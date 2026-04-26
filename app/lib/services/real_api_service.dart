@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'api_service.dart';
 
 class RealApiService implements ApiService {
@@ -14,13 +16,35 @@ class RealApiService implements ApiService {
   }
 
   @override
-  Future<Map<String, dynamic>> verifyAadhaar(String aadhaarNumber) {
-    throw UnimplementedError();
+  Future<Map<String, dynamic>> verifyAadhaar(String aadhaarNumber) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/gov/aadhaar/verify'),
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': 'gigcredit-demo-api-key-2026',
+      },
+      body: jsonEncode({'aadhaar': aadhaarNumber}),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    throw Exception('Failed to verify Aadhaar');
   }
 
   @override
-  Future<Map<String, dynamic>> verifyPan(String panNumber) {
-    throw UnimplementedError();
+  Future<Map<String, dynamic>> verifyPan(String panNumber) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/gov/pan/verify'),
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': 'gigcredit-demo-api-key-2026',
+      },
+      body: jsonEncode({'pan': panNumber}),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    throw Exception('Failed to verify PAN');
   }
 
   @override
@@ -74,8 +98,19 @@ class RealApiService implements ApiService {
   }
 
   @override
-  Future<Map<String, dynamic>> generateReportScore(Map<String, dynamic> verifiedProfileData) {
-    throw UnimplementedError();
+  Future<Map<String, dynamic>> generateReportScore(Map<String, dynamic> verifiedProfileData) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/report/generate'), // Note: baseUrl is /api, so this becomes /api/report/generate
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': 'gigcredit-demo-api-key-2026',
+      },
+      body: jsonEncode(verifiedProfileData),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    throw Exception('Failed to generate LLM report');
   }
 
   @override

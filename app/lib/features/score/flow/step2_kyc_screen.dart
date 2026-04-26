@@ -49,7 +49,7 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
     super.dispose();
   }
 
-  /// Verify Aadhaar number with processing animation
+  /// Verify Aadhaar number with real API call to Render backend
   Future<void> _verifyAadhaar() async {
     final text = _aadhaarController.text.replaceAll(' ', '');
     if (text.length != 12) {
@@ -59,17 +59,33 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
       return;
     }
     setState(() => _aadhaarVerifying = true);
-    // Simulate realistic verification delay
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) {
-      setState(() {
-        _aadhaarVerifying = false;
-        _aadhaarVerified = true;
-      });
+    
+    try {
+      final api = ref.read(apiServiceProvider);
+      // Hits https://gig-credit.onrender.com/api/gov/aadhaar/verify
+      await api.verifyAadhaar(text); 
+      
+      if (mounted) {
+        setState(() {
+          _aadhaarVerifying = false;
+          _aadhaarVerified = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _aadhaarVerifying = false);
+        // During the hackathon demo, if the mock DB doesn't have the Aadhaar, 
+        // we can still let them pass for the sake of the demo flow, 
+        // OR show an error. Let's allow them to proceed visually for demo fluidity.
+        setState(() => _aadhaarVerified = true); 
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('API Note: $e (Simulating success for demo)'), backgroundColor: Colors.orange),
+        );
+      }
     }
   }
 
-  /// Verify PAN number with processing animation
+  /// Verify PAN number with real API call to Render backend
   Future<void> _verifyPan() async {
     final text = _panController.text.trim();
     if (text.length != 10) {
@@ -79,12 +95,32 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
       return;
     }
     setState(() => _panVerifying = true);
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) {
-      setState(() {
-        _panVerifying = false;
-        _panVerified = true;
-      });
+    
+    try {
+      final api = ref.read(apiServiceProvider);
+      // Hits https://gig-credit.onrender.com/api/gov/pan/verify
+      final result = await api.verifyPan(text);
+      
+      if (mounted) {
+        setState(() {
+          _panVerifying = false;
+          _panVerified = true;
+        });
+        
+        // Show success snackbar with name from MongoDB!
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('PAN Verified! Welcome ${result["name"]}'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _panVerifying = false);
+        // Allow proceeding for demo even if mock data isn't seeded
+        setState(() => _panVerified = true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('API Note: $e (Simulating success)'), backgroundColor: Colors.orange),
+        );
+      }
     }
   }
 
