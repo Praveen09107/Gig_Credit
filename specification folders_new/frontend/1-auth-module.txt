@@ -1,0 +1,423 @@
+GigCredit Frontend Specification — Authentication Module
+
+This document defines the complete frontend specification for the Authentication Module in the GigCredit application. It covers the splash experience, login flow, sign-up flow, OTP verification, authentication edge cases, session behavior, and the transition into the main app.
+
+The Authentication Module is the first functional experience the user sees after launch. It must feel fast, secure, trustworthy, and easy to understand.
+
+1. MODULE GOAL
+
+The Authentication Module exists to:
+- introduce the GigCredit brand during app launch
+- allow existing users to log in securely using mobile OTP
+- allow new users to create an account using username and mobile OTP verification
+- move authenticated users into the main application flow without friction
+
+This module is not only a security layer. It is also the first trust-building layer of the product.
+
+2. AUTHENTICATION FLOW OVERVIEW
+
+The app entry sequence is:
+App Launch
+→ Splash Screen
+→ Login / Sign Up Screen
+→ OTP Verification
+→ Authentication Success
+→ Home Page
+
+This sequence should be kept simple and predictable.
+
+3. SPLASH SCREEN PURPOSE
+
+The Splash Screen appears immediately when the app launches.
+
+Purpose:
+- show the GigCredit brand identity
+- create a premium first impression
+- prepare the user for a secure financial product experience
+- transition smoothly into the authentication screen
+
+The splash screen should not feel like a loading dump. It should feel intentional and polished.
+
+4. SPLASH SCREEN CONTENT
+
+Recommended UI content:
+- GigCredit logo
+- subtle logo animation or brand reveal effect
+- optional short tagline such as:
+  Privacy-first. Explainable. Built for the real world.
+
+The screen should remain visually minimal and should not overload the user with too much text.
+
+5. SPLASH SCREEN BEHAVIOR
+
+Behavior rules:
+- splash appears on app open
+- animation duration should be short and smooth
+- after the splash completes, the app navigates to Login / Sign Up screen unless a valid authenticated session already exists
+- if a valid session already exists, the app may directly navigate into the main app
+
+This behavior should support both first-time and returning users.
+
+6. SESSION CHECK ON LAUNCH
+
+When the app opens, it should check whether the user already has a valid active session.
+
+If session exists:
+- skip authentication screens
+- open main app directly
+
+If session does not exist:
+- navigate to Login / Sign Up screen
+
+This session check should happen silently after or during splash handling.
+
+7. LOGIN / SIGN UP SCREEN PURPOSE
+
+The Login / Sign Up screen is the central entry point for authentication.
+
+Purpose:
+- allow existing users to log in
+- allow new users to create an account
+- clearly separate login and sign-up behavior
+- keep OTP-based authentication easy and trusted
+
+This screen should be simple, friendly, and mobile-first.
+
+8. LOGIN / SIGN UP SCREEN STRUCTURE
+
+Recommended structure:
+- app logo / heading
+- short subtext explaining secure mobile OTP access
+- toggle or segmented control between Login and Sign Up
+- input fields based on selected mode
+- primary CTA button
+- secondary helper text for OTP or edge cases
+
+The screen should avoid clutter and focus on one action at a time.
+
+9. LOGIN FLOW PURPOSE
+
+The Login flow is for existing users who already created an account earlier.
+
+Input required:
+- mobile number
+
+Flow:
+- user enters registered mobile number
+- taps Continue / Send OTP
+- OTP is sent to the mobile number
+- user is navigated to OTP verification screen
+
+10. LOGIN UI CONTENT
+
+Recommended Login UI content:
+- heading: Login
+- subtext: Enter your registered mobile number to continue
+- mobile number field
+- button: Send OTP
+
+Validation hints:
+- invalid mobile number should show an inline error
+- empty field should not proceed
+
+11. SIGN UP FLOW PURPOSE
+
+The Sign Up flow is for new users who do not yet have a GigCredit account.
+
+Inputs required:
+- username
+- mobile number
+
+Flow:
+- user enters username and mobile number
+- taps Continue / Send OTP
+- OTP is sent to the mobile number
+- user proceeds to OTP verification screen
+- after OTP success, account is created
+- user is redirected to Home
+
+12. SIGN UP UI CONTENT
+
+Recommended Sign Up UI content:
+- heading: Sign Up
+- subtext: Create your GigCredit account using mobile OTP
+- username field
+- mobile number field
+- button: Send OTP
+
+Validation hints:
+- username cannot be empty
+- mobile number must be valid
+- invalid inputs should not proceed
+
+13. AUTH MODE SWITCHING
+
+The Login / Sign Up screen should let users switch between Login and Sign Up easily.
+
+Behavior:
+- switching mode should update fields immediately
+- Login shows only mobile number
+- Sign Up shows username + mobile number
+- field validation should match the selected mode
+
+This interaction should feel seamless and not reset the whole screen unnecessarily.
+
+14. OTP VERIFICATION PURPOSE
+
+The OTP screen verifies that the entered mobile number belongs to the user.
+
+Purpose:
+- provide secure access
+- confirm mobile ownership
+- complete either login or account creation
+
+This screen is common to both Login and Sign Up flows.
+
+15. OTP SCREEN CONTENT
+
+Recommended UI content:
+- heading: Verify OTP
+- subtext indicating the mobile number where OTP was sent
+- OTP input fields or single OTP input row
+- timer or resend countdown
+- button: Verify OTP
+- resend option
+
+This screen must feel fast and confidence-building.
+
+16. OTP VERIFICATION BEHAVIOR
+
+Behavior rules:
+- OTP entry should accept the required digit count only
+- Verify button should remain disabled until OTP length is complete
+- on correct OTP:
+  - login flow → authenticate user and go to Home
+  - sign-up flow → create account, authenticate user, and go to Home
+- on incorrect OTP:
+  - show clear error message
+  - allow retry
+
+17. OTP RESEND BEHAVIOR
+
+If the user does not receive OTP:
+- show resend option after countdown or allowed interval
+- user can tap Resend OTP
+- a fresh OTP should be requested
+- UI should confirm OTP was resent
+
+The resend flow must be easy because OTP failure is a common real-world case.
+
+18. EDGE CASE: EXISTING USER TRIES SIGN UP
+
+If the user enters a mobile number that already has an account during Sign Up:
+- block duplicate account creation
+- show clear message such as:
+  User already registered
+- offer a path back to Login mode
+
+This prevents confusion and duplicate identity issues.
+
+19. EDGE CASE: NEW USER TRIES LOGIN
+
+If the user enters an unregistered mobile number during Login:
+- block login flow
+- show clear message such as:
+  User not registered
+- offer a path to Sign Up mode
+
+This helps users recover without frustration.
+
+20. EDGE CASE: OTP FAILURE
+
+If OTP verification fails:
+- show a clear error message
+- keep the user on the OTP screen
+- allow re-entry or resend
+
+Suggested UI copy:
+- Invalid OTP. Please try again.
+- Didn't receive OTP? Resend
+
+21. AUTHENTICATION SUCCESS BEHAVIOR
+
+On successful authentication:
+- create authenticated app session
+- store required session token or auth state
+- fetch or initialize user profile
+- navigate to Home screen
+
+This transition should feel immediate and should not send the user back through extra steps.
+
+22. POST-SIGN-UP INITIALIZATION
+
+If the user is signing up for the first time:
+- account is created after OTP success
+- username and mobile number become part of user profile
+- initial free report state and credit state should be initialized according to system defaults
+- user is redirected to Home
+
+This ensures a new user enters the app with a complete initial state.
+
+23. SESSION PERSISTENCE
+
+The authentication state should persist until logout.
+
+That means:
+- users should not be asked to log in again every time app is reopened
+- splash should check for valid session
+- if session is valid, open app directly to main flow
+- if session has expired or is invalid, send user back to authentication
+
+24. LOGOUT RELATION
+
+The Profile module handles logout, but the Authentication Module must define what logout means.
+
+Logout should:
+- clear session token
+- clear authenticated user state
+- return user to Login / Sign Up screen
+- prevent access to protected screens until authentication is completed again
+
+25. PROTECTED APP ACCESS RULE
+
+All main app modules should be protected behind authentication.
+
+Protected modules include:
+- Home
+- Score
+- Loans
+- Applications
+- Profile
+- Reports
+- Payments / Credits
+
+Users should not be able to access these without successful authentication.
+
+26. LOADING STATES IN AUTH MODULE
+
+The Authentication Module should support these loading states:
+- splash animation state
+- session check loading state
+- send OTP loading state
+- verify OTP loading state
+- resend OTP loading state
+
+Each loading state should be clear and not feel broken.
+
+27. ERROR STATES IN AUTH MODULE
+
+The module must support these error states:
+- invalid mobile number
+- empty username
+- user already registered
+- user not registered
+- invalid OTP
+- OTP expired
+- resend failure
+- network error
+- authentication server error
+
+Each error should have helpful recovery action where possible.
+
+28. INPUT VALIDATION RULES
+
+Mobile number rules:
+- must be numeric
+- must match expected valid mobile length
+- should show inline validation before submitting if clearly invalid
+
+Username rules:
+- required for Sign Up only
+- cannot be blank
+- should support normal user-friendly names
+
+OTP rules:
+- required length only
+- verify only when complete
+
+29. CONNECTIVITY REQUIREMENT
+
+Authentication depends on online services.
+
+That means:
+- OTP send requires internet
+- OTP verify requires internet
+- account creation requires internet
+- login session validation may require internet depending on auth system behavior
+
+If the user is offline, the auth screen should show a clear network-related message.
+
+30. SECURITY POSITIONING IN UI
+
+Since this is a financial app, the authentication interface should look secure and reassuring.
+
+UI should communicate:
+- secure OTP login
+- private account access
+- trusted onboarding experience
+
+The design should avoid looking like a casual social app.
+
+31. COMPONENTS USED INSIDE AUTH MODULE
+
+Main reusable components expected here:
+- SplashScreen
+- BrandLogo
+- AuthModeSwitcher
+- TextInputField
+- OTPInputWidget
+- PrimaryButton
+- SecondaryTextAction
+- InlineMessageBanner
+- LoadingIndicator
+
+32. FRONTEND STATE USED INSIDE AUTH MODULE
+
+Important state used by this module:
+- authMode (login / sign-up)
+- username
+- mobile number
+- otp value
+- otp send status
+- otp verify status
+- resend countdown
+- auth session state
+- auth error state
+
+33. NAVIGATION RULES INSIDE AUTH MODULE
+
+Expected route behavior:
+- Splash → Login / Sign Up if no session
+- Splash → Main app if valid session
+- Login / Sign Up → OTP after send OTP success
+- OTP → Home after auth success
+- Logout from Profile → Login / Sign Up
+
+These routes should be deterministic and easy to test.
+
+34. UX PRINCIPLES FOR AUTH MODULE
+
+The authentication experience should feel:
+- fast
+- simple
+- secure
+- low-friction
+- mobile-friendly
+- trustworthy
+
+Users should never feel confused about whether they are logging in or signing up.
+
+35. BACKEND INTEGRATION EXPECTATIONS
+
+This module will eventually require backend integration for:
+- OTP send request
+- OTP verification
+- account creation during sign-up
+- session validation
+- session token handling
+
+Future integration specs should define exact request fields and response contracts for these actions.
+
+36. FINAL MODULE DIRECTION
+
+The Authentication Module should feel like a premium but simple gateway into GigCredit. It must establish trust from the very first interaction, keep OTP-based access easy to understand, and move users into the product without friction. If this module is built well, users will immediately feel that GigCredit is secure, modern, and thoughtfully designed for real financial use.

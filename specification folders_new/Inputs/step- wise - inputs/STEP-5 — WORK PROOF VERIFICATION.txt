@@ -1,0 +1,119 @@
+STEP-5 — WORK PROOF VERIFICATION
+GigCredit Onboarding Specification
+Version: Final Input Structure
+Status: Locked — Inputs Only
+
+--------------------------------------------------
+1. PURPOSE
+--------------------------------------------------
+
+Step-5 collects work proof documents based on the
+gig worker category selected in Step-1.
+
+This document covers inputs only.
+Verification and validation are defined separately.
+
+--------------------------------------------------
+2. HOW THIS STEP IS PRESENTED
+--------------------------------------------------
+
+Step-5 dynamically loads one of four modules
+based on Work Type from Step-1.
+
+All inputs in this step are OPTIONAL.
+User may skip Step-5 and proceed to Step-6.
+
+Work Type Selected     → Module Loaded
+─────────────────────────────────────────────────
+Platform Worker        → Platform Driver Module
+Vendor / Seller        → Street Vendor Module
+Skilled Tradesperson   → Skill Certificate Module
+Freelancer             → Placeholder (not built yet)
+
+--------------------------------------------------
+3. MODULE 1 — PLATFORM DRIVER
+--------------------------------------------------
+
+Section A — Vehicle Number Entry
+
+#  | Field          | UI Element          | Format        | Mandatory
+---|----------------|---------------------|---------------|----------
+1  | Vehicle Number | Alphanumeric field  | e.g AN01H7125 | Optional
+
+Section B — Document Uploads
+(Enabled only after vehicle number is verified)
+
+#  | Field                    | UI Element    | File Type     | Mandatory
+---|--------------------------|---------------|---------------|----------
+2  | RC Book                  | Image/PDF     | JPG/PNG/PDF   | Optional
+3  | Vehicle Insurance Doc    | Image/PDF     | JPG/PNG/PDF   | Optional
+4  | Platform App Screenshot 1| Image upload  | JPG/PNG       | Optional
+5  | Platform App Screenshot 2| Image upload  | JPG/PNG       | Optional
+6  | Platform App Screenshot 3| Image upload  | JPG/PNG       | Optional
+7  | Platform App Screenshot 4| Image upload  | JPG/PNG       | Optional
+8  | Platform App Screenshot 5| Image upload  | JPG/PNG       | Optional
+
+Note: Minimum 1 screenshot required if this module is used.
+Maximum 5 screenshots allowed.
+Accepted platforms: Uber, Ola, Rapido, Swiggy,
+                    Zomato, Blinkit, Dunzo, Porter
+
+--------------------------------------------------
+4. MODULE 2 — STREET VENDOR / SELLER
+--------------------------------------------------
+
+#  | Field                      | UI Element  | File Type   | Mandatory
+---|----------------------------|-------------|-------------|----------
+1  | PM SVANidhi Application ID | Text field  | Text        | Optional
+2  | SVANidhi Approval Letter   | Image/PDF   | JPG/PNG/PDF | Optional
+3  | Bank No-Due Certificate    | Image/PDF   | JPG/PNG/PDF | Optional
+4  | FSSAI License Number       | Text field  | Text        | Optional
+5  | FSSAI Registration Cert    | Image/PDF   | JPG/PNG/PDF | Optional
+
+Note: SVANidhi Letter upload enabled only after
+      Application ID is verified.
+      FSSAI Certificate upload enabled only after
+      License Number is verified.
+
+--------------------------------------------------
+5. MODULE 3 — SKILLED TRADESPERSON
+--------------------------------------------------
+
+#  | Field              | UI Element  | File Type   | Mandatory
+---|--------------------|-------------|-------------|----------
+1  | Certificate ID     | Text field  | Text        | Optional
+2  | Skill India Cert   | Image/PDF   | JPG/PNG/PDF | Optional
+
+Note: Certificate upload enabled only after
+      Certificate ID is verified via API.
+      Issuing body: NSDC / Skill India
+
+--------------------------------------------------
+6. MODULE 4 — FREELANCER
+--------------------------------------------------
+
+STATUS: PLACEHOLDER
+Not yet implemented.
+Will be defined in a future version.
+
+--------------------------------------------------
+7. STEP-5 INPUT SUMMARY
+--------------------------------------------------
+
+Module               | Total Inputs | File Uploads | Text Inputs
+---------------------|--------------|--------------|------------
+Platform Driver      | 8            | 7            | 1
+Street Vendor        | 5            | 3            | 2
+Skilled Tradesperson | 2            | 1            | 1
+Freelancer           | 0            | 0            | 0
+
+All inputs across all modules: OPTIONAL
+
+--------------------------------------------------
+8. FINAL LOCK
+--------------------------------------------------
+
+This Step-5 input structure is final.
+Verification and validation defined separately.
+
+End of Step-5 Specification.

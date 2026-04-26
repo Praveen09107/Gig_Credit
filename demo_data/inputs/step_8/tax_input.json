@@ -1,0 +1,17 @@
+{
+  "itr": {
+    "pan": "BXYPK4532N",
+    "assessment_year": "2025-26",
+    "acknowledgement_number": "CPC/2526/A1234567",
+    "total_income": 340000,
+    "tax_paid": 12500,
+    "filing_date": "2025-07-28",
+    "itr_type": "ITR-1"
+  },
+  "gst": {
+    "gst_number": "33BXYPK4532N1Z5",
+    "trade_name": "Ravi Kumar Delivery Services",
+    "registration_date": "2024-06-01",
+    "status": "Active"
+  }
+}

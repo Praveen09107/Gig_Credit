@@ -1,0 +1,1046 @@
+
+================================================================================
+GIGCREDIT — OCR ENGINE AND PARSER CREATION INSTRUCTION FILE
+FOR AI-ASSISTED DEVELOPMENT (VS CODE COPILOT / CURSOR / WINDSURF)
+VERSION 1.0
+================================================================================
+
+READ THIS FIRST — HOW TO USE THIS FILE
+=======================================
+
+This file is an instruction set for an AI coding assistant.
+
+The AI should:
+  1. Read this file completely before writing any code
+  2. Read all sample input files in the /inputs/ folder (step-wise)
+  3. Understand each document type, its layout, and what fields to extract
+  4. Generate parsers based on the samples provided
+  5. Follow the architecture and output schema defined in this file exactly
+
+Folder structure expected:
+  /gigcredit-ocr/
+    ├── instructions.txt         ← THIS FILE
+    ├── inputs/
+    │   ├── step-1/              ← No OCR (user-typed fields only)
+    │   ├── step-2/
+    │   │   ├── aadhaar_front_sample.jpg
+    │   │   ├── aadhaar_back_sample.jpg
+    │   │   └── pan_sample.jpg
+    │   ├── step-3/
+    │   │   ├── axis_bank_statement.pdf
+    │   │   ├── canara_bank_statement.pdf
+    │   │   ├── sbi_bank_statement.pdf
+    │   │   ├── hdfc_bank_statement.pdf
+    │   │   └── icici_bank_statement.pdf
+    │   ├── step-4/
+    │   │   ├── tneb_electricity_bill.jpg
+    │   │   ├── bescom_electricity_bill.jpg
+    │   │   ├── indane_lpg_bill.jpg
+    │   │   ├── hp_gas_bill.jpg
+    │   │   ├── jio_mobile_bill.jpg
+    │   │   └── airtel_mobile_bill.jpg
+    │   ├── step-5/
+    │   │   ├── rc_book_sample.jpg
+    │   │   ├── driving_licence_sample.jpg
+    │   │   ├── swiggy_earnings_screenshot.png
+    │   │   ├── zomato_earnings_screenshot.png
+    │   │   └── upi_screenshot.png
+    │   ├── step-6/
+    │   │   ├── eshram_card_sample.jpg
+    │   └── step-7/
+    │       ├── health_insurance_policy.pdf
+    │       ├── vehicle_insurance_cert.jpg
+    │       └── life_insurance_bond.pdf
+    ├── output/
+    │   └── (generated parser files go here)
+    └── schema/
+        └── normalized_schemas.json   ← output schemas defined in Section 5
+
+================================================================================
+SECTION 1 — OCR ENGINE ARCHITECTURE
+================================================================================
+
+AI INSTRUCTION:
+  All OCR runs on-device inside the Flutter Android app.
+  You are generating Python-side parser logic for TESTING and VALIDATION
+  of the OCR output. The same logic will be ported to Dart for on-device use.
+
+  For Python testing pipeline:
+    - Use pytesseract or paddleocr for OCR extraction
+    - Use pdfplumber for text-based PDF extraction (preferred over OCR for PDFs)
+    - Use pdf2image for scanned PDF conversion to images
+    - Use Pillow for image preprocessing
+    - Use re (regex) for field extraction
+    - Use fuzzywuzzy or rapidfuzz for name matching
+
+  For Flutter/Dart production:
+    - OCR: PaddleOCR Lite via platform channel (Android native)
+    - PDF text extraction: syncfusion_flutter_pdf or pdfx
+    - Image preprocessing: native Android Bitmap operations
+    - Logic: mirror the Python parser logic exactly in Dart
+
+REQUIRED PYTHON LIBRARIES:
+  pip install paddleocr pytesseract pdfplumber pdf2image Pillow
+  pip install rapidfuzz python-dateutil re2
+
+--------------------------------------------------------------------------------
+1.1 GENERAL OCR PIPELINE (APPLIES TO ALL INPUTS)
+--------------------------------------------------------------------------------
+
+  STEP 1 — RECEIVE FILE
+    Input: file path (jpg / png / pdf)
+    Action: detect file type
+
+  STEP 2 — FILE TYPE ROUTING
+    if extension in ['.jpg', '.jpeg', '.png', '.webp']:
+        route → IMAGE PIPELINE
+    if extension == '.pdf':
+        try pdfplumber text extraction first
+        if text extracted and len > 100 chars:
+            route → PDF TEXT PIPELINE (no OCR needed)
+        else:
+            route → PDF IMAGE PIPELINE (scanned, needs OCR)
+
+  STEP 3 — IMAGE PREPROCESSING (for image pipeline and PDF image pipeline)
+    a. Convert to grayscale
+    b. Resize: max width 1600px (preserve aspect ratio)
+    c. Deskew: correct rotation if > 2 degrees
+    d. Denoise: apply mild Gaussian blur
+    e. Contrast enhancement: CLAHE (Contrast Limited Adaptive Histogram Eq.)
+    f. Binarize: Otsu threshold for black/white conversion
+
+  STEP 4 — OCR EXTRACTION
+    Run PaddleOCR on preprocessed image
+    Returns: list of (bounding_box, text, confidence)
+    Filter: discard any result with confidence < 0.60
+
+  STEP 5 — DOCUMENT TYPE DETECTION
+    From raw OCR text, detect document type (see Section 2)
+    Select correct parser strategy
+
+  STEP 6 — FIELD EXTRACTION
+    Run the selected parser on the OCR text
+    Extract target fields into a dict
+
+  STEP 7 — NORMALIZE OUTPUT
+    Convert extracted dict to the normalized schema for that document type
+    (defined in Section 5)
+
+  STEP 8 — CONFIDENCE SCORING
+    Compute parser confidence:
+      required_fields_found / total_required_fields
+    If confidence < 0.70: flag as LOW_CONFIDENCE, request re-upload
+
+  STEP 9 — CLEANUP
+    Delete preprocessed temp images
+    Keep only the normalized output dict in memory
+
+  STEP 10 — RETURN
+    Return normalized dict + confidence score + doc_type
+
+--------------------------------------------------------------------------------
+1.2 OCR TRIGGER RULES (WHEN TO RUN OCR)
+--------------------------------------------------------------------------------
+
+  TRIGGER — RUN OCR:
+    ✅ User uploads a new file
+    ✅ User replaces an existing file
+    ✅ User recaptures a photo
+    ✅ User taps an explicit "Rescan" button
+
+  DO NOT TRIGGER OCR:
+    ❌ User types in a text field
+    ❌ User moves to the next step (if file unchanged)
+    ❌ User taps the back button
+    ❌ App resumes from background (use cached result)
+
+  OCR RESULT CACHING:
+    After OCR runs on a file, store result in temp cache with file hash.
+    If same file uploaded again (same hash), use cached result, skip OCR.
+
+================================================================================
+SECTION 2 — DOCUMENT TYPE DETECTION
+================================================================================
+
+AI INSTRUCTION:
+  After raw OCR text is extracted, run document_type_detect() to identify
+  which parser to use. Detection is keyword-based on the full OCR text.
+
+  def document_type_detect(raw_text: str) -> str:
+    text = raw_text.upper()
+
+    # Aadhaar detection
+    if "AADHAAR" in text or "UNIQUE IDENTIFICATION" in text or "UIDAI" in text:
+        if "FRONT" clue or photo area detected:
+            return "AADHAAR_FRONT"
+        return "AADHAAR_BACK"
+
+    # PAN detection
+    if "INCOME TAX DEPARTMENT" in text or "PERMANENT ACCOUNT NUMBER" in text:
+        return "PAN_CARD"
+
+    # Bank statement detection — detect which bank
+    if "AXIS BANK" in text:
+        return "BANK_STMT_AXIS"
+    if "CANARA BANK" in text:
+        return "BANK_STMT_CANARA"
+    if "STATE BANK OF INDIA" in text or "SBI" in text:
+        return "BANK_STMT_SBI"
+    if "HDFC BANK" in text:
+        return "BANK_STMT_HDFC"
+    if "ICICI BANK" in text:
+        return "BANK_STMT_ICICI"
+    if any keyword in text for ["ACCOUNT STATEMENT", "TRANSACTION DATE",
+                                 "DEBIT", "CREDIT", "BALANCE"]:
+        return "BANK_STMT_GENERIC"
+
+    # Utility bills
+    if "TAMIL NADU ELECTRICITY" in text or "TNEB" in text or "TANGEDCO" in text:
+        return "BILL_ELECTRICITY_TNEB"
+    if "BESCOM" in text or "BANGALORE ELECTRICITY" in text:
+        return "BILL_ELECTRICITY_BESCOM"
+    if "INDANE" in text or "INDIAN OIL" in text:
+        return "BILL_LPG_INDANE"
+    if "HP GAS" in text or "HINDUSTAN PETROLEUM" in text:
+        return "BILL_LPG_HP"
+    if "BHARAT GAS" in text or "BPCL" in text:
+        return "BILL_LPG_BHARAT"
+    if "JIO" in text and ("POSTPAID" in text or "BILL" in text):
+        return "BILL_MOBILE_JIO"
+    if "AIRTEL" in text and "BILL" in text:
+        return "BILL_MOBILE_AIRTEL"
+
+    # Vehicle documents
+    if "REGISTRATION CERTIFICATE" in text or "RC BOOK" in text:
+        return "RC_BOOK"
+    if "DRIVING LICENCE" in text or "DRIVING LICENSE" in text:
+        return "DRIVING_LICENCE"
+
+    # Platform earnings screenshots
+    if "SWIGGY" in text and ("EARNINGS" in text or "TRIPS" in text):
+        return "EARNINGS_SWIGGY"
+    if "ZOMATO" in text and "EARNINGS" in text:
+        return "EARNINGS_ZOMATO"
+    if "OLA" in text and "EARNINGS" in text:
+        return "EARNINGS_OLA"
+    if "UBER" in text and "EARNINGS" in text:
+        return "EARNINGS_UBER"
+
+    # Government scheme cards
+    if "E-SHRAM" in text or "ESHRAM" in text or "UNORGANISED WORKER" in text:
+        return "ESHRAM_CARD"
+
+    # Insurance
+    if "HEALTH INSURANCE" in text or "MEDICLAIM" in text:
+        return "INSURANCE_HEALTH"
+    if "MOTOR INSURANCE" in text or "VEHICLE INSURANCE" in text:
+        return "INSURANCE_VEHICLE"
+    if "LIFE INSURANCE" in text or "LIC" in text or "PREMIUM RECEIPT" in text:
+        return "INSURANCE_LIFE"
+
+    # ITR
+    if "INCOME TAX RETURN" in text or "ACKNOWLEDGEMENT" in text and "ITR" in text:
+        return "ITR_ACKNOWLEDGEMENT"
+
+    return "UNKNOWN"
+
+================================================================================
+SECTION 3 — PARSERS PER DOCUMENT TYPE
+================================================================================
+
+AI INSTRUCTION:
+  For each document type below, look at the sample file in /inputs/
+  and generate a parser function that:
+    1. Takes raw OCR text (string) as input
+    2. Extracts the target fields listed
+    3. Returns a dict matching the normalized schema in Section 5
+    4. Handles common OCR errors (O vs 0, I vs 1, missing spaces)
+    5. Uses the regex patterns provided as starting points — improve based
+       on actual sample files
+
+--------------------------------------------------------------------------------
+3.1 AADHAAR FRONT (step-2/aadhaar_front_sample.jpg)
+--------------------------------------------------------------------------------
+
+  TARGET FIELDS:
+    - aadhaar_number   (12-digit, format: XXXX XXXX XXXX)
+    - full_name        (line above DOB)
+    - date_of_birth    (DD/MM/YYYY)
+    - gender           (Male / Female / Transgender)
+    - year_of_birth    (fallback if full DOB not found)
+
+  PARSER STRATEGY:
+    - Aadhaar numbers are always 12 digits in groups of 4
+    - Name is in bold, typically 1–2 lines above DOB
+    - DOB is prefixed by "DOB:" or "Date of Birth:" or "जन्म तिथि:"
+    - Gender is prefixed by "Male" / "Female" or in Hindi/Tamil
+
+  STARTING REGEX:
+    aadhaar_pattern = r'\d{4}\s\d{4}\s\d{4}'
+    dob_pattern     = r'DOB[:\s]*([0-9]{2}/[0-9]{2}/[0-9]{4})'
+    yob_pattern     = r'Year of Birth[:\s]*(\d{4})'
+    gender_pattern  = r'\b(Male|Female|Transgender)\b'
+
+  OCR ERROR HANDLING:
+    - Aadhaar may OCR as "1234 5O67 89I2" — replace O→0, I→1
+    - Name may have extra spaces — use strip() and re.sub(r'\s+', ' ', name)
+    - DOB separators may OCR as '-' or '.' instead of '/' — normalize
+
+  LOOK AT: inputs/step-2/aadhaar_front_sample.jpg
+  IMPROVE REGEX based on actual layout observed in the sample.
+
+--------------------------------------------------------------------------------
+3.2 AADHAAR BACK (step-2/aadhaar_back_sample.jpg)
+--------------------------------------------------------------------------------
+
+  TARGET FIELDS:
+    - address_line1
+    - address_line2
+    - district
+    - state
+    - pin_code
+
+  PARSER STRATEGY:
+    - Address is a multi-line block below the QR code
+    - State name appears before PIN code
+    - PIN code is always 6 digits
+
+  STARTING REGEX:
+    pin_pattern   = r'\b([1-9][0-9]{5})\b'
+    state_pattern = r'(Tamil Nadu|Maharashtra|Karnataka|...) all states list
+
+  LOOK AT: inputs/step-2/aadhaar_back_sample.jpg
+
+--------------------------------------------------------------------------------
+3.3 PAN CARD (step-2/pan_sample.jpg)
+--------------------------------------------------------------------------------
+
+  TARGET FIELDS:
+    - pan_number        (format: ABCDE1234F)
+    - full_name         (name of PAN holder)
+    - father_name       (father's name on PAN)
+    - date_of_birth     (DD/MM/YYYY)
+
+  PARSER STRATEGY:
+    - PAN number is always 5 letters + 4 digits + 1 letter, uppercase
+    - Full name appears in CAPITAL LETTERS on the card
+    - Father's name appears below the full name
+    - DOB is in DD/MM/YYYY format
+
+  STARTING REGEX:
+    pan_pattern  = r'[A-Z]{5}[0-9]{4}[A-Z]{1}'
+    dob_pattern  = r'([0-9]{2}/[0-9]{2}/[0-9]{4})'
+    name_pattern = r'^([A-Z\s]+)$'  (all-caps line)
+
+  OCR ERROR HANDLING:
+    - PAN may OCR as "ABCDE 1234F" (extra space) — remove spaces in PAN field
+    - Letters O and 0 confusion in PAN number — apply domain logic
+      (4th character of PAN is always P/C/H/F/A/T/B/L/J/G — use this to validate)
+
+  LOOK AT: inputs/step-2/pan_sample.jpg
+
+--------------------------------------------------------------------------------
+3.4 BANK STATEMENTS — AXIS BANK (step-3/axis_bank_statement.pdf)
+--------------------------------------------------------------------------------
+
+  TARGET FIELDS PER TRANSACTION:
+    - date          (DD/MM/YYYY or DD-MM-YYYY or DD MMM YYYY)
+    - narration     (description / transaction name)
+    - debit_amount  (float, empty if credit transaction)
+    - credit_amount (float, empty if debit transaction)
+    - balance       (float, closing balance after transaction)
+
+  ACCOUNT HEADER FIELDS:
+    - account_number
+    - account_holder_name
+    - statement_from_date
+    - statement_to_date
+    - ifsc_code
+
+  PARSER STRATEGY FOR AXIS BANK:
+    Step 1: Use pdfplumber to extract text — Axis Bank statements are
+            digital PDFs (not scanned), so text extraction is direct.
+    Step 2: Find the transaction table. Look for the header row containing
+            keywords: "Date", "Narration", "Chq./Ref.No.", "Value Dt",
+            "Withdrawal Amt.", "Deposit Amt.", "Closing Balance"
+    Step 3: Extract rows below the header.
+    Step 4: Handle multi-line narrations (narration text wraps to next line
+            in Axis statements — detect by checking if first column is empty).
+    Step 5: Parse amounts — Axis uses comma-separated format (1,23,456.78)
+            Remove commas, convert to float.
+
+  AXIS BANK COLUMN POSITIONS (approximate, verify with sample):
+    Col 0: Date (DD/MM/YYYY)
+    Col 1: Narration (multi-line possible)
+    Col 2: Cheque/Ref No
+    Col 3: Value Date
+    Col 4: Withdrawal Amount (debit)
+    Col 5: Deposit Amount (credit)
+    Col 6: Closing Balance
+
+  STARTING CODE:
+    import pdfplumber
+    def parse_axis_statement(pdf_path):
+        transactions = []
+        with pdfplumber.open(pdf_path) as pdf:
+            for page in pdf.pages:
+                tables = page.extract_tables()
+                for table in tables:
+                    for row in table:
+                        # parse row into transaction dict
+        return transactions
+
+  LOOK AT: inputs/step-3/axis_bank_statement.pdf
+  ADJUST column indices and header detection based on actual sample.
+
+--------------------------------------------------------------------------------
+3.5 BANK STATEMENTS — CANARA BANK (step-3/canara_bank_statement.pdf)
+--------------------------------------------------------------------------------
+
+  TARGET FIELDS: Same as 3.4
+
+  PARSER STRATEGY FOR CANARA BANK:
+    Canara Bank statements may be digital or printed-then-scanned.
+    Step 1: Try pdfplumber text extraction.
+    Step 2: If text extraction fails → convert PDF pages to images → OCR.
+    Step 3: Canara header row keywords: "Tran Date", "Particulars",
+            "Debit", "Credit", "Balance"
+    Step 4: Date format is DD/MM/YYYY.
+    Step 5: Canara narrations include NEFT/UPI/ATW/CHQ prefixes — preserve them.
+
+  CANARA BANK COLUMN POSITIONS (verify with sample):
+    Col 0: Transaction Date
+    Col 1: Value Date
+    Col 2: Particulars (narration)
+    Col 3: Debit
+    Col 4: Credit
+    Col 5: Balance
+
+  LOOK AT: inputs/step-3/canara_bank_statement.pdf
+
+--------------------------------------------------------------------------------
+3.6 BANK STATEMENTS — SBI (step-3/sbi_bank_statement.pdf)
+--------------------------------------------------------------------------------
+
+  TARGET FIELDS: Same as 3.4
+
+  PARSER STRATEGY FOR SBI:
+    SBI statements downloaded from YONO/NetBanking are digital PDFs.
+    SBI header row keywords: "Txn Date", "Value Date", "Description",
+    "Ref No./Cheque No.", "Debit", "Credit", "Balance"
+    SBI uses format: "DD MMM YYYY" (e.g., 01 Apr 2026)
+    Parse date using: datetime.strptime(date_str, "%d %b %Y")
+
+  LOOK AT: inputs/step-3/sbi_bank_statement.pdf
+
+--------------------------------------------------------------------------------
+3.7 BANK STATEMENTS — HDFC (step-3/hdfc_bank_statement.pdf)
+--------------------------------------------------------------------------------
+
+  TARGET FIELDS: Same as 3.4
+
+  PARSER STRATEGY FOR HDFC:
+    HDFC header keywords: "Date", "Narration", "Value Dt", "Debit Amount",
+    "Credit Amount", "Chq/Ref Number", "Closing Balance"
+    HDFC narrations are long and structured (UPI/NEFT/IMPS prefix included).
+    HDFC date: DD/MM/YY format — convert to DD/MM/YYYY (add 20 prefix to YY).
+
+  LOOK AT: inputs/step-3/hdfc_bank_statement.pdf
+
+--------------------------------------------------------------------------------
+3.8 BANK STATEMENTS — ICICI (step-3/icici_bank_statement.pdf)
+--------------------------------------------------------------------------------
+
+  TARGET FIELDS: Same as 3.4
+
+  PARSER STRATEGY FOR ICICI:
+    ICICI header keywords: "S.No.", "Value Date", "Transaction Date",
+    "Cheque Number", "Transaction Remarks", "Withdrawal Amount (INR)",
+    "Deposit Amount (INR)", "Balance (INR)"
+    ICICI amounts include trailing spaces — strip before converting to float.
+
+  LOOK AT: inputs/step-3/icici_bank_statement.pdf
+
+--------------------------------------------------------------------------------
+3.9 BANK STATEMENTS — GENERIC FALLBACK (any unknown bank)
+--------------------------------------------------------------------------------
+
+  TARGET FIELDS: Same as 3.4
+
+  PARSER STRATEGY — GENERIC TABLE PARSER:
+    This parser handles any bank not matched by the above 5.
+    Strategy: find the transaction table by searching for a row that contains
+    ALL of these keywords in some combination:
+      "date", "debit", "credit", "balance"
+    Once header row found, extract all rows below it.
+    Use column position of "debit" and "credit" keywords to map amounts.
+    Any numeric value in "debit" column → debit_amount
+    Any numeric value in "credit" column → credit_amount
+    Last numeric column → balance
+
+  CONFIDENCE SCORING:
+    Generic parser confidence = (successfully_parsed_rows / total_rows)
+    If confidence < 0.70 → flag as NEEDS_REVIEW
+
+  THIS PARSER IS THE FALLBACK — always runs last, after all specific parsers fail.
+
+--------------------------------------------------------------------------------
+3.10 UTILITY BILLS — ELECTRICITY — TNEB/TANGEDCO
+         (step-4/tneb_electricity_bill.jpg)
+--------------------------------------------------------------------------------
+
+  TARGET FIELDS:
+    - consumer_number   (unique identifier, must be same across 6 months)
+    - bill_month        (Month Year, e.g. "March 2026")
+    - bill_amount       (total amount due, float)
+    - due_date          (DD/MM/YYYY)
+    - payment_status    (Paid / Unpaid)
+    - units_consumed    (integer)
+
+  PARSER STRATEGY:
+    TNEB bills are printed images (not digital PDFs).
+    Use image OCR pipeline.
+    Look for:
+      - "Consumer No" or "SC No" → consumer number
+      - "Bill Month" or "Billing Period" → month
+      - "Amount Payable" or "Total Amount Due" → bill amount
+      - "Due Date" or "Last Date" → due date
+      - "Units Consumed" or "Consumption" → units
+
+  STARTING REGEX:
+    consumer_pattern = r'(?:Consumer No|SC No)[:\s]*([A-Z0-9]+)'
+    amount_pattern   = r'(?:Amount Payable|Total Due)[:\s]*([\d,]+\.?\d*)'
+    due_date_pattern = r'(?:Due Date|Last Date)[:\s]*(\d{2}/\d{2}/\d{4})'
+    units_pattern    = r'(?:Units Consumed|Consumption)[:\s]*(\d+)'
+
+  LOOK AT: inputs/step-4/tneb_electricity_bill.jpg
+
+--------------------------------------------------------------------------------
+3.11 UTILITY BILLS — LPG — INDANE (step-4/indane_lpg_bill.jpg)
+--------------------------------------------------------------------------------
+
+  TARGET FIELDS:
+    - consumer_number
+    - distributor_name
+    - bill_month
+    - cylinders_delivered  (integer)
+    - amount_charged       (float)
+
+  PARSER STRATEGY:
+    Indane delivery challan / invoice.
+    Look for:
+      - "Consumer ID" or "LPG ID" → consumer_number
+      - "Distributor" or "Agency Name" → distributor
+      - Date of delivery → bill_month
+      - Number of cylinders → cylinders
+      - Amount charged → amount
+
+  LOOK AT: inputs/step-4/indane_lpg_bill.jpg
+
+--------------------------------------------------------------------------------
+3.12 UTILITY BILLS — MOBILE — JIO (step-4/jio_mobile_bill.jpg)
+--------------------------------------------------------------------------------
+
+  TARGET FIELDS:
+    - mobile_number     (10-digit — must match Step 1 mobile)
+    - bill_month        (Month Year)
+    - bill_amount       (float)
+    - due_date          (DD/MM/YYYY)
+    - plan_type         (Postpaid / Prepaid)
+
+  PARSER STRATEGY:
+    Jio bills are digital PDFs (use pdfplumber first).
+    Look for:
+      - "Mobile Number" or "Connection No" → mobile_number
+      - "Bill Date" or "Billing Period" → bill_month
+      - "Total Amount Due" or "Amount Payable" → bill_amount
+      - "Due Date" or "Payment Due" → due_date
+
+  LOOK AT: inputs/step-4/jio_mobile_bill.jpg
+
+--------------------------------------------------------------------------------
+3.13 VEHICLE DOCUMENTS — RC BOOK (step-5/rc_book_sample.jpg)
+--------------------------------------------------------------------------------
+
+  TARGET FIELDS:
+    - vehicle_number        (format: TN09AB1234)
+    - owner_name
+    - vehicle_class         (Motorcycle / LMV / Goods Vehicle etc.)
+    - chassis_number
+    - engine_number
+    - registration_date     (DD/MM/YYYY)
+    - rc_expiry_date        (DD/MM/YYYY)
+    - fuel_type             (Petrol / Diesel / Electric)
+
+  PARSER STRATEGY:
+    RC books (smart card format) are photographed, use image OCR pipeline.
+    Look for:
+      - Registration number: always in format STATE_CODE + DIGITS + LETTERS + DIGITS
+        Regex: r'[A-Z]{2}[\s-]?[0-9]{1,2}[\s-]?[A-Z]{1,3}[\s-]?[0-9]{1,4}'
+      - "Name of Owner" or "Registered Owner"
+      - "Vehicle Class" or "Class of Vehicle"
+      - "Chassis No" → chassis
+      - "Engine No" → engine
+      - "Registration Date" or "Date of Registration"
+      - "Registration Validity" or "Valid Upto" → expiry
+
+  LOOK AT: inputs/step-5/rc_book_sample.jpg
+
+--------------------------------------------------------------------------------
+3.14 DRIVING LICENCE (step-5/driving_licence_sample.jpg)
+--------------------------------------------------------------------------------
+
+  TARGET FIELDS:
+    - dl_number         (format: TN-0920100123456)
+    - holder_name
+    - date_of_birth     (DD/MM/YYYY)
+    - valid_from        (DD/MM/YYYY)
+    - valid_to          (DD/MM/YYYY)
+    - vehicle_classes   (list: MC, LMV, etc.)
+
+  PARSER STRATEGY:
+    DL is smart card format, image OCR.
+    DL number format: STATE-DISTRICT-YEAR-NUMBER
+    Regex: r'[A-Z]{2}-?[0-9]{2}-?[0-9]{4}-?[0-9]{7}'
+    Vehicle classes appear as codes: MC, LMV, MCWG, TRANS
+
+  LOOK AT: inputs/step-5/driving_licence_sample.jpg
+
+--------------------------------------------------------------------------------
+3.15 PLATFORM EARNINGS — SWIGGY (step-5/swiggy_earnings_screenshot.png)
+     PLATFORM EARNINGS — ZOMATO (step-5/zomato_earnings_screenshot.png)
+     PLATFORM EARNINGS — OLA / UBER (step-5/ola_earnings_screenshot.png)
+--------------------------------------------------------------------------------
+
+  TARGET FIELDS:
+    - platform_name         (Swiggy / Zomato / Ola / Uber)
+    - month_label           (e.g. "April 2026")
+    - total_earnings        (float in ₹)
+    - total_trips           (integer)
+    - account_name          (name shown on earnings page)
+
+  PARSER STRATEGY:
+    Screenshots have NO fixed layout — use entity extraction, not table parser.
+
+    Entity extraction approach:
+    Step 1: OCR full screenshot
+    Step 2: Find total earnings → scan for largest ₹ amount on the screen
+            Regex: r'[₹Rs\.]+\s*([\d,]+)'
+    Step 3: Find total trips → look for pattern: NUMBER + "trips" / "deliveries" / "rides"
+            Regex: r'(\d+)\s*(?:trips|deliveries|rides|orders)'
+    Step 4: Find month → look for Month + Year pattern
+            Regex: r'(January|February|March|April|May|June|July|August|
+                       September|October|November|December)\s+\d{4}'
+    Step 5: Platform confirmed by logo keyword already detected in document_type_detect()
+
+  NOTE: Do NOT try to parse exact UI layout. Screenshots vary by app version.
+  Use pure text entity extraction for all platform screenshots.
+
+  LOOK AT: inputs/step-5/swiggy_earnings_screenshot.png
+           inputs/step-5/zomato_earnings_screenshot.png
+
+--------------------------------------------------------------------------------
+3.16 ESHRAM CARD (step-6/eshram_card_sample.jpg)
+--------------------------------------------------------------------------------
+
+  TARGET FIELDS:
+    - uan_number           (Universal Account Number — 12 digits)
+    - holder_name
+    - father_name
+    - date_of_birth        (DD/MM/YYYY)
+    - worker_category
+    - state_of_work
+
+  PARSER STRATEGY:
+    eShram card is a printed/digital card, image OCR.
+    UAN is 12-digit, similar to Aadhaar format visually.
+    Look for "UAN" prefix followed by digits.
+    "Worker Category" or "Occupation" for worker_category.
+
+  LOOK AT: inputs/step-6/eshram_card_sample.jpg
+
+--------------------------------------------------------------------------------
+3.17 INSURANCE — HEALTH POLICY (step-7/health_insurance_policy.pdf)
+--------------------------------------------------------------------------------
+
+  TARGET FIELDS:
+    - policy_number
+    - policy_holder_name
+    - insurer_name          (Star Health / Niva Bupa / Care etc.)
+    - sum_insured           (float)
+    - annual_premium        (float)
+    - policy_start_date     (DD/MM/YYYY)
+    - policy_expiry_date    (DD/MM/YYYY)
+
+  PARSER STRATEGY:
+    Health insurance policies are digital PDFs.
+    Use pdfplumber text extraction.
+    Look for:
+      - "Policy No" or "Policy Number" → policy_number
+      - "Insured Name" or "Name of Insured" → holder_name
+      - "Sum Insured" or "Coverage Amount" → sum_insured
+      - "Premium" or "Annual Premium" → premium
+      - "Policy Period" or "Valid From...To" → start + expiry dates
+    Policy expiry must be > today's date (validate this in parser output)
+
+  LOOK AT: inputs/step-7/health_insurance_policy.pdf
+
+--------------------------------------------------------------------------------
+3.18 INSURANCE — VEHICLE (step-7/vehicle_insurance_cert.jpg)
+--------------------------------------------------------------------------------
+
+  TARGET FIELDS:
+    - policy_number
+    - policy_holder_name
+    - vehicle_number        (must match RC book vehicle number from Step 5)
+    - insurer_name
+    - policy_expiry_date    (DD/MM/YYYY)
+
+  LOOK AT: inputs/step-7/vehicle_insurance_cert.jpg
+
+--------------------------------------------------------------------------------
+3.19 INSURANCE — LIFE INSURANCE (step-7/life_insurance_bond.pdf)
+--------------------------------------------------------------------------------
+
+  TARGET FIELDS:
+    - policy_number
+    - policy_holder_name
+    - insurer_name          (LIC / HDFC Life / SBI Life etc.)
+    - sum_assured           (float)
+    - annual_premium        (float)
+    - policy_start_date
+    - policy_expiry_date
+    - coverage_status       (Active / Lapsed)
+
+  LOOK AT: inputs/step-7/life_insurance_bond.pdf
+
+================================================================================
+SECTION 4 — COMMON OCR ERROR CORRECTIONS
+================================================================================
+
+AI INSTRUCTION:
+  Apply these corrections to ALL raw OCR output before running field parsers.
+
+  def clean_ocr_text(text: str) -> str:
+    # Fix common OCR letter/number confusions
+    # Only apply in NUMERIC-EXPECTED contexts
+    text = text.strip()
+
+    # In Aadhaar/PAN number fields only:
+    def fix_number_field(s):
+        return s.replace('O', '0').replace('I', '1').replace('l', '1')
+              .replace('S', '5').replace('B', '8')
+
+    # Normalize whitespace
+    text = re.sub(r'\s+', ' ', text)
+
+    # Normalize date separators
+    text = re.sub(r'(\d{2})[-\.](\d{2})[-\.](\d{4})', r'\1/\2/\3', text)
+
+    # Normalize currency symbols
+    text = text.replace('Rs.', '₹').replace('INR', '₹')
+
+    # Normalize amount commas (keep only decimals)
+    def parse_amount(s):
+        return float(s.replace(',', '').replace('₹', '').strip())
+
+    return text
+
+  FUZZY NAME MATCHING:
+    When comparing OCR-extracted name with API-returned name:
+    Use rapidfuzz.fuzz.token_sort_ratio()
+    Threshold: ≥ 85 → MATCH, < 85 → MISMATCH
+
+    from rapidfuzz import fuzz
+    def names_match(name1: str, name2: str) -> bool:
+        score = fuzz.token_sort_ratio(name1.upper(), name2.upper())
+        return score >= 85
+
+================================================================================
+SECTION 5 — NORMALIZED OUTPUT SCHEMAS
+================================================================================
+
+AI INSTRUCTION:
+  Every parser MUST return a dict conforming to these schemas exactly.
+  Downstream feature engineering reads these schemas.
+  Never add extra fields. Never rename fields.
+  Use None (Python) / null (JSON) for missing optional fields.
+
+SCHEMA 1 — IDENTITY DOCUMENT:
+{
+    "doc_type": str,            // "AADHAAR_FRONT" | "PAN_CARD" etc.
+    "full_name": str or None,
+    "date_of_birth": str or None,  // "DD/MM/YYYY" format always
+    "id_number": str or None,       // Aadhaar or PAN number
+    "address": str or None,         // Aadhaar back only
+    "state": str or None,
+    "pin_code": str or None,
+    "confidence": float             // 0.0–1.0
+}
+
+SCHEMA 2 — BANK TRANSACTION (one per transaction):
+{
+    "date": str,                // "YYYY-MM-DD" always (convert all formats)
+    "narration": str,
+    "debit_amount": float or None,
+    "credit_amount": float or None,
+    "balance": float or None,
+    "confidence": float
+}
+
+SCHEMA 3 — BANK STATEMENT HEADER:
+{
+    "doc_type": str,             // "BANK_STMT_AXIS" etc.
+    "bank_name": str,
+    "account_number": str or None,
+    "account_holder_name": str or None,
+    "ifsc_code": str or None,
+    "statement_from": str or None,   // "YYYY-MM-DD"
+    "statement_to": str or None,     // "YYYY-MM-DD"
+    "transactions": list,            // list of SCHEMA 2 dicts
+    "confidence": float
+}
+
+SCHEMA 4 — UTILITY BILL:
+{
+    "doc_type": str,             // "BILL_ELECTRICITY_TNEB" etc.
+    "provider_name": str,
+    "consumer_number": str or None,
+    "mobile_number": str or None,  // mobile bills only
+    "bill_month": str or None,     // "YYYY-MM" always
+    "bill_amount": float or None,
+    "due_date": str or None,       // "YYYY-MM-DD"
+    "payment_status": str or None, // "Paid" | "Unpaid" | "Unknown"
+    "units_consumed": int or None,  // electricity only
+    "confidence": float
+}
+
+SCHEMA 5 — VEHICLE DOCUMENT:
+{
+    "doc_type": str,             // "RC_BOOK" | "DRIVING_LICENCE"
+    "vehicle_number": str or None,
+    "owner_name": str or None,
+    "vehicle_class": str or None,
+    "chassis_number": str or None,
+    "engine_number": str or None,
+    "registration_date": str or None,  // "YYYY-MM-DD"
+    "expiry_date": str or None,        // "YYYY-MM-DD"
+    "dl_number": str or None,          // DL only
+    "vehicle_classes_authorized": list or None,  // DL only
+    "confidence": float
+}
+
+SCHEMA 6 — PLATFORM EARNINGS:
+{
+    "doc_type": str,             // "EARNINGS_SWIGGY" etc.
+    "platform_name": str,
+    "month_label": str or None,  // "YYYY-MM"
+    "total_earnings": float or None,
+    "total_trips": int or None,
+    "account_name": str or None,
+    "confidence": float
+}
+
+SCHEMA 7 — INSURANCE DOCUMENT:
+{
+    "doc_type": str,             // "INSURANCE_HEALTH" etc.
+    "policy_number": str or None,
+    "policy_holder_name": str or None,
+    "insurer_name": str or None,
+    "sum_insured": float or None,
+    "annual_premium": float or None,
+    "policy_start_date": str or None,  // "YYYY-MM-DD"
+    "policy_expiry_date": str or None, // "YYYY-MM-DD"
+    "coverage_status": str or None,    // "Active" | "Lapsed" | "Expired"
+    "vehicle_number": str or None,     // vehicle insurance only
+    "confidence": float
+}
+
+================================================================================
+SECTION 6 — VALIDATION RULES (POST-PARSER)
+================================================================================
+
+AI INSTRUCTION:
+  After any parser returns a normalized schema, run these validations.
+  These are NOT field-format validations (regex) — these are BUSINESS RULE
+  validations. Flag any failure as a ValidationResult.
+
+  AADHAAR:
+    ✅ id_number must be exactly 12 digits (after removing spaces)
+    ✅ date_of_birth must be a valid past date (> 18 years ago)
+    ✅ full_name must be present and ≥ 3 characters
+
+  PAN:
+    ✅ id_number must match [A-Z]{5}[0-9]{4}[A-Z]{1} exactly
+    ✅ 4th character of PAN must be P/C/H/F/A/T/B/L/J/G (person type)
+    ✅ full_name must match Aadhaar name (fuzzy ≥ 85%)
+
+  BANK STATEMENT:
+    ✅ Must have ≥ 30 transactions
+    ✅ statement_from must be ≥ 6 months before statement_to
+    ✅ All debit_amount and credit_amount must be positive floats
+    ✅ balance must be non-negative
+    ✅ account_holder_name must match Aadhaar name (fuzzy ≥ 85%)
+
+  UTILITY BILLS:
+    ✅ consumer_number must be identical across all 6 bills of same type
+    ✅ bill_month must cover 6 consecutive months
+    ✅ bill_amount must be positive float
+    ✅ Mobile bill: mobile_number must match Step 1 mobile number
+
+  VEHICLE DOCUMENTS:
+    ✅ vehicle_number format: [A-Z]{2}[0-9]{2}[A-Z]{1,3}[0-9]{1,4}
+    ✅ RC expiry_date must be > today
+    ✅ owner_name must match Aadhaar name (fuzzy ≥ 85%)
+    ✅ DL vehicle_classes_authorized must contain the RC vehicle_class
+
+  INSURANCE:
+    ✅ policy_expiry_date must be > today
+    ✅ policy_holder_name must match Aadhaar name (fuzzy ≥ 85%)
+    ✅ Vehicle insurance: vehicle_number must match RC book vehicle_number
+    ✅ sum_insured must be positive float
+
+================================================================================
+SECTION 7 — OCR DATA LIFECYCLE (WHERE DATA LIVES)
+================================================================================
+
+  STAGE 1 — UPLOAD EVENT
+    Raw file: stored in app private cache /cache/uploads/{uuid}/
+    Access: only the app process can read this
+
+  STAGE 2 — DURING OCR
+    Preprocessed image: temp file in /cache/ocr_temp/{uuid}/
+    Raw OCR text: held in RAM only (never written to disk)
+    Parser output: held in RAM only
+
+  STAGE 3 — AFTER SUCCESSFUL PARSING + VALIDATION
+    Normalized schema: saved to encrypted local DB (Step-specific table)
+    Example: step2_identity table stores SCHEMA 1 output
+    Raw file: DELETED immediately after parser succeeds
+    OCR temp files: DELETED immediately
+    Raw OCR text: cleared from RAM
+
+  STAGE 4 — IF VALIDATION FAILS
+    Parser output: held in RAM briefly for error display
+    Raw file: kept in /cache/uploads/{uuid}/ for retry
+    User shown: which fields failed, asked to re-upload
+    On re-upload: old file deleted, new file processed
+
+  STAGE 5 — AFTER ALL 9 STEPS COMPLETE (POST-SCORING)
+    All normalized schemas in encrypted DB: DELETED
+    Only FinalReportObject retained (encrypted)
+
+  STORAGE SUMMARY:
+    Type                        | Where              | Duration
+    ----------------------------|--------------------|------------------
+    Raw uploaded file           | cache/uploads/     | Until parser done
+    OCR preprocessed image      | cache/ocr_temp/    | During OCR only
+    Raw OCR text string         | RAM only           | During parsing only
+    Normalized schema dict      | Encrypted local DB | Until scoring done
+    FinalReportObject           | Encrypted local DB | Long term
+    Any log of raw OCR text     | NOWHERE            | Never stored
+
+================================================================================
+SECTION 8 — PYTHON TEST HARNESS STRUCTURE
+================================================================================
+
+AI INSTRUCTION:
+  Generate a Python test harness with this structure:
+
+  /gigcredit-ocr/
+    ├── ocr_engine.py           ← main OCR + preprocessing functions
+    ├── document_detector.py    ← document_type_detect() function
+    ├── parsers/
+    │   ├── __init__.py
+    │   ├── identity_parsers.py   ← Aadhaar + PAN parsers
+    │   ├── bank_parsers.py       ← All bank statement parsers + generic
+    │   ├── bill_parsers.py       ← All utility bill parsers
+    │   ├── vehicle_parsers.py    ← RC book + DL parsers
+    │   ├── earnings_parsers.py   ← Platform earnings screenshot parsers
+    │   ├── govt_parsers.py       ← eShram, ITR parsers
+    │   └── insurance_parsers.py  ← Health, Vehicle, Life insurance parsers
+    ├── validators.py             ← All validation rules from Section 6
+    ├── normalizer.py             ← Output schema normalization
+    ├── test_runner.py            ← Run all parsers against sample inputs
+    └── schema/
+        └── normalized_schemas.json
+
+  TEST RUNNER LOGIC (test_runner.py):
+
+    import os
+    from ocr_engine import process_file
+    from validators import validate_output
+
+    def run_all_tests():
+        input_dir = "./inputs"
+        results = []
+
+        for step_folder in sorted(os.listdir(input_dir)):
+            step_path = os.path.join(input_dir, step_folder)
+            for filename in os.listdir(step_path):
+                file_path = os.path.join(step_path, filename)
+                result = process_file(file_path)
+                validation = validate_output(result)
+                results.append({
+                    "file": filename,
+                    "step": step_folder,
+                    "doc_type": result.get("doc_type"),
+                    "confidence": result.get("confidence"),
+                    "validation_passed": validation["passed"],
+                    "fields_found": [k for k,v in result.items() if v is not None]
+                })
+
+        # Print summary
+        for r in results:
+            status = "✅ PASS" if r["validation_passed"] else "❌ FAIL"
+            print(f"{status} | {r['step']} | {r['file']} | conf={r['confidence']:.2f}")
+
+    if __name__ == "__main__":
+        run_all_tests()
+
+================================================================================
+SECTION 9 — PARSER CREATION WORKFLOW FOR AI
+================================================================================
+
+AI INSTRUCTION — FOLLOW THIS EXACT ORDER:
+
+  STEP 1: Read this entire file (instructions.txt)
+
+  STEP 2: List all files in /inputs/ folder recursively
+
+  STEP 3: For each file in /inputs/:
+    a. Identify which step folder it belongs to
+    b. Identify the document type from the filename
+    c. Open and read/analyze the file content (image or PDF)
+    d. Note the actual layout, column positions, and keyword patterns
+
+  STEP 4: For each document type, generate a parser function:
+    a. Start with the STARTING REGEX from Section 3 for that type
+    b. Adjust regex and column positions based on the actual sample
+    c. Add OCR error corrections from Section 4
+    d. Return normalized output matching Section 5 schema exactly
+
+  STEP 5: Write each parser to the correct file in /parsers/
+
+  STEP 6: Add validation logic to validators.py per Section 6 rules
+
+  STEP 7: Run test_runner.py against all sample inputs
+
+  STEP 8: For any file with confidence < 0.70, revisit the parser and
+    improve extraction logic until confidence ≥ 0.80
+
+  STEP 9: Document parser-specific notes (bank name, quirks, column mapping)
+    as comments at the top of each parser function
+
+IMPORTANT RULES FOR AI:
+  ✅ Never hardcode specific sample values from inputs (names, IDs, amounts)
+  ✅ Parsers must work on ANY document of that type, not just the sample
+  ✅ Always handle None gracefully — if a field is not found, return None
+  ✅ Never crash on unexpected input — use try/except around all parsing
+  ✅ Always include a confidence score
+  ✅ Output schema must match Section 5 exactly — no extra or renamed fields
+
+================================================================================
+END OF OCR ENGINE AND PARSER CREATION INSTRUCTION FILE
+GIGCREDIT VERSION 1.0
+================================================================================

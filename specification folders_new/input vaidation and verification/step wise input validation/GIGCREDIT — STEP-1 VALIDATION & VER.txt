@@ -1,0 +1,512 @@
+GIGCREDIT — STEP-1 VALIDATION & VERIFICATION SPECIFICATION
+Version 1.0 | Basic Profile Information
+============================================================
+
+PURPOSE
+-------
+Collect the user's core demographic and professional baseline.
+Initialize the global profile object used for all cross-step
+validations and ML feature engineering downstream.
+
+No document uploads occur in this step.
+This step is entirely form-based.
+
+============================================================
+SECTION 1 — INPUTS (AUTHORITATIVE LIST — 13 FIELDS)
+============================================================
+
+#   Field Name                       Type          Mandatory
+--  -------------------------------- ------------- ---------
+1   Full Name                        Text          Required
+2   Date of Birth                    Date          Required
+3   Mobile Number                    Numeric       Required
+4   Current Address                  Multi-text    Required
+5   Permanent Address                Multi-text    Required
+6   State of Residence               Dropdown      Required
+7   Work Type                        Single Select Required
+8   Self-Declared Monthly Income INR Number        Required
+9   Years in Current Profession      Number        Required
+10  Number of Dependents             Number        Required
+11  Vehicle Ownership                Yes/No        Required
+12  Secondary Income Source          Text          Optional
+13  Secondary Income Amount INR      Number        Optional
+
+NOTE: No validation or verification logic references any field
+outside this list.
+
+============================================================
+SECTION 2 — INDIVIDUAL VALIDATION (ON-DEVICE)
+============================================================
+
+Runs locally on the device, field by field,
+before any API call is made.
+
+------------------------------------------------------------
+FIELD 1 — FULL NAME
+------------------------------------------------------------
+Type        : Text string
+Rules
+  - Only alphabetic characters and single spaces allowed
+  - No digits, no special characters except space
+  - Trimmed length >= 2 characters
+Error Messages
+  - "Name must contain only letters and spaces"
+  - "Name must be at least 2 characters"
+Valid Example   : Ravi Kumar
+Invalid Example : Ravi123 | R@vi | R
+
+------------------------------------------------------------
+FIELD 2 — DATE OF BIRTH
+------------------------------------------------------------
+Type        : Date (DD/MM/YYYY via calendar picker)
+Rules
+  - Must be a valid past date
+  - Compute age = floor((today - dob) / 365.25)
+  - Age must satisfy: 18 <= age <= 65
+Derived Value
+  - Store computed age in local state alongside dob
+Error Messages
+  - "You must be at least 18 years old"
+  - "Age must not exceed 65 years"
+  - "Invalid date"
+Valid Example   : 12/06/1997 (age 28)
+Invalid Example : 15/03/2015 (age 10)
+
+------------------------------------------------------------
+FIELD 3 — MOBILE NUMBER
+------------------------------------------------------------
+Type        : Numeric string (10 digits)
+Rules
+  - Exactly 10 digits
+  - First digit must be in {6, 7, 8, 9}
+  - No country code, no spaces, no dashes
+Error Messages
+  - "Mobile number must be exactly 10 digits"
+  - "Mobile number must start with 6, 7, 8, or 9"
+Valid Example   : 9876543210
+Invalid Example : 1234567890 | 98765432 | 98765432100
+
+NOTE: Format validation is on-device only.
+OTP verification is a separate server-side step (see Section 4).
+
+------------------------------------------------------------
+FIELD 4 — CURRENT ADDRESS
+------------------------------------------------------------
+Type        : Multi-line free text
+Rules
+  - Trimmed length >= 10 characters
+  - Must contain at least 2 words (whitespace-separated tokens)
+Error Messages
+  - "Address too short. Please enter a valid address"
+Valid Example   : No 14, Anna Nagar, Chennai - 600040
+Invalid Example : Chennai
+
+------------------------------------------------------------
+FIELD 5 — PERMANENT ADDRESS
+------------------------------------------------------------
+Type        : Multi-line free text
+Rules
+  - Same as Current Address rules
+  - Can be identical to Current Address (allowed)
+Error Messages
+  - Same as Current Address errors
+
+------------------------------------------------------------
+FIELD 6 — STATE OF RESIDENCE
+------------------------------------------------------------
+Type        : Dropdown selector
+Rules
+  - Value must be one of the 28 states + 8 union territories
+  - Hardcoded list in app (Andhra Pradesh, Tamil Nadu, etc.)
+  - Cannot be empty
+Error Messages
+  - "Please select a valid state or union territory"
+
+------------------------------------------------------------
+FIELD 7 — WORK TYPE
+------------------------------------------------------------
+Type        : Single select (4 illustrated cards)
+Allowed Values
+  - "Platform Worker"
+  - "Vendor / Seller"
+  - "Skilled Tradesperson"
+  - "Freelancer"
+Rules
+  - Exactly one option must be selected
+  - No free text allowed
+  - Selection cannot be blank
+Downstream Impact
+  - Determines entire Step-5 dynamic module
+  - Drives P1 income feature engineering
+  - Selects meta-learner at scoring time
+Error Messages
+  - "Please select your work type"
+
+------------------------------------------------------------
+FIELD 8 — SELF-DECLARED MONTHLY INCOME (INR)
+------------------------------------------------------------
+Type        : Integer (Rupees per month, no decimals)
+Rules
+  - Must be numeric
+  - income > 0
+  - income <= 200000 (recommended upper cap)
+Error Messages
+  - "Income must be a positive number"
+  - "Income value seems unusually high. Please verify"
+Valid Example   : 22000
+Invalid Example : -5000 | 0 | abc
+
+------------------------------------------------------------
+FIELD 9 — YEARS IN CURRENT PROFESSION
+------------------------------------------------------------
+Type        : Integer
+Rules
+  - years >= 0
+  - years <= age (computed from DOB)
+  - years <= 40 (per input spec cap)
+Error Messages
+  - "Years in profession cannot be negative"
+  - "Years in profession cannot exceed your current age"
+  - "Please enter a valid number"
+Valid Example   : 5
+Invalid Example : -1 | 70
+
+------------------------------------------------------------
+FIELD 10 — NUMBER OF DEPENDENTS
+------------------------------------------------------------
+Type        : Integer (stepper or text input)
+Rules
+  - dependents >= 0
+  - dependents <= 10
+Error Messages
+  - "Dependents cannot be negative"
+  - "Maximum 10 dependents allowed"
+Valid Example   : 2
+Invalid Example : -1 | 15
+
+------------------------------------------------------------
+FIELD 11 — VEHICLE OWNERSHIP
+------------------------------------------------------------
+Type        : Boolean (radio button Yes / No)
+Rules
+  - Must be explicitly selected
+  - Null is not accepted
+Downstream Impact
+  - If Yes → Vehicle Insurance is MANDATORY in Step-7
+  - If No  → Vehicle Insurance is OPTIONAL in Step-7
+Error Messages
+  - "Please indicate whether you own a vehicle"
+
+------------------------------------------------------------
+FIELD 12 — SECONDARY INCOME SOURCE (Optional)
+------------------------------------------------------------
+Type        : Text / dropdown
+Rules
+  - If empty → accepted, no error
+  - If provided:
+    - Trimmed length between 2 and 100 characters
+    - Allowed: letters, numbers, spaces, basic punctuation
+Error Messages
+  - "Secondary income source description is too short"
+  - "Secondary income source contains invalid characters"
+
+------------------------------------------------------------
+FIELD 13 — SECONDARY INCOME AMOUNT INR (Optional)
+------------------------------------------------------------
+Type        : Number (Rupees per month)
+Rules
+  - If empty → accepted, no error
+  - If provided:
+    - Must be numeric and positive
+    - secondary_income_amount <= self_declared_income
+      (Field 13 cannot exceed Field 8)
+Error Messages
+  - "Secondary income must be a positive number"
+  - "Secondary income cannot exceed primary income"
+
+============================================================
+SECTION 3 — CROSS INTERNAL VALIDATION (WITHIN STEP-1)
+============================================================
+
+Runs after ALL individual field validations pass.
+Uses only the data entered in Step-1.
+No API call required.
+
+------------------------------------------------------------
+CHECK 3.1 — ADDRESS CONSISTENCY
+------------------------------------------------------------
+Logic
+  - Normalize: trim both addresses, collapse spaces, lowercase
+  - If current_address == permanent_address (after normalize):
+      address_type = "same"
+  - Else:
+      address_type = "different"
+Action   : Store address_type in local state
+Blocking : No (informational only)
+
+------------------------------------------------------------
+CHECK 3.2 — AGE vs PROFESSION TENURE
+------------------------------------------------------------
+Logic
+  - if years_in_profession > (age - 14):
+      FAIL — profession_tenure_inconsistent = true
+Rule Basis : No work before age 14 assumption
+Action     : Show error, BLOCK Step-1 until corrected
+Error Message
+  - "Years in profession is inconsistent with your age.
+     Please correct one of the values."
+
+------------------------------------------------------------
+CHECK 3.3 — AGE vs DEPENDENTS (Soft Check)
+------------------------------------------------------------
+Logic
+  - if age < 21 and dependents > 0:
+      dependents_suspicious = true
+Action   : Store flag in local state for scoring/review
+Blocking : NO — does not block Step-1 completion
+
+------------------------------------------------------------
+CHECK 3.4 — PRIMARY vs SECONDARY INCOME
+------------------------------------------------------------
+Logic
+  - Only runs if secondary_income_amount is provided
+  - if secondary_income_amount > self_declared_income:
+      FAIL
+Action   : Show error, BLOCK Step-1 until corrected
+Error Message
+  - "Secondary income cannot be greater than
+     your primary monthly income."
+
+------------------------------------------------------------
+CHECK 3.5 — STATE vs ADDRESS CONSISTENCY (Soft Check)
+------------------------------------------------------------
+Logic
+  - Check if state_of_residence appears as a substring
+    in either current_address or permanent_address
+    (case-insensitive)
+  - If not found:
+      address_state_mismatch = true
+Action   : Store soft flag for scoring/review
+Blocking : NO — does not block Step-1 completion
+
+============================================================
+SECTION 4 — MOBILE OTP VERIFICATION (SERVER-SIDE)
+============================================================
+
+Triggered after Field 3 passes on-device format validation.
+User taps "Send OTP" button.
+Step-1 CANNOT be marked Verified until OTP succeeds.
+
+MongoDB Collection : mobile_verification_db
+
+------------------------------------------------------------
+API 1 — REQUEST OTP
+------------------------------------------------------------
+Method   : POST
+Endpoint : /verify-mobile
+Request Body
+  {
+    "mobile": "9876543210"
+  }
+Backend Logic
+  - Validate mobile format (server-side duplicate check)
+  - Generate 6-digit OTP
+  - Store record:
+    {
+      "mobile": "9876543210",
+      "otp_hash": "<hashed OTP>",
+      "created_at": "<timestamp>",
+      "expires_at": "<timestamp + 5 min>",
+      "status": "pending"
+    }
+  - Send OTP to user's mobile (simulated in dev)
+Response
+  {
+    "otp_sent": true,
+    "expiry_seconds": 300
+  }
+Error Responses
+  - 400 : Invalid mobile format
+  - 429 : Too many OTP requests (rate limit)
+
+------------------------------------------------------------
+API 2 — VALIDATE OTP
+------------------------------------------------------------
+Method   : POST
+Endpoint : /verify-mobile-otp
+Request Body
+  {
+    "mobile": "9876543210",
+    "otp": "482961"
+  }
+Backend Logic
+  - Lookup record in mobile_verification_db by mobile
+  - Compare OTP hash
+  - Check expiry (expires_at > now)
+  - If match and not expired:
+      Update record: status = "verified"
+      Return verified = true
+  - If expired:
+      Return error "OTP expired"
+  - If wrong:
+      Increment attempt counter
+      After 3 wrong attempts: lock for 15 minutes
+Response (Success)
+  {
+    "verified": true
+  }
+Error Responses
+  - 400 : Wrong OTP
+  - 400 : OTP expired
+  - 429 : Too many failed attempts, locked
+
+On-Device Action on Success
+  - Set mobile_verified = true in local state
+
+============================================================
+SECTION 5 — GLOBAL PROFILE INITIALIZATION
+============================================================
+
+Triggered when ALL of the following are true:
+  - All 13 individual field validations passed
+  - All cross-internal checks passed (no hard blocks)
+  - Mobile OTP verification returned verified = true
+
+------------------------------------------------------------
+GLOBAL PROFILE OBJECT (verified_profile)
+------------------------------------------------------------
+Stored in: secure local on-device store
+Mirrored to: backend session store (for audit/analytics)
+
+{
+  "name"                    : "<Full Name>",
+  "dob"                     : "<YYYY-MM-DD>",
+  "age"                     : <int>,
+  "mobile"                  : "<10-digit string>",
+  "mobile_verified"         : true,
+
+  "current_address"         : "<string>",
+  "permanent_address"       : "<string>",
+  "address_type"            : "same" | "different",
+  "state"                   : "<State of Residence>",
+
+  "work_type"               : "platform_worker"
+                            | "vendor_seller"
+                            | "skilled_tradesperson"
+                            | "freelancer",
+
+  "self_declared_income"    : <int>,
+  "years_in_profession"     : <int>,
+  "dependents"              : <int>,
+  "has_vehicle"             : true | false,
+
+  "secondary_income_source" : "<string or null>",
+  "secondary_income_amount" : <int or null>,
+
+  "flags": {
+    "profession_tenure_inconsistent" : false,
+    "dependents_suspicious"          : false,
+    "address_state_mismatch"         : false
+  }
+}
+
+RULE: All later steps read from this global object only.
+They do NOT reference raw Step-1 UI field values directly.
+
+============================================================
+SECTION 6 — CROSS-STEP VALIDATION DEPENDENCIES
+============================================================
+
+Step-1 defines the source of truth for all later steps.
+
+STEP-2 (Identity / KYC)
+  - Aadhaar name must match verified_profile.name
+  - Aadhaar DOB must match verified_profile.dob
+  - PAN name must match verified_profile.name
+
+STEP-3 (Bank Verification)
+  - Bank account holder name must match verified_profile.name
+
+STEP-4 (Utility Bills)
+  - Address on bills cross-checked with current_address
+    and permanent_address
+  - State cross-checked with verified_profile.state
+
+STEP-5 (Work-Type Documents)
+  - Module selection driven by verified_profile.work_type
+
+STEP-6 (Government Schemes)
+  - Scheme holder name must match verified_profile.name
+  - Scheme holder DOB must match verified_profile.dob
+
+STEP-7 (Insurance)
+  - has_vehicle = true  → Vehicle Insurance REQUIRED
+  - has_vehicle = false → Vehicle Insurance OPTIONAL
+  - dependents used for health cover family size reasoning
+
+STEP-8 (ITR / GST)
+  - ITR name and PAN anchored by Step-1 name + Step-2 PAN
+  - GST registration name cross-checked with verified name
+
+STEP-9 (Loan / EMI)
+  - EMI consistency checked against self_declared_income
+  - Dependents used in debt-to-income reasoning
+
+============================================================
+SECTION 7 — TECHNICAL FLOW (FINAL)
+============================================================
+
+User opens Step-1 screen
+  ↓
+User fills all 13 fields
+  ↓
+On-device individual validation (all 13 fields)
+  ↓
+  [Any hard failure] → Show field-level error, block Continue
+  ↓
+User taps "Send OTP"
+  ↓
+POST /verify-mobile → OTP sent to mobile
+  ↓
+User enters OTP
+  ↓
+POST /verify-mobile-otp → mobile_verified = true
+  ↓
+Cross-internal validation runs
+  - Check 3.1: Address consistency (non-blocking)
+  - Check 3.2: Age vs profession (BLOCKING if fail)
+  - Check 3.3: Age vs dependents (soft flag only)
+  - Check 3.4: Income vs secondary income (BLOCKING if fail)
+  - Check 3.5: State vs address (soft flag only)
+  ↓
+  [Any hard cross-internal failure] → Show error, block Continue
+  ↓
+All validations pass → Initialize verified_profile object
+  ↓
+Store verified_profile in local secure store
+  ↓
+Mark Step-1 Status = VERIFIED
+  ↓
+Enable navigation to Step-2
+
+============================================================
+SECTION 8 — OUTPUT OF STEP-1
+============================================================
+
+Step-1 Status        : VERIFIED
+verified_profile     : Initialized and stored
+mobile_verified      : true
+Step-2 Status        : UNLOCKED
+
+Data carried forward for scoring feature engineering:
+  - work_type_encoded
+  - profession_tenure_norm
+  - age_suitability
+  - state_median_anchor
+  - declared_income (self_declared_income)
+  - dependents count
+  - has_vehicle flag
+
+============================================================
+END OF STEP-1 VALIDATION & VERIFICATION SPECIFICATION
+============================================================

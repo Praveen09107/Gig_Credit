@@ -1,0 +1,483 @@
+Create a COMPLETE SOFTWARE DELIVERY RISK CONTROL & ERROR PREVENTION SPECIFICATION file for my project “GigCredit”.
+
+IMPORTANT:
+This is NOT bug fixing after development.
+This is PREVENTION SYSTEM before and during development.
+
+Need full file to avoid last time failures:
+- broken integration
+- model mismatch
+- GitHub confusion
+- OCR not running
+- static app
+- backend not connected
+- no testing
+- missing artifacts
+- planning mismatch
+- developer conflicts
+- wrong folder structure
+- hidden runtime failures
+
+Write like a Senior Engineering Program Manager + CTO + DevOps Lead.
+
+=========================================================
+PROJECT NAME:
+GigCredit – Privacy-First On-Device Credit Scoring Platform
+=========================================================
+
+LAST TIME FAILURES TO PREVENT
+=========================================================
+
+1. Dev 1 and Dev 2 worked separately.
+After completion, integration became 0%.
+
+2. ML models trained in Dev 2 laptop but not fully pulled in Dev 1.
+Terminal showed success but files missing.
+
+3. Model artifact mismatch.
+
+4. GitHub push/pull confusion.
+Version mismatch.
+Wrong branches.
+Conflict merges.
+
+5. OCR engine not triggering on upload event.
+PP-OCRv5 integration failed.
+
+6. On-device assets missing in APK:
+- ML models
+- OCR models
+- shap_lookup.json
+- validation rules
+- verification configs
+
+7. Backend verification APIs not connected.
+LLM report backend not connected.
+Database not connected.
+
+8. Full 9-step onboarding flow not implemented.
+
+9. Inputs mismatch vs validation mismatch vs model mismatch.
+
+10. Folder structure not following plan.
+
+11. Many broken runtime issues.
+
+12. No integration ownership.
+
+13. App became static despite planning.
+
+14. Unit testing = 0
+System testing = 0
+
+15. Minor planning gaps created major failures.
+
+=========================================================
+I NEED FULL SPECIFICATION WITH THESE SECTIONS
+=========================================================
+
+SECTION 1 — ROOT CAUSE ANALYSIS
+
+Need explain WHY such failures happen in software teams:
+- planning without executable checkpoints
+- parallel dev without contracts
+- hidden local files
+- no artifact registry
+- no ownership map
+- no integration cadence
+- no CI/CD
+- no test gates
+- assumptions between developers
+
+SECTION 2 — PROJECT DELIVERY OPERATING MODEL
+
+Need define exact team model:
+
+Dev 1 owns:
+Frontend + App Flow + OCR Integration + State Flow
+
+Dev 2 owns:
+ML Models + SHAP + Validation Logic + Backend APIs
+
+Shared ownership:
+Integration + Final release + Testing
+
+Need RACI matrix.
+
+SECTION 3 — PHASED DELIVERY MODEL
+
+Need phases:
+
+Phase 0: Architecture Freeze  
+Phase 1: Repo + Structure Freeze  
+Phase 2: Stub Integration First  
+Phase 3: Module Development  
+Phase 4: Weekly Merge  
+Phase 5: Full System Integration  
+Phase 6: QA  
+Phase 7: Release Build
+
+Need entry / exit criteria per phase.
+
+SECTION 4 — REPOSITORY GOVERNANCE
+
+Need GitHub structure:
+
+main
+develop
+feature/dev1-ui
+feature/dev2-ml
+feature/backend
+release/v1
+
+Need branch policy:
+- no direct push to main
+- PR mandatory
+- review mandatory
+- squash merge
+- tags for releases
+
+Need pull strategy:
+git fetch
+git pull --rebase
+
+Need prevent “terminal says pulled but files missing”.
+
+SECTION 5 — FILE & FOLDER LOCKDOWN
+
+Need exact folder structure for GigCredit:
+
+/app
+/assets/models
+/assets/ocr
+/assets/config
+/backend
+/ml_training
+/docs/specs
+/tests
+/scripts
+
+Need rules:
+No random folders.
+No local-only files.
+No untracked artifacts.
+
+SECTION 6 — ARTIFACT REGISTRY SYSTEM
+
+Need full control for:
+
+ML Models:
+- xgboost.bin
+- lightgbm.txt
+- rf.pkl
+- meta_lr.pkl
+
+OCR:
+- ppocr_det
+- ppocr_rec
+
+Configs:
+- shap_lookup.json
+- validation_rules.json
+- lender_rules.json
+
+Need manifest file:
+
+artifact_manifest.json
+
+Need fields:
+filename
+version
+hash
+size
+owner
+date
+required_for_build
+
+Need startup validation.
+
+SECTION 7 — MODEL EXPORT CONTROL
+
+Need prevent artifact mismatch.
+
+Need define:
+- training version
+- export format
+- quantized format
+- mobile compatible format
+- checksum verify
+- compatibility matrix
+
+Need no hidden local models.
+
+SECTION 8 — INTEGRATION-FIRST DEVELOPMENT MODEL
+
+Critical:
+
+Before real coding:
+Need mock integration.
+
+Example:
+
+UI button click
+→ fake OCR response
+→ fake model score
+→ fake backend response
+
+Need skeleton app working first.
+
+Then replace module one by one.
+
+Need explain why static app happened last time.
+
+SECTION 9 — OCR DELIVERY CONTROL
+
+Need prevent OCR failures.
+
+Need checklist:
+
+- upload event fires
+- file path valid
+- permissions granted
+- model loaded
+- native bridge works
+- callback returns
+- timeout handling
+- confidence threshold works
+
+Need fallback if OCR fails.
+
+Need log strategy.
+
+SECTION 10 — ON-DEVICE BUNDLE CONTROL
+
+Need ensure APK contains:
+
+models
+ocr engine
+configs
+rules
+translations
+
+Need build verification:
+
+APK unpack script
+check file presence
+check sizes
+check checksum
+
+Need startup asset self-test.
+
+SECTION 11 — BACKEND CONNECTION CONTROL
+
+Need verification APIs must connect.
+
+Need checks:
+
+health endpoint
+DB connected
+env vars loaded
+API auth works
+Groq key works
+Mongo connected
+
+Need startup fail alerts.
+
+SECTION 12 — 9 STEP FLOW CONTROL
+
+Need every step tracked.
+
+Step states:
+
+NOT_STARTED
+IN_PROGRESS
+COMPLETE
+VERIFIED
+BLOCKED
+
+Need no release if any step missing.
+
+Need step coverage checklist.
+
+SECTION 13 — CONTRACT DRIVEN DEVELOPMENT
+
+Need schemas fixed before coding.
+
+Example:
+
+OCR output schema
+Validation schema
+Score schema
+Report schema
+Loan application schema
+
+Need both devs code only against contracts.
+
+SECTION 14 — DAILY INTEGRATION RULE
+
+Need every day merge to develop branch.
+
+No long isolation development.
+
+Need nightly smoke build.
+
+Need weekly full demo.
+
+SECTION 15 — COMMUNICATION CONTROL
+
+Need eliminate confusion.
+
+Need daily sync template:
+
+Yesterday done
+Today doing
+Blocked by
+Need from other dev
+
+Need decision log file.
+
+Need no verbal-only decisions.
+
+SECTION 16 — TESTING SYSTEM
+
+Need mandatory:
+
+Unit Tests:
+- parsers
+- validators
+- scoring functions
+
+Integration Tests:
+- OCR to parser
+- parser to score
+- app to backend
+
+System Tests:
+- full 9 step flow
+- report generation
+- apply loan flow
+
+Regression Tests:
+after every merge
+
+Need release blocked if fail.
+
+SECTION 17 — ERROR LOGGING SYSTEM
+
+Need logs for:
+
+OCR failures
+missing model
+API timeout
+schema mismatch
+score crash
+step navigation fail
+
+Need log levels:
+INFO
+WARN
+ERROR
+FATAL
+
+Need crash report collection.
+
+SECTION 18 — BUILD RELEASE GATES
+
+No APK release unless:
+
+All assets present
+All APIs connected
+All 9 steps functional
+Smoke tests pass
+System tests pass
+Version tagged
+Rollback build stored
+
+SECTION 19 — RUNTIME SELF CHECKS
+
+App startup checks:
+
+models exist
+ocr assets exist
+rules exist
+db open
+permissions ok
+backend reachable
+
+If fail:
+show exact message.
+
+SECTION 20 — CHANGE MANAGEMENT
+
+Need when changing model:
+must update:
+artifact manifest
+version notes
+compatibility
+
+Need when changing input:
+must update:
+validation
+UI
+feature engineering
+docs
+
+Need impact checklist.
+
+SECTION 21 — RISK REGISTER
+
+Need top risks:
+
+integration failure
+missing assets
+wrong branch merge
+OCR crash
+API dead
+score mismatch
+static UI
+broken forms
+schema drift
+
+Need probability + mitigation.
+
+SECTION 22 — EMERGENCY RECOVERY PLAN
+
+If release week broken:
+
+Use last stable branch
+disable optional modules
+switch mock mode
+rollback models
+hotfix branch
+
+SECTION 23 — DELIVERY DASHBOARD
+
+Need measurable metrics:
+
+% steps complete
+% tests passing
+asset completeness
+API uptime
+merge frequency
+open blockers
+critical bugs
+
+SECTION 24 — FINAL GOLDEN RULES
+
+Need strong rules:
+
+No module complete until integrated.
+No artifact valid until checksum verified.
+No planning valid until executable.
+No release valid until full flow tested.
+
+=========================================================
+OUTPUT STYLE
+=========================================================
+
+Need very detailed professional file.
+Not summary.
+Not short bullets only.
+Need actionable engineering operating manual.
+
+This file should ensure GigCredit never repeats last failure.

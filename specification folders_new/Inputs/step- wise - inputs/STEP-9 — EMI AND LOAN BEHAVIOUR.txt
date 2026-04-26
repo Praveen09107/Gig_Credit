@@ -1,0 +1,178 @@
+STEP-9 — EMI AND LOAN BEHAVIOUR
+GigCredit Onboarding Specification
+Version: Final Input Structure
+Status: Locked — Inputs Only (No Verification Logic)
+
+--------------------------------------------------
+1. PURPOSE
+--------------------------------------------------
+
+Step-9 captures the user's existing loan and EMI
+obligations to assess:
+  - Monthly debt repayment burden
+  - Repayment regularity and consistency
+  - Debt-to-income ratio signals
+
+This data feeds the P3 Debt Management scoring pillar
+and is cross-referenced against bank statement debit
+entries from Step-3.
+
+This file defines ONLY user-facing inputs:
+  - EMI / Loan entry fields
+  - Mandatory / Optional behavior
+  - Multi-entry rules
+
+All cross-checks with bank statement data and
+backend verification logic are defined in the
+Step-9 verification specification.
+
+Global rules:
+- At least ONE loan entry is required if the
+  user confirms they have active EMIs.
+- If the user has NO active loans/EMIs, they
+  may skip this step entirely.
+- Maximum entries: 5 active loan/EMI records.
+
+--------------------------------------------------
+2. HOW THIS STEP IS PRESENTED
+--------------------------------------------------
+
+Screen layout:
+  - A top-level question:
+    "Do you have any active EMIs or loans?"
+    Toggle: Yes / No
+
+  - If No  → Step-9 is skipped / marked complete
+              as "No active loans."
+  - If Yes → Expand the loan entry form.
+
+The loan entry section allows the user to add
+multiple EMI records (up to 5) using an
+"Add Another Loan" button after each entry.
+
+Each loan entry is displayed as a card with
+the entry number (Loan 1, Loan 2, etc.).
+
+--------------------------------------------------
+3. TOP-LEVEL TOGGLE
+--------------------------------------------------
+
+#  | Field Name               | UI Element        | Input Format  | Mandatory
+---|--------------------------|-------------------|---------------|----------
+1  | Active Loans / EMIs?     | Toggle Yes / No   | Boolean       | Required
+
+Behavior:
+  - Yes → Expand loan entry section.
+  - No  → Step marked complete. No further
+          inputs required.
+
+--------------------------------------------------
+4. LOAN / EMI ENTRY (REPEATABLE MODULE)
+--------------------------------------------------
+
+Each loan entry is one card with the following
+fields. The user fills one card per active loan.
+
+Section: Loan Entry Card (Loan #N)
+(Visible only when Active Loans? = Yes)
+
+#  | Field Name              | UI Element           | Input Format                   | Mandatory
+---|-------------------------|----------------------|--------------------------------|----------
+2  | Lender Name             | Dropdown + free text | Bank / NBFC / MFI / Other name | Required per entry
+3  | Monthly EMI Amount (₹)  | Numeric text field   | Positive integer in INR        | Required per entry
+4  | Previous Debit Date     | Date picker          | DD/MM/YYYY                     | Required per entry
+5  | Latest Debit Date       | Date picker          | DD/MM/YYYY                     | Required per entry
+6  | Loan Verification       | Button (Action)      | Triggers verification check    | Optional
+
+Field notes:
+- Field 2 (Lender Name):
+    Dropdown options include major banks (SBI,
+    HDFC, Canara, PNB, etc.), NBFCs (Bajaj, IIFL,
+    Muthoot), MFIs (Ujjivan, Jana Bank), and an
+    "Other" free-text option.
+
+- Field 3 (Monthly EMI Amount):
+    The exact EMI deducted per month in ₹.
+    Must be a positive number > 0.
+
+- Field 4 (Previous Debit Date):
+    The second-most-recent EMI debit date.
+    Used to compute debit interval regularity.
+    Must be before Latest Debit Date.
+
+- Field 5 (Latest Debit Date):
+    The most recent EMI debit date.
+    Must be ≤ today's date.
+
+- Field 6 (Loan Verification Trigger):
+    Optional action button.
+    When tapped, the system attempts to
+    cross-reference the declared EMI against
+    bank statement debit entries from Step-3.
+    Outcome: Verification status tag shown on
+    the loan card (Matched / Not Found).
+    Non-blocking — user can proceed without
+    triggering this.
+
+--------------------------------------------------
+5. MULTI-ENTRY RULES
+--------------------------------------------------
+
+Rule                         | Detail
+-----------------------------|-----------------------------------------------
+Minimum entries (if Yes)     | 1 loan entry must be completed
+Maximum entries              | 5 loan entries per user
+Add entry trigger            | "Add Another Loan" button below each card
+Remove entry trigger         | "Remove" / trash icon on each card
+Entry numbering              | Loan 1, Loan 2 ... Loan 5
+Validation on Continue       | All Required fields (2–5) must be filled in
+                             | every card before the step can be submitted
+
+--------------------------------------------------
+6. STEP-9 INPUT SUMMARY
+--------------------------------------------------
+
+Field #  | Field Name                | Per Entry? | Mandatory
+---------|---------------------------|------------|----------
+1        | Active Loans? (toggle)    | No (once)  | Required globally
+2        | Lender Name               | Yes        | Required per entry
+3        | Monthly EMI Amount (₹)    | Yes        | Required per entry
+4        | Previous Debit Date       | Yes        | Required per entry
+5        | Latest Debit Date         | Yes        | Required per entry
+6        | Loan Verification Trigger | Yes        | Optional per entry
+
+Total fields per entry : 5 (4 required + 1 optional)
+Maximum entries        : 5
+Maximum total inputs   : 1 toggle + (5 × 5) = 26 fields
+Minimum total inputs   : 1 toggle + 5 fields (1 entry)
+
+--------------------------------------------------
+7. STEP-9 FLOW SUMMARY
+--------------------------------------------------
+
+User opens Step-9
+  ↓
+"Do you have active EMIs?" → No?
+  → Step-9 marked complete as "No active loans"
+  → Proceed to scoring
+  ↓
+"Do you have active EMIs?" → Yes?
+  → Show Loan Entry Card (Loan 1)
+  → User fills Lender Name, EMI Amount,
+    Previous Debit Date, Latest Debit Date
+  → Optional: tap Loan Verification button
+  → Add more loans (up to 5 total)
+  → Tap Continue
+  → All required fields validated
+  → Step-9 marked complete
+  → Proceed to final credit scoring
+
+--------------------------------------------------
+8. FINAL LOCK
+--------------------------------------------------
+
+This Step-9 input structure is final.
+All bank statement debit cross-checks, EMI
+regularity analysis, and debt-to-income ratio
+computations are defined in the Step-9
+verification and scoring specification.

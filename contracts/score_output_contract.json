@@ -1,0 +1,13 @@
+{
+  "version": "1.0.0",
+  "final_score_range": [300, 900],
+  "grade_bands": {
+    "A": [800, 900],
+    "B": [700, 799],
+    "C": [600, 699],
+    "D": [500, 599],
+    "E": [300, 499]
+  },
+  "pillar_scores_range": [0.0, 1.0],
+  "confidence_range": [0.0, 1.0]
+}

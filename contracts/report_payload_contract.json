@@ -1,0 +1,22 @@
+{
+  "version": "1.0.0",
+  "required_fields": [
+    "credit_score",
+    "grade",
+    "risk_level",
+    "work_type",
+    "language",
+    "pillar_scores",
+    "positive_factors",
+    "negative_factors",
+    "confidence_level"
+  ],
+  "llm_response_shape": {
+    "explanation": "string",
+    "suggestions": [
+      "string",
+      "string",
+      "string"
+    ]
+  }
+}

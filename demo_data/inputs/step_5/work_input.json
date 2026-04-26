@@ -1,0 +1,18 @@
+{
+  "platform": "Swiggy",
+  "worker_id": "SWG-12345",
+  "payout": {
+    "period": "Jan – Mar 2026",
+    "total_earnings": 42500.0,
+    "total_trips": 312,
+    "avg_per_trip": 136.2,
+    "on_time_rate": 0.94,
+    "platform_rating": 4.8
+  },
+  "vehicle_rc": {
+    "vehicle_number": "TN 09 AB 1234",
+    "owner_name": "Ravi Kumar",
+    "vehicle_type": "Two Wheeler",
+    "registration_valid": true
+  }
+}

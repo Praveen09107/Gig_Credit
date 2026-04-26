@@ -1,0 +1,15 @@
+{
+  "rows": 10000,
+  "cols": 97,
+  "feature_count": 95,
+  "work_type_distribution": {
+    "platform_worker": 2534,
+    "vendor": 2527,
+    "tradesperson": 2486,
+    "freelancer": 2453
+  },
+  "target_mean": 0.5929,
+  "target_std": 0.0826,
+  "target_min": 0.2502,
+  "target_max": 0.8514
+}

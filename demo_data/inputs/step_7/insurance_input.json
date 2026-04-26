@@ -1,0 +1,23 @@
+{
+  "health_insurance": {
+    "policy_number": "HDFC-HL-789012",
+    "provider": "HDFC Ergo",
+    "sum_assured": 500000,
+    "valid_until": "2027-01-15",
+    "premium_paid": true,
+    "type": "health"
+  },
+  "vehicle_insurance": {
+    "policy_number": "ICICI-VH-345678",
+    "provider": "ICICI Lombard",
+    "vehicle_number": "TN 09 AB 1234",
+    "valid_until": "2026-12-31",
+    "type": "vehicle"
+  },
+  "life_insurance": {
+    "policy_number": "LIC-LF-901234",
+    "provider": "LIC",
+    "sum_assured": 1000000,
+    "type": "life"
+  }
+}

@@ -1,0 +1,761 @@
+GigCredit Frontend Specification — Sample JSON Models and Dummy Data Contracts
+
+This document defines sample JSON structures and dummy data contracts for the GigCredit frontend. Its purpose is to help the frontend team build screens quickly using realistic placeholder data that matches the actual app logic and future API integration needs.
+
+These are not final backend schemas. They are frontend-friendly reference contracts for mock services, widget testing, local development, and early integration planning.
+
+1. MODULE GOAL
+
+This specification exists to:
+- define sample payload shapes for all major modules
+- help the team build UI with consistent dummy data
+- reduce confusion between frontend teammates
+- prepare mock data that can later map to real APIs
+- ensure models align with product rules
+
+This is the dummy data contract layer of the frontend build process.
+
+2. GLOBAL JSON DESIGN PRINCIPLE
+
+All sample JSON objects should be:
+- readable
+- realistic
+- consistent
+- easy to map into Dart models
+- aligned with future backend integration
+
+Avoid random or placeholder-only structures that do not match the app logic.
+
+3. MAIN DATA DOMAINS
+
+The GigCredit frontend needs sample data contracts for:
+- user
+- auth session
+- credit balance
+- score report
+- report language variants
+- loan offers
+- lender handoff / consent
+- applications
+- profile reports history
+- common API response wrappers
+
+These data types are derived from the overall app flow and system rules. [file:10][file:3]
+
+4. COMMON API RESPONSE WRAPPER
+
+Recommended generic response shape:
+
+{
+  "success": true,
+  "message": "Data fetched successfully",
+  "data": {}
+}
+
+Recommended error shape:
+
+{
+  "success": false,
+  "message": "Unable to fetch data",
+  "errorCode": "FETCH_FAILED",
+  "data": null
+}
+
+This makes frontend response handling easier.
+
+5. USER MODEL SAMPLE
+
+Suggested user JSON:
+
+{
+  "id": "user_001",
+  "name": "Ravi Kumar",
+  "mobile": "9876543210",
+  "isVerified": true,
+  "preferredLanguage": "en",
+  "createdAt": "2026-04-25T08:15:00Z"
+}
+
+This supports Profile and auth-linked UI. [file:10]
+
+6. AUTH SESSION MODEL SAMPLE
+
+Suggested auth session JSON:
+
+{
+  "token": "mock_session_token_123",
+  "userId": "user_001",
+  "isAuthenticated": true,
+  "sessionExpiresAt": "2026-04-25T20:15:00Z"
+}
+
+This helps frontend test login and protected routes.
+
+7. OTP REQUEST RESPONSE SAMPLE
+
+Suggested OTP send response:
+
+{
+  "success": true,
+  "message": "OTP sent successfully",
+  "data": {
+    "mobile": "9876543210",
+    "resendAfterSeconds": 30
+  }
+}
+
+Suggested OTP failure response:
+
+{
+  "success": false,
+  "message": "Failed to send OTP. Please try again.",
+  "errorCode": "OTP_SEND_FAILED",
+  "data": null
+}
+
+This aligns with the auth flow and resend behavior. [file:10]
+
+8. CREDIT BALANCE MODEL SAMPLE
+
+Suggested credit state JSON:
+
+{
+  "userId": "user_001",
+  "freeReportsAllowed": 3,
+  "freeReportsUsed": 2,
+  "freeReportsRemaining": 1,
+  "creditBalance": 20,
+  "creditsRequiredPerReport": 10,
+  "pricePerTenCredits": 79
+}
+
+This reflects the defined credit rules. [file:10]
+
+9. SCORE ACCESS ELIGIBILITY SAMPLE
+
+Suggested score eligibility response:
+
+{
+  "success": true,
+  "message": "Eligibility checked",
+  "data": {
+    "canGenerateScore": true,
+    "reason": "FREE_REPORT_AVAILABLE",
+    "freeReportsRemaining": 1,
+    "creditBalance": 0,
+    "creditsRequired": 10
+  }
+}
+
+Blocked version:
+
+{
+  "success": true,
+  "message": "Eligibility checked",
+  "data": {
+    "canGenerateScore": false,
+    "reason": "INSUFFICIENT_CREDITS",
+    "freeReportsRemaining": 0,
+    "creditBalance": 0,
+    "creditsRequired": 10
+  }
+}
+
+This supports gating logic before score flow. [file:10]
+
+10. SCORE SUMMARY MODEL SAMPLE
+
+Suggested score summary JSON:
+
+{
+  "reportId": "report_001",
+  "userId": "user_001",
+  "score": 742,
+  "scoreRangeMin": 300,
+  "scoreRangeMax": 900,
+  "riskLevel": "Moderate",
+  "generatedAt": "2026-04-25T09:40:00Z",
+  "language": "en",
+  "loanEligible": true
+}
+
+This matches the app’s credit score output range and recommendation logic. [file:10][file:3]
+
+11. SCORE PILLAR MODEL SAMPLE
+
+The scoring system uses exactly seven behavioural pillars. All seven must appear in every pillar-related UI surface including the report screen, the pillar breakdown section, and any score explanation cards.
+
+Suggested score pillar array:
+
+[
+  {
+    "id": "pillar_income",
+    "pillarCode": "P1",
+    "title": "Income Stability",
+    "subtitle": "Not how much, but how consistent",
+    "score": 78,
+    "maxScore": 100,
+    "description": "Your monthly earnings are reasonably consistent."
+  },
+  {
+    "id": "pillar_payment",
+    "pillarCode": "P2",
+    "title": "Payment Discipline",
+    "subtitle": "Do you pay rent and bills on time",
+    "score": 81,
+    "maxScore": 100,
+    "description": "You regularly complete bill and payment activity on time."
+  },
+  {
+    "id": "pillar_debt",
+    "pillarCode": "P3",
+    "title": "Debt Management",
+    "subtitle": "Existing EMIs handled well or struggling",
+    "score": 66,
+    "maxScore": 100,
+    "description": "Your debt usage is acceptable but can improve."
+  },
+  {
+    "id": "pillar_savings",
+    "pillarCode": "P4",
+    "title": "Savings Behaviour",
+    "subtitle": "Any buffer, any RD or SIP detected",
+    "score": 59,
+    "maxScore": 100,
+    "description": "Your savings pattern is currently moderate."
+  },
+  {
+    "id": "pillar_work",
+    "pillarCode": "P5",
+    "title": "Work and Identity",
+    "subtitle": "Verified occupation, not a fake profile",
+    "score": 74,
+    "maxScore": 100,
+    "description": "Your work type and identity have been verified through submitted documents."
+  },
+  {
+    "id": "pillar_resilience",
+    "pillarCode": "P6",
+    "title": "Financial Resilience",
+    "subtitle": "How do you bounce back from bad months",
+    "score": 71,
+    "maxScore": 100,
+    "description": "You show moderate resilience against unexpected expenses."
+  },
+  {
+    "id": "pillar_social",
+    "pillarCode": "P7",
+    "title": "Social Accountability",
+    "subtitle": "Embedded in community, SHG, cooperatives",
+    "score": 55,
+    "maxScore": 100,
+    "description": "Participation in government schemes and community networks adds credibility."
+  }
+]
+
+Note: All seven pillars must always be rendered. If a pillar has no data, its score should default to 0 and the description should read: Insufficient data for this pillar. Do not hide or skip any pillar row in the UI.
+
+This supports explainable score UI. [file:3]
+
+12. IMPROVEMENT SUGGESTIONS SAMPLE
+
+Suggested improvement suggestions JSON:
+
+[
+  {
+    "id": "tip_001",
+    "title": "Improve bill payment consistency",
+    "description": "Pay utility bills on or before due date for the next 3 months."
+  },
+  {
+    "id": "tip_002",
+    "title": "Increase savings buffer",
+    "description": "Set aside a small amount each month to improve resilience."
+  },
+  {
+    "id": "tip_003",
+    "title": "Maintain regular work-income entries",
+    "description": "Consistent income proof improves score confidence."
+  }
+]
+
+This reflects the project’s personalized suggestion layer. [file:3]
+
+13. FULL SCORE REPORT SAMPLE
+
+The full report object must always include all seven pillars in the pillars array. Partial pillar arrays are not acceptable because the UI always renders all seven rows.
+
+Suggested score report JSON:
+
+{
+  "reportId": "report_001",
+  "userId": "user_001",
+  "score": 742,
+  "grade": "B",
+  "scoreRangeMin": 300,
+  "scoreRangeMax": 900,
+  "riskLevel": "Moderate",
+  "riskBand": "Medium",
+  "language": "en",
+  "generatedAt": "2026-04-25T09:40:00Z",
+  "proofId": "GC-PROOF-82931",
+  "shapFactors": {
+    "positive": [
+      { "factor": "consistent_bill_payment", "impact": "+12 pts", "label": "Regular bill payments" },
+      { "factor": "eshram_registered", "impact": "+8 pts", "label": "eShram registration verified" },
+      { "factor": "income_regularity", "impact": "+7 pts", "label": "Stable monthly income pattern" }
+    ],
+    "negative": [
+      { "factor": "low_savings_ratio", "impact": "-9 pts", "label": "Low savings buffer detected" },
+      { "factor": "high_emi_count", "impact": "-6 pts", "label": "Multiple active EMI obligations" },
+      { "factor": "no_sip_detected", "impact": "-4 pts", "label": "No recurring investment found" }
+    ]
+  },
+  "pillars": [
+    {
+      "id": "pillar_income",
+      "pillarCode": "P1",
+      "title": "Income Stability",
+      "subtitle": "Not how much, but how consistent",
+      "score": 78,
+      "maxScore": 100,
+      "description": "Your monthly earnings are reasonably consistent."
+    },
+    {
+      "id": "pillar_payment",
+      "pillarCode": "P2",
+      "title": "Payment Discipline",
+      "subtitle": "Do you pay rent and bills on time",
+      "score": 81,
+      "maxScore": 100,
+      "description": "You regularly complete bill and payment activity on time."
+    },
+    {
+      "id": "pillar_debt",
+      "pillarCode": "P3",
+      "title": "Debt Management",
+      "subtitle": "Existing EMIs handled well or struggling",
+      "score": 66,
+      "maxScore": 100,
+      "description": "Your debt usage is acceptable but can improve."
+    },
+    {
+      "id": "pillar_savings",
+      "pillarCode": "P4",
+      "title": "Savings Behaviour",
+      "subtitle": "Any buffer, any RD or SIP detected",
+      "score": 59,
+      "maxScore": 100,
+      "description": "Your savings pattern is currently moderate."
+    },
+    {
+      "id": "pillar_work",
+      "pillarCode": "P5",
+      "title": "Work and Identity",
+      "subtitle": "Verified occupation, not a fake profile",
+      "score": 74,
+      "maxScore": 100,
+      "description": "Your work type and identity have been verified through submitted documents."
+    },
+    {
+      "id": "pillar_resilience",
+      "pillarCode": "P6",
+      "title": "Financial Resilience",
+      "subtitle": "How do you bounce back from bad months",
+      "score": 71,
+      "maxScore": 100,
+      "description": "You show moderate resilience against unexpected expenses."
+    },
+    {
+      "id": "pillar_social",
+      "pillarCode": "P7",
+      "title": "Social Accountability",
+      "subtitle": "Embedded in community, SHG, cooperatives",
+      "score": 55,
+      "maxScore": 100,
+      "description": "Participation in government schemes and community networks adds credibility."
+    }
+  ],
+  "improvementSuggestions": [
+    {
+      "id": "tip_001",
+      "title": "Improve bill payment consistency",
+      "description": "Pay utility bills on or before due date for the next 3 months."
+    },
+    {
+      "id": "tip_002",
+      "title": "Increase savings buffer",
+      "description": "Set aside a small amount each month to improve resilience."
+    },
+    {
+      "id": "tip_003",
+      "title": "Maintain regular work-income entries",
+      "description": "Consistent income proof improves score confidence."
+    }
+  ],
+  "llmExplanation": "Your GigCredit score of 742 reflects a solid financial profile built on consistent income and disciplined bill payments. Your main opportunity areas are building a savings buffer and reducing EMI pressure over the next few months.",
+  "canCheckLoanOffers": true
+}
+
+Grade mapping reference for UI display:
+- 800 to 900 = Grade S (Exceptional)
+- 720 to 799 = Grade A (Excellent)
+- 640 to 719 = Grade B (Good)
+- 560 to 639 = Grade C (Fair)
+- 480 to 559 = Grade D (Needs Improvement)
+- 300 to 479 = Grade E (Poor)
+
+This grade must be displayed beside the score on the report screen and must be colour-coded using the design system status colours.
+
+This is the main object for Score Report screen binding. [file:10][file:3]
+
+14. REPORT LANGUAGE VARIANT SAMPLE
+
+Suggested report language response:
+
+{
+  "reportId": "report_001",
+  "availableLanguages": ["en", "ta", "hi"],
+  "currentLanguage": "ta",
+  "translatedContent": {
+    "scoreLabel": "கிரெடிட் ஸ்கோர்",
+    "riskLabel": "ஆபத்து நிலை",
+    "suggestionsLabel": "மேம்பாட்டு பரிந்துரைகள்"
+  }
+}
+
+This supports the report language switch feature. [file:10][file:3]
+
+15. LOAN OFFER MODEL SAMPLE
+
+Suggested single loan offer JSON:
+
+{
+  "offerId": "offer_001",
+  "lenderId": "lender_001",
+  "lenderName": "FinTech A",
+  "lenderType": "Fintech",
+  "loanAmountMin": 15000,
+  "loanAmountMax": 50000,
+  "interestRate": "14.5%",
+  "emiOption": "₹2,450/month",
+  "matchReason": "Matched based on stable income and payment behavior",
+  "status": "READY_TO_APPLY",
+  "isEligible": true
+}
+
+This supports loan card display and application CTA. [file:10][file:3]
+
+16. LOAN OFFERS LIST SAMPLE
+
+Suggested offers array:
+
+[
+  {
+    "offerId": "offer_001",
+    "lenderId": "lender_001",
+    "lenderName": "FinTech A",
+    "lenderType": "Fintech",
+    "loanAmountMin": 15000,
+    "loanAmountMax": 50000,
+    "interestRate": "14.5%",
+    "emiOption": "₹2,450/month",
+    "matchReason": "Matched based on stable income and payment behavior",
+    "status": "READY_TO_APPLY",
+    "isEligible": true
+  },
+  {
+    "offerId": "offer_002",
+    "lenderId": "lender_002",
+    "lenderName": "NBFC B",
+    "lenderType": "NBFC",
+    "loanAmountMin": 30000,
+    "loanAmountMax": 100000,
+    "interestRate": "16.2%",
+    "emiOption": "₹4,900/month",
+    "matchReason": "Matched based on moderate risk and repayment consistency",
+    "status": "READY_TO_APPLY",
+    "isEligible": true
+  }
+]
+
+This fits the lender match and eligibility logic. [file:3][file:10]
+
+17. LOANS EMPTY STATE SAMPLE
+
+Suggested no-score loans state:
+
+{
+  "hasValidScoreSession": false,
+  "showOffers": false,
+  "emptyStateType": "NO_SCORE",
+  "title": "Check your score to view loan offers",
+  "ctaLabel": "Check My Score"
+}
+
+Suggested no-offer state:
+
+{
+  "hasValidScoreSession": true,
+  "showOffers": false,
+  "emptyStateType": "NO_ELIGIBLE_OFFERS",
+  "title": "No matching offers available right now",
+  "ctaLabel": "View Improvement Suggestions"
+}
+
+This supports both Loans empty-state conditions. [file:10]
+
+18. CONSENT PAYLOAD SAMPLE
+
+Suggested loan consent request JSON:
+
+{
+  "offerId": "offer_001",
+  "userId": "user_001",
+  "reportId": "report_001",
+  "shareScore": true,
+  "shareRiskProfile": true,
+  "shareEligibilityInsights": true,
+  "consentGivenAt": "2026-04-25T10:10:00Z"
+}
+
+This matches the consent-based lender handoff flow. [file:10][file:3]
+
+19. TOKEN GENERATION RESPONSE SAMPLE
+
+Suggested token response:
+
+{
+  "success": true,
+  "message": "Secure token generated",
+  "data": {
+    "applicationSessionId": "app_session_001",
+    "handoffType": "REDIRECT",
+    "redirectUrl": "https://example-lender.com/apply/session/app_session_001",
+    "token": "secure_mock_token_987"
+  }
+}
+
+Alternative in-app prefill response:
+
+{
+  "success": true,
+  "message": "Application session created",
+  "data": {
+    "applicationSessionId": "app_session_002",
+    "handoffType": "PREFILLED_FORM",
+    "token": "secure_mock_token_654",
+    "prefilledData": {
+      "name": "Ravi Kumar",
+      "mobile": "9876543210",
+      "eligibleAmount": 50000
+    }
+  }
+}
+
+This supports both redirect and prefilled flow designs. [file:3]
+
+20. APPLICATION MODEL SAMPLE
+
+Suggested single application JSON:
+
+{
+  "applicationId": "application_001",
+  "offerId": "offer_001",
+  "lenderName": "FinTech A",
+  "loanAmount": 50000,
+  "interestRate": "14.5%",
+  "emiOption": "₹2,450/month",
+  "status": "UNDER_REVIEW",
+  "submittedAt": "2026-04-25T10:20:00Z",
+  "lastUpdatedAt": "2026-04-25T11:00:00Z"
+}
+
+This supports Applications list cards. [file:10]
+
+21. APPLICATIONS LIST SAMPLE
+
+Suggested applications array:
+
+[
+  {
+    "applicationId": "application_001",
+    "offerId": "offer_001",
+    "lenderName": "FinTech A",
+    "loanAmount": 50000,
+    "interestRate": "14.5%",
+    "emiOption": "₹2,450/month",
+    "status": "UNDER_REVIEW",
+    "submittedAt": "2026-04-25T10:20:00Z",
+    "lastUpdatedAt": "2026-04-25T11:00:00Z"
+  },
+  {
+    "applicationId": "application_002",
+    "offerId": "offer_002",
+    "lenderName": "NBFC B",
+    "loanAmount": 30000,
+    "interestRate": "16.2%",
+    "emiOption": "₹1,980/month",
+    "status": "APPROVED",
+    "submittedAt": "2026-04-24T14:10:00Z",
+    "lastUpdatedAt": "2026-04-25T09:00:00Z"
+  }
+]
+
+This aligns with the Applications tab behavior. [file:10]
+
+22. APPLICATION STATUS TIMELINE SAMPLE
+
+Suggested timeline JSON:
+
+[
+  {
+    "step": "APPLICATION_SUBMITTED",
+    "label": "Application Submitted",
+    "status": "COMPLETED",
+    "time": "2026-04-25T10:20:00Z"
+  },
+  {
+    "step": "CONSENT_VERIFIED",
+    "label": "Consent Verified",
+    "status": "COMPLETED",
+    "time": "2026-04-25T10:21:00Z"
+  },
+  {
+    "step": "UNDER_REVIEW",
+    "label": "Under Review",
+    "status": "CURRENT",
+    "time": "2026-04-25T11:00:00Z"
+  },
+  {
+    "step": "DECISION_PENDING",
+    "label": "Decision Pending",
+    "status": "UPCOMING",
+    "time": null
+  }
+]
+
+This supports progress-tracking UI. [file:10]
+
+23. PROFILE REPORT HISTORY SAMPLE
+
+Suggested saved reports array:
+
+[
+  {
+    "reportId": "report_001",
+    "score": 742,
+    "language": "en",
+    "generatedAt": "2026-04-25T09:40:00Z",
+    "downloadAvailable": true
+  },
+  {
+    "reportId": "report_002",
+    "score": 701,
+    "language": "ta",
+    "generatedAt": "2026-04-22T16:15:00Z",
+    "downloadAvailable": true
+  }
+]
+
+This supports My Reports in Profile. [file:10]
+
+24. PROFILE PAGE DATA SAMPLE
+
+Suggested profile payload:
+
+{
+  "user": {
+    "id": "user_001",
+    "name": "Ravi Kumar",
+    "mobile": "9876543210",
+    "isVerified": true
+  },
+  "credits": {
+    "freeReportsAllowed": 3,
+    "freeReportsUsed": 3,
+    "freeReportsRemaining": 0,
+    "creditBalance": 20
+  },
+  "reportsCount": 2
+}
+
+This lets Profile screen render with one request if needed. [file:10]
+
+25. BUY CREDITS PURCHASE REQUEST SAMPLE
+
+Suggested purchase request JSON:
+
+{
+  "userId": "user_001",
+  "creditsToBuy": 20,
+  "amount": 158
+}
+
+This follows the multiple-of-10 and Rs.79 per 10 credits rule. [file:10]
+
+26. BUY CREDITS PURCHASE SUCCESS SAMPLE
+
+Suggested purchase success JSON:
+
+{
+  "success": true,
+  "message": "Credits added successfully",
+  "data": {
+    "transactionId": "txn_001",
+    "creditsPurchased": 20,
+    "updatedCreditBalance": 40,
+    "amountPaid": 158
+  }
+}
+
+This supports immediate balance refresh.
+
+27. COMMON STATUS ENUM SUGGESTIONS
+
+Suggested frontend status enums:
+
+Score access:
+- FREE_REPORT_AVAILABLE
+- ELIGIBLE_WITH_CREDITS
+- INSUFFICIENT_CREDITS
+
+Loan offer:
+- READY_TO_APPLY
+- APPLIED
+- EXPIRED
+
+Application:
+- SUBMITTED
+- CONSENT_VERIFIED
+- UNDER_REVIEW
+- DECISION_PENDING
+- APPROVED
+- REJECTED
+- DISBURSED
+
+These match the app behavior and progress definitions. [file:10]
+
+28. COMMON LANGUAGE ENUM SUGGESTIONS
+
+Suggested language values:
+- en
+- ta
+- hi
+
+These align with report language support. [file:10][file:3]
+
+29. DUMMY DATA RULES FOR TEAM USAGE
+
+When creating mock JSON for UI:
+- use realistic lender names
+- use valid-looking amounts and timestamps
+- keep statuses consistent with UI rules
+- avoid random meaningless text
+- keep empty-state and error-state payloads separate from success payloads
+
+This will make the demo feel more polished.
+
+30. FINAL DIRECTION
+
+Sample JSON Models and Dummy Data Contracts should make the frontend build faster and cleaner by giving every teammate the same data vocabulary. If the UI is built against realistic contracts from the beginning, later API integration will be far smoother and require much less rework.

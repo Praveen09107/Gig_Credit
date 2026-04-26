@@ -1,0 +1,442 @@
+Create a COMPLETE, DEEP, PROFESSIONAL TECHNICAL SPECIFICATION document for my fintech project “GigCredit”.
+
+IMPORTANT:
+Do NOT give outline points.
+Do NOT give short summary.
+Do NOT give generic content.
+
+I need FULL technical depth, production-grade specification, with correct order, realistic architecture, internal workflows, data movement, engines, validations, scoring pipeline, backend APIs, report generation, lender flow, and security.
+
+Write like a real CTO / System Architect specification.
+
+=========================================================
+PROJECT NAME:
+GigCredit – Privacy-First On-Device Credit Scoring Platform for Gig Workers
+=========================================================
+
+CORE IDEA:
+Gig workers often lack CIBIL score and salary slips.
+
+GigCredit uses real financial behavior:
+- UPI usage
+- Bank statements
+- Bills
+- Work proof
+- Insurance
+- Government schemes
+- ITR / GST
+- EMI obligations
+
+System converts these into an alternative credit score (300–900).
+
+Most processing happens ON DEVICE.
+
+After report generation, user can apply for loans INSIDE the app.
+
+Loan form opens inside GigCredit app (not redirect).
+
+User submits application.
+
+Application + score + certificate + analysis is securely sent to selected NBFC / FinTech company.
+
+Lender reviews and gives loan.
+
+=========================================================
+DOCUMENT MUST COVER IN FULL DEPTH
+=========================================================
+
+SECTION 1 — SYSTEM OVERVIEW
+- Full architecture vision
+- Why on-device model
+- User flow overview
+- Trust model
+- Tech stack
+
+SECTION 2 — APP RUNTIME FLOW
+From app open to final report.
+
+Include:
+App launch
+Security checks
+Session restore
+Asset loading
+Model loading
+State restore
+
+SECTION 3 — COMPLETE INPUT FLOW (9 STEPS)
+
+Need FULL detail for each step:
+
+1. Basic Profile
+2. Identity / KYC
+3. Bank Verification
+4. Utility Bills
+5. Work Proof
+6. Government Schemes
+7. Insurance
+8. ITR / GST
+9. Existing EMI / Loans
+
+For each step include:
+
+- Inputs collected
+- UI type
+- Required / optional
+- Accepted files
+- Validation rules
+- OCR trigger rules
+- Cross-step dependency
+- Verification API calls
+- Scoring impact
+
+SECTION 4 — ON-DEVICE OCR ENGINE
+
+Need detailed flow:
+
+Upload file
+→ detect type
+→ image preprocessing
+→ PDF parsing
+→ OCR extraction
+→ confidence score
+→ parser routing
+→ field extraction
+→ normalized output
+
+Mention:
+
+PaddleOCR Lite
+PDF extraction
+Bank statements
+Bills
+Screenshots
+
+Need confidence thresholds and retry logic.
+
+SECTION 5 — PARSER ENGINE
+
+Need detailed parser logic for:
+
+- Aadhaar
+- PAN
+- Bank statements
+- Utility bills
+- Insurance docs
+- Work screenshots
+- ITR/GST docs
+
+Need:
+regex + layout + template parser architecture.
+
+SECTION 6 — VALIDATION ENGINE
+
+Need full layered validation:
+
+1. Field validation
+2. OCR confidence validation
+3. Cross-document validation
+4. Cross-step validation
+5. Fraud detection rules
+6. Soft fail vs hard fail logic
+
+Examples:
+PAN name mismatch
+Bank holder mismatch
+Address mismatch
+Income impossible
+Fake docs suspicion
+
+SECTION 7 — VERIFICATION BACKEND
+
+Backend exists ONLY for:
+
+1. Verification APIs
+2. LLM explanation generation
+3. Loan partner integrations
+
+Need full FastAPI architecture.
+
+Need APIs like:
+
+/auth/otp/send
+/auth/otp/verify
+/gov/pan/verify
+/gov/aadhaar/verify
+/bank/ifsc/verify
+/bank/account/verify
+/insurance/verify
+
+Need request response flows.
+
+Need MongoDB schemas.
+
+SECTION 8 — TRUSTED PROFILE ENGINE
+
+How verified data becomes canonical profile.
+
+Need encrypted local storage model.
+
+Need step status system.
+
+Need versioning.
+
+SECTION 9 — FEATURE ENGINEERING ENGINE
+
+Need deep technical content.
+
+Convert raw inputs into 95 features.
+
+Need categories:
+
+- Income stability
+- Payment discipline
+- Debt load
+- Savings behavior
+- Identity strength
+- Work continuity
+- Social trust
+
+Need normalization methods.
+
+Need missing data fallback logic.
+
+SECTION 10 — ML PIPELINE
+
+We tested:
+
+- XGBoost
+- LightGBM
+- Random Forest
+- Logistic Regression
+
+Need final architecture:
+
+Base learners
+Ensemble blending
+Meta learner
+
+Need score generation:
+300–900
+
+Need grade mapping.
+
+Need latency targets.
+
+Need on-device inference logic.
+
+SECTION 11 — CONFIDENCE ENGINE
+
+Need technical confidence score based on:
+
+- verification completeness
+- OCR quality
+- missing inputs
+- contradictions
+- evidence depth
+
+Need High / Medium / Low logic.
+
+SECTION 12 — SHAP LOOKUP ENGINE
+
+Need explainability architecture.
+
+Use shap_lookup.json bundled inside app.
+
+Need:
+
+feature impact lookup
+top positive factors
+top negative factors
+pillar mapping
+
+Need no heavy SHAP runtime compute.
+
+SECTION 13 — REPORT GENERATION PIPELINE
+
+Need exact flow:
+
+Track A:
+On-device report content:
+score
+pillars
+raw factors
+
+Track B:
+Backend LLM content:
+plain explanation
+improvement suggestions
+multilingual translation
+
+Need payload structure.
+
+Need fallback if server fails.
+
+Need final report sections.
+
+SECTION 14 — LOAN MATCHING ENGINE
+
+Need technical partner matching logic.
+
+Inputs:
+
+score
+confidence
+income consistency
+risk profile
+
+Partner configs:
+
+min score
+loan slabs
+risk appetite
+service area
+
+Output:
+
+Estimated offers:
+
+FinTech A up to ₹1,00,000
+NBFC B up to ₹50,000
+
+Need ranking logic.
+
+SECTION 15 — IN-APP LOAN APPLICATION FLOW
+
+Important:
+
+No redirect.
+
+Inside GigCredit app.
+
+Need flow:
+
+User clicks Apply
+→ application form opens
+→ prefilled profile
+→ report certificate attached
+→ score attached
+→ user adds remaining fields
+→ consent checkbox
+→ submit
+
+Then sent securely to selected lender API.
+
+Need exact API payload.
+
+SECTION 16 — PARTNER SIDE FLOW
+
+Lender receives application.
+
+Need:
+
+auto rules engine
+manual review
+KYC recheck
+decisioning
+approve/reject/modify
+disbursal
+
+Need callback status update to GigCredit app.
+
+SECTION 17 — BUSINESS MODEL ENGINE
+
+Need dual business model:
+
+MODEL 1:
+Gig workers
+
+First 3 reports free
+₹79–₹99 after
+
+MODEL 2:
+Partner lenders
+
+Commission per loan
+API fee future
+
+Need flow monetization logic.
+
+SECTION 18 — SECURITY ARCHITECTURE
+
+Need full security model:
+
+Keystore
+AES encryption
+TLS
+HMAC
+certificate pinning
+anti root
+anti debug
+session expiry
+no raw data sharing
+tokenized partner transfer
+
+SECTION 19 — DATA RETENTION & CLEANUP
+
+Need:
+
+temp file deletion
+cache deletion
+report deletion option
+token expiry
+revoke sessions
+
+SECTION 20 — FULL MASTER SEQUENCE DIAGRAM
+
+Need complete end-to-end flow:
+
+User Input
+→ OCR
+→ Parse
+→ Validate
+→ Verify
+→ Feature Engineer
+→ Score
+→ Confidence
+→ SHAP
+→ Report
+→ Loan Match
+→ Apply
+→ Lender Review
+→ Loan Disbursal
+
+SECTION 21 — PERFORMANCE TARGETS
+
+Need:
+
+OCR latency
+score latency
+report latency
+API latency
+RAM target
+device support
+
+SECTION 22 — FUTURE SCALE
+
+Need:
+
+insurance offers
+BNPL
+merchant loans
+subscriptions
+API licensing
+
+=========================================================
+OUTPUT STYLE RULES
+=========================================================
+
+- Must be EXTREMELY detailed
+- Correct technical order
+- Real engineering language
+- No fluff
+- No vague words
+- No short summaries
+- Should feel like 50+ page architecture document condensed into text
+- Use headings + subsections
+- Use workflows + schemas + logic
+
+=========================================================
+FINAL GOAL
+=========================================================
+
+I need the BEST possible full technical specification for GigCredit.

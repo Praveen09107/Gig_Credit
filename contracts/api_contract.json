@@ -1,0 +1,30 @@
+{
+  "version": "1.0.0",
+  "base_paths": {
+    "auth": "/auth",
+    "gov": "/gov",
+    "bank": "/bank",
+    "api": "/api"
+  },
+  "security_headers": [
+    "X-Api-Key",
+    "X-Device-Id",
+    "X-Timestamp",
+    "X-Signature"
+  ],
+  "endpoints": [
+    "POST /auth/otp/send",
+    "POST /auth/otp/verify",
+    "POST /gov/aadhaar/verify",
+    "POST /gov/pan/verify",
+    "POST /bank/ifsc/verify",
+    "POST /bank/account/verify",
+    "POST /bank/loan/check",
+    "POST /gov/vehicle/rc/verify",
+    "POST /gov/eshram/verify",
+    "POST /gov/pmsym/verify",
+    "POST /gov/insurance/policy/verify",
+    "POST /gov/income-tax/itr/verify",
+    "POST /api/report/generate"
+  ]
+}

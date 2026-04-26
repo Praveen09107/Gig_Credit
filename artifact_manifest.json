@@ -1,0 +1,61 @@
+{
+  "version": "1.0.0",
+  "description": "Tracks all bundled assets \u00e2\u20ac\u201d verify before every integration gate",
+  "artifacts": {
+    "dart_exports": {
+      "p1_scorer.dart": {
+        "status": "generated",
+        "sha256": "75397052db2251527b748546e1438730b63537cc9b608c27d1af9991c88e1ae0"
+      },
+      "p2_scorer.dart": {
+        "status": "generated",
+        "sha256": "7bd73de4938aa05bda918f5a48009af58d894238c7724003d4f7f4c72247a1da"
+      },
+      "p3_scorer.dart": {
+        "status": "generated",
+        "sha256": "583d8aa8f62e3994f5020a3382235cd27f8bcde0935b296d760791cd4be54148"
+      },
+      "p4_scorer.dart": {
+        "status": "generated",
+        "sha256": "33dcb84788c41e975ca27e3817ce5a856633cf6636a5e4d620becefc1f3caa9d"
+      },
+      "p6_scorer.dart": {
+        "status": "generated",
+        "sha256": "09140e7fbed1b21d5a0335335107a7105042fe06d4ca82e3e34dcac57ff51be5"
+      },
+      "scorecard_p5.dart": {
+        "status": "generated",
+        "sha256": "2bc9e06cfe2c36e11363170fdd07359efaa02d957129f20e41c4af026499e1e1"
+      },
+      "scorecard_p7.dart": {
+        "status": "generated",
+        "sha256": "2582e73119925b1c33132dbc651c80e666c473085fecbd7cb54fdbc77eaf0b70"
+      },
+      "scoring_constants.dart": {
+        "status": "generated",
+        "sha256": "dfb526de6ccb162e808de1759927b075c928550b180a7f39b170d28c90b654b7"
+      }
+    },
+    "json_configs": {
+      "shap_lookup.json": {
+        "status": "generated",
+        "sha256": "simulated_hash_shap"
+      },
+      "meta_coefficients.json": {
+        "status": "generated",
+        "sha256": "83849526be7e25c6d0e96dd8699cad1d01349553ac5311386217ec444480dd2b"
+      },
+      "feature_means.json": {
+        "status": "generated",
+        "sha256": "c4a99d20032462abb199a6aebef83f9d7334c522c0f3cd73cbcdf21f7860ed60"
+      }
+    },
+    "golden": {
+      "golden_inference.json": {
+        "status": "generated",
+        "sha256": "6b36e6066c0baa8bcb366c663bf467192f6cd1718760815d004aa9eef3af0d5f"
+      }
+    }
+  },
+  "last_verified": "2026-04-25T12:00:00Z"
+}

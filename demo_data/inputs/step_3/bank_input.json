@@ -1,0 +1,13 @@
+{
+  "bank_name": "HDFC Bank",
+  "account_number": "098765432123",
+  "ifsc": "HDFC0001234",
+  "statement_period": "Oct 2025 – Mar 2026",
+  "total_transactions": 127,
+  "avg_monthly_credit": 28500.0,
+  "avg_monthly_debit": 22100.0,
+  "closing_balance": 34200.0,
+  "emi_detected": 2,
+  "overdraft_days": 3,
+  "bounce_count": 0
+}

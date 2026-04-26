@@ -1,0 +1,64 @@
+# ================================
+# GIGCREDIT .gitignore
+# ================================
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+*.egg-info/
+.pytest_cache/
+dist/
+build/
+
+# Flutter
+app/.dart_tool/
+app/.packages
+app/build/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/.pub-cache/
+app/.pub/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+*.tmp
+
+# ML large files (if any exceed 50MB)
+# ml_pipeline/data/generated/*.csv
+
+# Environment secrets
+.env
+.env.local
+.env.production
+
+# NEVER ignore these:
+# contracts/*.json
+# app/assets/config/*.json
+# app/lib/scoring/models/*.dart
+# demo_data/**
+# artifact_manifest.json
+
+# Personal & User-specified Exclusions
+*.jpg
+*.jpeg
+*.png
+*.webp
+photos/
+report/
+specification folders_new/
+app/assets/images/

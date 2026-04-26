@@ -1,0 +1,23 @@
+{
+  "electricity": {
+    "provider": "TANGEDCO",
+    "consumer_number": "TN-0987654",
+    "amount_due": 1850.0,
+    "due_date": "15/03/2026",
+    "address_match": true,
+    "paid_on_time_last_6_months": 5
+  },
+  "water": {
+    "provider": "CMWSSB",
+    "consumer_number": "CH-456789",
+    "amount_due": 450.0,
+    "due_date": "20/03/2026",
+    "paid_on_time_last_6_months": 6
+  },
+  "gas": {
+    "provider": "Indane Gas",
+    "consumer_number": "IG-112233",
+    "amount_due": 950.0,
+    "refill_frequency_months": 2
+  }
+}

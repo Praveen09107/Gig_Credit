@@ -1,0 +1,457 @@
+GigCredit Frontend Specification — App Overview
+
+This document defines the complete product-level overview for the GigCredit application from a frontend architecture perspective. It explains what the application is, who it is built for, what problems it solves, how the modules connect, and which business rules must remain consistent across the entire interface.
+
+This file is the foundation reference for all other frontend specification files. Every screen-level and module-level document should align with the definitions in this overview.
+
+1. PRODUCT NAME
+
+Product Name:
+GigCredit
+
+Tagline Direction:
+Privacy-first. Explainable. Built for the real world.
+
+Core Product Positioning:
+GigCredit is a privacy-first, explainable, on-device alternative credit scoring application designed for gig workers and financially underserved users who may not have a traditional CIBIL score.
+
+2. PRODUCT PURPOSE
+
+GigCredit exists to help users:
+- understand their financial health using alternative data
+- generate a non-traditional credit score without depending only on formal salary slips or prior credit history
+- see clear explanations for why they received a particular score
+- receive personalized suggestions to improve their score
+- access suitable loan recommendations based on score, risk profile, and financial behavior
+
+The frontend must continuously communicate that GigCredit is not just a score app. It is a guided financial access platform built on trust, transparency, and user control.
+
+3. PRIMARY TARGET USERS
+
+The product is mainly designed for:
+- gig workers
+- delivery workers
+- ride-sharing workers
+- service workers
+- freelancers
+- financially underserved users without formal credit visibility
+
+These users may have regular income and real financial behavior, but they often lack the formal documentation or credit history expected by traditional lenders.
+
+4. CORE USER PROBLEM
+
+The product addresses these core user problems:
+- no traditional credit score even with real income
+- rejection from banks and NBFCs because formal proof is missing
+- no clear explanation for loan rejection
+- credit systems ignoring real-world financial behavior like UPI usage, bills, work consistency, and savings behavior
+- fear of sharing sensitive financial data to cloud systems
+
+The frontend should reflect these pain points through clear messaging and not assume the user already understands financial scoring systems.
+
+5. CORE PRODUCT PROMISE
+
+The interface must consistently reinforce the following product promise:
+- privacy-first processing
+- explainable credit assessment
+- on-device evaluation
+- fairer access to formal lending
+- practical, real-world usefulness
+
+All major screens should communicate some part of this trust promise either through text, icons, banners, or section headings.
+
+6. PRODUCT PILLARS
+
+The product rests on five major frontend communication pillars:
+- Privacy
+- Explainability
+- Fairness
+- Actionability
+- Access to credit
+
+These pillars should influence both content and UI hierarchy throughout the product.
+
+7. APP ENTRY FLOW
+
+The complete product entry flow is:
+App Launch
+→ Splash Screen
+→ Login / Sign Up
+→ Home Page
+
+This is the default entry path for all users.
+
+8. SPLASH SCREEN ROLE
+
+The splash screen introduces the brand and creates a first impression of trust, technology, and polish.
+
+It should:
+- show GigCredit branding
+- use a simple but premium opening animation
+- transition smoothly into authentication
+- avoid long waiting states
+
+The splash experience should feel fintech-grade and modern.
+
+9. AUTHENTICATION OVERVIEW
+
+GigCredit supports two authentication entry paths:
+- Login
+- Sign Up
+
+Login Flow:
+- Enter mobile number
+- OTP sent to registered number
+- Enter OTP
+- Successful login redirects to Home
+
+Sign Up Flow:
+- Enter username and mobile number
+- OTP verification
+- Account created
+- Redirect to Home
+
+10. AUTH EDGE CASES
+
+Authentication must support these edge cases:
+- existing user tries to sign up
+- new user tries to log in
+- OTP verification fails
+- OTP resend is needed
+
+These states must be written clearly and handled consistently in the frontend.
+
+11. PRIMARY APP MODULES
+
+The main frontend modules in GigCredit are:
+- Home
+- Score
+- Report
+- Loans
+- Applications
+- Profile
+- Credits / Payments
+- Authentication
+
+These modules are connected, but each has a distinct purpose and should be specified separately in dedicated files.
+
+12. GLOBAL NAVIGATION MODEL
+
+After authentication, the application uses a bottom navigation system with five main tabs:
+- Home
+- Score
+- Loans
+- Applications
+- Profile
+
+This navigation is the main post-login information architecture of the app.
+
+13. NAVIGATION PRINCIPLE
+
+The app follows user-controlled navigation.
+
+That means:
+- users can switch tabs freely
+- no unnecessary forced redirects should happen
+- score generation does not automatically push the user to loans
+- after major actions, the user should still feel in control of what to open next
+
+This is especially important because trust and clarity are major parts of the product.
+
+14. HOME MODULE PURPOSE
+
+The Home module acts as the trust-building landing page after login.
+
+It introduces the product clearly and explains:
+- what GigCredit does
+- why it is privacy-preserving
+- how it helps users
+- what the next key action is
+
+The primary CTA from Home is Check Score.
+
+15. SCORE MODULE PURPOSE
+
+The Score module is the core operational module of the app.
+
+It allows users to:
+- understand what score generation means
+- view instructions before input submission
+- complete the multi-step input flow
+- generate a score
+- receive a report with breakdown and suggestions
+
+This is the most important functional module in the app.
+
+16. INPUT FLOW OVERVIEW
+
+The score process uses a multi-step input journey.
+
+Your latest requirement defines it as a 9-step input flow where:
+- users can move between steps
+- progress is visible
+- completed inputs are indicated
+- users may revisit any step before generating score
+
+The flow must feel guided but flexible.
+
+17. REPORT MODULE PURPOSE
+
+After score generation, the Report module displays:
+- credit score
+- explanation of why that score was generated
+- suggestions to improve score
+- valuable insights
+- pillar breakdown
+- contribution bars for each pillar
+- download options
+- credit assessment certificate option
+- apply loan CTA
+
+This report experience should strongly reinforce explainability and usefulness.
+
+18. PILLAR MODEL
+
+The score report must display these behavioral pillars:
+- Income Stability
+- Payment Discipline
+- Debt Management
+- Savings Behavior
+- Work and Identity
+- Financial Resilience
+- Social Accountability
+
+The frontend must show both the name and understandable meaning of each pillar, not just labels.
+
+19. LOANS MODULE PURPOSE
+
+The Loans module converts score understanding into credit opportunity.
+
+It helps users:
+- check loan eligibility
+- compare loan offers
+- upload a report or regenerate score if required
+- review matched offers
+- apply to a selected lender
+- provide consent before lender-side usage of derived profile insights
+
+This module should feel trustworthy and serious.
+
+20. APPLICATIONS MODULE PURPOSE
+
+The Applications module allows users to:
+- see submitted loan applications
+- track current application status
+- open detailed progress view
+- understand where the application currently stands
+
+This module reduces uncertainty after loan application submission.
+
+21. PROFILE MODULE PURPOSE
+
+The Profile module acts as the account control center.
+
+It helps users:
+- view identity details
+- access past reports
+- buy credits
+- review payment-related actions
+- log out securely
+
+This module should remain simple, readable, and operationally useful.
+
+22. CREDIT SYSTEM OVERVIEW
+
+GigCredit includes a report credit model.
+
+Core rules:
+- first 3 reports are free
+- after free reports are exhausted, credits are required
+- 1 report = 10 credits
+- 10 credits = Rs.79
+- credits can be increased or decreased only in multiples of 10
+
+The frontend must apply these rules consistently everywhere.
+
+23. CREDIT RESTRICTION LOGIC
+
+When the user attempts to generate a score after exhausting free reports:
+- the app must check whether sufficient credits are available
+- if credits are not available, the app must block score generation
+- a popup or blocking message must prompt the user to buy credits
+- if the user closes the popup and again attempts Check Score without credits, the app must show the restriction again
+
+This rule must be strictly enforced because it affects product monetization and backend integration.
+
+24. SCORE TO LOANS DEPENDENCY
+
+Loan offers are not permanently unlocked.
+
+They are available only when:
+- the user has a valid relevant score available for the current flow
+- the loan check is based on the latest score context
+
+Depending on the final backend logic, users may either upload the report or re-run score flow before offers are shown. The module spec must make this rule explicit so frontend and backend remain aligned.
+
+25. PRIVACY POSITIONING
+
+Privacy is one of the strongest product differentiators.
+
+The frontend must repeatedly communicate that:
+- data processing happens on-device
+- sensitive raw data is not stored in the cloud
+- only derived insights are used where needed
+- data can be deleted after report generation
+- decisions are explainable, not black-box
+
+This must not be confined to only one screen; it should appear in Home, Score, Loans, and consent experiences.
+
+26. EXPLAINABILITY POSITIONING
+
+Explainability is central to the user experience.
+
+The app should clearly communicate:
+- why the score was generated
+- what financial behaviors influenced it
+- which pillars are stronger or weaker
+- what users can improve next
+
+This makes the product educational as well as functional.
+
+27. CONSENT MODEL
+
+Before any lender-facing sharing happens, the app must ask for explicit user consent.
+
+The consent flow must clearly explain:
+- raw data is not shared
+- derived score and profile insights may be shared
+- the purpose of sharing is lender matching and loan processing
+- users retain control and transparency
+
+The consent screen is a trust-sensitive part of the product.
+
+28. APPLICATION TRACKING MODEL
+
+After a loan application is submitted, the app must allow the user to track progress using the Applications tab.
+
+Expected progress stages include:
+- Application Submitted
+- Consent Verified
+- Under Review
+- Decision Pending
+
+The UI should support both empty state and active application state.
+
+29. LANGUAGE SUPPORT OVERVIEW
+
+The report system supports multilingual content.
+
+The interface should support at least:
+- English
+- Tamil
+- Hindi
+
+Language switching is especially important on report and download-related interfaces.
+
+30. CONNECTIVITY MODEL
+
+Some product functions may work offline while others require network access.
+
+Expected logic:
+- on-device score computation is designed to be local-first
+- OTP, verification APIs, payment systems, and lender APIs require internet
+
+The frontend should clearly distinguish offline-friendly actions from online-only flows when needed.
+
+31. GLOBAL STATE EXPECTATIONS
+
+The app requires shared state for:
+- authenticated user
+- user profile
+- mobile number and username
+- free report usage count
+- credit balance
+- current score session data
+- generated report data
+- selected loan offer
+- applications list
+- payment status
+- language preference
+
+These states must be structured clearly for clean backend integration.
+
+32. FRONTEND DESIGN DIRECTION
+
+The visual design should feel:
+- trustworthy
+- modern
+- clean
+- explainable
+- light and readable
+- fintech-oriented rather than overly decorative
+
+Cards, banners, icons, and feature sections should support comprehension, not visual clutter.
+
+33. USER EXPERIENCE PRINCIPLES
+
+The full product should follow these UX principles:
+- clarity before complexity
+- user control over redirection
+- transparent messaging
+- strong empty states
+- strong loading and error states
+- consistent CTA behavior
+- meaningful trust cues
+- guided but flexible flows
+
+34. ERROR HANDLING OVERVIEW
+
+The app must provide clear handling for:
+- OTP issues
+- upload failures
+- score generation failures
+- payment failures
+- network problems
+- no applications state
+- no report state
+- no credits state
+
+These should be documented in a dedicated error-state specification file later.
+
+35. BACKEND INTEGRATION READINESS
+
+This overview must support real backend integration.
+
+That means future specifications should define:
+- exact request and response expectations
+- field-level data requirements
+- state persistence rules
+- module-to-module dependencies
+- session rules for score, report, credit purchase, and application tracking
+
+No frontend behavior should be left ambiguous when backend teams begin integration.
+
+36. PRODUCTION READINESS NOTE
+
+This application should be specified as a real production product, not as a hackathon-only screen deck.
+
+So every module document should include:
+- purpose
+- UI structure
+- component list
+- interaction logic
+- error states
+- loading states
+- navigation behavior
+- business rules
+- backend integration considerations
+
+37. DOCUMENT ROLE IN SPEC SYSTEM
+
+This overview file is the root specification file.
+
+All other files such as auth, navigation, home, score, report, loans, applications, profile, credits, components, and API contracts must follow the definitions made here unless explicitly updated in a later master revision.
+
+38. FINAL PRODUCT DIRECTION
+
+GigCredit should feel like a privacy-first financial guidance platform built for real-world users who are often excluded by traditional systems. The frontend must help users move from trust, to score understanding, to actionable improvement, to loan opportunity, while always keeping privacy, consent, clarity, and usability at the center.

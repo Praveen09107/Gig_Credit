@@ -1,0 +1,422 @@
+GigCredit Frontend Specification — Profile Module
+
+This document defines the complete frontend specification for the Profile Module in the GigCredit application. The Profile Module is the personal account and utility center of the app. It gives users access to their identity information, credit balance, report history, account details, and logout functionality. It also acts as the main place for purchasing credits after the free report limit is exhausted.
+
+The Profile Module must feel organized, trustworthy, simple, and utility-focused. It should not feel overloaded or visually confusing.
+
+1. MODULE GOAL
+
+The Profile Module exists to:
+- show user identity details
+- show account-related information
+- allow users to buy credits
+- let users access past reports if supported
+- expose account details and settings-related information
+- support logout functionality
+- act as the fallback destination for blocked score flow due to insufficient credits
+
+This module is the personal management layer of GigCredit.
+
+2. ENTRY POINTS
+
+Primary entry points:
+- bottom navigation → Profile tab
+- Score module → Buy Credits redirection when user has no free reports and insufficient credits
+- future in-app settings or account management links
+
+For the current version, the Profile tab and score restriction redirect are the primary paths. [file:10]
+
+3. NAVIGATION ACTIVATION RULE
+
+Whenever the user enters the Profile module:
+- the Profile tab icon must become active
+- the user should clearly understand they are now inside the Profile section
+
+This is required for bottom navigation consistency. [file:10]
+
+4. PROFILE MODULE PURPOSE IN USER FLOW
+
+The Profile module supports both normal and utility-driven journeys.
+
+It is used when:
+- the user wants to view their personal info
+- the user needs to buy credits
+- the user wants to access previous reports
+- the app redirects them after score restriction
+- the user wants to review account details or logout
+
+This makes it both a personal dashboard and a utility center.
+
+5. PROFILE SCREEN CONTENT OVERVIEW
+
+The Profile screen should contain these sections:
+- User Info
+- Buy Credits
+- My Reports
+- Account Details
+- Logout
+
+These sections are directly aligned with the overall app flow. [file:10]
+
+6. PROFILE SCREEN TITLE
+
+Suggested title:
+Profile
+
+Behavior:
+- place at top of the screen
+- keep the layout simple and familiar
+- clearly identify the screen as the user's account area
+
+7. USER INFO SECTION PURPOSE
+
+The User Info section gives users a quick summary of who is currently logged in.
+
+This section should help users confirm that the account is correct and active.
+
+8. USER INFO CONTENT
+
+The User Info section should include:
+- Name
+- Mobile Number
+
+Optional future fields:
+- profile avatar
+- member since date
+- language preference
+- verified badge
+
+The minimum required fields come directly from the app flow summary. [file:10]
+
+9. USER INFO DISPLAY RULE
+
+User information should be:
+- easy to identify at first glance
+- shown near the top of the Profile screen
+- clearly separated from utility actions like Buy Credits or Logout
+
+This gives the screen structure and hierarchy.
+
+10. BUY CREDITS SECTION PURPOSE
+
+The Buy Credits section is one of the most important parts of the Profile module.
+
+It exists because:
+- the first 3 reports are free
+- after that, reports require credits
+- 1 report requires 10 credits
+- 10 credits cost Rs.79
+
+This section supports the app’s credit-based monetization flow. [file:10]
+
+11. CREDIT SYSTEM RULES
+
+The Profile module must reflect these rules:
+- First 3 reports are free
+- After free usage, score generation requires credits
+- 1 Report = 10 Credits
+- 10 Credits = Rs.79
+- credits increase only in multiples of 10
+- minimum purchase is 10 credits
+
+These rules are explicitly defined in the app overview. [file:10]
+
+12. CREDIT BALANCE DISPLAY
+
+The Buy Credits section should show the user’s current credit balance clearly.
+
+Behavior:
+- balance should be visible without entering a deeper page
+- the user should instantly know whether they can generate another report
+- free reports remaining may also be shown if product design chooses to expose it
+
+This improves transparency and reduces friction.
+
+13. BUY CREDITS CTA PURPOSE
+
+The Buy Credits button or action allows the user to purchase more credits when needed.
+
+This should be visually prominent but not aggressive.
+
+14. BUY CREDITS FLOW BEHAVIOR
+
+When the user taps Buy Credits:
+- open a credit purchase screen, bottom sheet, or purchase flow
+- show available purchase quantity in valid multiples of 10
+- prevent invalid quantities below minimum purchase
+- confirm updated balance after successful payment
+
+This is based on the defined purchase rules. [file:10]
+
+15. PURCHASE QUANTITY RULE
+
+Credit purchase must follow these constraints:
+- quantity must be a multiple of 10
+- minimum purchase quantity is 10
+- invalid purchase amounts should not be accepted
+
+This validation should happen clearly in the frontend before payment submission. [file:10]
+
+16. BUY CREDITS SUCCESS BEHAVIOR
+
+After successful payment:
+- update the visible credit balance
+- confirm that credits were added
+- allow the user to continue score generation later without confusion
+
+If the user came from score restriction, future versions may support direct return behavior.
+
+17. BUY CREDITS FAILURE BEHAVIOR
+
+If payment fails:
+- do not change balance
+- show clear error message
+- allow retry
+- keep user inside the purchase context safely
+
+The user should not feel uncertain about whether money was charged.
+
+18. SCORE RESTRICTION REDIRECT EXPECTATION
+
+When a user tries to generate a score without enough credits after free reports are exhausted:
+- the app should show Buy Credits to continue
+- tapping Buy Credits should redirect to Profile module
+- Profile tab must become active
+
+This behavior is part of the defined credit system flow. [file:10]
+
+19. MY REPORTS SECTION PURPOSE
+
+The My Reports section gives users access to previously generated reports if report history is supported.
+
+Even if full history is not implemented in the first version, this section should be planned clearly.
+
+20. MY REPORTS CONTENT
+
+The My Reports section may show:
+- list of generated reports
+- report date
+- report language
+- download option
+- reopen option
+- certificate access if available
+
+This section should feel useful and structured.
+
+21. REPORT HISTORY READINESS
+
+Even if only the latest report is used for loans in the session-based logic, the Profile module can still support viewing old reports for reference.
+
+However:
+- old reports should not bypass loan eligibility logic
+- previous reports must not be reused to cheat the current loan flow
+
+This respects the “latest score only” rule in the system logic. [file:10]
+
+22. MY REPORTS EMPTY STATE
+
+If the user has no generated reports:
+- show a calm empty state
+- explain that generated reports will appear here
+- provide CTA to go to Score tab
+
+Suggested meaning:
+You have no reports yet. Generate your first credit report to see it here.
+
+23. MY REPORTS CTA BEHAVIOR
+
+When the empty-state CTA is tapped:
+- navigate to Score tab
+- activate Score icon
+- allow user to start the score flow
+
+This keeps module transitions consistent.
+
+24. ACCOUNT DETAILS SECTION PURPOSE
+
+The Account Details section contains profile-related account information and utility-level details.
+
+This section should remain simple in version one.
+
+25. ACCOUNT DETAILS CONTENT
+
+Possible fields or actions inside Account Details:
+- account metadata
+- mobile verification status
+- language preference
+- app version
+- policy links
+- support/help links
+- account reference identifiers
+
+The exact contents may expand later, but the section should exist structurally now.
+
+26. ACCOUNT DETAILS DESIGN RULE
+
+Account Details should be shown as an organized list of rows or grouped cards.
+
+The user should feel that this section is informational, not transactional.
+
+27. LOGOUT SECTION PURPOSE
+
+The Logout action allows users to safely end their session.
+
+This must be visible and easy to understand.
+
+28. LOGOUT ACTION RULE
+
+When the user taps Logout:
+- show confirmation prompt if needed
+- end authenticated session
+- clear relevant app session state
+- redirect user to Login or Sign Up entry screen
+
+This is a core account behavior.
+
+29. LOGOUT CONFIRMATION EXPECTATION
+
+A confirmation step is recommended to prevent accidental logout.
+
+Suggested actions:
+- Cancel
+- Logout
+
+This is especially helpful on mobile.
+
+30. PROFILE MODULE STATE OVERVIEW
+
+Important state used in Profile module includes:
+- authenticated user identity
+- name
+- mobile number
+- credit balance
+- free reports remaining if exposed
+- report history list
+- account metadata
+- payment flow state
+- logout state
+
+This state should be backend-ready and easy to maintain.
+
+31. LOADING STATES
+
+The Profile module should support:
+- loading user profile
+- loading credit balance
+- loading report history
+- payment processing
+- logout processing
+
+These loading states should be calm and clear.
+
+32. ERROR STATES
+
+The Profile module should support these errors:
+- failed to load user info
+- failed to load credit balance
+- failed to load reports
+- payment failure
+- logout failure
+- account detail fetch failure
+
+Each error should provide a clear retry path.
+
+33. EMPTY STATE RULES
+
+The module may need empty states for:
+- no reports
+- no purchase history if that is added later
+- missing optional account details
+
+Empty states should never make the screen look broken.
+
+34. PROFILE MODULE LAYOUT EXPECTATION
+
+The layout should feel:
+- clean
+- vertically structured
+- easy to scroll
+- section-based
+- familiar to mobile users
+
+A good order is:
+- User Info
+- Credit Balance / Buy Credits
+- My Reports
+- Account Details
+- Logout
+
+35. ACCESSIBILITY AND READABILITY RULES
+
+The Profile module must remain easy to use on mobile.
+
+Important rules:
+- important values like credit balance must be easy to spot
+- Buy Credits CTA must be clearly tappable
+- logout action should not be too close to unrelated actions
+- rows and cards should remain readable and scannable
+- status and labels should not rely only on color
+
+36. PRIVACY POSITIONING INSIDE PROFILE
+
+Since GigCredit is a privacy-first app, the Profile module should continue that tone.
+
+That means:
+- show only necessary personal info
+- avoid exposing sensitive data unnecessarily
+- keep identity display respectful and minimal
+- ensure report and account access feel secure
+
+This aligns with the product’s privacy-first design principle. [file:3][file:10]
+
+37. PROFILE TO SCORE RETURN READINESS
+
+If the user enters Profile due to score restriction:
+- the UI should make buying credits feel connected to continuing the score journey
+- future versions may support a contextual banner such as “Buy credits to continue generating your report”
+
+This would improve flow continuity.
+
+38. PROFILE TO REPORT READINESS
+
+If the My Reports section is active:
+- users should be able to reopen a report for viewing
+- download or certificate access may also be exposed here
+- this should stay separate from the “latest score required for loans” rule
+
+This distinction is important.
+
+39. REUSABLE COMPONENTS IN PROFILE MODULE
+
+Expected components include:
+- ProfileHeader
+- UserInfoCard
+- CreditBalanceCard
+- BuyCreditsButton
+- CreditsPurchaseSheet
+- ReportsList
+- EmptyReportsState
+- AccountDetailsList
+- LogoutButton
+- ConfirmationModal
+- BottomNavBar
+
+These should match the overall app design system.
+
+40. TESTING PRIORITIES FOR PROFILE MODULE
+
+Testing should verify:
+- Profile tab activates correctly
+- user name and mobile display correctly
+- credit balance renders correctly
+- Buy Credits opens purchase flow
+- invalid purchase quantities are blocked
+- successful purchase updates balance
+- failed purchase shows retry path
+- My Reports empty state renders correctly
+- My Reports CTA switches to Score tab
+- Logout clears session and redirects correctly
+
+41. FINAL MODULE DIRECTION
+
+The Profile Module should feel like the user’s control center for identity, credits, reports, and account access. It must support monetization through credit purchase while still feeling clean, trustworthy, and easy to use. A strong Profile module makes the rest of the GigCredit experience more manageable and transparent.

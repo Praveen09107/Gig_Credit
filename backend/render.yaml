@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: gigcredit-backend
+    env: docker
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: DB_NAME
+        value: gigcredit
+      - key: GROQ_API_KEY
+        sync: false
+      - key: HMAC_SECRET
+        value: gigcredit-demo-hmac-secret-2026
+      - key: SERVER_API_KEY
+        value: gigcredit-demo-api-key-2026
+      - key: ENABLE_HMAC
+        value: "false"
+      - key: SKIP_AUTH
+        value: "true"

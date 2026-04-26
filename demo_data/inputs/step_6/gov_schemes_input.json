@@ -1,0 +1,20 @@
+{
+  "eshram": {
+    "uan": "ESH-9876543210",
+    "name": "Ravi Kumar",
+    "occupation": "Platform Worker",
+    "enrolled_date": "2024-03-15",
+    "active": true
+  },
+  "pmsym": {
+    "uan": "PMS-1234567890",
+    "scheme": "PM Shram Yogi Maan-dhan",
+    "enrolled": true
+  },
+  "ration_card": {
+    "card_number": "TN-RC-54321",
+    "family_head": "Kumar S",
+    "category": "PHH",
+    "family_size": 4
+  }
+}

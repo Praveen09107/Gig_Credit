@@ -1,0 +1,525 @@
+GigCredit Frontend Specification — Navigation Architecture
+
+This document defines the complete frontend navigation architecture for the GigCredit application. It explains how users move between screens, tabs, modules, gated flows, and special redirect conditions across the app.
+
+The navigation system must support a trust-first and user-controlled experience while still enforcing product rules such as score dependency, credit restrictions, and loan application flow.
+
+1. DOCUMENT PURPOSE
+
+This file defines:
+- global app navigation structure
+- bottom tab architecture
+- route-level dependencies
+- gated flows and restricted transitions
+- module entry and exit logic
+- special rules for score, loans, credits, and applications
+
+This file should be treated as the master navigation behavior reference for all modules.
+
+2. MAIN NAVIGATION PRINCIPLE
+
+GigCredit follows a user-controlled navigation system.
+
+That means:
+- users can access any bottom tab at any time after login
+- the app should avoid forced redirects wherever possible
+- major actions should end with clear user choice rather than automatic jumps
+- the system should guide users without taking away control unnecessarily
+
+This principle is especially important because GigCredit is a trust-sensitive financial product.
+
+3. HIGH-LEVEL APP FLOW
+
+The full app navigation journey is:
+App Launch
+→ Splash Screen
+→ Login / Sign Up
+→ Home
+→ Score / Loans / Applications / Profile via bottom navigation
+
+This defines the top-level app movement.
+
+4. PRE-AUTH AND POST-AUTH SEPARATION
+
+The navigation architecture is split into two layers:
+- Pre-auth layer
+- Post-auth layer
+
+Pre-auth layer includes:
+- Splash Screen
+- Login / Sign Up Screen
+- OTP Verification Screen
+
+Post-auth layer includes:
+- Home
+- Score
+- Loans
+- Applications
+- Profile
+- Report-related screens
+- Credit purchase related flows
+
+Protected routes should be accessible only after successful authentication.
+
+5. SPLASH NAVIGATION RULE
+
+On app launch:
+- show Splash Screen first
+- perform session check
+- if valid session exists, navigate to the post-auth app shell
+- if no valid session exists, navigate to Login / Sign Up
+
+The splash screen should act as the bridge between launch state and authenticated routing.
+
+6. POST-AUTH APP SHELL
+
+After successful authentication, the app should open inside a persistent app shell that contains:
+- the active screen content area
+- bottom navigation bar
+
+This shell should remain active across main module switching.
+
+7. BOTTOM NAVIGATION STRUCTURE
+
+The bottom navigation contains five tabs in this order:
+- Home
+- Score
+- Loans
+- Applications
+- Profile
+
+This order should remain fixed because it reflects the intended product journey from introduction to score, to lending, to tracking, to account control.
+
+8. TAB BEHAVIOR RULES
+
+Bottom tab behavior should follow these rules:
+- tapping a tab switches to that module root screen
+- active tab should be visually highlighted
+- inactive tabs remain available at all times after login
+- switching tabs should preserve important state unless explicitly reset by a business rule
+
+Tab switching should feel instant and stable.
+
+9. TAB STATE PERSISTENCE
+
+Navigation should preserve state where useful.
+
+Examples:
+- if user leaves a partially filled non-final score input flow and returns, progress may remain available if product logic allows
+- if user opens Loans, then switches to Applications, then returns, the module should reopen in its last visible state unless restricted by flow rules
+- profile and report history screens should preserve data once loaded
+
+However, some states are session-sensitive and must not be reused improperly.
+
+10. ROOT SCREENS FOR EACH TAB
+
+Each bottom tab should open its own root screen.
+
+Home tab root:
+- Home screen
+
+Score tab root:
+- Score landing screen
+
+Loans tab root:
+- Loans landing screen or loan eligibility entry state
+
+Applications tab root:
+- Applications list screen
+
+Profile tab root:
+- Profile screen
+
+11. HOME TAB NAVIGATION ROLE
+
+The Home tab acts as the app's trust-building dashboard and feature introduction screen.
+
+From Home, user should be able to:
+- understand the product
+- see privacy and explainability highlights
+- move into score flow through Check Score CTA
+
+The Home tab should not contain overly deep nested routes. It should mainly lead into Score.
+
+12. SCORE TAB NAVIGATION ROLE
+
+The Score tab contains the most layered internal flow.
+
+Expected navigation inside Score:
+- Score landing screen
+- Show Me How screen or instructional panel
+- 9-step input flow
+- Generate Score action
+- Report screen
+- Certificate view
+
+The Score tab must support both guided progression and user flexibility across input steps.
+
+13. SCORE MODULE INTERNAL NAVIGATION RULE
+
+Users should be able to:
+- enter score landing screen from Score tab or Home CTA
+- open Show Me How without starting actual score input
+- return from instructional view back to Score landing using back arrow
+- move across any available input steps while filling
+- generate score only after required inputs are complete
+- remain in control after report generation
+
+This flow must feel guided, not locked in a rigid wizard unless required by validation.
+
+14. HOME CTA TO SCORE RULE
+
+When the user taps Check Score from Home:
+- navigate to Score tab
+- visually activate the Score icon in bottom navigation
+- open the Score landing screen or appropriate current state inside Score module
+
+This transition must clearly signal that the user has moved into the Score area of the app.
+
+15. SCORE REPORT POST-ACTION RULE
+
+After score generation and report display:
+- user remains on the Report screen
+- app should not auto-redirect to Loans
+- user may choose next action such as Download Report, View Certificate, or Apply Loan / Check Loan Offers
+
+This is a core user-control rule.
+
+16. REPORT TO CERTIFICATE NAVIGATION RULE
+
+From the Report screen:
+- tapping Credit Assessment Certificate opens certificate interface or certificate detail screen
+- user should be able to return to the Report screen using back navigation
+
+Certificate should behave as a child route under the Score / Report flow.
+
+17. REPORT TO LOANS NAVIGATION RULE
+
+From the Report screen:
+- tapping Apply Loan or Check Loan Offers should navigate to Loans tab
+- Loans tab must become visually active in bottom navigation
+- selected score context should be passed into the Loans module if required
+
+This should feel like a handoff from assessment to action.
+
+18. CREDIT RESTRICTION INTERCEPTION RULE
+
+A special gated navigation rule exists for score generation.
+
+When user attempts Check Credit Score:
+- system checks free report availability and/or credit balance
+- if allowed, continue into score input flow
+- if not allowed, block flow and show buy credits prompt
+
+If the user dismisses the buy credits prompt and tries again without credits:
+- the app must show the restriction again
+- score generation must remain blocked until requirements are satisfied
+
+This is a hard business-rule interception.
+
+19. BUY CREDITS REDIRECTION RULE
+
+When user is blocked due to no credits:
+- the prompt should include Buy option
+- tapping Buy should navigate user to Profile tab or specific Buy Credits section within Profile
+- Profile icon in bottom navigation should become active
+
+This creates a clear recovery path from blocked score flow to monetization flow.
+
+20. LOANS TAB NAVIGATION ROLE
+
+The Loans tab exists for lender matching and loan application actions.
+
+Internal routes may include:
+- Loans landing screen
+- empty / gated state
+- report upload or score check entry choice
+- loan offers list
+- selected offer details or loan preference form
+- consent screen
+- application submitted success state
+
+Loans must be structured as a guided flow with explicit consent checkpoints.
+
+21. LOANS ENTRY CONDITIONS
+
+There are multiple possible entry paths into Loans:
+- direct tab tap from bottom navigation
+- Apply Loan / Check Loan Offers CTA from Report
+- Explore Loan Offers CTA from Applications empty state
+
+These entry points should converge into a consistent loan access logic.
+
+22. LOANS EMPTY OR GATED ENTRY RULE
+
+If the user opens Loans without the required score/report context:
+- show a guided state such as:
+  check score or upload report
+- do not show empty blank area
+- provide recovery path to Score
+
+This ensures the Loans tab always feels meaningful.
+
+23. LOANS TO SCORE REDIRECTION RULE
+
+If the user chooses Check Score from within Loans:
+- navigate to Score tab
+- activate Score icon in bottom navigation
+- open Score landing or continue score flow
+
+This maintains a clean dependency loop between Loans and Score.
+
+24. REPORT UPLOAD ENTRY IN LOANS
+
+If the user already has a valid report and chooses Upload Report from Loans:
+- remain inside Loans module
+- open report upload interaction
+- after successful upload and validation, continue to loan offers display
+
+This route is internal to the Loans tab and should not activate another tab.
+
+25. LOAN OFFER TO APPLICATION FLOW
+
+Inside Loans module, expected sequence is:
+- loan offers list
+- select one offer
+- enter desired loan details if required
+- consent screen
+- application submitted success screen
+
+Each step should use internal push navigation while keeping Loans as the active tab.
+
+26. CONSENT NAVIGATION RULE
+
+Before final application submission:
+- user must see consent screen
+- user can go back from consent to previous loan selection state
+- submit action should remain disabled until consent is provided
+
+Consent is a required gated sub-route inside the Loans flow.
+
+27. POST-APPLICATION SUCCESS NAVIGATION RULE
+
+After successful loan application submission:
+- show success confirmation screen or modal
+- inform user that tracking is available in Applications tab
+- allow user to go to Applications directly
+- allow user to return to Loans
+
+This keeps users oriented after submission.
+
+28. APPLICATIONS TAB NAVIGATION ROLE
+
+The Applications tab is the tracking module.
+
+Internal routes may include:
+- applications list screen
+- no applications empty state
+- application tracking detail screen
+
+Applications is not an application creation flow. It is a tracking flow.
+
+29. APPLICATIONS EMPTY STATE NAVIGATION RULE
+
+If no applications exist:
+- show empty state with message
+- offer CTA such as Explore Loan Offers
+- tapping that CTA should navigate to Loans tab
+- Loans icon should become active
+
+This creates a recovery loop back into the loan discovery process.
+
+30. APPLICATIONS DETAIL NAVIGATION RULE
+
+From the Applications list:
+- tapping Track Progress opens tracking detail screen
+- user remains within Applications tab
+- back navigation returns to Applications list
+
+This should behave like a simple master-detail flow.
+
+31. PROFILE TAB NAVIGATION ROLE
+
+The Profile tab is the account control area.
+
+Internal routes may include:
+- profile root screen
+- buy credits interaction
+- my reports list
+- report detail or download screen
+- payment flow screens if required
+
+Profile should stay operational and utility-focused.
+
+32. PROFILE TO REPORT HISTORY NAVIGATION RULE
+
+From Profile root:
+- tapping My Reports opens Reports history screen
+- back returns to Profile root
+
+Reports history is a child route under Profile unless product later promotes it to a separate module.
+
+33. PROFILE TO BUY CREDITS RULE
+
+Inside Profile:
+- Buy Credits section may expand inline or navigate to a detailed purchase screen
+- if entered due to blocked score flow, UI should preserve context and make buying feel like the intended next step
+
+This should support both proactive and forced purchase journeys.
+
+34. LOGOUT NAVIGATION RULE
+
+On logout from Profile:
+- clear session
+- leave app shell
+- return to Login / Sign Up screen
+- all protected routes become inaccessible until re-authentication
+
+This transition should be immediate and secure.
+
+35. BACK NAVIGATION PRINCIPLE
+
+Back behavior across the app should follow a simple rule:
+- if user is inside a nested child screen within a tab, back returns to the previous screen inside that tab
+- if user is already on a tab root screen, system back follows standard platform exit/minimize behavior depending on platform rules
+
+Back should never jump unexpectedly to unrelated tabs.
+
+36. MODAL VS FULL-SCREEN USAGE RULE
+
+Use full-screen route transitions for:
+- OTP verification
+- multi-step score inputs
+- report screen
+- certificate screen
+- loan consent flow
+- application tracking detail if detailed enough
+
+Use modal or bottom sheet patterns for:
+- buy credits prompt
+- minor confirmations
+- lightweight filters
+- inline choice dialogs
+
+This helps maintain a clean hierarchy of importance.
+
+37. DEEP DEPENDENCY RULES
+
+Some navigation paths depend on business logic.
+
+Examples:
+- Score cannot proceed if no credits after free reports are used
+- Loans cannot proceed to offers unless required score/report context exists
+- Loan application cannot complete without consent
+- Applications list depends on successful application submission history
+
+These dependencies should be enforced consistently by both frontend navigation guards and UI states.
+
+38. EMPTY, LOADING, AND ERROR ROUTE STATES
+
+Every major route must support state-based rendering:
+- loading state
+- empty state
+- error state
+- success state
+
+Navigation should not break when content is unavailable.
+
+39. ROUTE CONTEXT PASSING
+
+Important navigation transitions should be able to pass state context such as:
+- current score result
+- report reference
+- selected loan offer
+- selected application id
+- source route of navigation
+- credit restriction source
+
+This is especially important for frontend-backend integration and restoring screen meaning.
+
+40. SESSION-SENSITIVE ROUTES
+
+Some routes must validate current-session context before proceeding.
+
+Examples:
+- loan offers based on freshly generated score or uploaded report rules
+- credit restriction re-check before starting score generation
+- payment-success flow should update balance before returning to score generation
+
+These routes should not rely only on visual state; they must validate underlying session state.
+
+41. RECOMMENDED ROUTE MAP
+
+Pre-auth routes:
+- Splash
+- LoginSignUp
+- OTPVerification
+
+Post-auth shell routes:
+- HomeRoot
+- ScoreRoot
+- LoansRoot
+- ApplicationsRoot
+- ProfileRoot
+
+Nested routes:
+- ShowMeHow
+- ScoreInputStep1 to Step9 or dynamic step route
+- ReportScreen
+- CertificateScreen
+- LoanUploadReport
+- LoanOffers
+- LoanDetailsForm
+- LoanConsent
+- LoanSuccess
+- ApplicationTracking
+- ReportsHistory
+- PaymentFlow
+
+This route map should later be matched to actual Flutter navigation structure.
+
+42. COMPONENTS AFFECTING NAVIGATION
+
+Navigation-related shared components include:
+- BottomNavBar
+- AppShell
+- TopAppBar with back arrow
+- RouteGuard handler
+- CreditRestrictionPopup
+- SuccessModal or SuccessScreen
+- EmptyState CTA blocks
+
+These components should behave consistently across all modules.
+
+43. FRONTEND STATE LINKED TO NAVIGATION
+
+Navigation depends on app state such as:
+- auth session state
+- active tab
+- free reports remaining
+- credit balance
+- score generation completion state
+- current report availability
+- uploaded report availability
+- selected loan offer
+- submitted applications
+
+This state must be centralized enough to make route guards reliable.
+
+44. TESTING PRIORITIES FOR NAVIGATION
+
+Navigation testing should verify:
+- splash to auth / app shell logic
+- login to home transition
+- home to score transition activates Score tab
+- report to loans transition activates Loans tab
+- applications empty state to loans transition activates Loans tab
+- credit restriction popup blocks score flow correctly
+- logout exits app shell correctly
+- back navigation behaves correctly in nested flows
+
+These are critical for production reliability.
+
+45. FINAL NAVIGATION DIRECTION
+
+The navigation architecture of GigCredit should feel structured, simple, and trustworthy. Users should always know where they are, what the next possible action is, and why certain flows are gated. The system must preserve user control while still enforcing key business rules such as authentication, credits, score dependency, consent, and application tracking. If this navigation architecture is implemented well, the whole app will feel coherent and ready for backend integration.

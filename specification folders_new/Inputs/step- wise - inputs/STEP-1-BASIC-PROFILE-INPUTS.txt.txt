@@ -1,0 +1,261 @@
+STEP-1-BASIC-PROFILE-INPUTS.txt
+
+GIGCREDIT — STEP 1 BASIC PROFILE INPUT SPECIFICATION
+Version 1.0
+Status: Finalized
+Scope: Input collection only
+Note: This file covers only Step 1 user inputs, UI structure, field details, and mandatory/optional status. It does not include verification logic, validation logic, scoring features, or downstream rules.
+
+============================================================
+STEP 1 — BASIC PROFILE INFORMATION
+============================================================
+
+PURPOSE
+Collect the user’s core personal and professional profile details at the start of onboarding. This step establishes the baseline identity, residency, and work profile information required before document-based steps begin. This is a form-only step and does not include any uploads.
+
+------------------------------------------------------------
+HOW THIS STEP IS PRESENTED
+------------------------------------------------------------
+
+Step 1 is shown as a scrollable form screen divided into two main sections:
+
+1. Personal Details
+2. Professional Details
+
+The screen contains:
+- Single-line text inputs
+- Multi-line address fields
+- Date picker
+- Dropdown selector
+- Numeric inputs / steppers
+- Radio buttons
+- A 4-option work type selector displayed as illustrated cards in a 2 × 2 layout
+
+At the bottom of the screen, a Continue button is shown after all required Step 1 fields are filled.
+
+------------------------------------------------------------
+SECTION A — PERSONAL DETAILS
+------------------------------------------------------------
+
+Field 1
+Field Name: Full Name
+UI Element: Single-line text field
+Input Type: Plain text
+Example: Ravi Kumar
+Mandatory: Yes
+
+Description:
+Capture the full name of the applicant as entered by the user.
+
+------------------------------------------------------------
+
+Field 2
+Field Name: Date of Birth
+UI Element: Date picker
+Input Type: Date
+Display Format: DD/MM/YYYY
+Example: 12/06/1997
+Mandatory: Yes
+
+Description:
+Capture the applicant’s date of birth using a calendar-style date selector.
+
+------------------------------------------------------------
+
+Field 3
+Field Name: Mobile Number
+UI Element: Numeric text field
+Input Type: 10-digit mobile number
+Example: 9876543210
+Mandatory: Yes
+
+Description:
+Capture the primary mobile number used by the applicant.
+
+------------------------------------------------------------
+
+Field 4
+Field Name: Current Address
+UI Element: Multi-line text field
+Input Type: Free text address
+Example: No 14, Anna Nagar, Chennai
+Mandatory: Yes
+
+Description:
+Capture the applicant’s current residential address.
+
+------------------------------------------------------------
+
+Field 5
+Field Name: Permanent Address
+UI Element: Multi-line text field
+Input Type: Free text address
+Example: Madurai, Tamil Nadu
+Mandatory: Yes
+
+Description:
+Capture the applicant’s permanent residential address.
+
+------------------------------------------------------------
+
+Field 6
+Field Name: State of Residence
+UI Element: Dropdown selector
+Input Type: Single select
+Options: All Indian States and Union Territories
+Example: Tamil Nadu
+Mandatory: Yes
+
+Description:
+Capture the state or union territory in which the applicant currently resides.
+
+------------------------------------------------------------
+SECTION B — PROFESSIONAL DETAILS
+------------------------------------------------------------
+
+Field 7
+Field Name: Work Type
+UI Element: Illustrated card selector
+Input Type: Single choice
+Mandatory: Yes
+
+Available Options:
+
+Option 1
+Label: Platform Worker
+Suggested Examples Shown:
+- Ola
+- Uber
+- Swiggy
+- Zomato
+- Dunzo
+- Porter
+- Blinkit
+- Rapido
+
+Option 2
+Label: Vendor / Seller
+Suggested Examples Shown:
+- Fruit seller
+- Vegetable vendor
+- Street food seller
+- Kirana shop
+- Small goods seller
+
+Option 3
+Label: Skilled Tradesperson
+Suggested Examples Shown:
+- Electrician
+- Plumber
+- Carpenter
+- Welder
+- Mason
+- Tailor
+- Mechanic
+
+Option 4
+Label: Freelancer
+Suggested Examples Shown:
+- Designer
+- Developer
+- Writer
+- Content creator
+- Consultant
+
+Description:
+The user selects exactly one work category from the four available options.
+
+------------------------------------------------------------
+
+Field 8
+Field Name: Self-Declared Monthly Income
+UI Element: Numeric text field with currency prefix
+Input Type: Monthly income in INR
+Example: ₹22,000
+Mandatory: Yes
+
+Description:
+Capture the applicant’s self-declared average monthly income.
+
+------------------------------------------------------------
+
+Field 9
+Field Name: Years in Current Profession
+UI Element: Numeric stepper or numeric text field
+Input Type: Integer
+Example: 3
+Mandatory: Yes
+
+Description:
+Capture how many years the applicant has been working in their current profession or occupation type.
+
+------------------------------------------------------------
+
+Field 10
+Field Name: Number of Dependents
+UI Element: Numeric stepper
+Input Type: Integer
+Example: 2
+Mandatory: Yes
+
+Description:
+Capture the number of family members or dependents financially supported by the applicant.
+
+------------------------------------------------------------
+
+Field 11
+Field Name: Vehicle Ownership
+UI Element: Radio button selector
+Input Type: Yes / No
+Example: Yes
+Mandatory: Yes
+
+Description:
+Capture whether the applicant owns or uses a vehicle associated with their livelihood or household.
+
+------------------------------------------------------------
+
+Field 12
+Field Name: Secondary Income Source
+UI Element: Single-line text field + numeric amount field
+Input Type: Text + amount in INR
+Example: Part-time delivery, ₹5,000
+Mandatory: No
+
+Description:
+Capture any secondary or side income source declared by the applicant, along with the approximate monthly amount.
+
+------------------------------------------------------------
+STEP 1 INPUT SUMMARY
+------------------------------------------------------------
+
+Total Input Fields: 12
+Mandatory Fields: 11
+Optional Fields: 1
+Document Uploads in This Step: None
+
+------------------------------------------------------------
+STEP 1 SCREEN STRUCTURE SUMMARY
+------------------------------------------------------------
+
+Recommended display order:
+
+A. Personal Details
+1. Full Name
+2. Date of Birth
+3. Mobile Number
+4. Current Address
+5. Permanent Address
+6. State of Residence
+
+B. Professional Details
+7. Work Type
+8. Self-Declared Monthly Income
+9. Years in Current Profession
+10. Number of Dependents
+11. Vehicle Ownership
+12. Secondary Income Source
+
+------------------------------------------------------------
+END OF STEP 1 SPECIFICATION
+------------------------------------------------------------

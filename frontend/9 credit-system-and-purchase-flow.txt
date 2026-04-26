@@ -1,0 +1,398 @@
+GigCredit Frontend Specification — Credit System and Purchase Flow
+
+This document defines the complete frontend specification for the Credit System and Purchase Flow in the GigCredit application. This system controls how users access score generation after their free report usage is exhausted. It also defines how credits are displayed, purchased, validated, consumed, and connected to the overall score flow.
+
+The Credit System must feel fair, transparent, understandable, and easy to manage. Users should always know whether they can generate another report and what they need to do if they cannot.
+
+1. MODULE GOAL
+
+The Credit System exists to:
+- allow users to generate reports for free initially
+- enforce usage limits after free reports are exhausted
+- allow users to purchase additional report access through credits
+- clearly communicate pricing and balance
+- block score generation when insufficient credits exist
+- connect monetization with the score flow in a user-friendly way
+
+This system supports both access control and revenue logic.
+
+2. CORE CREDIT RULES
+
+The app must follow these rules:
+- First 3 reports are FREE
+- After the free limit, 1 report requires 10 credits
+- 10 credits cost Rs.79
+- credits can only be purchased in multiples of 10
+- minimum purchase quantity is 10 credits
+
+These rules are explicitly defined in the application flow. [file:10]
+
+3. CREDIT SYSTEM POSITION IN USER FLOW
+
+The credit system is triggered during score generation.
+
+Expected flow:
+- user opens score flow
+- user taps Check Credit Score
+- app checks free report availability and credit balance
+- if eligible, user continues to 9-step score input flow
+- if not eligible, app blocks access and shows Buy Credits path
+
+This makes the Credit System a gateway rule before score generation begins. [file:10]
+
+4. FREE REPORT USAGE PURPOSE
+
+The first 3 reports being free lowers friction and encourages first-time use.
+
+The frontend should communicate this clearly so users understand:
+- they can try the product before paying
+- free usage is limited
+- paid usage begins only after the free count is exhausted
+
+5. FREE REPORT COUNTER EXPECTATION
+
+The app should maintain a visible or internally trackable count of:
+- reports already used
+- free reports remaining
+
+If surfaced to the user, this should be shown in a simple and non-confusing way.
+
+Examples:
+- 2 free reports left
+- Free reports exhausted
+- Next report requires credits
+
+6. CREDIT BALANCE PURPOSE
+
+Once free reports are exhausted, credit balance becomes the main access mechanism for report generation.
+
+The app must clearly track and display:
+- current credit balance
+- minimum credits needed for next report
+- whether current balance is sufficient
+
+This avoids frustration and confusion.
+
+7. CREDIT BALANCE DISPLAY EXPECTATION
+
+The frontend should show balance in at least one of these places:
+- Profile module
+- Buy Credits screen
+- score restriction popup or sheet
+
+Optional supporting information:
+- free reports remaining
+- credits needed for next report
+- recent purchase update confirmation
+
+8. SCORE ACCESS VALIDATION RULE
+
+When a user taps Check Credit Score, the app must evaluate access in this order:
+- if free reports remain, allow score flow
+- else if credit balance is at least 10, allow score flow
+- else block the flow and show Buy Credits to continue
+
+This is the required gating logic. [file:10]
+
+9. BLOCKED ACCESS PURPOSE
+
+When the user does not have free reports and does not have enough credits, the score flow must be blocked.
+
+This ensures monetization logic is enforced consistently.
+
+10. BLOCKED ACCESS MESSAGE
+
+When blocked, the UI should explain:
+- free reports are exhausted
+- generating another report requires credits
+- the user needs to buy credits to continue
+
+Suggested meaning:
+You’ve used your free reports. Buy credits to continue generating your credit report.
+
+11. BUY CREDITS TO CONTINUE PROMPT
+
+When score access is blocked, the app should show a prompt, popup, modal, or bottom sheet with:
+- current balance
+- credits needed
+- pricing information
+- Buy Credits CTA
+- close or cancel option
+
+This should feel informative, not aggressive.
+
+12. REPEATED BLOCKING RULE
+
+If the user closes the Buy Credits prompt without purchasing and taps Check Credit Score again:
+- the system must evaluate access again
+- if the user is still ineligible, the blocking prompt must appear again
+
+This is explicitly required in the earlier score logic. [file:10]
+
+13. BUY CREDITS CTA REDIRECTION
+
+When the user taps Buy Credits from the blocked score state:
+- redirect user to Profile tab or Buy Credits section inside Profile
+- activate Profile tab in bottom navigation
+
+This is part of the defined app flow and module connection. [file:10]
+
+14. CREDIT PURCHASE PURPOSE
+
+Credit purchase is the paid continuation mechanism after the free trial-like usage ends.
+
+The purchase experience must be:
+- simple
+- transparent
+- constrained by valid quantities
+- easy to complete
+
+15. PURCHASE QUANTITY RULES
+
+Credits must be purchased only in valid multiples of 10.
+
+Valid examples:
+- 10 credits
+- 20 credits
+- 30 credits
+
+Invalid examples:
+- 5 credits
+- 12 credits
+- 17 credits
+
+The minimum valid purchase quantity is 10 credits. [file:10]
+
+16. PURCHASE PRICING RULE
+
+Base pricing rule:
+- 10 credits = Rs.79
+
+If the app later supports multiple packs, frontend must still preserve the base logic and validate quantity-to-price consistency.
+
+At minimum, the UI must clearly show the relationship between credits and price. [file:10]
+
+17. PURCHASE UI EXPECTATION
+
+The Buy Credits experience should show:
+- current balance
+- selectable purchase quantity
+- price summary
+- purchase confirmation CTA
+- optional explanatory note on how credits are used
+
+This reduces decision friction.
+
+18. PRICE SUMMARY EXPECTATION
+
+Before payment, the user should be able to clearly understand:
+- how many credits are being purchased
+- how much they cost
+- how many reports those credits enable
+
+Example:
+10 credits → Rs.79 → 1 report
+20 credits → Rs.158 → 2 reports
+
+This is frontend guidance for clarity, even if the first version is simple.
+
+19. PAYMENT PROCESSING STATE
+
+When the user confirms purchase:
+- show payment processing state
+- prevent duplicate taps
+- make it clear that the transaction is in progress
+
+The user should not be allowed to accidentally submit the same purchase twice.
+
+20. PURCHASE SUCCESS BEHAVIOR
+
+After successful payment:
+- update credit balance immediately
+- show success confirmation
+- make it clear that credits were added
+- allow the user to continue their score journey later or immediately depending on flow design
+
+The user must not feel uncertain after paying. [file:10]
+
+21. PURCHASE FAILURE BEHAVIOR
+
+If payment fails:
+- credit balance must not change
+- show clear error message
+- keep purchase context intact
+- allow retry
+
+The system should be transparent and safe.
+
+22. CREDIT CONSUMPTION RULE
+
+Credits should be consumed when a paid report generation attempt is accepted and processed according to backend-confirmed business logic.
+
+Frontend expectation:
+- once the user is eligible and starts a paid report generation flow, the app should be prepared to reflect reduced balance after successful consumption
+- the exact deduction trigger may be finalized with backend, but UI state must support it
+
+23. CONSUMPTION UNIT RULE
+
+Paid access unit:
+- 1 report = 10 credits
+
+This relationship must remain consistent anywhere credits are explained. [file:10]
+
+24. CREDIT SYSTEM UX TONE
+
+The Credit System should feel:
+- fair
+- understandable
+- informative
+- not manipulative
+- not overly aggressive
+
+Avoid dark patterns like hiding pricing, confusing balances, or misleading urgency.
+
+25. CREDIT INFO COPY EXPECTATION
+
+Helpful UI copy can include:
+- First 3 reports are free
+- 1 report requires 10 credits
+- Buy credits to continue
+- Your balance: 20 credits
+- You need 10 credits to generate the next report
+
+This makes the system easier to understand.
+
+26. PURCHASE FLOW ENTRY POINTS
+
+The Buy Credits flow may be entered from:
+- Profile tab
+- blocked score generation prompt
+- future banner or account utility entry
+
+Regardless of entry point, the logic and validation must remain the same.
+
+27. CREDIT SYSTEM DEPENDENCY ON SCORE FLOW
+
+The credit system must be tightly integrated with the Score module.
+
+That means:
+- score flow cannot bypass credit validation
+- insufficient balance must always block access
+- eligibility must be checked before entering the full 9-step paid flow if that is the final product rule
+
+This protects system consistency.
+
+28. STATE USED IN CREDIT SYSTEM
+
+Important frontend state includes:
+- reports used count
+- free reports remaining
+- credit balance
+- purchase quantity selection
+- purchase price summary
+- payment state
+- score access eligibility
+- blocked access modal state
+- last purchase result
+
+This state should be backend-ready.
+
+29. LOADING STATES
+
+The Credit System should support:
+- loading balance
+- loading free report usage
+- checking score access eligibility
+- payment processing
+- post-payment balance refresh
+
+Loading messages should clearly match the current action.
+
+30. ERROR STATES
+
+The Credit System should support these errors:
+- failed to load credit balance
+- failed to load free report usage
+- eligibility check failure
+- payment failure
+- balance update failure after payment
+- invalid quantity selection
+
+Each error should provide a clear retry path.
+
+31. INVALID QUANTITY HANDLING
+
+If the user attempts an invalid purchase amount:
+- block the purchase
+- explain the valid rule
+- keep the user in the purchase flow without crashing or resetting everything
+
+Example explanation:
+Credits must be purchased in multiples of 10. Minimum purchase is 10 credits.
+
+32. EMPTY OR ZERO BALANCE STATE
+
+If the user has:
+- zero credits
+- no free reports left
+
+then the UI should clearly state that another report cannot be generated until credits are purchased.
+
+This should never be hidden or implied only indirectly.
+
+33. BALANCE UPDATE EXPECTATION
+
+After successful purchase or successful credit consumption:
+- the updated credit balance should be reflected in the relevant UI
+- balance should stay consistent across Profile and score restriction views
+- stale balance display should be avoided
+
+34. CROSS-MODULE CONNECTIONS
+
+The Credit System connects directly with:
+- Score module, for access control
+- Profile module, for buying credits and viewing balance
+- Report generation flow, for credit consumption logic
+
+This makes it a shared system rather than a standalone page. [file:10]
+
+35. ACCESSIBILITY AND READABILITY RULES
+
+The Credit System must remain easy to understand on mobile.
+
+Important rules:
+- balance must be easy to spot
+- purchase quantity controls must be clear
+- price summary must be readable
+- blocked-access message must be understandable
+- actions like Buy Credits and Continue must be easy to tap
+
+36. PRIVACY AND TRUST POSITIONING
+
+Even though this is a monetization system, it must still align with GigCredit’s privacy-first trust posture.
+
+That means:
+- pricing must be clear
+- purchases must be transparent
+- balances must be honest and accurate
+- blocked access must be explained respectfully
+
+This preserves user trust.
+
+37. TESTING PRIORITIES FOR CREDIT SYSTEM
+
+Testing should verify:
+- first 3 reports are allowed without credit deduction
+- score access is blocked after free reports if balance is insufficient
+- blocked flow shows Buy Credits prompt
+- repeated Check Credit Score taps re-show the block when still ineligible
+- Buy Credits redirect activates Profile tab
+- only multiples of 10 can be purchased
+- minimum 10 credits rule is enforced
+- successful purchase updates balance
+- failed purchase does not change balance
+- 10 credits are treated as one report unit
+
+38. FINAL MODULE DIRECTION
+
+The Credit System and Purchase Flow should feel like a fair and transparent access model, not a confusing paywall. It must clearly explain when reports are free, when credits are required, how credits are purchased, and how the balance affects score generation. A strong implementation will make monetization feel understandable and manageable rather than frustrating.

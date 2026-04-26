@@ -1,0 +1,634 @@
+# GigCredit — Complete Input Specification (Steps 1–9)
+**Version:** 2.1 — Production Planning Reference
+**Status:** Final — All Steps Locked (Inputs Only)
+**Scope:** All user-facing fields, toggles, uploads, and mandatory rules for every onboarding step
+
+***
+
+## Overview
+
+GigCredit is a gig-worker credit scoring platform that collects financial, identity, and behavioural data across 9 onboarding steps. This README is the single reference document for all input fields across all steps.
+
+### System Dimensions
+
+| Dimension | Detail |
+|---|---|
+| Total Onboarding Steps | 9 |
+| Steps with Mandatory Content | Steps 1, 2, 3, 4 (partial), 5 |
+| Steps with Conditional Content | Step 4 (rent), Step 7 (vehicle insurance) |
+| Steps with Optional-Only Content | Steps 6, 7 (mostly), 8, 9 |
+| Dynamic Steps | Step 5 (fully reconfigures by work type) |
+| Supported Work Types | Platform Worker, Vendor/Seller, Skilled Tradesperson, Freelancer |
+
+### Input Count Summary
+
+| Step | Section | Mandatory | Optional | Total |
+|---|---|---|---|---|
+| 1 | Basic Profile | 11 | 1 | 12 |
+| 2 | Identity / KYC | 6 | 0 | 6 |
+| 3 | Bank Verification | 6 | 11 | 17 |
+| 4 | Utility Bills | 18 | up to 13 | 31 |
+| 5A | Platform Worker | 8 | 2 | 10 |
+| 5B | Vendor / Seller | 3 | 4 | 7 |
+| 5C | Skilled Tradesperson | 3 | 3 | 6 |
+| 5D | Freelancer | 2 | 7 | 9 |
+| 6 | Government Schemes | 0 (all conditional) | 10 | 10 |
+| 7 | Insurance Coverage | 0–1 (conditional) | 2–3 | 3 |
+| 8 | ITR and GST | 0 (all conditional) | up to 12 | 12 |
+| 9 | EMI / Loan Behaviour | 1 toggle + 4/entry | 1/entry | up to 26 |
+
+### Global Input Rules
+
+- **Required** — must be provided before step completion.
+- **Optional** — can be skipped without blocking the step.
+- **Conditional Required** — becomes required only when a specific module or toggle is selected.
+- Selecting a module and leaving it incomplete **blocks step completion**.
+- All document uploads accept JPG, PNG, or PDF unless otherwise noted.
+
+***
+
+## Step 1 — Basic Profile
+
+**Purpose:** Collect core demographic and professional details. The Work Type selected here configures all of Step 5 and downstream ML feature engineering. Vehicle Ownership controls Step 7 vehicle insurance mandatory status.
+
+**UI:** Multi-section scrollable form. No document uploads.
+
+### Section A — Personal Details
+
+| # | Field Name | UI Element | Input Format | Example | Mandatory |
+|---|---|---|---|---|---|
+| 1 | Full Name | Single-line text | Alphabets + spaces | Ravi Kumar | ✅ Required |
+| 2 | Date of Birth | Date picker (DD/MM/YYYY) | Calendar selector | 12/06/1997 | ✅ Required |
+| 3 | Mobile Number | Numeric text field | 10-digit Indian mobile | 9876543210 | ✅ Required |
+| 4 | Current Address | Multi-line text | Free text | No 14, Anna Nagar, Chennai | ✅ Required |
+| 5 | Permanent Address | Multi-line text | Free text | Madurai, Tamil Nadu | ✅ Required |
+| 6 | State of Residence | Dropdown | 28 states + 8 UTs | Tamil Nadu | ✅ Required |
+
+### Section B — Professional Details
+
+| # | Field Name | UI Element | Input Format | Example | Mandatory |
+|---|---|---|---|---|---|
+| 7 | Work Type | 4-card illustrated selector | One of four work types | Platform Worker | ✅ Required |
+| 8 | Self-Declared Monthly Income (₹) | Numeric field with ₹ prefix | Positive integer | ₹22,000 | ✅ Required |
+| 9 | Years in Current Profession | Numeric stepper | Integer 0–40 | 3 | ✅ Required |
+| 10 | Number of Dependents | Numeric stepper | Integer 0–10 | 2 | ✅ Required |
+| 11 | Vehicle Ownership | Radio button Yes / No | Boolean | Yes | ✅ Required |
+| 12 | Secondary Income Source | Text + ₹ amount field | Free text + integer | Part-time delivery, ₹5,000 | ⬜ Optional |
+
+### Work Type Cards (4 options)
+
+| Card | Label | Example Occupations |
+|---|---|---|
+| 1 | Platform Worker | Ola, Uber, Swiggy, Zomato, Blinkit, Rapido, Porter |
+| 2 | Vendor / Seller | Fruit vendor, street food, kirana, small goods |
+| 3 | Skilled Tradesperson | Electrician, plumber, carpenter, mason, tailor |
+| 4 | Freelancer | Designer, developer, writer, consultant |
+
+**Step 1 Total: 12 fields | Mandatory: 11 | Optional: 1**
+
+***
+
+## Step 2 — Identity Verification (KYC)
+
+**Purpose:** Verify government-issued identity documents and confirm the person physically present matches the identity on file. Produces KYC verification status used in P5 identity scoring.
+
+**UI:** Three upload cards with guide overlays. Selfie uses camera-only capture (no gallery).
+
+### Aadhaar Card
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 1 | Aadhaar Number | Numeric field (4-4-4 segmented) | 12-digit number | ✅ Required |
+| 2 | Aadhaar Card — Front Side | Image upload | JPG or PNG | ✅ Required |
+| 3 | Aadhaar Card — Back Side | Image upload | JPG or PNG | ✅ Required |
+
+> Both sides required: Front → name, DOB, Aadhaar number, photo. Back → full address for state and address cross-checks.
+
+### PAN Card
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 4 | PAN Number | Alphanumeric text field | 10-char (ABCDE1234F format) | ✅ Required |
+| 5 | PAN Card Photo | Image upload | JPG or PNG | ✅ Required |
+
+### Live Selfie
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 6 | Live Selfie | In-app camera trigger | Camera capture only (no gallery) | ✅ Required |
+
+> Camera-only enforces physical presence. Selfie is compared against Aadhaar front photo using on-device face matching (MobileFaceNet).
+
+**Step 2 Total: 6 fields | Mandatory: 6 | Optional: 0**
+
+***
+
+## Step 3 — Bank Verification
+
+**Purpose:** Collect bank account details and 6–12 months of transaction history. The bank statement is the most data-rich input in the system, driving the majority of P1–P4 scoring features.
+
+**UI:** Primary bank section visible by default. Secondary bank section collapsed behind a toggle. UPI section below both.
+
+### Primary Bank Account
+
+| # | Field Name | UI Element | Input Format | Example | Mandatory |
+|---|---|---|---|---|---|
+| 1 | Bank Name | Searchable dropdown | Indian bank name | HDFC Bank | ✅ Required |
+| 2 | Account Holder Name | Single-line text | Plain text | Ravi Kumar | ✅ Required |
+| 3 | Bank Branch Name | Single-line text | Plain text | Anna Nagar Chennai | ✅ Required |
+| 4 | IFSC Code | Alphanumeric uppercase | 11 characters | HDFC0001234 | ✅ Required |
+| 5 | Account Number | Numeric text | 9–18 digits | 1234567890 | ✅ Required |
+| 6 | Bank Statement Upload | PDF file picker | PDF only, 6–12 months | — | ✅ Required |
+| 7 | MICR Code | Numeric text | 9-digit number | 600240012 | ⬜ Optional |
+
+### Secondary Bank Account (Optional Module)
+
+| # | Field Name | UI Element | Mandatory |
+|---|---|---|---|
+| 8 | Enable Secondary Account | Toggle switch | ⬜ Optional |
+| 9 | Secondary Bank Name | Same as primary | Conditional Required if toggle ON |
+| 10 | Secondary Account Holder Name | Same as primary | Conditional Required if toggle ON |
+| 11 | Secondary Branch Name | Same as primary | Conditional Required if toggle ON |
+| 12 | Secondary IFSC Code | Same as primary | Conditional Required if toggle ON |
+| 13 | Secondary Account Number | Same as primary | Conditional Required if toggle ON |
+| 14 | Secondary Bank Statement | PDF file picker | Conditional Required if toggle ON |
+| 15 | Secondary MICR Code | Numeric text | ⬜ Optional |
+
+### UPI Statement (Optional Module)
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 16 | UPI Platform | Dropdown | PhonePe / GPay / Paytm / BHIM / Other | ⬜ Optional |
+| 17 | UPI Statement Upload | PDF file picker | PDF export from UPI app | ⬜ Optional |
+
+**Step 3 Total: 17 fields | Mandatory: 6 | Optional: 11**
+
+***
+
+## Step 4 — Utility Bills and Recurring Payments
+
+**Purpose:** Capture 6 months of recurring payment bills to establish address continuity, payment discipline, and financial obligation consistency. Updated to include Rent Bill as a distinct module with explicit fields.
+
+**UI:** Six expandable bill cards, each with a Yes/No toggle. Selecting a card expands its input fields.
+
+### Module 1 — Electricity Bill
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 1 | Electricity Bill Selected? | Toggle Yes / No | Boolean | Optional |
+| 2 | Consumer Number | Single-line text | Alphanumeric | Conditional Required |
+| 3 | Name as per Bill | Single-line text | Plain text | Conditional Required |
+| 4 | Bill Month / Period | Month-Year picker | MM/YYYY | Conditional Required |
+| 5 | Amount Paid (₹) | Numeric field | Positive integer | Conditional Required |
+| 6 | Electricity Bill Upload | File upload | JPG/PNG/PDF | Conditional Required |
+
+### Module 2 — Water Bill
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 7 | Water Bill Selected? | Toggle Yes / No | Boolean | Optional |
+| 8 | Consumer / Account No. | Single-line text | Alphanumeric | Conditional Required |
+| 9 | Name as per Bill | Single-line text | Plain text | Conditional Required |
+| 10 | Bill Month / Period | Month-Year picker | MM/YYYY | Conditional Required |
+| 11 | Amount Paid (₹) | Numeric field | Positive integer | Conditional Required |
+| 12 | Water Bill Upload | File upload | JPG/PNG/PDF | Conditional Required |
+
+### Module 3 — Gas / LPG Bill
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 13 | Gas Bill Selected? | Toggle Yes / No | Boolean | Optional |
+| 14 | Consumer / BP Number | Single-line text | Alphanumeric | Conditional Required |
+| 15 | Name as per Bill | Single-line text | Plain text | Conditional Required |
+| 16 | Bill Month / Period | Month-Year picker | MM/YYYY | Conditional Required |
+| 17 | Amount Paid (₹) | Numeric field | Positive integer | Conditional Required |
+| 18 | Gas Bill Upload | File upload | JPG/PNG/PDF | Conditional Required |
+
+### Module 4 — Mobile / Phone Bill
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 19 | Mobile Bill Selected? | Toggle Yes / No | Boolean | Optional |
+| 20 | Mobile Number | Numeric text | 10-digit mobile | Conditional Required |
+| 21 | Account / Customer Number | Single-line text | Alphanumeric ID | Conditional Required |
+| 22 | Name as per Bill | Single-line text | Plain text | Conditional Required |
+| 23 | Bill Month / Period | Month-Year picker | MM/YYYY | Conditional Required |
+| 24 | Amount Paid (₹) | Numeric field | Positive integer | Conditional Required |
+| 25 | Mobile Bill Upload | File upload | JPG/PNG/PDF | Conditional Required |
+
+> Accepted providers: Jio, Airtel, Vi, BSNL, MTNL
+
+### Module 5 — Internet / Broadband Bill
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 26 | Internet Bill Selected? | Toggle Yes / No | Boolean | Optional |
+| 27 | Account / Customer Number | Single-line text | Alphanumeric ID | Conditional Required |
+| 28 | Name as per Bill | Single-line text | Plain text | Conditional Required |
+| 29 | Bill Month / Period | Month-Year picker | MM/YYYY | Conditional Required |
+| 30 | Amount Paid (₹) | Numeric field | Positive integer | Conditional Required |
+| 31 | Internet Bill Upload | File upload | JPG/PNG/PDF | Conditional Required |
+
+> Accepted providers: JioFiber, Airtel Xstream, ACT, BSNL Bharat Fiber
+
+### Module 6 — Rent Receipt / Agreement *(Added)*
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 32 | Rent Proof Selected? | Toggle Yes / No | Boolean | Optional |
+| 33 | Tenant Name | Single-line text | Plain text | Conditional Required |
+| 34 | Landlord Name | Single-line text | Plain text | Conditional Required |
+| 35 | Rental Address | Multi-line text | Full address text | Conditional Required |
+| 36 | Monthly Rent Amount (₹) | Numeric field | Positive integer | Conditional Required |
+| 37 | Rent Period / Month | Month-Year picker | MM/YYYY | Conditional Required |
+| 38 | Rent Document Upload | File upload | JPG/PNG/PDF | Conditional Required |
+
+> Accepted documents: Monthly rent receipt signed by landlord, Registered/notarised rent agreement, Leave and License agreement PDF.
+> Field 35 (Rental Address) is cross-checked against Step 1 current address.
+> Field 36 (Monthly Rent Amount) is cross-checked against Step 3 bank statement debits.
+
+**Step 4 Total: 38 fields (6 toggles + 32 detail fields) | All Conditional Required when selected**
+
+***
+
+## Step 5 — Gig Work Proof (Dynamic)
+
+**Purpose:** Verify occupation, work history, and work-specific income. Step 5 is fully reconfigured by the Work Type selected in Step 1. The user only sees one of four layouts.
+
+| Work Type (Step 1) | Layout Rendered |
+|---|---|
+| Platform Worker | Layout 5A |
+| Vendor / Seller | Layout 5B |
+| Skilled Tradesperson | Layout 5C |
+| Freelancer | Layout 5D |
+
+***
+
+### Layout 5A — Platform Worker
+
+**Screen title:** "Verify Your Delivery / Ride Partner Profile"
+
+#### Section 1 — Vehicle Documents
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 1 | Vehicle Registration Number | Single-line text uppercase | Alphanumeric (TN09AB1234) | ✅ Required |
+| 2 | RC Book — Front Page | Image upload | JPG or PNG | ✅ Required |
+| 3 | Driving Licence — Front Side | Image upload | JPG or PNG | ✅ Required |
+| 4 | Driving Licence — Back Side | Image upload | JPG or PNG | ✅ Required |
+| 5 | Vehicle Insurance Certificate | Image or PDF upload | JPG/PNG/PDF | ✅ Required |
+
+#### Section 2 — Platform Earning Screenshots
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 6 | Earning Screenshot — Most Recent Month | Single image upload | Screenshot JPG/PNG | ✅ Required |
+| 7 | Earning Screenshot — 2 Months Ago | Single image upload | Screenshot JPG/PNG | ✅ Required |
+| 8 | Earning Screenshot — 3 Months Ago | Single image upload | Screenshot JPG/PNG | ✅ Required |
+| 9 | Second Platform App Screenshot | Single image upload | Screenshot JPG/PNG | ⬜ Optional |
+| 10 | Third Platform App Screenshot | Single image upload | Screenshot JPG/PNG | ⬜ Optional |
+
+**5A Total: 10 fields | Mandatory: 8 | Optional: 2**
+
+***
+
+### Layout 5B — Vendor / Seller
+
+**Screen title:** "Verify Your Vending / Seller Business"
+
+#### Section 1 — SVANidhi Scheme Documents
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 1 | PM SVANidhi Application ID | Single-line text | Alphanumeric | ✅ Required |
+| 2 | SVANidhi Approval Letter | Image or PDF upload | JPG/PNG/PDF | ✅ Required |
+
+#### Section 2 — Business Licence
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 3 | Municipal Trade Licence | Image or PDF upload | JPG/PNG/PDF | ✅ Required |
+
+#### Section 3 — Optional Supporting Documents
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 4 | Bank No-Due Certificate | Image or PDF upload | JPG/PNG/PDF | ⬜ Optional |
+| 5 | Vendor Association Membership | Image upload | JPG or PNG | ⬜ Optional |
+| 6 | Market Allotment Letter | Image or PDF upload | JPG/PNG/PDF | ⬜ Optional |
+| 7 | GST Registration Certificate | PDF upload | PDF | ⬜ Optional |
+
+**5B Total: 7 fields | Mandatory: 3 | Optional: 4**
+
+***
+
+### Layout 5C — Skilled Tradesperson
+
+**Screen title:** "Verify Your Trade Skills and Work History"
+
+#### Section 1 — Skill Certification
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 1 | Skill Certificate ID | Single-line text uppercase | Alphanumeric (NSDC-2023-457892) | ✅ Required |
+| 2 | NSDC / NSQF Skill Certificate | Image or PDF upload | JPG/PNG/PDF | ✅ Required |
+
+#### Section 2 — Work Proof
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 3 | Work Order Letter | Image or PDF upload | JPG/PNG/PDF | ✅ Required |
+
+#### Section 3 — Optional Supporting Documents
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 4 | Experience Certificate from Employer | Image or PDF upload | JPG/PNG/PDF | ⬜ Optional |
+| 5 | Additional NSDC / Skill Certificates | Multi-file upload | JPG/PNG/PDF (up to 3) | ⬜ Optional |
+| 6 | GST Registration Certificate | PDF upload | PDF | ⬜ Optional |
+
+**5C Total: 6 fields | Mandatory: 3 | Optional: 3**
+
+***
+
+### Layout 5D — Freelancer
+
+**Screen title:** "Verify Your Freelance Work Profile"
+
+#### Section 1 — Platform Profile
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 1 | Freelance Platform Profile Screenshot | Single image upload | Screenshot JPG/PNG | ✅ Required |
+| 2 | Second Platform Profile Screenshot | Single image upload | Screenshot JPG/PNG | ⬜ Optional |
+
+> Accepted platforms: Upwork, Fiverr, Toptal, Freelancer.com, PeoplePerHour, 99designs, Guru, Contra
+
+#### Section 2 — Client Invoices
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 3 | Client Invoice — Sample 1 | Image or PDF upload | JPG/PNG/PDF | ✅ Required (min 1) |
+| 4 | Client Invoice — Sample 2 | Image or PDF upload | JPG/PNG/PDF | ⬜ Optional |
+| 5 | Client Invoice — Sample 3 | Image or PDF upload | JPG/PNG/PDF | ⬜ Optional |
+| 6 | Client Invoice — Sample 4 | Image or PDF upload | JPG/PNG/PDF | ⬜ Optional |
+| 7 | Client Invoice — Sample 5 | Image or PDF upload | JPG/PNG/PDF | ⬜ Optional |
+
+#### Section 3 — Optional Supporting Documents
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 8 | Portfolio / Project Completion Proof | Image or PDF upload | Screenshot/JPG/PNG/PDF | ⬜ Optional |
+| 9 | GST Registration Certificate | PDF upload | PDF | ⬜ Optional |
+
+**5D Total: 9 fields | Mandatory: 2 | Optional: 7**
+
+***
+
+## Step 6 — Government Schemes and Social Security
+
+**Purpose:** Capture participation in Indian government welfare, credit, and social security schemes. All modules are globally optional. If a scheme is selected, its ID/reference and proof upload become required.
+
+**UI:** Vertical list of scheme modules. Each has a "I have this scheme" toggle (Yes/No). Selecting Yes expands the ID and upload fields.
+
+### Module 1 — PM SVANidhi
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 1 | PM SVANidhi Selected? | Toggle Yes / No | Boolean | Optional |
+| 2 | SVANidhi Reference / Application ID | Single-line text | Alphanumeric | Conditional Required |
+| 3 | SVANidhi Proof Document Upload | File upload | JPG/PNG/PDF | Conditional Required |
+
+### Module 2 — eShram Registration
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 4 | eShram Selected? | Toggle Yes / No | Boolean | Optional |
+| 5 | UAN (Universal Account Number) | Numeric text field | 12-digit UAN | Conditional Required |
+| 6 | eShram Card Upload | File upload | JPG/PNG/PDF | Conditional Required |
+
+### Module 3 — PM-SYM (Pension Scheme)
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 7 | PM-SYM Selected? | Toggle Yes / No | Boolean | Optional |
+| 8 | PM-SYM Pension Account Number | Single-line text | Alphanumeric | Conditional Required |
+| 9 | PM-SYM Pension Card / Proof Upload | File upload | JPG/PNG/PDF | Conditional Required |
+
+### Module 4 — PMJJBY (Life Insurance Scheme)
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 10 | PMJJBY Selected? | Toggle Yes / No | Boolean | Optional |
+| 11 | PMJJBY Unique Reference Number (URN) | Single-line text | URN as on certificate | Conditional Required |
+| 12 | PMJJBY Certificate of Insurance Upload | File upload | JPG/PNG/PDF | Conditional Required |
+
+### Module 5 — PMMY / MUDRA Loan
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 13 | PMMY Selected? | Toggle Yes / No | Boolean | Optional |
+| 14 | Mudra Loan Account Number | Single-line text | Alphanumeric | Conditional Required |
+| 15 | PMMY Loan Document Upload | File upload | JPG/PNG/PDF | Conditional Required |
+
+### Module 6 — PPF (Public Provident Fund)
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 16 | PPF Selected? | Toggle Yes / No | Boolean | Optional |
+| 17 | PPF Account Number | Single-line text | Alphanumeric | Conditional Required |
+| 18 | PPF Passbook Upload | File upload | JPG/PNG/PDF | Conditional Required |
+
+### Module 7 — Udyam / MSME Registration
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 19 | Udyam Selected? | Toggle Yes / No | Boolean | Optional |
+| 20 | Udyam Registration Number | Single-line text | Alphanumeric (UDYAM-TN-XX-XXXXXXX) | Conditional Required |
+| 21 | Udyam Certificate Upload | File upload | JPG/PNG/PDF | Conditional Required |
+
+**Step 6 Total: 21 fields (7 toggles + 14 detail fields) | All Conditional Required when selected**
+
+***
+
+## Step 7 — Insurance Coverage
+
+**Purpose:** Capture insurance policy details as evidence of financial resilience and risk management. Feeds the P6 Financial Resilience scoring pillar.
+
+**UI:** Three vertically stacked insurance cards. Each has a toggle. Vehicle Insurance becomes mandatory if Step 1 Vehicle Ownership = Yes.
+
+### Module 1 — Health Insurance
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 1 | Health Insurance Selected? | Toggle Yes / No | Boolean | Optional |
+| 2 | Health Policy Number | Single-line text | Alphanumeric | Conditional Required |
+| 3 | Policy Holder Name | Single-line text | Plain text | Conditional Required |
+| 4 | Health Policy Document Upload | File upload | JPG/PNG/PDF | Conditional Required |
+
+### Module 2 — Vehicle Insurance
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 5 | Vehicle Insurance Selected? | Toggle Yes / No | Boolean | Required if Step-1 vehicle = Yes |
+| 6 | Vehicle Policy Number | Single-line text | Alphanumeric | Conditional Required |
+| 7 | Policy Holder Name | Single-line text | Plain text | Conditional Required |
+| 8 | Vehicle Insurance Document Upload | File upload | JPG/PNG/PDF | Conditional Required |
+
+> Dynamic rule: If Step 1 Vehicle Ownership = Yes → module must be completed. If No → optional or hidden.
+
+### Module 3 — Life Insurance
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 9 | Life Insurance Selected? | Toggle Yes / No | Boolean | Optional |
+| 10 | Life Policy Number | Single-line text | Alphanumeric | Conditional Required |
+| 11 | Policy Holder Name | Single-line text | Plain text | Conditional Required |
+| 12 | Life Policy Document Upload | File upload | JPG/PNG/PDF | Conditional Required |
+
+**Step 7 Total: 12 fields (3 toggles + 9 detail fields) | Vehicle Insurance conditionally mandatory | Rest optional**
+
+***
+
+## Step 8 — ITR and GST Records
+
+**Purpose:** Collect formal income declaration and tax compliance records. Strongest income signals in the system — improve confidence scores across P1, P4, P6, and the meta-learner.
+
+**UI:** Two cards (ITR on top, GST below). Both collapsed by default. GST card expanded by default for Vendor and Freelancer work types.
+
+> Step-level message: *"ITR and GST records are the strongest proof of income. Submitting them can improve your score by up to 22 points across multiple pillars."*
+
+### Module 1 — Income Tax Return (ITR)
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 1 | ITR Selected? | Toggle Yes / No | Boolean | Optional |
+| 2 | PAN Number (as per ITR) | Single-line text | 10-char PAN (ABCDE1234F) | Conditional Required |
+| 3 | Name as per ITR | Single-line text | Plain text | Conditional Required |
+| 4 | Assessment Year | Dropdown | e.g. 2023-24, 2024-25 | Conditional Required |
+| 5 | Annual Income in INR | Numeric text | Integer (Total Income field on ITR-V) | Conditional Required |
+| 6 | ITR Acknowledgement Upload | File upload | JPG/PNG/PDF | Conditional Required |
+| 7 | Form 26AS Upload | File upload | PDF only | ⬜ Optional |
+
+### Module 2 — GST Records
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 8 | GST Selected? | Toggle Yes / No | Boolean | Optional |
+| 9 | GSTIN | Single-line text uppercase | 15-char alphanumeric | Conditional Required |
+| 10 | Legal Name as per GST | Single-line text | Plain text (as on GST RC) | Conditional Required |
+| 11 | Annual Turnover in INR | Numeric text | Integer (from GSTR-3B totals) | Conditional Required |
+| 12 | GST Document Upload | Multi-file upload | PDF (GSTR-3B returns + GST RC) | Conditional Required |
+
+> GST document upload accepts: Multiple GSTR-3B return PDFs (up to 6 months) + GST Registration Certificate (REG-06).
+
+### GST Visibility by Work Type
+
+| Work Type | GST Section Behaviour |
+|---|---|
+| Vendor / Seller | Expanded by default, visually prominent |
+| Freelancer | Expanded by default with income tip |
+| Platform Worker | Collapsed, expandable on demand |
+| Skilled Tradesperson | Collapsed, expandable on demand |
+
+**Step 8 Total: 12 fields (2 toggles + 10 detail fields) | All Conditional Required when selected**
+
+***
+
+## Step 9 — EMI and Loan Behaviour
+
+**Purpose:** Capture existing loan and EMI obligations to assess monthly debt repayment burden, regularity, and debt-to-income ratio signals. Feeds the P3 Debt Management scoring pillar. Cross-referenced against Step 3 bank statement debit entries.
+
+**UI:** Top-level toggle "Do you have active EMIs?" If Yes, a repeatable loan entry card appears. Up to 5 loan entries allowed.
+
+### Top-Level Toggle
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 1 | Active Loans / EMIs? | Toggle Yes / No | Boolean | Required |
+
+> If No → Step 9 marked complete as "No active loans." No further input needed.
+
+### Loan / EMI Entry Card (Repeatable — up to 5)
+
+Each loan the user declares fills one card. Fields below apply per card:
+
+| # | Field Name | UI Element | Input Format | Mandatory |
+|---|---|---|---|---|
+| 2 | Lender Name | Dropdown + free text | Bank / NBFC / MFI / Other | Required per entry |
+| 3 | Monthly EMI Amount (₹) | Numeric text | Positive integer in INR | Required per entry |
+| 4 | Previous Debit Date | Date picker | DD/MM/YYYY | Required per entry |
+| 5 | Latest Debit Date | Date picker | DD/MM/YYYY | Required per entry |
+| 6 | Loan Verification Trigger | Button (action) | Triggers bank cross-check | ⬜ Optional per entry |
+
+> **Field 4 (Previous Debit Date)** must be earlier than Field 5 (Latest Debit Date).
+> **Field 5 (Latest Debit Date)** must be ≤ today's date.
+> **Field 6 (Loan Verification)** cross-references declared EMI against Step 3 bank statement debits. Non-blocking.
+
+### Lender Dropdown Options
+
+| Category | Examples |
+|---|---|
+| Public Banks | SBI, Canara, PNB, Bank of Baroda, Indian Bank |
+| Private Banks | HDFC, ICICI, Axis, Kotak, IndusInd |
+| NBFCs | Bajaj Finance, IIFL, Muthoot Finance, Shriram |
+| MFIs | Ujjivan, Jana Bank, Spandana, ESAF |
+| Other | Free-text entry |
+
+### Multi-Entry Rules
+
+| Rule | Detail |
+|---|---|
+| Minimum entries (if Yes) | 1 loan entry must be completed |
+| Maximum entries | 5 loan entries per user |
+| Add entry trigger | "Add Another Loan" button below each completed card |
+| Remove entry trigger | Trash icon on each card |
+| Validation on Continue | All Required fields (2–5) filled in every card |
+
+**Step 9 Total: 1 toggle + up to 5 × 5 fields = 26 maximum | Mandatory: 4 fields per entry + 1 top toggle**
+
+***
+
+## Cross-Step Dependencies
+
+| Trigger Field | Step | Affects |
+|---|---|---|
+| Work Type | Step 1 | Entire Step 5 layout (5A / 5B / 5C / 5D) |
+| Work Type = Vendor / Freelancer | Step 1 | GST section shown expanded by default in Step 8 |
+| Vehicle Ownership = Yes | Step 1 | Vehicle Insurance becomes mandatory in Step 7 |
+| State of Residence | Step 1 | State median income anchor for all bank features |
+| PAN Number | Step 2 | Cross-checked in Step 8 ITR module |
+| Bank Statement Debits | Step 3 | Cross-checked against Step 4 bills, Step 6 scheme contributions, Step 7 premiums, Step 9 EMIs |
+| Aadhaar Name | Step 2 | Cross-checked in Steps 5A (DL, platform name), 5B (SVANidhi, trade licence), 5C (skill cert), 8 (ITR name) |
+| Vehicle Number (RC Book) | Step 5A | Cross-checked against Step 7 vehicle insurance policy |
+| Rental Address | Step 4 (Module 6) | Cross-checked against Step 1 current address |
+
+***
+
+## Scoring Pillar Mapping
+
+| Step | Scoring Pillars Fed |
+|---|---|
+| Step 1 | P1 Income Stability, P5 Identity, Meta-Learner work type selector |
+| Step 2 | P5 Identity and KYC |
+| Step 3 | P1 Income Stability, P2 Payment Discipline, P3 Debt Management, P4 Savings Behaviour |
+| Step 4 | P2 Payment Discipline |
+| Step 5 | P1 Income Stability, P5 Work Identity |
+| Step 6 | P7 Social Accountability |
+| Step 7 | P6 Financial Resilience |
+| Step 8 | P1, P4, P6 (via declared income and tax compliance) |
+| Step 9 | P3 Debt Management |
+
+***
+
+## Document Changelog
+
+| Version | Date | Change |
+|---|---|---|
+| 1.0 | Initial | Steps 1–8 specified |
+| 2.0 | Planning phase | Step 9 added (EMI and Loan Behaviour) |
+| 2.1 | April 2026 | Step 4 updated — Rent Bill added as Module 6 with explicit fields (Tenant Name, Landlord Name, Address, Amount, Period, Upload). Steps 6, 7, 8, 9 specs locked with document-verified field justifications. |
+
+***
+
+*This README is the single source of truth for all GigCredit onboarding inputs. All verification logic, OCR extraction fields, API call structures, and scoring computations are defined in the separate verification specification files per step.*

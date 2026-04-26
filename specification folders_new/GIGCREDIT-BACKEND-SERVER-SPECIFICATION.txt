@@ -1,0 +1,1052 @@
+
+================================================================================
+GIGCREDIT — BACKEND SERVER SPECIFICATION
+VERSION 1.0 FINAL
+SCOPE: Verification API Layer + LLM Report Generation Layer
+AUDIENCE: Backend Developer / Team Collaboration Reference
+================================================================================
+
+THIS DOCUMENT COVERS:
+  - What the backend server is and is NOT responsible for
+  - Clear boundary between on-device and backend
+  - Full verification API flow (Step 1 through Step 7)
+  - Full LLM report generation flow (SHAP → Groq → Plain English)
+  - Request/response schemas
+  - Error handling and fallback rules
+  - Security and privacy rules
+  - Performance targets
+
+THIS DOCUMENT DOES NOT COVER:
+  - ML model training (see ML Specification document)
+  - Feature engineering (see Feature Engineering Specification)
+  - On-device scoring logic (see Scoring Engine Specification)
+  - SHAP computation (see SHAP Specification)
+  - Flutter UI rendering (see Frontend Specification)
+  - Final report assembly and PDF export (see Report Pipeline Specification)
+
+================================================================================
+SECTION 0 — SYSTEM PHILOSOPHY
+================================================================================
+
+GigCredit is a PRIVACY-FIRST, ON-DEVICE credit scoring platform.
+
+The scoring engine runs entirely on the user's Flutter device.
+The backend server exists for two purposes ONLY:
+
+  PURPOSE 1 — VERIFICATION
+    Verify that user-provided identifiers (Aadhaar, PAN, RC, Insurance, etc.)
+    match real records in a simulated government/financial database.
+
+  PURPOSE 2 — LANGUAGE CONVERSION
+    Convert structured SHAP output (machine data) into plain English or
+    regional language explanation text and personalized suggestions
+    using the Groq LLM API.
+
+THE BACKEND NEVER:
+  - Computes credit scores
+  - Runs ML models
+  - Performs feature engineering
+  - Processes bank statements
+  - Reads raw OCR output
+  - Stores user documents
+  - Stores Aadhaar / PAN / bank transaction data
+
+THE BACKEND ONLY RECEIVES:
+  - Minimal identifiers for verification (e.g., PAN number only)
+  - Structured score + SHAP explanation JSON for LLM processing
+
+================================================================================
+SECTION 1 — ARCHITECTURE BOUNDARY: ON-DEVICE vs BACKEND
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────┐
+│                      USER'S FLUTTER DEVICE                      │
+│                                                                 │
+│  ┌─────────────┐   ┌──────────────┐   ┌─────────────────────┐  │
+│  │  Document   │   │  On-Device   │   │   Scoring Engine    │  │
+│  │  Capture    │──▶│  OCR Engine  │──▶│   (m2cgen Dart)     │  │
+│  │  (Camera)   │   │  (PaddleOCR) │   │   7 Pillars         │  │
+│  └─────────────┘   └──────────────┘   └────────┬────────────┘  │
+│                                                │               │
+│  ┌─────────────────────────────────────────────▼────────────┐  │
+│  │              Feature Engineering (Dart)                  │  │
+│  │              95 Features → Normalized 0.0–1.0            │  │
+│  └──────────────────────────────┬───────────────────────────┘  │
+│                                 │                               │
+│  ┌──────────────────────────────▼───────────────────────────┐  │
+│  │              SHAP Lookup Engine (Dart)                   │  │
+│  │              shap_lookup.json → Top 3 Pos + Top 3 Neg    │  │
+│  └──────────────────────────────┬───────────────────────────┘  │
+│                                 │                               │
+│  ┌──────────────────────────────▼───────────────────────────┐  │
+│  │         Explanation Payload Builder (Dart)               │  │
+│  │         Assembles structured JSON for LLM                │  │
+│  └──────────────────────────────┬───────────────────────────┘  │
+└────────────────────────────────-│───────────────────────────────┘
+                                  │
+                    ┌─────────────▼─────────────┐
+                    │   HTTPS (TLS + HMAC Auth)  │
+                    └─────────────┬─────────────┘
+                                  │
+┌─────────────────────────────────▼───────────────────────────────┐
+│                        BACKEND SERVER                           │
+│                     (FastAPI + MongoDB)                         │
+│                                                                 │
+│  ┌──────────────────────────┐   ┌───────────────────────────┐  │
+│  │  Verification API Layer  │   │  LLM Report Layer         │  │
+│  │                          │   │                           │  │
+│  │  /gov/aadhaar/verify     │   │  /api/report/generate     │  │
+│  │  /gov/pan/verify         │   │        │                  │  │
+│  │  /bank/ifsc/verify       │   │        ▼                  │  │
+│  │  /bank/account/verify    │   │  Prompt Builder           │  │
+│  │  /bank/loan/check        │   │        │                  │  │
+│  │  /gov/vehicle/rc/verify  │   │        ▼                  │  │
+│  │  /gov/eshram/verify      │   │  Groq API Call            │  │
+│  │  /gov/pmsym/verify       │   │  (llama3-70b-8192)        │  │
+│  │  /gov/insurance/verify   │   │        │                  │  │
+│  │  /auth/otp/send          │   │        ▼                  │  │
+│  │  /auth/otp/verify        │   │  Response Formatter       │  │
+│  │                          │   │        │                  │  │
+│  │  MongoDB Query Layer     │   │        ▼                  │  │
+│  │  (Simulated DB)          │   │  JSON Response to App     │  │
+│  └──────────────────────────┘   └───────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+                                  │
+                    ┌─────────────▼─────────────┐
+                    │   Response returns to App  │
+                    └─────────────┬─────────────┘
+                                  │
+┌─────────────────────────────────▼───────────────────────────────┐
+│                      USER'S FLUTTER DEVICE                      │
+│                                                                 │
+│  Verification Response → On-Device Cross-Validation             │
+│  LLM Response → Final Report Rendering (UI + PDF)              │
+└─────────────────────────────────────────────────────────────────┘
+
+KEY RULE:
+  The backend returns data to the app.
+  The app does all final processing, cross-validation, and rendering.
+  The backend never makes decisions about the user's creditworthiness.
+
+================================================================================
+SECTION 2 — TECHNOLOGY STACK
+================================================================================
+
+Backend Framework  : FastAPI (Python 3.11+)
+Database           : MongoDB (local for development, Atlas for production)
+LLM Provider       : Groq API (model: llama3-70b-8192)
+Authentication     : HMAC-SHA256 request signing + API Key header
+Transport Security : HTTPS (TLS 1.3)
+Rate Limiting      : Per-device, per-endpoint throttling
+Deployment         : Docker container (single service)
+
+Environment Variables Required:
+  GROQ_API_KEY         = <your Groq API key>
+  MONGODB_URI          = <MongoDB connection string>
+  HMAC_SECRET          = <shared secret with Flutter app>
+  SERVER_API_KEY       = <static API key for app requests>
+
+================================================================================
+SECTION 3 — REQUEST AUTHENTICATION
+================================================================================
+
+Every request from the Flutter app to the backend must include:
+
+  Header: X-Api-Key: <SERVER_API_KEY>
+  Header: X-Device-Id: <hashed device fingerprint>
+  Header: X-Timestamp: <Unix timestamp>
+  Header: X-Signature: <HMAC-SHA256 signature>
+
+Signature Computation (on-device):
+  body_hash  = SHA256(raw_request_body)
+  message    = device_id + ":" + timestamp + ":" + body_hash
+  signature  = HMAC-SHA256(HMAC_SECRET, message)
+
+Server Validation:
+  1. Check X-Api-Key matches SERVER_API_KEY
+  2. Check X-Timestamp is within ±5 minutes (replay protection)
+  3. Recompute HMAC and compare with X-Signature
+  4. If any check fails → return 401 Unauthorized
+
+All requests rejected if:
+  - Missing any header
+  - Timestamp expired (> 5 min old)
+  - HMAC mismatch
+  - API key invalid
+
+================================================================================
+SECTION 4 — VERIFICATION API LAYER
+================================================================================
+
+PURPOSE:
+  The app sends a minimal identifier extracted on-device via OCR or user input.
+  The server queries MongoDB (simulated government/bank database).
+  The server returns the matching record fields.
+  The app compares returned data against OCR-extracted data on-device.
+
+CRITICAL RULE:
+  The server ONLY matches identifiers.
+  The app decides if the document is verified or not.
+  The server never sees full documents, images, or transaction history.
+
+--------------------------------------------------------------------------------
+4.1 OTP FLOW (Step 1 — Mobile Verification)
+--------------------------------------------------------------------------------
+
+ENDPOINT: POST /auth/otp/send
+
+  Purpose   : Send OTP to user's mobile number
+  Trigger   : User enters mobile number in Step 1
+  App Sends : { "mobile": "9876543210" }
+
+  Server Logic:
+    1. Validate mobile is 10-digit numeric
+    2. Generate 6-digit OTP
+    3. Store OTP in otp_db with expiry = 5 minutes
+    4. Simulate OTP send (for demo: return OTP in response)
+    5. In production: integrate SMS gateway
+
+  Response (200 OK):
+    {
+      "status": "sent",
+      "expires_in_seconds": 300
+    }
+
+  Error Cases:
+    Invalid mobile format → 400 { "error": "invalid_mobile" }
+    Rate limit exceeded   → 429 { "error": "too_many_requests" }
+
+---
+
+ENDPOINT: POST /auth/otp/verify
+
+  Purpose   : Verify OTP entered by user
+  App Sends : { "mobile": "9876543210", "otp": "482917" }
+
+  Server Logic:
+    1. Query otp_db for matching mobile
+    2. Check OTP matches and is not expired
+    3. Mark mobile as verified in session
+
+  Response (200 OK):
+    { "status": "verified", "mobile_verified": true }
+
+  Error Cases:
+    OTP mismatch     → 400 { "error": "invalid_otp" }
+    OTP expired      → 400 { "error": "otp_expired" }
+    Mobile not found → 404 { "error": "not_found" }
+
+--------------------------------------------------------------------------------
+4.2 AADHAAR VERIFICATION (Step 2)
+--------------------------------------------------------------------------------
+
+ENDPOINT: POST /gov/aadhaar/verify
+
+  Purpose   : Verify Aadhaar number exists and is active
+  Trigger   : After on-device OCR extracts Aadhaar number from card image
+  App Sends : { "aadhaar": "123456789012" }
+
+  Server Logic:
+    1. Query aadhaar_db where aadhaar == input
+    2. If found → return record fields
+    3. If not found → return invalid
+
+  Response (200 OK):
+    {
+      "status": "valid",
+      "name": "Ravi Kumar",
+      "dob": "1997-06-12",
+      "state": "Tamil Nadu"
+    }
+
+  On-Device After Response:
+    Compare API name vs OCR name from Aadhaar front image
+    If match (fuzzy ≥ 85%) → aadhaar_verified = true
+    If mismatch → flag for re-upload, aadhaar_verified = false
+
+  Error Cases:
+    Aadhaar not found → 404 { "status": "invalid", "error": "not_found" }
+    Invalid format    → 400 { "error": "invalid_format" }
+
+--------------------------------------------------------------------------------
+4.3 PAN VERIFICATION (Step 2)
+--------------------------------------------------------------------------------
+
+ENDPOINT: POST /gov/pan/verify
+
+  Purpose   : Verify PAN number exists and is active
+  Trigger   : After on-device OCR extracts PAN from card image
+  App Sends : { "pan": "ABCDE1234F" }
+
+  Server Logic:
+    1. Validate PAN format regex [A-Z]{5}[0-9]{4}[A-Z]{1}
+    2. Query pan_db where pan == input
+    3. Return matching record
+
+  Response (200 OK):
+    {
+      "status": "valid",
+      "name": "Ravi Kumar",
+      "dob": "1997-06-12",
+      "pan_active": true,
+      "itr_filed": true,
+      "itr_years": [2022, 2023, 2024]
+    }
+
+  On-Device After Response:
+    Compare API name vs OCR name from PAN image
+    If match → pan_verified = true
+    itr_filed and itr_years stored in VerifiedProfile for P6 feature
+
+  Error Cases:
+    PAN not found  → 404 { "status": "invalid", "error": "not_found" }
+    PAN inactive   → 200 { "status": "inactive", "pan_active": false }
+    Invalid format → 400 { "error": "invalid_format" }
+
+--------------------------------------------------------------------------------
+4.4 BANK IFSC VERIFICATION (Step 3)
+--------------------------------------------------------------------------------
+
+ENDPOINT: POST /bank/ifsc/verify
+
+  Purpose   : Verify IFSC code is valid and get bank branch details
+  App Sends : { "ifsc": "HDFC0001234" }
+
+  Server Logic:
+    1. Validate IFSC format [A-Z]{4}0[A-Z0-9]{6}
+    2. Query ifsc_db where ifsc == input
+    3. Return bank details
+
+  Response (200 OK):
+    {
+      "status": "valid",
+      "bank_name": "HDFC Bank",
+      "branch_name": "Anna Nagar Chennai",
+      "city": "Chennai",
+      "state": "Tamil Nadu"
+    }
+
+  On-Device After Response:
+    Compare returned bank_name vs user-entered bank name
+    If match → ifsc_verified = true
+
+--------------------------------------------------------------------------------
+4.5 BANK ACCOUNT VERIFICATION (Step 3)
+--------------------------------------------------------------------------------
+
+ENDPOINT: POST /bank/account/verify
+
+  Purpose   : Verify bank account exists and is active
+  App Sends : { "account_number": "1234567890", "ifsc": "HDFC0001234" }
+
+  Response (200 OK):
+    {
+      "status": "valid",
+      "account_holder": "Ravi Kumar",
+      "account_type": "Savings",
+      "account_active": true
+    }
+
+  On-Device After Response:
+    Compare account_holder vs Aadhaar name
+    If match → bank_account_verified = true
+
+--------------------------------------------------------------------------------
+4.6 LOAN CHECK (Step 3 — Internal, Automated)
+--------------------------------------------------------------------------------
+
+ENDPOINT: POST /bank/loan/check
+
+  Purpose   : Check if user has active loans linked to their bank account
+  Trigger   : Runs automatically after bank account verification
+  App Sends : { "account_number": "1234567890" }
+
+  Response (200 OK):
+    {
+      "has_active_loans": true,
+      "loan_count": 2,
+      "loans": [
+        { "type": "Personal Loan", "emi_amount": 3500, "remaining_months": 18 },
+        { "type": "Two-Wheeler Loan", "emi_amount": 1800, "remaining_months": 6 }
+      ]
+    }
+
+  On-Device After Response:
+    Loan data fed into P3 (Debt Management) feature engineering
+    emi_to_income_ratio computed from this data
+
+--------------------------------------------------------------------------------
+4.7 VEHICLE RC VERIFICATION (Step 5 — Platform Workers Only)
+--------------------------------------------------------------------------------
+
+ENDPOINT: POST /gov/vehicle/rc/verify
+
+  Purpose   : Verify vehicle registration certificate
+  Trigger   : Step 5A (Platform Worker only), after OCR extracts vehicle number
+  App Sends : { "vehicle_number": "TN09AB1234" }
+
+  Response (200 OK):
+    {
+      "status": "valid",
+      "owner_name": "Ravi Kumar",
+      "vehicle_class": "Motorcycle",
+      "chassis_number": "ME4JC092XRM123456",
+      "engine_number": "JC09E2123456",
+      "registration_date": "2021-03-15",
+      "rc_expiry": "2036-03-14",
+      "fitness_expiry": "2027-03-14"
+    }
+
+  On-Device After Response:
+    Compare owner_name vs Aadhaar name → must match
+    rc_expiry must be > today
+    vehicle_class stored for DL class matching
+
+--------------------------------------------------------------------------------
+4.8 ESHRAM VERIFICATION (Step 6)
+--------------------------------------------------------------------------------
+
+ENDPOINT: POST /gov/eshram/verify
+
+  Purpose   : Verify e-Shram registration (unorganized worker registry)
+  App Sends : { "uan": "UAN123456789012" }
+
+  Response (200 OK):
+    {
+      "status": "registered",
+      "name": "Ravi Kumar",
+      "worker_category": "Gig Worker",
+      "registration_date": "2022-08-10"
+    }
+
+  On-Device After Response:
+    eshram_registered = true → feeds into P7 (Social Accountability) features
+
+--------------------------------------------------------------------------------
+4.9 PM-SYM VERIFICATION (Step 6)
+--------------------------------------------------------------------------------
+
+ENDPOINT: POST /gov/pmsym/verify
+
+  Purpose   : Verify PM-SYM pension scheme contribution
+  App Sends : { "uan": "UAN123456789012" }
+
+  Response (200 OK):
+    {
+      "status": "active",
+      "months_contributed": 14,
+      "last_contribution_date": "2026-03-01"
+    }
+
+  On-Device After Response:
+    pmsym_active = true → feeds into P7 features
+
+--------------------------------------------------------------------------------
+4.10 INSURANCE POLICY VERIFICATION (Step 7)
+--------------------------------------------------------------------------------
+
+ENDPOINT: POST /gov/insurance/policy/verify
+
+  Purpose   : Verify insurance policy (health, life, or vehicle)
+  App Sends : {
+                "policy_number": "HLT2024112345",
+                "policy_type": "health"
+              }
+
+  Response (200 OK — Health):
+    {
+      "status": "active",
+      "policy_holder": "Ravi Kumar",
+      "insurer": "Star Health Insurance",
+      "sum_insured": 500000,
+      "premium_annual": 8500,
+      "policy_start": "2024-11-01",
+      "policy_expiry": "2025-10-31"
+    }
+
+  Response (200 OK — Vehicle):
+    {
+      "status": "active",
+      "policy_holder": "Ravi Kumar",
+      "vehicle_number": "TN09AB1234",
+      "insurer": "Bajaj Allianz",
+      "policy_expiry": "2026-10-15"
+    }
+
+  On-Device After Response:
+    policy_expiry must be > today
+    policy_holder must match Aadhaar name
+    Sum insured and premium stored for P6 (Financial Resilience) features
+
+--------------------------------------------------------------------------------
+4.11 COMPLETE VERIFICATION TIMELINE (ALL STEPS)
+--------------------------------------------------------------------------------
+
+  STEP 1 → /auth/otp/send + /auth/otp/verify
+  STEP 2 → /gov/aadhaar/verify + /gov/pan/verify
+  STEP 3 → /bank/ifsc/verify + /bank/account/verify + /bank/loan/check
+  STEP 4 → No backend call (utility bills processed on-device only)
+  STEP 5 → /gov/vehicle/rc/verify (Platform Workers only)
+  STEP 6 → /gov/eshram/verify + /gov/pmsym/verify
+  STEP 7 → /gov/insurance/policy/verify (1–3 calls depending on policy types)
+
+  TOTAL MAXIMUM API CALLS ACROSS ALL STEPS: 11 calls
+  ALL CALLS ARE LIGHTWEIGHT (identifier only, no documents)
+  ALL CALLS RETURN IN 50–150ms (MongoDB lookup, no heavy computation)
+
+================================================================================
+SECTION 5 — LLM REPORT GENERATION LAYER
+================================================================================
+
+PURPOSE:
+  After on-device scoring completes and SHAP lookup runs, the app has a
+  structured explanation (machine-readable JSON). This JSON is sent to the
+  backend, which builds a prompt and calls the Groq API to convert the
+  data into plain English (or regional language) human-readable text.
+
+  The LLM returns ONLY:
+    - A plain English explanation of why the user got their score
+    - 3 personalized, actionable improvement suggestions
+
+  The LLM does NOT:
+    - Modify the credit score
+    - Modify pillar scores
+    - Store any user data
+    - Make credit decisions
+
+  The LLM output is returned to the app for display in the final report.
+  The final report assembly (PDF, UI rendering) happens on-device.
+
+--------------------------------------------------------------------------------
+5.1 WHAT HAPPENS ON-DEVICE BEFORE THE LLM CALL
+--------------------------------------------------------------------------------
+
+  STAGE 1 — SCORING (on-device):
+    All 7 pillar models run sequentially in Dart:
+      P1 → XGBoost scorer (m2cgen Dart)
+      P2 → XGBoost scorer (m2cgen Dart)
+      P3 → XGBoost scorer (m2cgen Dart)
+      P4 → XGBoost scorer (m2cgen Dart)
+      P5 → Dart Scorecard (weighted sum)
+      P6 → RandomForest scorer (m2cgen Dart)
+      P7 → Dart Scorecard (weighted sum)
+
+    Meta-learner (Logistic Regression, pure Dart dot product):
+      Input  : 7 pillar scores + work-type one-hot + interaction terms
+      Output : probability (0.0–1.0)
+      Score  : round(probability × 600) + 300 → range 300–900
+
+  STAGE 2 — SHAP LOOKUP (on-device):
+    App reads shap_lookup.json (pre-bundled in app at install)
+    For each of the 88 features:
+      - Find the feature's value bin
+      - Read pre-computed SHAP impact for that bin
+    Sort all features by |impact| descending
+    Select:
+      Top 3 positive features (highest positive SHAP impact)
+      Top 3 negative features (most negative SHAP impact)
+
+  STAGE 3 — EXPLANATION PAYLOAD BUILD (on-device):
+    App assembles the structured JSON payload
+    (defined in Section 5.2 below)
+    This payload is the ONLY thing sent to the backend
+
+--------------------------------------------------------------------------------
+5.2 EXPLANATION PAYLOAD SCHEMA (App → Backend)
+--------------------------------------------------------------------------------
+
+  ENDPOINT: POST /api/report/generate
+
+  REQUEST BODY:
+  {
+    "credit_score": 682,
+    "grade": "B",
+    "risk_level": "Medium",
+    "work_type": "platform_worker",
+    "language": "Tamil",
+    "pillar_scores": {
+      "income_stability": 72,
+      "payment_discipline": 68,
+      "debt_management": 55,
+      "savings_behaviour": 61,
+      "work_identity": 78,
+      "financial_resilience": 45,
+      "social_accountability": 60
+    },
+    "positive_factors": [
+      {
+        "feature_label": "Consistent monthly income",
+        "pillar": "Income Stability",
+        "impact": 15
+      },
+      {
+        "feature_label": "Utility bills paid on time",
+        "pillar": "Payment Discipline",
+        "impact": 12
+      },
+      {
+        "feature_label": "Bank balance growing steadily",
+        "pillar": "Savings Behaviour",
+        "impact": 9
+      }
+    ],
+    "negative_factors": [
+      {
+        "feature_label": "EMI payments high relative to income",
+        "pillar": "Debt Management",
+        "impact": -18
+      },
+      {
+        "feature_label": "No active health insurance",
+        "pillar": "Financial Resilience",
+        "impact": -10
+      },
+      {
+        "feature_label": "Low monthly savings rate",
+        "pillar": "Savings Behaviour",
+        "impact": -7
+      }
+    ],
+    "confidence_level": "High"
+  }
+
+  FIELD RULES:
+    credit_score       : integer, 300–900
+    grade              : string, one of S / A / B / C / D / E
+    risk_level         : string, one of Low / Medium / High
+    work_type          : string, one of platform_worker / vendor / tradesperson / freelancer
+    language           : string, one of English / Hindi / Tamil / Telugu / Kannada
+    pillar_scores      : object, all 7 pillars, values 0–100
+    positive_factors   : array, exactly 3 items
+    negative_factors   : array, exactly 3 items
+    feature_label      : human-readable label (NOT raw feature name like emi_to_income_ratio)
+    impact             : integer, SHAP impact magnitude (positive = positive, negative = negative)
+    confidence_level   : string, one of High / Medium / Low
+
+  WHAT IS NOT SENT:
+    - Aadhaar number
+    - PAN number
+    - Bank account number
+    - Any transaction data
+    - Raw feature values (emi_to_income_ratio: 0.72 etc.)
+    - Document images or OCR text
+
+--------------------------------------------------------------------------------
+5.3 BACKEND PROMPT BUILDER
+--------------------------------------------------------------------------------
+
+  The backend receives the payload and constructs a structured prompt
+  for the Groq API.
+
+  PROMPT TEMPLATE:
+
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │ You are a friendly financial advisor explaining a gig worker's       │
+  │ credit score in simple, clear language. Avoid technical jargon.     │
+  │ Write as if speaking directly to the user.                          │
+  │                                                                      │
+  │ USER PROFILE:                                                        │
+  │ Work Type    : {work_type_label}                                     │
+  │ Credit Score : {credit_score} out of 900                            │
+  │ Grade        : {grade}                                               │
+  │ Risk Level   : {risk_level}                                          │
+  │ Confidence   : {confidence_level}                                    │
+  │                                                                      │
+  │ SCORE BREAKDOWN:                                                     │
+  │ Income Stability       : {income_stability}/100                      │
+  │ Payment Discipline     : {payment_discipline}/100                    │
+  │ Debt Management        : {debt_management}/100                       │
+  │ Savings Behaviour      : {savings_behaviour}/100                     │
+  │ Work and Identity      : {work_identity}/100                         │
+  │ Financial Resilience   : {financial_resilience}/100                  │
+  │ Social Accountability  : {social_accountability}/100                 │
+  │                                                                      │
+  │ YOUR STRENGTHS (factors boosting your score):                       │
+  │ 1. {positive_1_label} (+{positive_1_impact} points)                 │
+  │ 2. {positive_2_label} (+{positive_2_impact} points)                 │
+  │ 3. {positive_3_label} (+{positive_3_impact} points)                 │
+  │                                                                      │
+  │ AREAS PULLING YOUR SCORE DOWN:                                      │
+  │ 1. {negative_1_label} ({negative_1_impact} points)                  │
+  │ 2. {negative_2_label} ({negative_2_impact} points)                  │
+  │ 3. {negative_3_label} ({negative_3_impact} points)                  │
+  │                                                                      │
+  │ TASK:                                                                │
+  │ 1. Write a 4–5 sentence explanation of the credit score.            │
+  │    - Start with overall performance (score + grade).                │
+  │    - Mention the top strengths specifically.                         │
+  │    - Mention the key concerns specifically.                          │
+  │    - End with an encouraging closing sentence.                       │
+  │                                                                      │
+  │ 2. Write exactly 3 personalized improvement suggestions.            │
+  │    - Each suggestion must be specific and actionable.               │
+  │    - Reference the actual concern from the negative factors.        │
+  │    - Keep each suggestion to 1–2 sentences maximum.                 │
+  │                                                                      │
+  │ OUTPUT FORMAT (strict JSON):                                         │
+  │ {                                                                    │
+  │   "explanation": "<4-5 sentence paragraph>",                        │
+  │   "suggestions": [                                                   │
+  │     "<suggestion 1>",                                               │
+  │     "<suggestion 2>",                                               │
+  │     "<suggestion 3>"                                                 │
+  │   ]                                                                  │
+  │ }                                                                    │
+  │                                                                      │
+  │ LANGUAGE: Write the entire response in {language}.                  │
+  │ DO NOT include any other text outside the JSON.                     │
+  └──────────────────────────────────────────────────────────────────────┘
+
+  work_type_label mapping:
+    platform_worker → "Delivery / Ride Partner"
+    vendor          → "Vendor / Seller"
+    tradesperson    → "Skilled Tradesperson"
+    freelancer      → "Freelancer / Creative Professional"
+
+--------------------------------------------------------------------------------
+5.4 GROQ API CALL (Backend → Groq)
+--------------------------------------------------------------------------------
+
+  Provider  : Groq (https://api.groq.com)
+  Model     : llama3-70b-8192
+  API Key   : GROQ_API_KEY (environment variable, never exposed to app)
+
+  GROQ REQUEST:
+  {
+    "model": "llama3-70b-8192",
+    "messages": [
+      {
+        "role": "user",
+        "content": "<fully constructed prompt from Section 5.3>"
+      }
+    ],
+    "temperature": 0.4,
+    "max_tokens": 600,
+    "response_format": { "type": "json_object" }
+  }
+
+  PARAMETER RATIONALE:
+    temperature 0.4 : Low randomness — consistent, professional tone
+    max_tokens 600  : Enough for 4-5 sentence explanation + 3 suggestions
+    json_object     : Forces strict JSON output, prevents free-text wrapping
+
+  GROQ RESPONSE (raw):
+  {
+    "choices": [
+      {
+        "message": {
+          "content": "{"explanation": "...", "suggestions": ["...", "...", "..."]}"
+        }
+      }
+    ]
+  }
+
+--------------------------------------------------------------------------------
+5.5 BACKEND RESPONSE FORMATTING
+--------------------------------------------------------------------------------
+
+  Backend parses the Groq response JSON.
+  Validates that explanation and suggestions fields exist.
+  Returns formatted response to app.
+
+  ENDPOINT RESPONSE (Backend → App):
+  {
+    "status": "success",
+    "language": "Tamil",
+    "explanation": "உங்கள் கிரெடிட் ஸ்கோர் 682 ஆக உள்ளது, இது B தரத்தில் உள்ளது...",
+    "suggestions": [
+      "உங்கள் மாதாந்திர EMI செலுத்துதல்களை குறைக்க, அதிக வட்டி கடன்களை முதலில் அடைக்க முயற்சி செய்யுங்கள்.",
+      "ஒரு உடல்நல காப்பீட்டு திட்டம் எடுங்கள் — இது உங்கள் நிதி நெகிழ்வு மதிப்பை 10+ புள்ளிகள் மேம்படுத்தும்.",
+      "மாதாந்திர வருமானத்தில் குறைந்தது 10% RD அல்லது SIP மூலம் சேமியுங்கள்."
+    ],
+    "model_used": "llama3-70b-8192",
+    "generated_at": "2026-04-24T16:43:00Z"
+  }
+
+--------------------------------------------------------------------------------
+5.6 WHAT HAPPENS ON-DEVICE AFTER LLM RESPONSE
+--------------------------------------------------------------------------------
+
+  The app receives the LLM response and:
+
+  STEP 1 — Validate response:
+    Check status == "success"
+    Check explanation is non-empty string
+    Check suggestions is array of exactly 3 items
+    If validation fails → use fallback template (see Section 6)
+
+  STEP 2 — Merge with on-device score data:
+    The app already has:
+      - Credit score (300–900)
+      - Grade and risk band
+      - 7 pillar score values
+      - Top 3 positive SHAP factors
+      - Top 3 negative SHAP factors
+    The LLM adds:
+      - explanation text (human-readable narrative)
+      - suggestions array (3 actionable items)
+
+  STEP 3 — Assemble final report object:
+    FinalReport = {
+      score data (on-device),
+      pillar breakdown (on-device),
+      SHAP factors (on-device),
+      explanation (LLM via backend),
+      suggestions (LLM via backend)
+    }
+
+  STEP 4 — Render on screen and PDF:
+    The Flutter UI renders the final report
+    User can export as PDF
+    PDF generation happens entirely on-device
+    NOTHING from the final report is sent back to the server
+
+  THE LLM OUTPUT IS THE FINAL PIECE.
+  THE BACKEND IS NOT INVOLVED IN FINAL REPORT ASSEMBLY.
+  THE BACKEND IS NOT INVOLVED IN PDF GENERATION.
+
+================================================================================
+SECTION 6 — FALLBACK RULES
+================================================================================
+
+FALLBACK SCENARIO 1 — LLM API UNAVAILABLE (No Internet):
+  App detects network error before sending to /api/report/generate
+  App uses bundled English template strings:
+    Template: "Your credit score is {score} (Grade {grade}, {risk_level} Risk).
+               Your strengths include {pos1} and {pos2}. The main areas to
+               improve are {neg1} and {neg2}. Work on reducing your debt burden
+               and building savings to improve your score."
+  Suggestions use pre-written template per negative factor
+
+FALLBACK SCENARIO 2 — GROQ API TIMEOUT (Server has internet, Groq does not respond):
+  Backend waits max 8 seconds for Groq response
+  If timeout → backend returns:
+    { "status": "fallback", "explanation": "<template text>", "suggestions": [...] }
+  App receives this and renders the template version
+  User does not see an error — just a slightly simpler explanation
+
+FALLBACK SCENARIO 3 — GROQ RETURNS INVALID JSON:
+  Backend catches JSON parse error
+  Backend constructs explanation from template using the input payload
+  Returns template response with status "fallback"
+
+FALLBACK SCENARIO 4 — VERIFICATION API UNAVAILABLE:
+  App retries up to 3 times with 2-second delay
+  After 3 failures → show user: "Verification service temporarily unavailable.
+  Your progress is saved. Please try again in a few minutes."
+  Step marked as PENDING_VERIFICATION
+  On retry → resume from same step, no data loss
+
+================================================================================
+SECTION 7 — MONGODB COLLECTIONS (SIMULATED DATABASE)
+================================================================================
+
+  otp_db:
+    { mobile, otp, created_at, expires_at, verified }
+
+  aadhaar_db:
+    { aadhaar, name, dob, state, pin, status }
+
+  pan_db:
+    { pan, name, dob, pan_active, itr_filed, itr_years }
+
+  ifsc_db:
+    { ifsc, bank_name, branch_name, city, state }
+
+  bank_accounts_db:
+    { account_number, ifsc, account_holder, account_type, account_active }
+
+  loan_accounts_db:
+    { account_number, has_active_loans, loans: [{type, emi_amount, remaining_months}] }
+
+  vehicle_rc_db:
+    { vehicle_number, owner_name, vehicle_class, chassis_number,
+      engine_number, registration_date, rc_expiry, fitness_expiry }
+
+  eshram_db:
+    { uan, name, worker_category, registration_date, status }
+
+  pmsym_db:
+    { uan, status, months_contributed, last_contribution_date }
+
+  insurance_db:
+    { policy_number, policy_type, policy_holder, insurer,
+      sum_insured, premium_annual, policy_start, policy_expiry,
+      vehicle_number (for vehicle policies) }
+
+  NO USER DOCUMENTS ARE STORED IN ANY COLLECTION.
+  NO BANK TRANSACTION DATA IS STORED.
+  NO FEATURE VECTORS OR SHAP DATA IS STORED.
+  REPORT LOGS STORE ONLY: hashed_device_id, timestamp, language, status.
+
+================================================================================
+SECTION 8 — WHAT BACKEND STORES (LOGGING ONLY)
+================================================================================
+
+  The backend maintains a report_logs collection for monitoring only:
+
+  report_logs:
+    {
+      log_id: <uuid>,
+      hashed_device_id: <SHA256 of device fingerprint>,
+      request_timestamp: <ISO 8601>,
+      language: "Tamil",
+      model_used: "llama3-70b-8192",
+      response_status: "success" | "fallback" | "error",
+      response_time_ms: 820
+    }
+
+  NO credit score is stored in logs.
+  NO pillar scores are stored in logs.
+  NO user name, Aadhaar, PAN, or any identifier is stored in logs.
+  Logs are for operational monitoring only (latency, error rates).
+
+================================================================================
+SECTION 9 — ERROR CODES REFERENCE
+================================================================================
+
+  HTTP 200 — Success
+  HTTP 400 — Bad Request (invalid input format)
+  HTTP 401 — Unauthorized (HMAC mismatch or invalid API key)
+  HTTP 404 — Record not found (identifier not in database)
+  HTTP 422 — Validation Error (missing required fields)
+  HTTP 429 — Too Many Requests (rate limit exceeded)
+  HTTP 500 — Internal Server Error (unexpected failure)
+  HTTP 503 — Service Unavailable (Groq API down)
+
+  All error responses follow this format:
+  {
+    "error": "<error_code>",
+    "message": "<human readable description>",
+    "timestamp": "<ISO 8601>"
+  }
+
+================================================================================
+SECTION 10 — PERFORMANCE TARGETS
+================================================================================
+
+  Verification API endpoints  : 50–150 ms per call
+  /api/report/generate        : 800–2000 ms total
+    - Prompt build            : < 10 ms
+    - Groq API call           : 700–1800 ms
+    - Response parse          : < 10 ms
+  OTP send                    : < 200 ms
+  OTP verify                  : < 50 ms
+
+  SERVER UPTIME TARGET        : 99.5% (demo/production)
+  MAX CONCURRENT REQUESTS     : 100 (single Docker instance)
+
+================================================================================
+SECTION 11 — COMPLETE END-TO-END FLOW SUMMARY
+================================================================================
+
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │                     GIGCREDIT FULL SYSTEM FLOW                     │
+  └─────────────────────────────────────────────────────────────────────┘
+
+  [USER OPENS APP]
+         │
+         ▼
+  [STEP 1] User enters profile + mobile number
+         │ App → POST /auth/otp/send → Server
+         │ User enters OTP
+         │ App → POST /auth/otp/verify → Server
+         │ OTP verified ✓
+         ▼
+  [STEP 2] User uploads Aadhaar + PAN + Selfie
+         │ On-device: OCR extracts fields
+         │ App → POST /gov/aadhaar/verify → Server
+         │ App → POST /gov/pan/verify → Server
+         │ On-device: Name cross-match, face match
+         │ Identity verified ✓
+         ▼
+  [STEP 3] User uploads bank statement
+         │ On-device: PDF parsed, transactions extracted (entirely on-device)
+         │ App → POST /bank/ifsc/verify → Server
+         │ App → POST /bank/account/verify → Server
+         │ App → POST /bank/loan/check → Server
+         │ On-device: All transaction analysis, EMI detection, feature computation
+         │ Bank verified ✓
+         ▼
+  [STEP 4] User uploads utility bills
+         │ On-device: OCR extracts all bill data
+         │ On-device: Cross-check bill amounts vs bank debits
+         │ NO backend call in Step 4
+         │ Utility evidence verified ✓
+         ▼
+  [STEP 5] Work proof (dynamic per work type)
+         │ On-device: OCR extracts work documents
+         │ Platform Workers → App → POST /gov/vehicle/rc/verify → Server
+         │ Vendors, Tradespeople, Freelancers → NO backend call
+         │ Work identity verified ✓
+         ▼
+  [STEP 6] Government scheme verification
+         │ App → POST /gov/eshram/verify → Server
+         │ App → POST /gov/pmsym/verify → Server
+         │ On-device: Social signals stored in VerifiedProfile
+         │ Scheme signals verified ✓
+         ▼
+  [STEP 7] Insurance verification
+         │ App → POST /gov/insurance/policy/verify → Server (1–3 calls)
+         │ On-device: Policy cross-check vs Aadhaar name, vehicle number
+         │ Insurance verified ✓
+         ▼
+  [ON-DEVICE SCORING]
+         │ Feature engineering → 88 features (7 pillars)
+         │ NaN sanitization
+         │ P1–P4 → XGBoost m2cgen Dart scorers
+         │ P5, P7 → Dart Scorecards
+         │ P6 → RandomForest m2cgen Dart scorer
+         │ Meta-learner → Logistic Regression dot product
+         │ Final score: 300–900
+         │ Grade + Risk Band assigned
+         ▼
+  [ON-DEVICE SHAP LOOKUP]
+         │ shap_lookup.json (bundled in app)
+         │ 88 features → SHAP impact values
+         │ Top 3 positive + Top 3 negative selected
+         │ feature_label (human-readable) assigned per feature
+         ▼
+  [ON-DEVICE PAYLOAD BUILD]
+         │ Assemble Explanation JSON (Section 5.2)
+         │ No raw data, no identifiers, no transactions
+         ▼
+  [APP → BACKEND]
+         │ POST /api/report/generate
+         │ HMAC-signed + API key authenticated
+         ▼
+  [BACKEND PROMPT BUILD]
+         │ Fill prompt template with payload fields
+         │ Set language from payload
+         ▼
+  [BACKEND → GROQ API]
+         │ POST to Groq (llama3-70b-8192)
+         │ temperature=0.4, max_tokens=600, json_object mode
+         ▼
+  [GROQ RETURNS RESPONSE]
+         │ { "explanation": "...", "suggestions": ["...", "...", "..."] }
+         ▼
+  [BACKEND VALIDATES + FORMATS]
+         │ Parse JSON, validate fields
+         │ Return formatted response to app
+         ▼
+  [BACKEND → APP]
+         │ { "status": "success", "explanation": "...", "suggestions": [...] }
+         ▼
+  [ON-DEVICE — FINAL REPORT ASSEMBLY]
+         │ Merge: score + pillars + SHAP + LLM explanation + suggestions
+         │ Final Report object assembled
+         ▼
+  [ON-DEVICE — RENDER + PDF]
+         │ Flutter UI renders report screen
+         │ User can export as PDF (on-device PDF generation)
+         │ Report displayed to user ✓
+
+  END OF FLOW.
+  The backend is not involved after returning the LLM response.
+  All final report assembly, rendering, and PDF export are on-device.
+
+================================================================================
+END OF BACKEND SERVER SPECIFICATION
+VERSION 1.0 — GigCredit
+================================================================================

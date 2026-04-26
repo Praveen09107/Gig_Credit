@@ -1,0 +1,2821 @@
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                ║
+║         GIGCREDIT — MASTER VERIFICATION & VALIDATION SPECIFICATION            ║
+║         Complete 9-Step Onboarding Workflow | All Steps | Final Version       ║
+║                                                                                ║
+║         Platform    : GigCredit (Gig Worker Credit Scoring System)            ║
+║         Architecture: On-Device Validation + Server-Side Verification         ║
+║         ML Pillars  : P1 Income | P2 Discipline | P3 Debt | P4 Savings        ║
+║                       P5 Identity | P6 Resilience | P7 Social Accountability  ║
+║         Final Output: Credit Score 300–900 (Meta-Learner: Logistic Regression)║
+║                                                                                ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+DOCUMENT PURPOSE
+────────────────
+This master file contains the complete verification and validation specification
+for all 9 steps of the GigCredit onboarding workflow. Each step defines:
+  1. Inputs collected from the user
+  2. Individual field-level validation rules (on-device)
+  3. API verification (government simulation via FastAPI + MongoDB)
+  4. OCR extraction fields
+  5. Cross-internal validation (within the same step)
+  6. Bank transaction cross-check (against Step-3 canonical CSV)
+  7. Global validation (cross-step consistency with verified profile)
+  8. ML features produced per step
+
+VALIDATION ARCHITECTURE (HYBRID):
+  On-Device  : Individual validation, OCR extraction, cross-internal checks
+  Server-Side: Government API simulations, bank penny drop, IFSC verification
+  No step proceeds without passing all HARD FAIL validations.
+  Soft flags are recorded as negative scoring signals but do NOT block the user.
+
+STEP OVERVIEW:
+╔═════╦════════════════════════════════╦════════════╦══════════════════════════╗
+║ Step║ Name                           ║ Mandatory  ║ Pillar                   ║
+╠═════╬════════════════════════════════╬════════════╬══════════════════════════╣
+║  1  ║ Basic Profile Information      ║ 11 inputs  ║ P5 Identity + Initializer║
+║  2  ║ Identity & KYC Verification    ║ 6 inputs   ║ P5 Identity              ║
+║  3  ║ Bank Account Verification      ║ 6 inputs   ║ P1 P2 P3 P4              ║
+║  4  ║ Utility Bill Verification      ║ 18 uploads ║ P2 Payment Discipline    ║
+║  5  ║ Gig Work Proof (Dynamic)       ║ 2-8 inputs ║ P1 Income + P5           ║
+║  6  ║ Government Scheme Verification ║ Optional   ║ P7 Social Accountability ║
+║  7  ║ Insurance Coverage             ║ 0-1 inputs ║ P6 Financial Resilience  ║
+║  8  ║ ITR & GST Records              ║ Optional   ║ P1 P6 P7                 ║
+║  9  ║ EMI & Loan Obligations         ║ 4 inputs   ║ P3 Debt Management       ║
+╚═════╩════════════════════════════════╩════════════╩══════════════════════════╝
+
+TOTAL INPUTS ACROSS ALL STEPS : 84
+TOTAL ML FEATURES PRODUCED    : 89
+HARD FAIL VALIDATIONS         : ~60+ across all steps
+SOFT FLAG VALIDATIONS         : ~30+ across all steps
+GOVERNMENT APIS SIMULATED     : 18 endpoints (FastAPI + MongoDB)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                              [ STEP 1 OF 9 ]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║  STEP-1 — BASIC PROFILE INFORMATION                                            ║
+║  Pillar: P5 Identity & Demographics | Global Profile Initializer               ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+PURPOSE
+-------
+Collect the user's basic identity and work category. This step initializes the
+global profile object and determines which workflow appears in Step-5.
+This step is entirely form-based — no document uploads occur here.
+
+===========================================================================
+INPUTS — STEP-1 (13 TOTAL | Mandatory: 11 | Optional: 2)
+===========================================================================
+
+#  | Field                        | Format               | Mandatory
+---|------------------------------|----------------------|-----------
+1  | Full Name                    | Text (alpha+spaces)  | Required
+2  | Date of Birth                | Date (DD-MM-YYYY)    | Required
+3  | Mobile Number                | 10-digit numeric     | Required
+4  | Current Address              | Multi-line text      | Required
+5  | Permanent Address            | Multi-line text      | Required
+6  | State of Residence           | Dropdown (28+8 list) | Required
+7  | Work Type                    | Single select (4)    | Required
+8  | Self-Declared Monthly Income | Number (₹)           | Required
+9  | Years in Current Profession  | Number (0-40)        | Required
+10 | Number of Dependents         | Number (0-10)        | Required
+11 | Vehicle Ownership            | Yes / No             | Required
+12 | Secondary Income Source      | Text / Dropdown      | Optional
+13 | Secondary Income Amount (₹)  | Number               | Optional
+
+Work Type Options: Platform Worker | Vendor/Seller | Skilled Tradesperson | Freelancer
+
+===========================================================================
+INDIVIDUAL VALIDATION — STEP-1
+===========================================================================
+
+Field                   | Rule                                               | Blocking
+------------------------|----------------------------------------------------|---------
+Full Name               | Alpha + spaces only; min 3 chars; no numbers       | HARD FAIL
+Date of Birth           | Valid date; age must be 18–65                      | HARD FAIL
+Mobile Number           | Exactly 10 digits; must start with 6, 7, 8, or 9  | HARD FAIL
+Current Address         | Min 10 characters                                  | HARD FAIL
+Permanent Address       | Min 10 characters                                  | HARD FAIL
+State of Residence      | Must be valid Indian state/UT from dropdown        | HARD FAIL
+Work Type               | Must select exactly one of 4 valid options         | HARD FAIL
+Monthly Income          | Positive integer > 0                               | HARD FAIL
+Years in Profession     | Non-negative integer 0–40                          | HARD FAIL
+Number of Dependents    | Non-negative integer 0–10                          | HARD FAIL
+Vehicle Ownership       | Must be Yes or No                                  | HARD FAIL
+Secondary Income Amount | Positive if Secondary Income Source provided       | Soft flag
+
+===========================================================================
+CROSS-INTERNAL VALIDATION — STEP-1
+===========================================================================
+
+Check                                               | Rule              | Blocking
+----------------------------------------------------|-------------------|---------
+Current Address vs Permanent Address                | If identical →    | None
+                                                    | address_type=same |
+                                                    | else different    |
+Monthly Income vs Years in Profession               | Sanity check:     | Soft flag
+                                                    | if years=0 and    |
+                                                    | income > ₹1L flag |
+
+===========================================================================
+GLOBAL PROFILE INITIALIZATION — STEP-1
+===========================================================================
+
+After Step-1 validation passes, global profile object created on device:
+
+verified_profile = {
+  "name"              : "Ravi Kumar",
+  "dob"               : "1997-06-12",
+  "age"               : 27,
+  "mobile"            : "9876543210",
+  "current_address"   : "No 14, Anna Nagar, Chennai",
+  "permanent_address" : "Madurai, Tamil Nadu",
+  "state"             : "Tamil Nadu",
+  "work_type"         : "platform_worker",
+  "monthly_income"    : 22000,
+  "years_profession"  : 3,
+  "dependents"        : 2,
+  "has_vehicle"       : true,
+  "secondary_income"  : 5000
+}
+
+DYNAMIC TRIGGERS FROM STEP-1:
+  Work Type      → Determines entire Step-5 layout + P1 feature engineering
+  Vehicle Ownership = Yes → Vehicle Insurance REQUIRED in Step-7
+  Vehicle Ownership = No  → Vehicle Insurance OPTIONAL in Step-7
+  State of Residence → state_median_income anchor for all bank feature ratios
+
+TECHNICAL FLOW:
+  User opens Step-1 → enters profile details → selects work type + vehicle ownership
+  → Individual validation → Cross-internal validation → Global profile created
+  → Step-1 Status = VERIFIED → Proceed to Step-2
+
+OUTPUT: Step-1 Status = VERIFIED
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                              [ STEP 2 OF 9 ]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║  STEP-2 — IDENTITY AND KYC VERIFICATION                                        ║
+║  Pillar: P5 Identity Verification | APIs: UIDAI + Income Tax + MobileFaceNet   ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+PURPOSE
+-------
+Verify the user's government-issued identity documents. Confirm the person
+physically present matches the identity on file using face matching.
+
+===========================================================================
+INPUTS — STEP-2 (6 TOTAL | All Mandatory)
+===========================================================================
+
+#  | Field                    | Format                  | Mandatory
+---|--------------------------|-------------------------|-----------
+1  | Aadhaar Number           | 12-digit numeric        | Required
+2  | Aadhaar Card Front       | JPG / PNG (camera/gallery)| Required
+3  | Aadhaar Card Back        | JPG / PNG (camera/gallery)| Required
+4  | PAN Number               | 10-char ABCDE1234F fmt  | Required
+5  | PAN Card Photo           | JPG / PNG               | Required
+6  | Live Selfie              | Camera capture ONLY     | Required
+
+UI BEHAVIOUR: Document uploads are DISABLED until number is verified via API.
+Aadhaar photo enabled only after UIDAI API + OTP success.
+PAN card enabled only after Income Tax API success.
+Selfie: camera-only (no gallery) to ensure physical presence.
+
+===========================================================================
+AADHAAR VERIFICATION
+===========================================================================
+
+STEP 1 — API VERIFICATION (UIDAI Simulation)
+  Endpoint  : POST /verify-aadhaar
+  MongoDB   : aadhaar_db
+  Request   : { "aadhaar_number": "123456789123" }
+  Response  : { "name": "Ravi Kumar", "dob": "1995-05-15",
+                "mobile": "9876543210", "status": "active" }
+  On success: OTP sent → user enters OTP → OTP validated
+              Aadhaar card upload enabled
+
+STEP 2 — OCR EXTRACTION (Aadhaar Front)
+  full_name | date_of_birth | aadhaar_number | photo
+
+STEP 3 — OCR EXTRACTION (Aadhaar Back)
+  full_address | state | pin_code
+
+INDIVIDUAL VALIDATION — AADHAAR
+  Field          | Rule                                   | Blocking
+  ---------------|----------------------------------------|---------
+  Aadhaar Number | 12-digit format                        | HARD FAIL
+  OCR Name       | Must match API name (fuzzy ≥ 90%)      | HARD FAIL
+  OCR DOB        | Must match API DOB (exact)             | HARD FAIL
+  OCR Aadhaar No | Must match user-entered number         | HARD FAIL
+
+===========================================================================
+PAN VERIFICATION
+===========================================================================
+
+STEP 1 — API VERIFICATION (Income Tax Dept Simulation)
+  Endpoint  : POST /verify-pan
+  MongoDB   : pan_db
+  Request   : { "pan": "ABCDE1234F" }
+  Response  : { "name": "Ravi Kumar", "dob": "1995-05-15", "status": "Active" }
+  On success: PAN card upload enabled
+
+STEP 2 — OCR EXTRACTION (PAN Card)
+  full_name | pan_number | date_of_birth | father_name | photo
+
+INDIVIDUAL VALIDATION — PAN
+  Field          | Rule                                   | Blocking
+  ---------------|----------------------------------------|---------
+  PAN Number     | 10-char ABCDE1234F regex               | HARD FAIL
+  OCR Name       | Must match API name (fuzzy ≥ 90%)      | HARD FAIL
+  OCR DOB        | Must match API DOB (exact)             | HARD FAIL
+  OCR PAN No     | Must match user-entered PAN            | HARD FAIL
+
+===========================================================================
+CROSS-INTERNAL VALIDATION — STEP-2
+===========================================================================
+
+Field       | Aadhaar          | PAN              | Rule
+------------|------------------|------------------|--------------------
+Name        | Ravi Kumar       | Ravi Kumar       | Fuzzy match ≥ 85%  → HARD FAIL if < 85%
+DOB         | 1995-05-15       | 1995-05-15       | Exact match        → HARD FAIL if mismatch
+
+===========================================================================
+FACE VERIFICATION — MobileFaceNet (On-Device)
+===========================================================================
+
+  Comparisons:
+    Selfie ↔ Aadhaar front photo : similarity score threshold ≥ 0.75
+    Selfie ↔ PAN card photo      : secondary check ≥ 0.70
+  If below threshold → face_verified = false → Step-2 FAILS
+
+===========================================================================
+GLOBAL VALIDATION — STEP-2
+===========================================================================
+
+  Field          | Compared Against     | Blocking
+  ---------------|----------------------|---------
+  Aadhaar Name   | Step-1 Full Name     | Soft flag (fuzzy ≥ 85%)
+  Aadhaar Back   | Step-1 Current Addr  | Soft flag (state match)
+
+Global profile update:
+  verified_profile.identity = { "name": "Ravi Kumar", "dob": "1995-05-15" }
+  verified_profile.verification_status = {
+    "aadhaar_verified": true,
+    "pan_verified"    : true,
+    "face_verified"   : true
+  }
+
+TECHNICAL FLOW:
+  Enter Aadhaar → UIDAI API → OTP → upload front+back → OCR → validate
+  Enter PAN → IT API → upload card → OCR → validate
+  Cross-internal: name+DOB match Aadhaar vs PAN
+  Selfie capture → MobileFaceNet → face match
+  Global: identity vs Step-1 → profile updated
+
+OUTPUT: Step-2 Status = VERIFIED
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                              [ STEP 3 OF 9 ]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║  STEP-3 — BANK ACCOUNT VERIFICATION                                            ║
+║  Pillar: P1 Income | P2 Payment Discipline | P3 Debt | P4 Savings              ║
+║  APIs: RBI IFSC Dataset + Penny Drop Simulation                                ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+PURPOSE
+-------
+Collect and verify bank account details and 6-month transaction history.
+The bank statement is the most data-rich input — produces majority of P1-P4 features.
+
+===========================================================================
+INPUTS — STEP-3 (17 TOTAL | Mandatory: 6 | Optional: 11)
+===========================================================================
+
+PRIMARY BANK (Required):
+  1  | Bank Name             | Dropdown/text          | Required
+  2  | Account Holder Name   | Text                   | Required
+  3  | Branch Name           | Text                   | Required
+  4  | IFSC Code             | 11-char alphanumeric   | Required
+  5  | Account Number        | 9-18 digit numeric     | Required
+  6  | Bank Statement PDF    | PDF (6-12 months)      | Required
+  7  | MICR Code             | 9-digit numeric        | Optional
+
+SECONDARY BANK (Optional module — same 7 fields):
+  8  | Enable Secondary Toggle    | Yes/No              | Optional
+  9-14| Same 7 fields as primary  | Same formats        | Conditional
+  15 | Secondary MICR Code        | 9-digit numeric     | Optional
+
+UPI SECTION (Optional):
+  16 | UPI Platform          | Dropdown               | Optional
+  17 | UPI Statement PDF     | PDF                    | Optional
+
+===========================================================================
+IFSC VERIFICATION
+===========================================================================
+
+  Endpoint  : POST /verify-ifsc
+  MongoDB   : ifsc_db (RBI IFSC Dataset)
+  Request   : { "ifsc": "HDFC0001234" }
+  Response  : { "bank_name": "HDFC Bank", "branch": "Anna Nagar", "city": "Chennai" }
+
+  INDIVIDUAL VALIDATION — IFSC:
+  Field      | Rule                              | Blocking
+  -----------|-----------------------------------|---------
+  IFSC Code  | 11 chars; first 4 alpha + 0 + 6   | HARD FAIL
+  Bank Name  | Must match API bank_name          | HARD FAIL
+
+===========================================================================
+ACCOUNT VERIFICATION — PENNY DROP SIMULATION
+===========================================================================
+
+  Endpoint  : POST /verify-bank-account
+  MongoDB   : bank_accounts_db
+  Request   : { "account_number": "1234567890", "ifsc": "HDFC0001234" }
+  Response  : { "account_exists": true, "is_active": true,
+                "account_holder_name": "Ravi Kumar", "bank_name": "HDFC Bank" }
+
+  INDIVIDUAL VALIDATION — ACCOUNT:
+  Field                | Rule                              | Blocking
+  ---------------------|-----------------------------------|---------
+  Account Holder Name  | User input vs API (fuzzy ≥ 85%)  | HARD FAIL
+  Bank Name            | User input vs API (exact)         | HARD FAIL
+  Account Status       | Must be Active                    | HARD FAIL
+
+===========================================================================
+BANK STATEMENT VALIDATION
+===========================================================================
+
+  STATEMENT PERIOD RULES:
+    duration = to_date − from_date ≥ 6 months  → HARD FAIL if shorter
+    current_date − to_date ≤ 30 days            → HARD FAIL if stale
+
+  OCR EXTRACTION FROM STATEMENT:
+    bank_name | account_holder | account_number | ifsc | micr
+    statement_from_date | statement_to_date
+    transaction_table: [ date | amount | cr/dr | narration | balance | mode ]
+
+  TRANSACTION CATEGORISATION (per transaction):
+    INCOME_SALARY | INCOME_GIG | INCOME_UPI | INCOME_CASH
+    EMI | UTILITY | RENT | FOOD | FUEL | ATM | TRANSFER | OTHER
+
+CROSS-INTERNAL VALIDATION — STEP-3:
+  Field          | Statement      | Verified Data  | Blocking
+  ---------------|----------------|----------------|---------
+  Bank Name      | HDFC Bank      | HDFC Bank      | HARD FAIL
+  Account Holder | Ravi Kumar     | Ravi Kumar     | HARD FAIL
+  IFSC Code      | HDFC0001234    | HDFC0001234    | HARD FAIL
+  Account Number | 1234567890     | 1234567890     | HARD FAIL
+
+UPI CROSS-CHECK:
+  UPI mobile number → must match Step-1 mobile number
+  UPI credits → cross-validated against bank statement credits
+
+SECONDARY BANK:
+  Same pipeline as primary
+  Deduplication: same date ±1 day + same amount ±₹5 → remove duplicate
+  Merged canonical transaction CSV produced
+
+GLOBAL VALIDATION — STEP-3:
+  Account Holder Name vs Step-2 Aadhaar Name (fuzzy ≥ 85%) → Soft flag
+
+Global profile update:
+  verified_profile.bank_verified = true
+  verified_profile.income_features = [extracted_transaction_features]
+  verified_profile.canonical_csv = [merged_transaction_dataset]
+
+OUTPUT: Step-3 Status = VERIFIED
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                              [ STEP 4 OF 9 ]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║  STEP-4 — UTILITY BILL VERIFICATION                                            ║
+║  Pillar: P2 Payment Discipline | APIs: EB + LPG government simulation          ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+PURPOSE
+-------
+Evaluate payment discipline through 6 months of recurring household bills.
+Bills are cross-referenced against Step-3 bank statement to confirm actual payment.
+
+===========================================================================
+INPUTS — STEP-4
+===========================================================================
+
+MANDATORY (18 uploads):
+  Electricity Bills  : 6 bills (JPG/PNG/PDF per bill)
+  LPG/Gas Bills      : 6 bills (JPG/PNG/PDF per bill)
+  Mobile/Phone Bills : 6 bills (JPG/PNG/PDF per bill)
+
+CONDITIONAL:
+  Rent Proof         : Option A = Rental Agreement (1 doc)
+                       Option B = 6 Monthly Rent Receipts
+                       Option C = Bank Auto-Detection (no upload)
+
+OPTIONAL (score boost):
+  WiFi/Broadband Bills     : Up to 6 bills
+  OTT Subscription Bills   : Any number of screenshots/PDFs
+
+===========================================================================
+ELECTRICITY BILL VERIFICATION
+===========================================================================
+
+  API: POST /gov/eb/verify
+  Request : { "service_number": "0119400742" }
+  Response: { "valid": true, "connection_status": "Active" }
+
+  OCR FIELDS (per bill):
+    service_number | bill_date | payment_date | amount_paid | payment_mode
+
+  INDIVIDUAL VALIDATION (per bill):
+    service_number OCR vs API : must match exactly         → HARD FAIL
+    connection_status         : must be Active             → HARD FAIL
+    consumer_name             : NOT VALIDATED              → (landlord name may appear)
+    amount_paid               : must be > 0               → HARD FAIL
+
+  BANK CROSS-CHECK:
+    transaction_date = bill_payment_date (± 3 days)
+    transaction_amount = bill_amount (± ₹10)
+
+  CROSS-INTERNAL:
+    Service number must be IDENTICAL across all 6 bills   → HARD FAIL if differs
+
+===========================================================================
+LPG / GAS BILL VERIFICATION
+===========================================================================
+
+  API: POST /gov/lpg/verify
+  Request : { "consumer_number": "45678912", "provider": "Indane" }
+  Response: { "valid": true, "consumer_name": "Ravi Kumar", "connection_status": "Active" }
+
+  OCR FIELDS (per bill):
+    consumer_number | consumer_name | provider_name | order_date | amount | order_status
+
+  INDIVIDUAL VALIDATION:
+    consumer_number OCR vs API : must match              → HARD FAIL
+    consumer_name OCR vs API   : fuzzy ≥ 80%             → HARD FAIL
+    provider_name              : must be Indane/HP/Bharat → HARD FAIL
+
+  BANK CROSS-CHECK:
+    LPG payments can be CASH — bank match is OPTIONAL (not mandatory)
+    If bank match found → additional positive signal
+    If no bank match   → bill still accepted
+
+  CROSS-INTERNAL:
+    Consumer number IDENTICAL across all 6 bills          → HARD FAIL if differs
+
+===========================================================================
+MOBILE / PHONE BILL VERIFICATION
+===========================================================================
+
+  No API for telecom verification.
+
+  OCR FIELDS (per bill):
+    mobile_number | provider_name | bill_month | plan_type | amount_due
+
+  INDIVIDUAL VALIDATION:
+    mobile_number  : must be exactly 10 digits            → HARD FAIL
+    provider_name  : Jio / Airtel / Vi / BSNL / MTNL     → Soft flag
+    amount_due     : must be > 0                          → HARD FAIL
+
+  BANK CROSS-CHECK:
+    transaction_date = bill_due_date (± 5 days)
+    transaction_amount = bill_amount (± ₹20)
+    narration contains provider name keywords
+
+  CROSS-INTERNAL:
+    Mobile number IDENTICAL across all 6 bills            → HARD FAIL if differs
+
+===========================================================================
+RENT PROOF VERIFICATION (CONDITIONAL)
+===========================================================================
+
+  Shown only if user indicates renter status.
+
+  Option A — Rental Agreement:
+    OCR: tenant_name | landlord_name | property_address | agreement_date
+         stamp_paper_value | stamp_number | property_type
+    Validation: tenant_name vs Step-1 name; property_address vs Step-1 address
+
+  Option B — 6 Rent Receipts:
+    OCR per receipt: tenant_name | receipt_number | date | rent_amount
+                     rental_period | property_address | payment_method
+    Validation: receipt_number unique x6; rent_amount consistent x6
+
+  Option C — Bank Auto-Detection (no upload):
+    System detects RENT / HOUSE RENT / HRA / LANDLORD in Step-3 narrations
+    If found → rent_auto_detected = true; no upload required
+
+===========================================================================
+OPTIONAL UTILITIES
+===========================================================================
+
+  WiFi/Broadband:
+    OCR: account_id | customer_name | invoice_date | amount | provider
+    Cross-internal: account_id identical across all 6 bills
+    Bank cross-check: payment vs Step-3
+
+  OTT Subscriptions (Netflix / Amazon Prime / Disney+):
+    OCR: platform | payment_date | amount
+    Validation: monthly recurring pattern
+    Bank cross-check: subscription debit vs Step-3
+
+===========================================================================
+GLOBAL VALIDATION — STEP-4
+===========================================================================
+
+  After all 6 bills per utility pass cross-internal validation:
+    Utility identifiers (service/consumer/mobile numbers) consistent
+    Payment frequency consistent across months
+    At least 3 mandatory utilities verified (EB + Gas + Mobile)
+
+  verified_profile.utilities = {
+    "electricity_verified": true,
+    "lpg_verified"        : true,
+    "mobile_verified"     : true,
+    "rent_verified"       : true,
+    "wifi_verified"       : false,
+    "ott_verified"        : false
+  }
+
+OUTPUT: Step-4 Status = VERIFIED
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                              [ STEP 5 OF 9 ]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║  STEP-5 — GIG WORK PROOF VERIFICATION (DYNAMIC BY WORK TYPE)                  ║
+║  Pillar: P1 Income Stability | P5 Identity | Dynamic: 4 layouts               ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+PURPOSE
+-------
+Verify the user's occupation, work history, and work-specific income sources.
+This step is ENTIRELY RECONFIGURED based on Work Type selected in Step-1.
+All inputs are optional — but if provided, they MUST pass verification.
+
+Layout mapping:
+  Platform Worker    → Layout 5A (10 inputs | Mandatory: 8)
+  Vendor / Seller    → Layout 5B (7 inputs  | Mandatory: 3)
+  Skilled Tradesperson→ Layout 5C (6 inputs  | Mandatory: 3)
+  Freelancer         → Layout 5D (7 inputs  | Mandatory: 2)
+
+===========================================================================
+LAYOUT 5A — PLATFORM WORKER
+===========================================================================
+
+INPUTS:
+  1  | Vehicle Registration Number   | Alphanumeric       | Required
+  2  | RC Book Front Page             | JPG/PNG            | Required
+  3  | Driving Licence Front          | JPG/PNG            | Required
+  4  | Driving Licence Back           | JPG/PNG            | Required
+  5  | Vehicle Insurance Certificate  | JPG/PNG/PDF        | Required
+  6  | Platform Earning Screenshot M1 | Screenshot JPG/PNG | Required
+  7  | Platform Earning Screenshot M2 | Screenshot JPG/PNG | Required
+  8  | Platform Earning Screenshot M3 | Screenshot JPG/PNG | Required
+  9  | 2nd Platform App Screenshot    | Screenshot         | Optional
+  10 | 3rd Platform App Screenshot    | Screenshot         | Optional
+
+API VERIFICATION:
+  RC Check      : POST /gov/vehicle/rc-check      → rc_status, owner_name, validity
+  Insurance     : POST /gov/vehicle/insurance-check → policy_number, status, expiry
+  Transport API : DL validity + vehicle class match
+
+OCR EXTRACTION:
+  RC Book    : vehicle_number | owner_name | registration_date | validity
+               chassis_number | engine_number | vehicle_class
+  DL Front   : dl_number | holder_name | dob | validity
+  DL Back    : vehicle_classes_authorised | validity_dates
+  Insurance  : policy_number | vehicle_number | insurer | expiry | status
+  Screenshot : monthly_earnings | trips_count | platform_rating | account_name
+               member_since | bank_deposited | platform_name
+
+INDIVIDUAL VALIDATION:
+  Vehicle Number : OCR vs API (exact match)              → HARD FAIL
+  Policy Number  : OCR vs API (exact match)              → HARD FAIL
+  DL Name        : OCR vs Step-2 Aadhaar name (exact)    → HARD FAIL
+  DL class       : OCR vs RC vehicle class (must match)  → HARD FAIL
+  Platform Name  : Account name vs Step-1 name (fuzzy)   → Soft flag
+
+CROSS-INTERNAL:
+  Vehicle number consistent across RC + Insurance + screenshots → HARD FAIL
+  Bank account number consistent across all payout screenshots
+
+BANK CROSS-CHECK (screenshots):
+  Screenshot earnings amount vs Step-3 bank credits ± 30% tolerance
+
+GLOBAL VALIDATION:
+  Vehicle owner name may differ from Step-1 (family vehicle allowed)
+  If differs → vehicle_owner_mismatch = true (soft, non-blocking)
+  Platform payout amount → matched vs Step-3 bank credits
+
+===========================================================================
+LAYOUT 5B — VENDOR / SELLER
+===========================================================================
+
+INPUTS:
+  1 | PM SVANidhi Application ID    | Alphanumeric SVN format | Required
+  2 | SVANidhi Approval Letter       | JPG/PNG/PDF             | Required
+  3 | Municipal Trade Licence        | JPG/PNG/PDF             | Required
+  4 | Bank No-Due Certificate        | JPG/PNG/PDF             | Optional
+  5 | Vendor Association Membership  | JPG/PNG                 | Optional
+  6 | Market Allotment Letter        | JPG/PNG/PDF             | Optional
+  7 | GST Registration Certificate   | PDF                     | Optional
+
+API: POST /gov/svanidhi/verify → loan_status, loan_amount, beneficiary_name
+OCR (SVANidhi): application_id | beneficiary_name | loan_amount | approval_date | bank
+OCR (Trade Licence): licence_number | validity | business_type | municipality | address
+
+INDIVIDUAL VALIDATION:
+  SVANidhi App ID : OCR vs API (exact)                  → HARD FAIL
+  Beneficiary Name: OCR vs Step-2 Aadhaar (fuzzy ≥ 85%) → HARD FAIL
+  Licence Number  : readable, non-empty                 → HARD FAIL
+
+CROSS-INTERNAL:
+  Vendor name consistent across SVANidhi + No-Due cert  → HARD FAIL
+  Loan account number consistent across both docs
+
+BANK CROSS-CHECK:
+  SVANidhi disbursement credit in Step-3 ± 10%
+  Monthly SVANidhi repayment debits in Step-3
+
+GLOBAL VALIDATION:
+  Beneficiary name vs Step-1/Step-2 identity (fuzzy ≥ 85%)
+
+===========================================================================
+LAYOUT 5C — SKILLED TRADESPERSON
+===========================================================================
+
+INPUTS:
+  1 | Skill Certificate ID             | NSDC-XXXX format | Required
+  2 | NSDC / NSQF Skill Certificate    | JPG/PNG/PDF      | Required
+  3 | Work Order Letter                | JPG/PNG/PDF      | Required
+  4 | Experience Certificate           | JPG/PNG/PDF      | Optional
+  5 | Additional Skill Certificates    | Up to 3 docs     | Optional
+  6 | GST Registration Certificate     | PDF              | Optional
+
+API: POST /gov/skill/verify → candidate_name, job_role, nsqf_level, status
+
+OCR (Certificate): candidate_name | certificate_id | job_role | nsqf_level
+                   training_institute | issue_date | issuing_body
+OCR (Work Order) : client_name | work_type | work_value | completion_date
+
+INDIVIDUAL VALIDATION:
+  Certificate ID  : OCR vs API (exact)                  → HARD FAIL
+  Candidate Name  : OCR vs Step-2 Aadhaar (fuzzy ≥ 85%) → HARD FAIL
+  NSQF Level      : Level 1–8 only                      → HARD FAIL
+  Status          : Must be Valid / Active               → HARD FAIL
+
+BANK CROSS-CHECK:
+  Work order value vs Step-3 income credits ± 30%
+  Completion date vs bank credit date
+
+GLOBAL VALIDATION:
+  Candidate name vs Step-1 Full Name (fuzzy ≥ 85%)
+
+===========================================================================
+LAYOUT 5D — FREELANCER
+===========================================================================
+
+INPUTS:
+  1 | Freelance Platform Profile Screenshot | Image     | Required
+  2 | 2nd Platform Screenshot               | Image     | Optional
+  3 | Client Invoice 1                       | JPG/PDF  | Required (min 1)
+  4 | Client Invoice 2                       | JPG/PDF  | Optional
+  5 | Client Invoice 3                       | JPG/PDF  | Optional
+  6 | Portfolio / Project Completion Proof   | Any      | Optional
+  7 | GST Registration Certificate           | PDF      | Optional
+  8 | MSME Certificate                       | PDF      | Optional
+
+OCR (Screenshot): account_name | platform_rating | total_earnings
+                  member_since | platform_badge
+OCR (Invoice)   : client_name | service_description | invoice_amount
+                  invoice_date | payment_status | gstin
+
+INDIVIDUAL VALIDATION:
+  Account Name      : OCR vs Step-1 Full Name (fuzzy ≥ 85%) → Soft flag
+  Invoice Amount    : must be > 0                            → HARD FAIL
+  Invoice Date      : must be valid past date                → HARD FAIL
+
+BANK CROSS-CHECK:
+  Invoice amounts vs Step-3 income credits ± 30%
+  Invoice dates vs bank credit dates
+
+GLOBAL VALIDATION:
+  Platform account name vs Step-1/Step-2 identity
+
+Global profile update:
+  verified_profile.work_proof = {
+    work_type, documents_verified, platform_earnings, bank_match_verified
+  }
+
+OUTPUT: Step-5 Status = VERIFIED
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                              [ STEP 6 OF 9 ]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SYSTEM DESIGN PROMPT — STEP-6: GOVERNMENT SCHEME VERIFICATION
+GigCredit Onboarding | Version: Final (Updated) | Pillar: P7 Social Accountability
+===========================================================================
+
+PURPOSE
+-------
+Step-6 collects optional government scheme registrations and financial
+security programs associated with the user. These schemes strengthen
+financial credibility and improve scoring signals under the P7 (Social
+Accountability) pillar and cross-feed P2 (Payment Discipline) and
+P3 (Debt Management).
+
+All schemes in this step are OPTIONAL globally.
+If a user selects any scheme, that scheme's ID and proof upload become
+CONDITIONALLY REQUIRED. Invalid inputs are rejected and ignored.
+
+Supported Schemes (6 total):
+  Scheme 1 : eShram Worker Registration
+  Scheme 2 : PM-SYM (Pradhan Mantri Shram Yogi Maandhan)
+  Scheme 3 : PMJJBY (Pradhan Mantri Jeevan Jyoti Bima Yojana)
+  Scheme 4 : PMMY (Pradhan Mantri Mudra Yojana)
+  Scheme 5 : PPF (Public Provident Fund)
+  Scheme 6 : Udyam / MSME Registration  ← NEW (previously missing)
+
+Validation architecture:
+  - Individual Validation : Per-field rules on user-entered data + OCR
+  - API Verification      : Government simulation (FastAPI + MongoDB)
+  - Bank Cross-Check      : Scheme payments matched against Step-3 CSV
+  - Cross-Internal        : Consistency within scheme documents
+  - Global Validation     : Identity cross-check with Step-1, Step-2, Step-3
+
+
+===========================================================================
+HOW IT IS PRESENTED ON SCREEN
+===========================================================================
+
+A checklist screen showing 6 scheme cards.
+Each card shows:
+  - Scheme name and short description
+  - Estimated score impact
+  - Expand button to reveal input fields
+
+Unselected schemes remain collapsed and are skipped entirely.
+The entire step is optional — user may skip all schemes.
+
+Step-level message shown to user:
+  "Each government scheme you are enrolled in adds to your
+   Social Accountability score. Even 1–2 verified schemes
+   can improve your final credit score by 15 to 30 points."
+
+
+===========================================================================
+SCHEME 1 — ESHRAM WORKER REGISTRATION
+===========================================================================
+
+Score impact: "Can add up to 12 points"
+
+INPUTS:
+  Input 1 : UAN Number (Conditional Required when scheme selected)
+            Format  : 12-digit numeric
+            Example : 123456789012
+  Input 2 : eShram Card Upload (Conditional Required)
+            Format  : JPG or PNG
+
+UI BEHAVIOUR:
+  UAN number entry → User clicks Verify
+  If API succeeds → eShram Card upload enabled
+  If API fails    → Error shown, scheme marked unverified
+
+
+API VERIFICATION — ESHRAM
+  Endpoint  : POST /gov/eshram/verify
+  MongoDB   : eshram_db
+  Request   : { "uan": "123456789012" }
+  Response  : {
+                "worker_name"          : "Ravi Kumar",
+                "occupation"           : "Electrician",
+                "state"                : "Tamil Nadu",
+                "registration_status"  : "Active",
+                "registration_date"    : "2022-06-15",
+                "verified"             : true
+              }
+  Possible status: Active | Inactive | Not Found
+
+
+OCR EXTRACTION — ESHRAM CARD
+  Fields extracted:
+    worker_name         : Name of registered worker
+    fathers_name        : Father's name
+    date_of_birth       : DOB of worker
+    gender              : Male / Female / Other
+    uan_number          : 12-digit UAN
+    primary_occupation  : Work category
+    aadhaar_reference   : Masked Aadhaar (last 4 digits)
+    photo               : Worker photo on card
+
+
+INDIVIDUAL VALIDATION — ESHRAM
+  Field               | Rule                                          | Blocking
+  --------------------|-----------------------------------------------|---------
+  UAN Number          | Must be exactly 12 digits                     | HARD FAIL
+                      | Numeric only                                  |
+                      | Must not be all zeros                         |
+  API Status          | registration_status must be Active            | HARD FAIL
+  OCR Worker Name     | Must match API worker_name (fuzzy ≥ 85%)      | HARD FAIL
+  OCR UAN Number      | Must match user-entered UAN exactly           | HARD FAIL
+  OCR DOB             | Must be a valid date                          | Soft flag
+  Aadhaar Reference   | Must show last 4 digits (XXXX-XXXX-ABCD)      | Soft flag
+
+
+CROSS-INTERNAL VALIDATION — ESHRAM
+  Check                                               | Blocking
+  ----------------------------------------------------|----------
+  UAN on card must match UAN entered by user          | HARD FAIL
+  Worker name consistent across front and back of card| Soft flag
+
+
+GLOBAL VALIDATION — ESHRAM
+  Field               | Compared Against                | Blocking
+  --------------------|----------------------------------|---------
+  Worker Name         | Step-1 Full Name (fuzzy ≥ 85%)  | Soft flag
+  Date of Birth       | Step-2 Aadhaar DOB (exact)      | Soft flag
+  State               | Step-1 State of Residence       | Soft flag
+
+Global profile update:
+  verified_profile.gov_schemes.eshram = true
+  verified_profile.gov_schemes.eshram_occupation = "Electrician"
+
+
+===========================================================================
+SCHEME 2 — PM-SYM (PRADHAN MANTRI SHRAM YOGI MAANDHAN)
+===========================================================================
+
+Score impact: "Can add up to 10 points"
+
+INPUTS:
+  Input 1 : Pension Account Number (Conditional Required)
+            Format  : Alphanumeric (e.g. PM-SYM-829201)
+  Input 2 : Pension Card or Registration Certificate (Conditional Required)
+            Format  : JPG, PNG, or PDF
+
+
+API VERIFICATION — PM-SYM
+  Endpoint  : GET /api/pension/status
+  MongoDB   : pmsym_db
+  Request   : {
+                "aadhaar_number"         : "XXXX-XXXX-1234",
+                "pension_account_number" : "PM-SYM-829201"
+              }
+  Response  : {
+                "scheme"                 : "PM-SYM",
+                "status"                 : "ACTIVE",
+                "monthly_contribution"   : 100,
+                "last_payment_date"      : "2026-02-10",
+                "pension_account_number" : "PM-SYM-829201",
+                "verified"               : true
+              }
+  Possible status: ACTIVE | INACTIVE | NOT_FOUND
+
+
+OCR EXTRACTION — PM-SYM CARD
+  Fields extracted:
+    pension_account_number  : Unique subscriber ID
+    subscriber_name         : Name on card
+    date_of_birth           : DOB
+    gender                  : Male / Female / Other
+    pension_start_date      : Date enrolled
+    monthly_contribution    : Amount (₹55 / ₹100 / ₹200)
+    government_contribution : Matching govt amount
+    aadhaar_reference       : Masked Aadhaar
+
+
+INDIVIDUAL VALIDATION — PM-SYM
+  Field                    | Rule                                      | Blocking
+  -------------------------|-------------------------------------------|---------
+  Pension Account Number   | Must match PM-SYM-XXXXXX format           | HARD FAIL
+  API Status               | Must be ACTIVE                            | HARD FAIL
+  OCR Account Number       | Must match entered account number         | HARD FAIL
+  OCR Subscriber Name      | Must match API name (fuzzy ≥ 85%)         | HARD FAIL
+  Monthly Contribution     | Must be ₹55, ₹100, or ₹200 (valid tiers) | Soft flag
+
+
+CROSS-INTERNAL VALIDATION — PM-SYM
+  Check                                                  | Blocking
+  -------------------------------------------------------|---------
+  Pension account number consistent across card sections | HARD FAIL
+  Contribution amount must align with age-based tier     | Soft flag
+
+
+BANK TRANSACTION CROSS-CHECK — PM-SYM
+  Rule: Step-3 canonical CSV must show monthly debit
+        matching contribution amount (± ₹5 tolerance)
+  Date gap between consecutive debits must be ≤ 35 days
+  If bank match found → pmsym_bank_verified = true (strong P2 signal)
+  If no match        → Soft flag; scheme accepted as declared
+
+
+GLOBAL VALIDATION — PM-SYM
+  Field             | Compared Against               | Blocking
+  ------------------|--------------------------------|---------
+  Subscriber Name   | Step-1 Full Name (fuzzy ≥ 85%) | Soft flag
+  DOB               | Step-2 Aadhaar DOB (exact)     | Soft flag
+
+Global profile update:
+  verified_profile.gov_schemes.pmsym = true
+  verified_profile.gov_schemes.pmsym_contribution = 100
+
+
+===========================================================================
+SCHEME 3 — PMJJBY (PRADHAN MANTRI JEEVAN JYOTI BIMA YOJANA)
+===========================================================================
+
+Score impact: "Can add up to 8 points"
+Note: No verification API for PMJJBY. Validation via OCR + bank cross-check.
+
+INPUTS:
+  Input 1 : PMJJBY Insurance Certificate Upload (Conditional Required)
+            Format  : JPG, PNG, or PDF
+
+
+OCR EXTRACTION — PMJJBY CERTIFICATE
+  Fields extracted:
+    member_name           : Insured person's name
+    master_policy_number  : Bank-issued master policy number
+    urn                   : Unique Reference Number
+    date_of_birth         : DOB of insured
+    bank_account_number   : Linked savings account
+    bank_name             : Issuing bank
+    insurance_provider    : LIC or partner insurer
+    date_of_commencement  : Policy start date
+    cover_end_date        : Policy expiry date (31 May each year)
+    sum_assured           : ₹2,00,000 (fixed)
+    premium_amount_paid   : ₹436 per year (fixed)
+    renewal_date          : Annual renewal date
+
+
+INDIVIDUAL VALIDATION — PMJJBY
+  Field                 | Rule                                        | Blocking
+  ----------------------|---------------------------------------------|---------
+  Member Name           | Must be readable; min 3 chars               | HARD FAIL
+  Master Policy Number  | Must be readable and non-empty              | HARD FAIL
+  URN                   | Must be readable and non-empty              | HARD FAIL
+  Sum Assured           | Must be ₹2,00,000 (fixed — any other = fake)| HARD FAIL
+  Premium Amount        | Must be ₹436 (fixed — any other = flag)     | Soft flag
+  Cover End Date        | Must be 31st May of a valid year            | Soft flag
+  DOB                   | Must be a valid date                        | Soft flag
+
+
+CROSS-INTERNAL VALIDATION — PMJJBY
+  Check                                              | Blocking
+  ---------------------------------------------------|----------
+  Policy start date must be before cover end date    | HARD FAIL
+  Bank account number on cert must be readable       | Soft flag
+
+
+BANK TRANSACTION CROSS-CHECK — PMJJBY
+  Rule: Step-3 CSV must show annual debit of ₹436
+        on or near policy renewal date (± 15 days)
+  Merchant narration should contain: LIC / PMJJBY / JEEVAN JYOTI
+  If bank match found → pmjjby_bank_verified = true
+
+
+GLOBAL VALIDATION — PMJJBY
+  Field               | Compared Against               | Blocking
+  --------------------|--------------------------------|---------
+  Member Name         | Step-1 Full Name (fuzzy ≥ 85%) | Soft flag
+  Bank Account Number | Step-3 Verified Account Number | Soft flag
+
+Global profile update:
+  verified_profile.gov_schemes.pmjjby = true
+
+
+===========================================================================
+SCHEME 4 — PMMY (PRADHAN MANTRI MUDRA YOJANA)
+===========================================================================
+
+Score impact: "Can add up to 10 points"
+Note: No verification API. Validation via OCR + bank cross-check.
+
+INPUTS:
+  Input 1 : Loan Account Number (Conditional Required)
+            Format  : Alphanumeric
+  Input 2 : Mudra Loan Acknowledgement / Sanction Letter (Conditional Required)
+            Format  : JPG, PNG, or PDF
+  Input 3 : Bank No-Due Certificate after loan closure (Optional)
+            Format  : JPG, PNG, or PDF
+
+
+OCR EXTRACTION — MUDRA LOAN LETTER
+  Fields extracted:
+    applicant_name     : Borrower name
+    loan_amount        : Sanctioned amount (₹)
+    loan_account_number: Unique loan account ID
+    bank_name          : Lending institution
+    loan_approval_date : Date loan was approved
+    loan_type          : Shishu / Kishor / Tarun
+    mudra_card_number  : 16-digit Mudra card (if issued)
+
+OCR EXTRACTION — NO-DUE CERTIFICATE (if uploaded)
+  Fields extracted:
+    loan_account_number : Must match Mudra letter
+    borrower_name       : Must match Mudra letter
+    certificate_date    : Date of no-due certificate
+    issuing_bank        : Must match Mudra letter bank
+    loan_status         : Closed / Settled
+
+
+INDIVIDUAL VALIDATION — PMMY
+  Field               | Rule                                        | Blocking
+  --------------------|---------------------------------------------|---------
+  Loan Account Number | Alphanumeric, min 6 characters              | HARD FAIL
+  Applicant Name      | Readable, min 3 chars                       | HARD FAIL
+  Loan Amount         | Must be > 0 and ≤ ₹10,00,000 (Mudra limit) | HARD FAIL
+  Loan Type           | Must be Shishu / Kishor / Tarun             | Soft flag
+  Approval Date       | Must be a valid past date                   | Soft flag
+
+
+CROSS-INTERNAL VALIDATION — PMMY
+  Field                | Mudra Letter     | No-Due Certificate | Blocking
+  ---------------------|------------------|--------------------|----------
+  Loan Account Number  | Must match       | Must match         | HARD FAIL
+  Applicant Name       | Source           | Must match         | HARD FAIL
+  Bank Name            | Source           | Must match         | Soft flag
+
+
+BANK TRANSACTION CROSS-CHECK — PMMY
+  Rule 1: Loan disbursement credit in Step-3 CSV
+          Amount: Mudra loan amount ± 10%
+          Date  : Near loan_approval_date ± 15 days
+  Rule 2: Monthly EMI repayments found as recurring debits
+          Merchant: bank name / MUDRA / LOAN / EMI in narration
+  If disbursement found → mudra_credited = true
+  If EMIs found        → mudra_repaying = true (strong P3 positive)
+  If no-due cert uploaded + loan status = Closed → mudra_closed = true
+
+
+GLOBAL VALIDATION — PMMY
+  Field           | Compared Against               | Blocking
+  ----------------|--------------------------------|---------
+  Applicant Name  | Step-1 Full Name (fuzzy ≥ 85%) | Soft flag
+  Bank Name       | Step-3 Verified Bank Name      | Soft flag
+
+Global profile update:
+  verified_profile.gov_schemes.pmmy = true
+  verified_profile.gov_schemes.mudra_loan_amount = 50000
+  verified_profile.gov_schemes.mudra_closed = false
+
+
+===========================================================================
+SCHEME 5 — PPF (PUBLIC PROVIDENT FUND)
+===========================================================================
+
+Score impact: "Can add up to 8 points"
+Note: No verification API. Validation via OCR + bank cross-check.
+
+INPUTS:
+  Input 1 : PPF Account Number (Conditional Required)
+            Format  : Alphanumeric
+  Input 2 : PPF Passbook First Page (Conditional Required)
+            Format  : JPG or PNG
+
+
+OCR EXTRACTION — PPF PASSBOOK
+  Fields extracted:
+    account_holder_name : Name on passbook
+    ppf_account_number  : Unique PPF account ID
+    cif_number          : Customer Information File number
+    bank_name           : Holding bank
+    branch_name         : Branch name
+    date_of_issue       : Passbook issue date
+    ifsc_code           : Branch IFSC
+    annual_contribution : Typical deposit amount (₹)
+    maturity_date       : 15-year lock-in end date
+
+
+INDIVIDUAL VALIDATION — PPF
+  Field                | Rule                                          | Blocking
+  ---------------------|-----------------------------------------------|---------
+  PPF Account Number   | Alphanumeric, min 6 characters               | HARD FAIL
+  OCR Account Number   | Must match entered account number            | HARD FAIL
+  Account Holder Name  | Readable, min 3 chars                        | HARD FAIL
+  Annual Contribution  | Must be ≥ ₹500 and ≤ ₹1,50,000 (PPF limits) | Soft flag
+  Maturity Date        | Must be a valid future or past date          | Soft flag
+
+
+CROSS-INTERNAL VALIDATION — PPF
+  Check                                                | Blocking
+  -----------------------------------------------------|----------
+  PPF account number consistent across passbook pages  | HARD FAIL
+  IFSC code format valid (11 characters)               | Soft flag
+
+
+BANK TRANSACTION CROSS-CHECK — PPF
+  Rule: Step-3 CSV must show quarterly or annual debit
+        Amount: annual_contribution amount ± 10%
+        Merchant narration: PPF / PUBLIC PROVIDENT / SBI PPF / HDFC PPF
+  If bank match found → ppf_bank_verified = true (P4 savings signal)
+
+
+GLOBAL VALIDATION — PPF
+  Field                | Compared Against                  | Blocking
+  ---------------------|-----------------------------------|---------
+  Account Holder Name  | Step-1 Full Name (fuzzy ≥ 85%)    | Soft flag
+  Bank Name            | Step-3 Verified Bank Name         | Soft flag
+  IFSC Code            | Step-3 Verified IFSC (if same bank)| Soft flag
+
+Global profile update:
+  verified_profile.gov_schemes.ppf = true
+  verified_profile.gov_schemes.ppf_contribution = 12000
+
+
+===========================================================================
+SCHEME 6 — UDYAM / MSME REGISTRATION  ← NEWLY ADDED
+===========================================================================
+
+Score impact: "Can add up to 15 points"
+Note: Strongest formal business signal — significantly boosts P7 for
+      Vendor, Freelancer, and Skilled Tradesperson work types.
+
+INPUTS:
+  Input 1 : Udyam Registration Number (Conditional Required)
+            Format  : UDYAM-XX-00-0000000 (19-character format)
+            Example : UDYAM-TN-33-0012345
+  Input 2 : Udyam Registration Certificate Upload (Conditional Required)
+            Format  : PDF preferred; JPG or PNG accepted
+
+UI BEHAVIOUR:
+  User enters Udyam Registration Number → clicks Verify
+  If API succeeds → Certificate upload becomes enabled
+  If API fails    → Error shown, scheme marked unverified
+
+
+API VERIFICATION — UDYAM / MSME
+  Endpoint  : POST /gov/msme/udyam-verify
+  MongoDB   : udyam_db
+  Request   : { "udyam_number": "UDYAM-TN-33-0012345" }
+  Response  : {
+                "enterprise_name"      : "Ravi Kumar Enterprises",
+                "udyam_number"         : "UDYAM-TN-33-0012345",
+                "category"             : "Micro",
+                "nic_activity"         : "Retail Trade",
+                "registration_date"    : "2021-08-15",
+                "state"                : "Tamil Nadu",
+                "status"               : "Active",
+                "major_activity"       : "Services",
+                "verified"             : true
+              }
+  Possible status: Active | Cancelled | Suspended | Not Found
+  Possible category: Micro | Small | Medium
+
+
+OCR EXTRACTION — UDYAM CERTIFICATE
+  Fields extracted:
+    udyam_number          : 19-character registration number
+    enterprise_name       : Registered business/enterprise name
+    owner_name            : Proprietor / partner name
+    nic_code              : National Industrial Classification code
+    nic_activity          : Business activity description
+    category              : Micro / Small / Medium
+    major_activity        : Manufacturing / Services / Trading
+    registration_date     : Date of Udyam registration
+    state_code            : 2-letter state code embedded in number
+    date_of_commencement  : Business commencement date
+    enterprise_type       : Proprietorship / Partnership / OPC / LLP
+
+
+INDIVIDUAL VALIDATION — UDYAM
+  Field                 | Rule                                          | Blocking
+  ----------------------|-----------------------------------------------|---------
+  Udyam Number          | Must match UDYAM-XX-00-0000000 format        | HARD FAIL
+                        | (regex: UDYAM-[A-Z]{2}-[0-9]{2}-[0-9]{7})    |
+  State Code in Number  | 2-letter state code must be valid Indian state| HARD FAIL
+                        | (e.g. TN = Tamil Nadu, MH = Maharashtra)      |
+  API Status            | Must be Active                                | HARD FAIL
+  Category              | Must be Micro, Small, or Medium               | HARD FAIL
+  OCR Udyam Number      | Must match entered number exactly             | HARD FAIL
+  OCR Enterprise Name   | Must match API enterprise_name (fuzzy ≥ 80%) | HARD FAIL
+  Registration Date     | Must be a valid past date                     | Soft flag
+  NIC Code              | Must be a valid 5-digit NIC code              | Soft flag
+  Enterprise Type       | Must be valid legal entity type               | Soft flag
+
+
+CROSS-INTERNAL VALIDATION — UDYAM
+  Check                                                    | Blocking
+  ---------------------------------------------------------|---------
+  Udyam number on certificate must match entered number    | HARD FAIL
+  State code in Udyam number must match state in address   | Soft flag
+  Enterprise name consistent across all certificate sections| Soft flag
+  Registration date must not be in the future              | HARD FAIL
+  Category (Micro/Small/Medium) consistent across sections | Soft flag
+
+
+BANK TRANSACTION CROSS-CHECK — UDYAM
+  UDYAM registration has no direct payment/debit to check.
+  However:
+    Rule 1: If Step-5 has GST certificate with same GSTIN → cross-link
+            gst_udyam_linked = true (strong P7 signal)
+    Rule 2: Business income credits in Step-3 bank statement
+            tagged as INCOME_GIG or INCOME_CASH may be cross-linked
+            to Udyam activity type for income consistency scoring
+
+
+GLOBAL VALIDATION — UDYAM
+  Field               | Compared Against                       | Blocking
+  --------------------|----------------------------------------|---------
+  Enterprise Name     | Step-1 Full Name (fuzzy ≥ 80%)         | Soft flag
+                      | (proprietor name may differ from biz   |
+                      |  name — fuzzy match on owner_name used)|
+  Owner Name          | Step-2 Aadhaar Name (fuzzy ≥ 85%)      | Soft flag
+  State               | Step-1 State of Residence (exact)      | Soft flag
+  Major Activity      | Step-1 Work Type alignment:            | Soft flag
+                      |   Services → Freelancer / Tradesperson |
+                      |   Trading → Vendor / Seller            |
+  GSTIN Cross-link    | Step-5 GST cert GSTIN if available     | Soft flag
+                      | If match → gst_udyam_linked = true     |
+
+Example:
+  Udyam owner_name   : Ravi Kumar
+  Step-2 Aadhaar name: Ravi Kumar
+  → fuzzy match ≥ 85% → PASS
+
+  Udyam enterprise_name : Ravi Kumar Traders
+  Step-1 Full Name      : Ravi Kumar
+  → fuzzy match on owner_name used, not enterprise_name
+
+Global profile update:
+  verified_profile.gov_schemes.udyam = true
+  verified_profile.gov_schemes.udyam_category = "Micro"
+  verified_profile.gov_schemes.udyam_activity = "Services"
+  verified_profile.gov_schemes.gst_udyam_linked = true
+
+
+===========================================================================
+GLOBAL VALIDATION — STEP-6 (AFTER ALL SELECTED SCHEMES)
+===========================================================================
+
+After all selected schemes pass individual and cross-internal validation,
+the system updates the global profile object:
+
+verified_profile.gov_schemes = {
+  "eshram"           : true,
+  "eshram_occupation": "Electrician",
+  "pmsym"            : true,
+  "pmsym_contribution": 100,
+  "pmjjby"           : false,
+  "pmmy"             : true,
+  "mudra_loan_amount": 50000,
+  "mudra_closed"     : false,
+  "ppf"              : false,
+  "udyam"            : true,
+  "udyam_category"   : "Micro",
+  "udyam_activity"   : "Services",
+  "gst_udyam_linked" : true
+}
+
+Scheme participation count → scheme_count_norm feature (P7)
+Each verified scheme adds to social_accountability_score.
+
+
+===========================================================================
+ML FEATURES PRODUCED — P7 SOCIAL ACCOUNTABILITY
+===========================================================================
+
+Feature                    | Description                              | Pillar
+---------------------------|------------------------------------------|---------
+eshram_active              | eShram registration verified (0/1)       | P7
+pmsym_active               | PM-SYM pension active (0/1)              | P7, P2
+pmjjby_active              | PMJJBY life insurance active (0/1)       | P7, P6
+pmmy_completed             | Mudra loan verified (0/1)                | P7, P3
+ppf_active                 | PPF contribution verified (0/1)          | P7, P4
+udyam_registered           | Udyam/MSME registered (0/1)              | P7, P1
+gst_udyam_linked           | GST cert linked to Udyam (0/1)           | P7, P1
+scheme_count_norm          | Total verified schemes ÷ 6               | P7
+scheme_bank_verified_ratio | Schemes with bank match ÷ total schemes  | P7, P2
+
+Total features produced: 9 | Pillar: P7 (primary), P1, P2, P3, P4, P6
+
+
+===========================================================================
+TECHNICAL FLOW — STEP-6
+===========================================================================
+
+User opens Step-6
+  ↓
+Score impact message displayed
+  ↓
+User sees 6 scheme cards (all collapsed by default)
+  ↓
+[FOR EACH SCHEME USER SELECTS]
+
+  User taps scheme card → expands
+  User enters scheme ID (UAN / pension account / Udyam number etc.)
+  User clicks Verify
+    → API call made (if API available for this scheme)
+    → API response stored temporarily
+    → Document upload enabled on success
+  User uploads proof document
+    → OCR extraction runs on-device
+    → Individual validation: OCR fields vs API response
+    → Individual validation: format rules on all fields
+  Cross-internal validation: consistency within document
+  Bank cross-check: scheme payment matched in Step-3 CSV
+  Global validation: identity fields vs Step-1 / Step-2 / Step-3
+  Scheme marked: verified = true / unverified = false
+  ↓
+[AFTER ALL SELECTED SCHEMES PROCESSED]
+
+  Global profile updated with all scheme flags
+  ML features computed: scheme_count_norm, scheme_bank_verified_ratio
+  ↓
+Step-6 Status = COMPLETED
+  ↓
+User proceeds to Step-7 — Insurance Verification
+
+
+===========================================================================
+SCHEME COVERAGE REFERENCE TABLE
+===========================================================================
+
+Scheme    | ID Format              | API Available | Bank Cross-Check | Key OCR Fields
+----------|------------------------|---------------|------------------|----------------
+eShram    | 12-digit UAN           | YES           | Monthly debit    | worker_name, uan_number
+PM-SYM    | PM-SYM-XXXXXX          | YES           | Monthly debit    | subscriber_name, account_no
+PMJJBY    | No ID (cert upload)    | NO            | Annual ₹436      | member_name, policy_number
+PMMY      | Loan account no.       | NO            | Disbursement+EMI | applicant_name, loan_amount
+PPF       | PPF account no.        | NO            | Qtrly/annual dep.| account_holder, ppf_acct_no
+Udyam     | UDYAM-XX-00-0000000    | YES           | GST cross-link   | enterprise_name, udyam_number
+
+
+===========================================================================
+OUTPUT OF STEP-6
+===========================================================================
+
+Step-6 Status              : COMPLETED
+verified_profile update    : gov_schemes object updated with all flags
+P7 features produced       : 9 Social Accountability features
+Cross-pillar contributions : P1, P2, P3, P4, P6
+
+===========================================================================
+END OF STEP-6 SPECIFICATION (UPDATED — UDYAM/MSME ADDED)
+===========================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                              [ STEP 7 OF 9 ]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SYSTEM DESIGN PROMPT — STEP-7: INSURANCE VERIFICATION
+GigCredit Onboarding | Version: Final | Pillar: P6 Financial Resilience
+===========================================================================
+
+PURPOSE
+-------
+Step-7 verifies the user's insurance coverage. Insurance participation
+strengthens financial responsibility signals and improves risk assessment.
+Three insurance types are supported:
+  1. Health Insurance
+  2. Vehicle Insurance
+  3. Life Insurance
+
+All insurance inputs are optional, EXCEPT Vehicle Insurance, which becomes
+REQUIRED if the user selected "Yes" for Vehicle Ownership in Step-1.
+
+Validation architecture:
+  - OCR Extraction       : On-device
+  - API Verification     : Government simulation (FastAPI + MongoDB)
+  - Individual Validation: OCR vs API data (per field)
+  - Cross-Internal       : Within document fields (consistency)
+  - Global Validation    : Consistency with previous steps
+
+
+===========================================================================
+HOW IT IS PRESENTED ON SCREEN
+===========================================================================
+
+Three insurance cards displayed vertically.
+Each card shows:
+  - Insurance type name
+  - Brief description of what it covers
+  - Estimated score impact
+
+Vehicle insurance card mandatory status is dynamically set based on
+Vehicle Ownership answer from Step-1.
+
+
+===========================================================================
+INPUTS — STEP-7 (TOTAL: 3)
+===========================================================================
+
+#  | Field                                  | UI Element            | Format           | Count | Mandatory
+---|----------------------------------------|-----------------------|------------------|-------|---------------------
+1  | Health Insurance Policy Document       | Image/PDF upload card | JPG, PNG, PDF    | 1     | Optional
+2  | Vehicle Insurance Policy               | Image/PDF upload card | JPG, PNG, PDF    | 1     | If Vehicle = Yes
+3  | Life Insurance Policy Bond or          | Image/PDF upload card | JPG, PNG, PDF    | 1     | Optional
+   | Premium Receipt                        |                       |                  |       |
+
+Total Inputs  : 3
+Mandatory     : 0–1 (vehicle insurance conditional on Step-1 answer)
+Optional      : 2–3
+Document uploads: Up to 3 images/PDFs
+
+
+===========================================================================
+UI GATE RULES
+===========================================================================
+
+GATE 1 — Vehicle Insurance Card Badge (dynamic from Step-1):
+  verified_profile.has_vehicle = true
+    → Card shows "REQUIRED" badge
+    → Upload is mandatory
+    → Missing = incomplete step
+
+  verified_profile.has_vehicle = false
+    → Card shows "OPTIONAL" badge
+    → Upload not required
+    → Skipping has no penalty
+
+GATE 2 — Continue Button:
+  has_vehicle = true  → vehicle insurance must be uploaded and pass
+                        all validations before Continue is enabled
+  has_vehicle = false → Continue available at any point (all 3 optional)
+
+GATE 3 — RC Deduplication (Step-5 cross-dependency):
+  IF verified_profile.work.rc_verified = true (Step-5A completed):
+    → RC verification SKIPPED in Step-7
+    → System reuses vehicle_number from Step-5 global state
+    → Vehicle insurance OCR vehicle number cross-checked against
+      Step-5 vehicle number
+  IF step5_skipped = true OR rc_verified = false:
+    → Normal RC verification flow applies in Step-7
+
+
+===========================================================================
+INSURANCE 1 — HEALTH INSURANCE
+===========================================================================
+
+Score impact shown on card: "Can add up to 18 points"
+
+--- OCR EXTRACTION — HEALTH INSURANCE POLICY ---
+
+Field                | Example Value              | Used For
+---------------------|----------------------------|-------------------------------
+policy_number        | P700002012015007530        | API verification
+policy_holder_name   | Ashwani Kumar Rai          | API + Step-1 + Step-2 match
+insurance_company    | Star Health                | API verification
+policy_start_date    | 2014-07-03                 | Active period check
+policy_expiry_date   | 2015-07-02                 | Active status check
+sum_insured          | 300000                     | P6 feature: health_sum_norm
+premium_amount       | 6067                       | Bank transaction cross-check
+scheme_description   | 2 Adults + 1 Child         | Coverage type signal
+
+INSURER DETECTION:
+  System detects insurer name from document.
+  Example: "Star Health and Allied Insurance"
+
+--- API VERIFICATION — HEALTH INSURANCE ---
+
+Endpoint  : POST /gov/insurance/health-policy-verify
+MongoDB   : health_insurance_db
+Trigger   : Automatic after OCR extracts policy_number
+
+Request:
+  {
+    "policy_number"      : "P700002012015007530",
+    "insurance_company"  : "Star Health",
+    "policy_holder_name" : "Ashwani Kumar Rai"
+  }
+
+Response:
+  {
+    "policy_number"      : "P700002012015007530",
+    "policy_holder_name" : "Ashwani Kumar Rai",
+    "insurance_company"  : "Star Health",
+    "policy_status"      : "Expired",
+    "policy_expiry_date" : "2015-07-02",
+    "sum_insured"        : 300000,
+    "verified"           : true
+  }
+
+Possible policy_status values: Active | Expired | Not Found
+
+--- INDIVIDUAL VALIDATION — HEALTH INSURANCE ---
+
+#  | Field                    | Rule                            | Blocking
+---|--------------------------|----------------------------------|----------
+1  | Policy Number            | OCR must match API               | HARD FAIL
+2  | Policy Holder Name       | OCR vs API fuzzy >= 85%          | HARD FAIL
+3  | Insurance Company        | OCR must match API               | HARD FAIL
+4  | Policy Start Date        | Must be valid date format        | HARD FAIL
+5  | Policy Expiry Date       | Valid date; API status = Active  | HARD FAIL
+6  | Sum Insured              | Must be numeric > 0              | HARD FAIL
+7  | Premium Amount           | Must be numeric > 0              | HARD FAIL
+8  | Scheme Description       | Must be readable (not blank)     | Soft flag
+
+--- CROSS-INTERNAL VALIDATION — HEALTH INSURANCE ---
+
+#  | Check                                          | Rule               | Blocking
+---|------------------------------------------------|---------------------|---------
+1  | Policy number consistent across document       | Identical in all   | HARD FAIL
+   | sections                                       | sections           |
+2  | Policy holder name consistent across document  | Same in all name   | HARD FAIL
+   |                                                | fields             |
+
+--- BANK TRANSACTION CROSS-CHECK — HEALTH INSURANCE ---
+
+Premium debit matching in Step-3 canonical CSV:
+  Amount   : premium_amount (OCR) ± 5%
+             OR annual_premium ÷ 12 (if monthly mode) ± 5%
+  Merchant : contains insurer name keywords
+             e.g. "STAR HEALTH", "HDFC ERGO", "NIVA BUPA",
+                  "CARE HEALTH", "ICICI LOMBARD", "HEALTH INSURANCE"
+  Category : INSURANCE_PREMIUM
+
+  Match found → health_premium_bank_verified = true  (bonus P6 signal)
+  No match    → health_premium_bank_verified = false  (soft flag, non-blocking)
+
+  Note: Step-3 bank statement is converted to a canonical CSV format.
+  Each transaction has: date, amount, merchant, category, transaction_id.
+  Matching uses: transaction date ± 7 days of premium due date AND
+                 amount within ± 5% tolerance.
+
+--- GLOBAL VALIDATION — HEALTH INSURANCE ---
+
+#  | Check                                          | Compared Against        | Blocking
+---|------------------------------------------------|--------------------------|----------
+1  | Policy holder name (OCR)                       | verified_profile.name    | HARD FAIL
+   |                                                | (Step-1 full name)       |
+2  | Policy holder name (OCR)                       | verified_profile.        | HARD FAIL
+   |                                                | identity.aadhaar_name    |
+   |                                                | (Step-2 Aadhaar name)    |
+
+
+===========================================================================
+INSURANCE 2 — VEHICLE INSURANCE
+===========================================================================
+
+Score impact shown on card: "Can add up to 12 points"
+
+Dynamic Behaviour:
+  Vehicle Ownership in Step-1 = Yes → Card shows REQUIRED badge
+                                       Upload is mandatory
+  Vehicle Ownership in Step-1 = No  → Card shows OPTIONAL badge
+                                       Upload not required, no penalty
+
+Vehicle insurance is verified in TWO stages:
+  Stage 1: RC Book Verification
+  Stage 2: Vehicle Insurance Policy Verification
+
+--- STAGE 1: RC BOOK VERIFICATION ---
+
+RC Deduplication Check (run first):
+  IF verified_profile.work.rc_verified = true (from Step-5A):
+    → SKIP RC API call
+    → Reuse from global state:
+        vehicle_number = verified_profile.work.vehicle_number
+        owner_name     = verified_profile.work.rc_owner_name
+        vehicle_class  = verified_profile.work.vehicle_class
+    → Show user: "RC already verified in Step-5. Proceeding to
+                  insurance check."
+  ELSE:
+    → User uploads RC Book document
+    → Run OCR + API verification (below)
+
+OCR EXTRACTION — RC BOOK:
+
+Field               | Example Value   | Used For
+--------------------|-----------------|-------------------------------
+vehicle_number      | TN09AB1234      | API verification + insurance
+owner_name          | Ravi Kumar      | API match + global comparison
+vehicle_class       | Motorcycle      | API match + insurance check
+registration_date   | 2019-03-15      | Valid date check
+engine_number       | ENG983421       | Readable field check
+chassis_number      | CHS776543       | Readable field check
+
+API VERIFICATION — RC BOOK:
+
+Endpoint  : POST /gov/vehicle/rc-verify
+MongoDB   : vehicle_rc_db
+
+Request:
+  { "vehicle_number": "TN09AB1234" }
+
+Response:
+  {
+    "vehicle_number"      : "TN09AB1234",
+    "owner_name"          : "Ravi Kumar",
+    "vehicle_class"       : "Motorcycle",
+    "registration_status" : "Active",
+    "verified"            : true
+  }
+
+INDIVIDUAL VALIDATION — RC BOOK:
+
+#  | Field              | Rule                              | Blocking
+---|--------------------|-----------------------------------|---------
+1  | Vehicle Number     | OCR must match API                | HARD FAIL
+2  | Owner Name         | OCR must match API                | HARD FAIL
+3  | Vehicle Class      | OCR must match API                | HARD FAIL
+4  | Registration Date  | Must be valid date format         | HARD FAIL
+5  | Engine Number      | Must be readable (not blank)      | Soft flag
+6  | Chassis Number     | Must be readable (not blank)      | Soft flag
+
+--- STAGE 2: VEHICLE INSURANCE POLICY VERIFICATION ---
+
+OCR EXTRACTION — VEHICLE INSURANCE POLICY:
+
+Field               | Example Value   | Used For
+--------------------|-----------------|-------------------------------
+policy_number       | MTR987654321    | API verification
+vehicle_number      | TN09AB1234      | RC Book cross-check
+owner_name          | Ravi Kumar      | RC owner name consistency
+insurance_company   | ICICI Lombard   | API cross-check
+policy_start_date   | 2024-04-10      | Active period check
+policy_expiry_date  | 2025-04-09      | Active status check
+premium_amount      | 1106            | Bank transaction cross-check
+chassis_number      | CHS776543       | RC Book consistency
+engine_number       | ENG983421       | RC Book consistency
+
+API VERIFICATION — VEHICLE INSURANCE:
+
+Endpoint  : POST /gov/insurance/vehicle-policy-verify
+MongoDB   : vehicle_insurance_db
+
+Request:
+  {
+    "policy_number"  : "MTR987654321",
+    "vehicle_number" : "TN09AB1234"
+  }
+
+Response:
+  {
+    "policy_number"      : "MTR987654321",
+    "vehicle_number"     : "TN09AB1234",
+    "insurance_company"  : "ICICI Lombard",
+    "policy_status"      : "Active",
+    "policy_expiry_date" : "2025-04-09",
+    "verified"           : true
+  }
+
+INDIVIDUAL VALIDATION — VEHICLE INSURANCE POLICY:
+
+#  | Field              | Rule                              | Blocking
+---|--------------------|-----------------------------------|---------
+1  | Policy Number      | OCR must match API                | HARD FAIL
+2  | Vehicle Number     | OCR must match API                | HARD FAIL
+3  | Insurance Company  | OCR must match API                | HARD FAIL
+4  | Owner Name         | OCR must match API                | HARD FAIL
+5  | Policy Start Date  | Must be valid date format         | HARD FAIL
+6  | Policy Expiry Date | Not expired; API status = Active  | HARD FAIL
+7  | Premium Amount     | Must be numeric > 0               | HARD FAIL
+8  | Chassis Number     | OCR must match RC Book            | HARD FAIL
+9  | Engine Number      | OCR must match RC Book            | HARD FAIL
+
+--- CROSS-INTERNAL VALIDATION — VEHICLE INSURANCE ---
+
+#  | Check                                          | Rule               | Blocking
+---|------------------------------------------------|--------------------|---------
+1  | Vehicle number consistent across RC Book and   | Must be identical  | HARD FAIL
+   | Insurance Policy                               |                    |
+2  | Chassis number consistent across RC Book and   | Must be identical  | HARD FAIL
+   | Insurance Policy                               |                    |
+3  | Engine number consistent across RC Book and    | Must be identical  | HARD FAIL
+   | Insurance Policy                               |                    |
+
+--- BANK TRANSACTION CROSS-CHECK — VEHICLE INSURANCE ---
+
+Premium debit matching in Step-3 canonical CSV:
+  Amount   : premium_amount (OCR) ± 5%
+  Merchant : contains insurer name keywords
+             e.g. "ICICI LOMBARD", "BHARTI AXA", "BAJAJ ALLIANZ",
+                  "TATA AIG", "MOTOR INSURANCE", "VEHICLE INSURANCE"
+  Category : INSURANCE_PREMIUM
+
+  Match found → vehicle_premium_bank_verified = true  (bonus P6 signal)
+  No match    → vehicle_premium_bank_verified = false  (soft flag, non-blocking)
+
+--- GLOBAL VALIDATION — VEHICLE INSURANCE ---
+
+#  | Check                              | Compared Against                      | Blocking
+---|------------------------------------|---------------------------------------|----------
+1  | RC owner name (OCR)                | verified_profile.name (Step-1)        | Soft flag
+   |                                    | If mismatch → vehicle_owner_          | only
+   |                                    | mismatch = true                       |
+   |                                    | (family vehicle allowed)              |
+2  | Vehicle number (insurance OCR)     | verified_profile.work.vehicle_number  | HARD FAIL
+   |                                    | (Step-5A) — if Step-5 completed       |
+3  | Policy number (insurance OCR)      | verified_profile.work.policy_number   | HARD FAIL
+   |                                    | (Step-5A) — if Step-5 completed       |
+
+
+===========================================================================
+INSURANCE 3 — LIFE INSURANCE
+===========================================================================
+
+Score impact shown on card: "Can add up to 10 points"
+
+Accepted documents:
+  - Life Insurance Policy Bond
+  - OR most recent Premium Payment Receipt / Certificate
+  (Either document is accepted)
+
+--- OCR EXTRACTION — LIFE INSURANCE ---
+
+Field               | Example Value                        | Used For
+--------------------|--------------------------------------|-------------------------------
+policy_number       | 00779114                             | API verification
+policy_holder_name  | Mr Shoeb Ahmed Siraj Ahmed Ansari   | API + Step-1 + Step-2 match
+insurance_company   | BSLI / LIC India                    | API verification
+sum_assured         | 550500                               | P6 feature: life_sum_norm
+total_premium_paid  | 51198.67                             | Bank cross-check
+policy_issue_date   | 25-FEB-2015                         | Valid date check
+coverage_start      | 25-FEB-2015                         | Coverage period check
+coverage_end        | 24-FEB-2016                         | Expiry check
+coverage_status     | Premium Paying Maturity              | Active status check
+payment_mode        | Yearly                               | Premium frequency signal
+coverage_name       | BSLI Easy Protector                 | Policy type signal
+
+--- API VERIFICATION — LIFE INSURANCE ---
+
+Endpoint  : POST /gov/insurance/life-policy-verify
+MongoDB   : life_insurance_db
+Trigger   : Automatic after OCR extracts policy_number
+
+Request:
+  {
+    "policy_number"     : "00779114",
+    "policy_holder_name": "Shoeb Ahmed Siraj Ahmed Ansari"
+  }
+
+Response:
+  {
+    "policy_number"      : "00779114",
+    "policy_holder_name" : "Shoeb Ahmed",
+    "insurance_company"  : "LIC India",
+    "policy_status"      : "Active",
+    "verified"           : true
+  }
+
+--- INDIVIDUAL VALIDATION — LIFE INSURANCE ---
+
+#  | Field                        | Rule                                   | Blocking
+---|------------------------------|----------------------------------------|---------
+1  | Policy Number                | OCR must match API                     | HARD FAIL
+2  | Policy Holder Name           | OCR vs API fuzzy >= 85%                | HARD FAIL
+3  | Insurance Company            | OCR must match API                     | HARD FAIL
+4  | Sum Assured                  | Must be numeric > 0                    | HARD FAIL
+5  | Total Premium Paid           | Must be numeric > 0                    | HARD FAIL
+6  | Policy Issue Date            | Must be valid date format              | HARD FAIL
+7  | Coverage Period (Start–End)  | Start < End; End date not expired      | HARD FAIL
+8  | Coverage Status              | Must be "Active" or "Premium Paying"   | HARD FAIL
+9  | Payment Mode                 | Must be readable (Yearly/Monthly/      | Soft flag
+   |                              | Quarterly)                             |
+
+--- CROSS-INTERNAL VALIDATION — LIFE INSURANCE ---
+
+#  | Check                                         | Rule               | Blocking
+---|-----------------------------------------------|--------------------|---------
+1  | Policy number consistent across document      | Identical in all   | HARD FAIL
+   | sections                                      | sections           |
+2  | Policy holder name consistent across document | Same in all name   | HARD FAIL
+   |                                               | fields             |
+
+--- BANK TRANSACTION CROSS-CHECK — LIFE INSURANCE ---
+
+Premium debit matching in Step-3 canonical CSV:
+  Amount   : total_premium_paid (OCR) ± 5%
+             OR annual_premium ÷ 12 (if monthly mode) ± 5%
+  Merchant : contains insurer keywords
+             e.g. "LIC", "BSLI", "HDFC LIFE", "ICICI PRU",
+                  "SBI LIFE", "MAX LIFE", "LIFE INSURANCE", "PREMIUM"
+  Category : INSURANCE_PREMIUM
+  Date     : ± 7 days of premium due date
+
+  Match found → life_premium_bank_verified = true  (bonus P6 signal)
+  No match    → life_premium_bank_verified = false  (soft flag, non-blocking)
+
+--- GLOBAL VALIDATION — LIFE INSURANCE ---
+
+#  | Check                          | Compared Against                    | Blocking
+---|--------------------------------|-------------------------------------|---------
+1  | Policy holder name (OCR)       | verified_profile.name (Step-1)      | HARD FAIL
+2  | Policy holder name (OCR)       | verified_profile.identity.          | HARD FAIL
+   |                                | aadhaar_name (Step-2)               |
+
+
+===========================================================================
+GLOBAL PROFILE UPDATE — STEP-7
+===========================================================================
+
+After all validations pass, the global profile is updated:
+
+verified_profile.insurance = {
+  "health_insurance"  : true,   // true if health policy verified
+  "vehicle_insurance" : true,   // true if vehicle policy verified
+  "life_insurance"    : false   // true if life policy verified
+}
+
+
+===========================================================================
+ML FEATURES PRODUCED — P6 FINANCIAL RESILIENCE
+===========================================================================
+
+Feature                       | Description                            | Pillar
+------------------------------|----------------------------------------|-------
+health_insurance_active_binary| Health policy verified and active (0/1)| P6
+health_insurance_sum_norm     | sum_insured ÷ anchor value (0.0–1.0)   | P6
+vehicle_insurance_active_binary| Vehicle insurance validated (0/1)     | P6
+vehicle_insurance_valid_binary | Vehicle policy not expired (0/1)      | P6
+life_insurance_active_binary  | Life insurance validated (0/1)         | P6
+life_insurance_sum_norm       | sum_assured ÷ anchor value (0.0–1.0)  | P6
+insurance_coverage_count      | Total types verified (0–3)             | P6
+
+Total P6 features from Step-7: 7
+
+
+===========================================================================
+TECHNICAL FLOW — STEP-7
+===========================================================================
+
+User opens Step-7
+  ↓
+System reads verified_profile.has_vehicle from Step-1
+  ↓
+Three insurance cards rendered with correct badges (REQUIRED / OPTIONAL)
+  ↓
+[HEALTH INSURANCE — Optional]
+  User uploads Health Insurance Policy Document
+    → OCR: policy_number, holder_name, company, start_date,
+            expiry_date, sum_insured, premium_amount, scheme_desc
+    → POST /gov/insurance/health-policy-verify
+    → Individual validation: all 8 OCR fields validated (see table)
+    → Cross-internal: policy_number + holder_name consistent
+    → Bank cross-check: premium debit in Step-3 CSV (± 5%, ± 7 days)
+    → Global: holder_name vs Step-1 name AND Step-2 Aadhaar name
+    [PASS] → health_insurance = true
+    [FAIL] → card shows error; user can retry; step not blocked
+  ↓
+[VEHICLE INSURANCE — Mandatory if has_vehicle = true]
+
+  GATE: IF rc_verified = true from Step-5A:
+    → Skip RC API, reuse vehicle_number from global state
+  ELSE:
+    → User uploads RC Book
+    → OCR: vehicle_number, owner_name, vehicle_class,
+            registration_date, engine_number, chassis_number
+    → POST /gov/vehicle/rc-verify
+    → RC Individual validation: all 6 fields (see table)
+  ↓
+  User uploads Vehicle Insurance Policy
+    → OCR: policy_number, vehicle_number, owner_name, company,
+            start_date, expiry_date, premium_amount,
+            chassis_number, engine_number
+    → POST /gov/insurance/vehicle-policy-verify
+    → Individual validation: all 9 fields (see table)
+    → Cross-internal: vehicle_number, chassis_number, engine_number
+                      consistent across RC + insurance
+    → Bank cross-check: premium debit in Step-3 CSV
+    → Global: vehicle_number vs Step-5 vehicle_number (if applicable)
+    [PASS] → vehicle_insurance = true
+    [FAIL] → HARD FAIL if has_vehicle = true (blocks Continue)
+  ↓
+[LIFE INSURANCE — Optional]
+  User uploads Life Insurance Policy or Premium Receipt
+    → OCR: policy_number, holder_name, company, sum_assured,
+            total_premium_paid, issue_date, coverage_period,
+            coverage_status, payment_mode, coverage_name
+    → POST /gov/insurance/life-policy-verify
+    → Individual validation: all 9 fields (see table)
+    → Cross-internal: policy_number + holder_name consistent
+    → Bank cross-check: premium debit in Step-3 CSV (± 5%, ± 7 days)
+    → Global: holder_name vs Step-1 name AND Step-2 Aadhaar name
+    [PASS] → life_insurance = true
+    [FAIL] → card shows error; user can retry; step not blocked
+  ↓
+Update verified_profile.insurance
+  ↓
+Step-7 Status = COMPLETED
+Enable navigation to Step-8
+
+
+===========================================================================
+OUTPUT OF STEP-7
+===========================================================================
+
+Step-7 Status          : COMPLETED
+verified_profile update: verified_profile.insurance updated
+P6 ML features         : 7 financial resilience features produced
+Next Step              : Step-8 (ITR and GST Records) — UNLOCKED
+
+===========================================================================
+END OF STEP-7 SPECIFICATION
+===========================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                              [ STEP 8 OF 9 ]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SYSTEM DESIGN PROMPT — STEP-8: ITR AND GST RECORDS
+GigCredit Onboarding | Version: Final | Pillars: P1, P6, P7, Meta-Learner
+===========================================================================
+
+PURPOSE
+-------
+Step-8 collects formal income declaration and tax compliance records.
+ITR and GST documents independently verify the income reported in the
+bank statement (Step-3) and the income declared in Step-1.
+
+These are the strongest formal income signals in the system. Submitting
+them improves confidence scores across P1 (Income Stability), P4
+(Savings Behaviour), P6 (Financial Resilience), and the Meta-Learner.
+
+All inputs in this step are optional. The user may skip either section
+or both. However, if the user provides any document, it must pass
+all validation layers. Invalid inputs are rejected and not used.
+
+Validation architecture:
+  - OCR Extraction       : On-device
+  - API Verification     : Government simulation (FastAPI + MongoDB)
+  - Individual Validation: Per-field rules on OCR extracted data
+  - Cross-Internal       : Consistency within and across documents
+  - Global Validation    : Consistency with all previous verified steps
+
+
+===========================================================================
+HOW IT IS PRESENTED ON SCREEN
+===========================================================================
+
+Two separate sections on one screen:
+  - Section A: ITR (Income Tax Return) — shown on top
+  - Section B: GST (Goods and Services Tax) — shown below
+
+Both sections are collapsed by default.
+
+Score impact message shown at top of screen:
+  "ITR and GST records are the strongest proof of income.
+   Submitting them can improve your score by up to 22 points
+   across multiple pillars."
+
+GST section is VISUALLY EXPANDED and PROMINENTLY DISPLAYED
+by default for:
+  - Vendor Seller (Step-1 work type)
+  - Freelancer (Step-1 work type)
+
+GST section remains collapsed for:
+  - Platform Worker
+  - Skilled Tradesperson
+
+
+===========================================================================
+INPUTS — STEP-8 (TOTAL: 4, ALL OPTIONAL)
+===========================================================================
+
+#  | Field                              | UI Element            | Format         | Count | Mandatory
+---|------------------------------------|-----------------------|----------------|-------|----------
+1  | ITR Acknowledgement Receipt        | Image/PDF upload card | JPG, PNG, PDF  | 1     | Optional
+   | (Form V)                           |                       |                |       |
+2  | Form 26AS                          | PDF upload card       | PDF only       | 1     | Optional
+3  | GSTIN Number                       | Text field (uppercase)| 15-char        | 1     | Optional
+   |                                    |                       | alphanumeric   |       |
+4  | GSTR-3B Monthly Returns            | Multi-file PDF upload | Up to 6 PDFs   | 1–6   | Optional
+
+Total Inputs  : 4
+Mandatory     : 0
+Optional      : 4
+Document uploads: Up to 8 (1 Form V + 1 Form 26AS + 6 GSTR-3B returns)
+
+UI Gate Rule:
+  → If user uploads Form V but NOT Form 26AS: acceptable, Form 26AS optional.
+  → If user uploads Form 26AS but NOT Form V: acceptable, Form V optional.
+  → If user enters GSTIN but uploads NO GSTR-3B: reject GSTIN alone;
+    at least 1 GSTR-3B return required to use GSTIN for scoring.
+  → If GSTIN not entered: GSTR-3B upload blocked (greyed out).
+
+
+===========================================================================
+SECTION A — ITR (INCOME TAX RETURN) VERIFICATION
+===========================================================================
+
+Score impact: Up to 15 points across P1 and P6.
+
+The user may upload one or both of the following documents:
+  1. ITR Acknowledgement Receipt (Form V / ITR-V)
+  2. Form 26AS (Annual Statement)
+
+Both documents are independent. Either alone is accepted.
+Both together produce more features.
+
+--- OCR EXTRACTION — ITR FORM V (ACKNOWLEDGEMENT RECEIPT) ---
+
+Field                  | Example Value          | Used For
+-----------------------|------------------------|-------------------------------
+taxpayer_name          | Ravi Kumar             | Step-1 + Step-2 name match
+pan_number             | ABCDE1234F             | Step-2 PAN cross-check
+assessment_year        | 2024-25                | Filing recency check
+acknowledgement_number | 123456789012345        | API verification (15 digits)
+date_of_filing         | 2025-07-18             | Filing window validation
+total_income           | 480000                 | P1 + P6 feature, bank match
+gross_total_income     | 510000                 | Income before deductions
+deductions             | 30000                  | Deduction signal
+net_taxable_income     | 480000                 | Final taxable income
+
+--- OCR EXTRACTION — FORM 26AS ---
+
+Field                            | Used For
+---------------------------------|-------------------------------
+taxpayer_name                    | Name consistency with Form V
+pan_number                       | PAN consistency with Form V
+total_tds_amount                 | Tax deduction signal (P6)
+total_income_from_all_sources    | Cross-check with Form V income
+employer_or_client_tan_details   | Formal income source signal
+advance_tax_payments             | Financial discipline signal
+
+--- API VERIFICATION — ITR ---
+
+Endpoint  : POST /gov/income-tax/itr-verify
+MongoDB   : itr_filings_db
+Trigger   : Automatic after OCR extracts acknowledgement_number
+
+Request:
+  {
+    "pan_number"             : "ABCDE1234F",
+    "acknowledgement_number" : "123456789012345",
+    "assessment_year"        : "2024-25"
+  }
+
+Response:
+  {
+    "itr_found"      : true,
+    "filing_status"  : "Valid",
+    "assessed_income": 480000,
+    "verified"       : true
+  }
+
+Possible filing_status values: Valid | Invalid Filing | Not Found
+
+AIS BACKEND CHECK (SIMULATED):
+  Backend performs simulated cross-check with Annual Information
+  Statement (AIS) data for high-value transaction anomaly detection.
+  If declared ITR income deviates > 50% from AIS estimated income:
+    → Flag: income_ais_mismatch = true (non-blocking, soft signal only)
+
+--- INDIVIDUAL VALIDATION — ITR FORM V ---
+
+#  | Field                    | Rule                                         | Blocking
+---|--------------------------|----------------------------------------------|---------
+1  | Taxpayer Name            | Min 2 words, alphabets + spaces only,        | HARD FAIL
+   |                          | no numbers, min 3 characters                 |
+2  | PAN Number               | Regex: [A-Z]{5}[0-9]{4}[A-Z]{1},            | HARD FAIL
+   |                          | exactly 10 characters, all uppercase         |
+3  | Assessment Year          | Valid FY format (e.g. 2024-25);              | HARD FAIL
+   |                          | not a future AY; within last 3 AYs           |
+4  | Acknowledgement Number   | Exactly 15 digits, numeric only              | HARD FAIL
+5  | Total Income             | Must be numeric, > 0                         | HARD FAIL
+6  | Date of Filing           | Must be valid date; must fall within          | HARD FAIL
+   |                          | valid ITR filing window for that AY           |
+   |                          | (typically April–December of filing year)    |
+
+--- INDIVIDUAL VALIDATION — FORM 26AS ---
+
+#  | Field                           | Rule                       | Blocking
+---|---------------------------------|----------------------------|---------
+1  | Taxpayer Name                   | Must be readable, alphabets| HARD FAIL
+2  | PAN Number                      | Same regex as Form V       | HARD FAIL
+3  | Total TDS Amount                | Numeric ≥ 0                | HARD FAIL
+4  | Total Income from All Sources   | Numeric ≥ 0                | HARD FAIL
+
+--- CROSS-INTERNAL VALIDATION — ITR ---
+
+#  | Check                                              | Rule                     | Blocking
+---|----------------------------------------------------|--------------------------|---------
+1  | Taxpayer name consistent within Form V             | Fuzzy ≥ 85%              | HARD FAIL
+2  | Assessment Year ↔ Filing Date                      | Filing date must fall    | HARD FAIL
+   |                                                    | within valid period for  |
+   |                                                    | that AY                  |
+3  | IF both Form V AND Form 26AS uploaded:             |                          |
+   |   PAN Number (Form V vs Form 26AS)                 | Must be identical        | HARD FAIL
+   |   Taxpayer Name (Form V vs Form 26AS)              | Fuzzy ≥ 85%              | HARD FAIL
+   |   Total Income (Form V vs Form 26AS)               | Within ± 30% tolerance   | Soft flag
+
+--- BANK TRANSACTION CROSS-CHECK — ITR ---
+
+Income consistency validation using Step-3 canonical CSV:
+  Formula:
+    expected_monthly = total_income (ITR) ÷ 12
+    lower_bound      = expected_monthly × 0.60
+    upper_bound      = expected_monthly × 1.40
+
+  Step-3 average monthly credit = avg monthly bank deposits
+
+  IF avg_monthly_credit is within [lower_bound, upper_bound]:
+    → income_consistency = "strong"
+    → itr_to_bank_ratio feature = computed
+  IF avg_monthly_credit is outside range:
+    → income_consistency = "medium" (non-blocking, does NOT reject ITR)
+    → Soft flag only; ITR still accepted
+
+  Note: Bank statement is converted to canonical CSV in Step-3.
+  Each transaction has: date, amount, merchant, category, transaction_id.
+
+--- GLOBAL VALIDATION — ITR ---
+
+#  | Check                          | Compared Against                    | Blocking
+---|--------------------------------|-------------------------------------|---------
+1  | Taxpayer Name (OCR)            | verified_profile.name (Step-1)      | HARD FAIL
+2  | Taxpayer Name (OCR)            | verified_profile.identity.pan_name  | HARD FAIL
+   |                                | (Step-2 PAN API name)               |
+3  | PAN Number (OCR)               | verified_profile.identity.          | HARD FAIL
+   |                                | pan_number (Step-2)                 |
+4  | ITR declared income ÷ 12       | Step-3 avg monthly bank credits     | Soft flag
+   |                                | (60%–140% tolerance band)           |
+
+
+===========================================================================
+SECTION B — GST RECORDS VERIFICATION
+===========================================================================
+
+Score impact: Up to 7 points in P7 (Social Accountability) and P1.
+
+The user:
+  1. Enters GSTIN Number (15-character)
+  2. Uploads up to 6 GSTR-3B Monthly Return PDFs
+
+GSTIN entry unlocks the GSTR-3B multi-file upload slot.
+If GSTIN is not entered, GSTR-3B upload remains disabled (greyed out).
+Minimum 1 GSTR-3B return required to register any GST score impact.
+
+--- OCR EXTRACTION — GSTR-3B (PER RETURN, UP TO 6 FILES) ---
+
+Field                             | Example Value  | Used For
+----------------------------------|----------------|-------------------------------
+gstin                             | 33AABCU9603R1Z5| API verification
+business_legal_name               | Ravi Kumar     | Step-1 name cross-check
+return_filing_month               | Jan-2026       | Filing consistency check
+outward_taxable_supplies_turnover | 65000          | P1 income feature
+filing_date                       | 2026-02-12     | Recency and regularity check
+tax_payable                       | 11700          | Tax compliance signal
+tax_paid                          | 11700          | Payment discipline signal
+
+--- API VERIFICATION — GST ---
+
+Endpoint  : POST /gov/gst/gstin-verify
+MongoDB   : gstin_db
+Trigger   : After user enters GSTIN and taps Verify
+
+Request:
+  { "gstin": "33AABCU9603R1Z5" }
+
+Response:
+  {
+    "gstin_found"         : true,
+    "business_legal_name" : "Ravi Kumar",
+    "gstin_status"        : "Active",
+    "registration_date"   : "2022-04-01",
+    "verified"            : true
+  }
+
+Possible gstin_status values: Active | Cancelled | Suspended | Not Found
+
+GSTR-3B FILING CONSISTENCY API CHECK (after OCR):
+  Endpoint  : POST /gov/gst/filing-history
+  MongoDB   : gstr3b_filings_db
+  Request   : { "gstin": "33AABCU9603R1Z5" }
+  Response  :
+    {
+      "months_filed"     : 5,
+      "latest_filing"    : "2026-01-12",
+      "consistency_flag" : "regular"
+    }
+
+--- INDIVIDUAL VALIDATION — GST ---
+
+#  | Field                            | Rule                              | Blocking
+---|----------------------------------|-----------------------------------|---------
+1  | GSTIN                            | Exactly 15 alphanumeric chars;    | HARD FAIL
+   |                                  | first 2 digits = state code;      |
+   |                                  | matches PAN in chars 3–12;        |
+   |                                  | API status = Active               |
+2  | Business Legal Name              | Must be readable; alphabets +     | HARD FAIL
+   |                                  | spaces; min 2 chars               |
+3  | Return Filing Month              | Must be a valid month-year format | HARD FAIL
+   |                                  | (e.g. Jan-2026, 01-2026)         |
+4  | Monthly Turnover                 | Must be numeric, ≥ 0              | HARD FAIL
+5  | Filing Date                      | Must be valid date                | HARD FAIL
+6  | Tax Payable                      | Must be numeric, ≥ 0              | HARD FAIL
+7  | Tax Paid                         | Must be numeric, ≥ 0;            | HARD FAIL
+   |                                  | ≤ tax_payable + 5% tolerance     |
+
+--- CROSS-INTERNAL VALIDATION — GST ---
+
+#  | Check                                              | Rule               | Blocking
+---|----------------------------------------------------|--------------------|----------
+1  | GSTIN consistent across all uploaded GSTR-3B files | Must be identical  | HARD FAIL
+2  | Business Legal Name consistent across all files    | Fuzzy ≥ 85%        | HARD FAIL
+3  | Filing months must represent distinct months       | No duplicate months| HARD FAIL
+4  | Filing months must be in chronological order       | Ascending dates    | Soft flag
+5  | Gap between filing months must be ≤ 35 days        | Consecutive months | Soft flag
+   | (regularity check)                                 |                    |
+
+--- BANK TRANSACTION CROSS-CHECK — GST ---
+
+GST tax payment verification in Step-3 canonical CSV:
+  Merchant  : contains GST-related keywords
+              e.g. "GST", "GSTIN", "TAX PAYMENT", "IGST", "CGST", "SGST"
+  Amount    : tax_paid (OCR) ± 5% tolerance
+  Date      : ± 10 days of filing date
+
+  Match found → gst_tax_bank_verified = true  (bonus P7 signal)
+  No match    → gst_tax_bank_verified = false  (soft flag, non-blocking)
+
+--- GLOBAL VALIDATION — GST ---
+
+#  | Check                          | Compared Against                    | Blocking
+---|--------------------------------|-------------------------------------|---------
+1  | Business Legal Name (OCR)      | verified_profile.name (Step-1)      | Soft flag
+   |                                | (Mismatch allowed if trading name   |
+   |                                |  differs from personal name;        |
+   |                                |  flagged but not rejected)          |
+2  | GSTIN (Step-8)                 | Step-5 GST certificate GSTIN        | HARD FAIL
+   |                                | (if Vendor/Freelancer submitted     |
+   |                                |  GST cert in Step-5)                |
+3  | Monthly turnover               | Step-3 avg monthly bank credits     | Soft flag
+   |                                | (± 30% tolerance)                   |
+
+
+===========================================================================
+DYNAMIC SECTION VISIBILITY — GST (Based on Step-1 Work Type)
+===========================================================================
+
+Work Type             | GST Section in Step-8
+----------------------|----------------------------------------------------
+Vendor Seller         | Expanded by default; visually prominent;
+                      | tip shown: "GST registration shows formal
+                      | business operation."
+Freelancer            | Expanded by default; tip shown: "GST registration
+                      | confirms professional income."
+Platform Worker       | Collapsed; expandable; low emphasis
+Skilled Tradesperson  | Collapsed; expandable; low emphasis
+
+
+===========================================================================
+GLOBAL PROFILE UPDATE — STEP-8
+===========================================================================
+
+After all validations pass, the global profile is updated:
+
+verified_profile.itr = {
+  "pan"              : "ABCDE1234F",
+  "assessment_year"  : "2024-25",
+  "declared_income"  : 480000,
+  "itr_verified"     : true,
+  "form_26as_linked" : true
+}
+
+verified_profile.gst = {
+  "gstin"              : "33AABCU9603R1Z5",
+  "gst_registered"     : true,
+  "filing_consistency" : 5,    // months out of 6 uploaded
+  "avg_monthly_turnover": 62000
+}
+
+
+===========================================================================
+ML FEATURES PRODUCED — STEP-8
+===========================================================================
+
+Feature                     | Description                            | Pillar
+----------------------------|----------------------------------------|-------
+itr_filed_binary            | ITR verified and filed (0/1)           | P6, Meta
+declared_income_ratio       | ITR annual ÷ 12 ÷ bank monthly avg     | P1
+itr_to_bank_ratio           | Income consistency cross-check ratio   | P1, P6
+gst_registered_binary       | GSTIN verified and active (0/1)        | P7
+gst_filing_consistency      | Months filed ÷ 6 (0.0–1.0)            | P7
+gst_monthly_turnover_norm   | Avg monthly turnover ÷ income anchor   | P1 (Vendor/
+                            |                                        | Freelancer)
+
+Total features produced: 6
+Pillars impacted: P1, P6, P7, Meta-Learner
+
+
+===========================================================================
+TECHNICAL FLOW — STEP-8
+===========================================================================
+
+User opens Step-8
+  ↓
+Step-level score message displayed
+  ↓
+System reads Step-1 work type:
+  Vendor / Freelancer → GST section expanded by default
+  Platform Worker / Tradesperson → GST section collapsed
+  ↓
+[SECTION A — ITR]
+
+  [IF user uploads ITR Form V]
+    → OCR: taxpayer_name, pan_number, assessment_year,
+            acknowledgement_number, date_of_filing,
+            total_income, gross_total_income,
+            deductions, net_taxable_income
+    → POST /gov/income-tax/itr-verify
+    → Individual validation: all 6 Form V fields (see table)
+    → AIS backend simulated cross-check
+
+  [IF user uploads Form 26AS]
+    → OCR: taxpayer_name, pan_number, total_tds_amount,
+            total_income_from_all_sources,
+            employer_tan_details, advance_tax_payments
+    → Individual validation: all 4 Form 26AS fields (see table)
+
+  [IF BOTH uploaded]
+    → Cross-internal: PAN match, name fuzzy match, income ± 30%
+
+  → Bank cross-check: ITR income vs Step-3 avg monthly credits
+    (60%–140% tolerance band)
+  → Global: taxpayer_name vs Step-1 name, Step-2 PAN name, Step-2 PAN number
+  [PASS] → itr_verified = true
+  [FAIL] → card shows error; user can retry; step not blocked overall
+  ↓
+[SECTION B — GST]
+
+  [IF user enters GSTIN]
+    → POST /gov/gst/gstin-verify
+    → GSTIN individual validation (format + API status = Active)
+    → GSTR-3B upload slot enabled
+  ↓
+  [IF user uploads GSTR-3B returns (1–6 files)]
+    → OCR per file: gstin, business_legal_name, return_filing_month,
+                    outward_taxable_supplies, filing_date,
+                    tax_payable, tax_paid
+    → POST /gov/gst/filing-history (filing consistency check)
+    → Individual validation: all 7 GSTR-3B fields per file (see table)
+    → Cross-internal: GSTIN consistent, business name consistent,
+                      distinct months, no duplicates
+    → Bank cross-check: GST tax payment in Step-3 CSV
+    → Global: business name vs Step-1 name (soft);
+              GSTIN vs Step-5 GST cert GSTIN (hard, if applicable)
+    [PASS] → gst_registered = true; filing_consistency computed
+    [FAIL] → card shows error; user can retry; step not blocked overall
+  ↓
+Update verified_profile.itr AND verified_profile.gst
+  ↓
+Step-8 Status = COMPLETED
+  ↓
+Proceed to Final Credit Scoring and Report Generation
+
+
+===========================================================================
+OUTPUT OF STEP-8
+===========================================================================
+
+Step-8 Status           : COMPLETED
+verified_profile update : itr and gst objects updated
+P1 + P6 + P7 features  : 6 ML features produced
+Next Step               : Final Credit Score Computation and Report
+
+===========================================================================
+END OF STEP-8 SPECIFICATION
+===========================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                              [ STEP 9 OF 9 ]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SYSTEM DESIGN PROMPT — STEP-9: EMI AND LOAN OBLIGATIONS
+GigCredit Onboarding | Version: Final | Pillar: P3 Debt Management
+===========================================================================
+
+PURPOSE
+-------
+Step-9 captures the user's existing debt obligations and repayment
+behaviour. This is the FINAL onboarding step. EMI and loan data feeds
+the P3 (Debt Management) scoring pillar and cross-validates against
+the bank statement dataset collected in Step-3.
+
+The primary verification method is bank transaction cross-check.
+An optional API trigger provides additional verification signal.
+If the user has no active loans, they may declare "No active loans"
+and proceed directly.
+
+Validation architecture:
+  - Individual Validation : Per-field rules on user-entered data
+  - API Verification      : Optional loan verification (FastAPI + MongoDB)
+  - Bank Cross-Check      : EMI matching against Step-3 canonical CSV
+  - Cross-Internal        : Consistency across multiple loan entries
+  - Global Validation     : Declared loans vs auto-detected EMIs in Step-3
+
+
+===========================================================================
+HOW IT IS PRESENTED ON SCREEN
+===========================================================================
+
+A single screen with:
+  - A "No Active Loans" toggle at the top
+  - A primary loan entry card (shown by default)
+  - An "Add Another Loan" button below (adds up to 5 additional loans)
+  - A Verify button per loan card (optional API trigger)
+
+Score impact message shown at top of screen:
+  "Declaring your active loans helps us accurately assess your
+   debt burden. Honest disclosure improves your score reliability."
+
+No Active Loans Toggle:
+  User selects "I have no active loans"
+    → All loan fields hidden
+    → Step-9 marked as declared_no_loans = true
+    → System still runs auto-detection from Step-3 bank data
+    → If EMI-tagged debits found in Step-3 → undisclosed_emi_flag = true
+    → Step-9 COMPLETED (no blocking)
+
+Maximum loans allowed: 6 (1 primary + 5 additional)
+
+
+===========================================================================
+INPUTS — STEP-9 (5 FIELDS PER LOAN ENTRY)
+===========================================================================
+
+Per Loan Entry:
+
+#  | Field                     | UI Element              | Format                    | Mandatory
+---|---------------------------|-------------------------|---------------------------|----------
+1  | Lender Name               | Text field / Dropdown   | Free text or predefined   | Required
+   |                           |                         | list of Indian lenders    |
+2  | Monthly EMI Amount (INR)  | Numeric text field      | Positive integer, no      | Required
+   |                           | with ₹ prefix           | decimals                  |
+3  | Previous Debit Date       | Date picker             | DD-MM-YYYY                | Required
+4  | Latest Debit Date         | Date picker             | DD-MM-YYYY                | Required
+5  | Loan Verification API     | "Verify" button         | Tap to trigger            | Optional
+   | Trigger                   | per loan card           | API call                  | (action)
+
+Total Inputs per loan entry : 5 (4 data fields + 1 optional action)
+Total loan entries allowed  : Up to 6
+Total mandatory inputs      : 4 per loan × number of loans declared
+Total optional              : Verify button (per loan)
+
+Predefined Lender Dropdown options (examples):
+  HDFC Bank, ICICI Bank, SBI, Axis Bank, Bajaj Finserv, Muthoot Finance,
+  Shriram Finance, IIFL Finance, Fullerton India, KreditBee, MoneyTap,
+  PaySense, EarlySalary, Navi, Kreditech, Other (free text entry)
+
+UI Note:
+  Previous Debit Date and Latest Debit Date pickers show:
+  "Enter the last two months EMI debit dates from your bank statement."
+
+
+===========================================================================
+INDIVIDUAL VALIDATION — PER LOAN ENTRY
+===========================================================================
+
+#  | Field                  | Rule                                          | Blocking
+---|------------------------|-----------------------------------------------|---------
+1  | Lender Name            | Min 3 characters                              | HARD FAIL
+   |                        | Alphabets + spaces only                       |
+   |                        | Must not be blank                             |
+2  | Monthly EMI Amount     | Must be numeric                               | HARD FAIL
+   |                        | Must be > 0                                   |
+   |                        | Must be ≤ Step-1 declared monthly income      |
+   |                        | (EMI cannot exceed total income)              |
+3  | Previous Debit Date    | Must be valid date format (DD-MM-YYYY)        | HARD FAIL
+   |                        | Must be earlier than Latest Debit Date        |
+   |                        | Must not be a future date                     |
+4  | Latest Debit Date      | Must be valid date format (DD-MM-YYYY)        | HARD FAIL
+   |                        | Must not be a future date                     |
+   |                        | Must be within the last 90 days               |
+5  | EMI Frequency Sanity   | Gap between Previous and Latest Debit Date    | Soft flag
+   |                        | must be between 25 and 35 days                |
+   |                        | (monthly cycle check)                         |
+   |                        | If gap < 25 or > 35: flag as irregular cycle  |
+
+
+===========================================================================
+API VERIFICATION — LOAN (OPTIONAL TRIGGER)
+===========================================================================
+
+User taps "Verify" button on a loan card to trigger verification.
+This is optional. If not triggered, bank cross-check is used instead.
+
+Endpoint  : POST /gov/loan/verify
+MongoDB   : loan_obligations_db
+Trigger   : User taps Verify button per loan card
+
+Request:
+  {
+    "lender_name"      : "HDFC Bank",
+    "emi_amount"       : 5000,
+    "latest_debit_date": "2026-04-05"
+  }
+
+Response:
+  {
+    "loan_found"          : true,
+    "loan_status"         : "Active",
+    "outstanding_balance" : 85000,
+    "loan_type"           : "Personal Loan",
+    "verified"            : true
+  }
+
+Possible loan_status values: Active | Closed | Defaulted | Not Found
+
+Post-API Individual Validation:
+  IF loan_status = Active  → loan_api_verified = true
+  IF loan_status = Closed  → flag: loan_declared_as_closed = true
+                             (user declared active, API says closed)
+                             Soft flag, non-blocking
+  IF loan_status = Defaulted → flag: loan_defaulted = true
+                               Hard negative P3 signal; step NOT blocked
+  IF loan_status = Not Found → API verification inconclusive;
+                               fallback to bank cross-check only
+
+Outstanding balance stored as:
+  verified_profile.loans[i].outstanding_balance
+  Used to compute: debt_to_income_ratio (P3 feature)
+
+
+===========================================================================
+BANK TRANSACTION CROSS-CHECK — PRIMARY VERIFICATION METHOD
+===========================================================================
+
+This is the MAIN verification method for Step-9.
+Each declared EMI is matched against the Step-3 canonical CSV.
+
+Step-3 canonical CSV structure per transaction:
+  date | amount | merchant_narration | category | transaction_id
+
+Matching rules per loan entry:
+
+LATEST DEBIT MATCH:
+  Amount   : transaction amount = EMI amount ± 5% tolerance
+  Date     : transaction date = Latest Debit Date ± 5 days
+  Merchant : transaction narration contains lender keywords
+             e.g. "HDFC", "BAJAJ", "EMI", "LOAN", "EQUATED",
+                  "INSTALMENT", "ECS", "NACH", "AUTO DEBIT"
+  Category : tagged as EMI in Step-3 transaction parser
+
+PREVIOUS DEBIT MATCH:
+  Amount   : same EMI amount ± 5%
+  Date     : ~30 days before Latest Debit Date ± 5 days
+
+MATCH RESULTS:
+
+  Both Latest AND Previous debit found:
+    → emi_bank_verified = true
+    → emi_recurring     = true  (strongest P3 positive signal)
+
+  Only Latest debit found:
+    → emi_bank_verified = true
+    → emi_recurring     = false  (single confirmation)
+
+  No debit found:
+    → emi_bank_verified = false
+    → EMI still accepted as self-declared
+    → Soft flag: emi_unverified = true
+    → Negative P3 signal but NON-BLOCKING
+
+  EMI debit found in Step-3 but amount differs by > 30%:
+    → Soft flag: emi_amount_mismatch = true
+    → Step NOT blocked; discrepancy recorded as P3 signal
+
+
+===========================================================================
+UNDISCLOSED EMI AUTO-DETECTION (GLOBAL STEP-3 SCAN)
+===========================================================================
+
+The system scans ALL Step-3 bank transactions tagged as category EMI.
+It compares auto-detected EMI patterns against user-declared loans.
+
+Detection logic:
+  1. Collect all transactions in Step-3 where category = EMI
+  2. Group recurring debits:
+     same amount (± 5%) + same merchant + recurring monthly pattern
+     → identify as a distinct EMI obligation
+  3. For each auto-detected EMI group:
+     a. Check if user declared a loan with matching lender + amount
+     b. If matched → emi_declared = true
+     c. If NOT matched → undisclosed_emi detected
+
+Undisclosed EMI Rule:
+  IF auto-detected EMI NOT declared by user:
+    → undisclosed_emi_flag = true
+    → undisclosed_emi_count += 1
+    → Negative P3 signal
+    → Step-9 NOT blocked (user can still complete onboarding)
+    → Soft flag only
+
+  Example:
+    Step-3 shows: recurring ₹3,200 debit to "BAJAJ FINSERV EMI"
+                  on 7th of each month for 6 months.
+    User did NOT declare this loan in Step-9.
+    → System flags: undisclosed_emi_flag = true
+    → Negative scoring signal applied silently in P3.
+
+
+===========================================================================
+CROSS-INTERNAL VALIDATION — ACROSS ALL LOAN ENTRIES
+===========================================================================
+
+#  | Check                               | Rule                          | Blocking
+---|-------------------------------------|-------------------------------|---------
+1  | Total EMI burden vs income          | Sum of all declared EMIs must | Soft flag
+   |                                     | be < Step-1 declared monthly  |
+   |                                     | income                        |
+   |                                     | IF > 80% of income:           |
+   |                                     | flag high_emi_burden = true   |
+2  | Duplicate lender check              | Same lender name cannot appear| HARD FAIL
+   |                                     | more than once across all     |
+   |                                     | loan entries                  |
+3  | Debit date consistency              | Previous Debit Date must be   | Soft flag
+   |                                     | ~30 days (25–35 days) before  |
+   |                                     | Latest Debit Date for EACH    |
+   |                                     | loan entry                    |
+4  | EMI-to-income ratio computation     | total_emi ÷ declared_income   | Feature
+   |                                     | = emi_burden_ratio            | only
+   |                                     | Stored as P3 feature          |
+5  | EMI declared vs Step-3 auto-detect  | Declared count vs auto-       | Soft flag
+   |                                     | detected EMI groups from      |
+   |                                     | Step-3 bank data              |
+
+
+===========================================================================
+GLOBAL VALIDATION — STEP-9
+===========================================================================
+
+#  | Check                                   | Compared Against              | Blocking
+---|-----------------------------------------|-------------------------------|---------
+1  | Total EMI debits in bank                | Step-3 EMI-tagged transaction | Soft flag
+   |                                         | total vs declared total EMI   |
+2  | Auto-detected EMIs (Step-3) vs          | User-declared loans in Step-9 | Soft flag
+   | declared EMIs (Step-9)                  | (undisclosed_emi_flag rule)   |
+3  | Outstanding balance vs bank debits      | If API verified: outstanding  | Soft flag
+   |                                         | balance consistency with      |
+   |                                         | Step-3 debit history          |
+4  | EMI lender vs known NACH/ECS merchants  | Cross-check lender name       | Soft flag
+   |                                         | against NACH/ECS narrations   |
+   |                                         | in Step-3 bank data           |
+5  | Declared income vs total debt burden    | Step-1 monthly income vs      | Soft flag
+   |                                         | total_emi + utility + rent    |
+   |                                         | (full obligation scan)        |
+
+
+===========================================================================
+GLOBAL PROFILE UPDATE — STEP-9
+===========================================================================
+
+After all validations pass, the global profile is updated:
+
+verified_profile.loans = [
+  {
+    "lender_name"          : "HDFC Bank",
+    "emi_amount"           : 5000,
+    "previous_debit_date"  : "2026-03-05",
+    "latest_debit_date"    : "2026-04-05",
+    "emi_bank_verified"    : true,
+    "emi_recurring"        : true,
+    "loan_status"          : "Active",
+    "outstanding_balance"  : 85000
+  },
+  {
+    "lender_name"          : "Bajaj Finserv",
+    "emi_amount"           : 3200,
+    "previous_debit_date"  : "2026-03-07",
+    "latest_debit_date"    : "2026-04-07",
+    "emi_bank_verified"    : true,
+    "emi_recurring"        : true,
+    "loan_status"          : "Active",
+    "outstanding_balance"  : 42000
+  }
+]
+
+verified_profile.debt_summary = {
+  "total_monthly_emi"    : 8200,
+  "emi_burden_ratio"     : 0.37,
+  "active_loan_count"    : 2,
+  "undisclosed_emi_flag" : false,
+  "high_emi_burden"      : false
+}
+
+
+===========================================================================
+ML FEATURES PRODUCED — P3 DEBT MANAGEMENT
+===========================================================================
+
+Feature                     | Description                              | Pillar
+----------------------------|------------------------------------------|---------
+emi_burden_ratio            | Total declared EMI ÷ monthly income      | P3
+active_loan_count           | Number of declared active loans (0–6)    | P3
+emi_bank_verified_binary    | At least 1 EMI confirmed in bank (0/1)   | P3
+emi_recurring_binary        | Both prev + latest debit found (0/1)     | P3
+undisclosed_emi_flag        | Hidden EMI detected from Step-3 (0/1)    | P3
+emi_on_time_ratio           | On-time EMI payments ÷ total observed    | P3
+                            | months (from Step-3 transaction history) |
+debt_to_income_ratio        | Total outstanding balance ÷ annual income| P3
+                            | (if API verified)                        |
+high_emi_burden_binary      | emi_burden_ratio > 0.80 (0/1)            | P3
+
+Total features produced: 8
+Pillar impacted: P3 (Debt Management)
+
+
+===========================================================================
+TECHNICAL FLOW — STEP-9
+===========================================================================
+
+User opens Step-9
+  ↓
+Score impact message displayed
+  ↓
+GATE: "No Active Loans" toggle check
+  User selects "I have no active loans"
+    → All loan fields hidden
+    → declared_no_loans = true
+    → System silently scans Step-3 for undisclosed EMI patterns
+    → If undisclosed EMIs found → undisclosed_emi_flag = true (soft)
+    → Step-9 COMPLETED immediately
+  ↓
+[IF user declares loans]
+
+  User enters Loan 1:
+    → Lender Name
+    → Monthly EMI Amount
+    → Previous Debit Date
+    → Latest Debit Date
+    → Individual validation: all 4 fields + frequency sanity check
+    ↓
+  [OPTIONAL] User taps Verify button:
+    → POST /gov/loan/verify
+    → API response: loan_status, outstanding_balance, loan_type
+    → Post-API validation: Active / Closed / Defaulted / Not Found
+  ↓
+  Bank cross-check (automatic):
+    → Match Latest Debit Date in Step-3 canonical CSV (± 5%, ± 5 days)
+    → Match Previous Debit Date in Step-3 canonical CSV
+    → emi_bank_verified and emi_recurring flags set
+  ↓
+  [IF user taps "Add Another Loan"]
+    → Same 5-field card appears
+    → Same individual validation + optional API + bank cross-check
+    → Repeat up to 6 loans total
+  ↓
+  Cross-internal validation:
+    → Duplicate lender check (HARD FAIL if duplicate)
+    → Total EMI burden vs Step-1 income (soft flag if > 80%)
+    → EMI-to-income ratio computed (emi_burden_ratio)
+  ↓
+  Global validation:
+    → Auto-detect EMI patterns from Step-3 bank data
+    → Compare against declared loans
+    → undisclosed_emi_flag if mismatch found (soft, non-blocking)
+    → Full obligation scan: EMI + utility + rent vs declared income
+  ↓
+Update verified_profile.loans and verified_profile.debt_summary
+  ↓
+Step-9 Status = COMPLETED
+  ↓
+ALL 9 STEPS COMPLETE
+  ↓
+Meta-Learner (Logistic Regression) runs on all 89 features
+  ↓
+Final Credit Score computed (range: 300–900)
+  ↓
+Credit Report and Score Card generated for user
+
+
+===========================================================================
+OUTPUT OF STEP-9
+===========================================================================
+
+Step-9 Status           : COMPLETED
+verified_profile update : loans array and debt_summary updated
+P3 features produced    : 8 Debt Management features
+Final trigger           : Meta-Learner → Credit Score (300–900)
+
+===========================================================================
+END OF STEP-9 SPECIFICATION
+===========================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                   ALL 9 STEPS COMPLETE — META-LEARNER TRIGGERED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FINAL CREDIT SCORE COMPUTATION
+────────────────────────────────
+After Step-9 completes, all 89 features from Steps 1-9 are passed to:
+
+  P1 Income Stability        → XGBoost model
+  P2 Payment Discipline      → XGBoost model
+  P3 Debt Management         → XGBoost model
+  P4 Savings Behaviour       → XGBoost model
+  P5 Identity Verification   → Rule-based score
+  P6 Financial Resilience    → RandomForest model
+  P7 Social Accountability   → RandomForest model
+
+  Final Meta-Learner         → Logistic Regression
+  Output                     → Credit Score: 300–900
+  Report                     → Score card with pillar breakdown
+
+════════════════════════════════════════════════════════════════════════════════
+END OF GIGCREDIT MASTER VERIFICATION & VALIDATION SPECIFICATION
+Version: Final | All 9 Steps | 84 Inputs | 89 Features | 18 APIs
+════════════════════════════════════════════════════════════════════════════════

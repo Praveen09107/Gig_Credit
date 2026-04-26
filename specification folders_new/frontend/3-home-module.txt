@@ -1,0 +1,379 @@
+GigCredit Frontend Specification — Home Module
+
+This document defines the complete frontend specification for the Home Module in the GigCredit application. The Home screen is the first main post-login screen and acts as the trust-building landing page of the app. It introduces the product, communicates the privacy-first and explainable value proposition, and directs users into the Score flow.
+
+The Home screen must feel clean, trustworthy, modern, and product-focused. It should not feel like a cluttered dashboard. Its primary job is to explain the product clearly and guide the user toward the Check Score action.
+
+1. MODULE GOAL
+
+The Home Module exists to:
+- introduce GigCredit clearly after login
+- communicate the product's privacy-first and explainable positioning
+- show the key benefits of the app in a structured way
+- reassure the user about privacy and security
+- guide the user into the Score flow through the main CTA
+
+This module acts as the user's first trust checkpoint inside the product.
+
+2. ENTRY POINT
+
+Primary entry points:
+- after successful login or sign up
+- bottom navigation → Home tab
+
+The Home tab is the root destination immediately after authentication unless future logic changes the startup route.
+
+3. HOME SCREEN PURPOSE
+
+The Home screen is not meant to be a data-heavy dashboard.
+
+Its purpose is to:
+- position the product
+- explain what the app does
+- explain why it is different
+- reduce fear about data handling
+- encourage the user to check their score
+
+This means the screen should prioritize messaging, hierarchy, and flow over dense controls.
+
+4. SCREEN CONTENT ORDER
+
+The content on the Home screen must appear in this order only:
+- hero headline
+- supporting subtext
+- hero image
+- feature cards section
+- Check Score button
+- privacy-preserving explanation section
+- trust and security statement
+- process flow section showing how the product works
+
+This order must remain fixed because the user explicitly defined the content sequence.
+
+5. HERO HEADLINE
+
+Primary headline text:
+Privacy-first. Explainable. Built for the real world
+
+Behavior:
+- show this first and prominently
+- render as bold hero headline
+- this should be the strongest typographic element on the screen
+- text should immediately establish the core product promise
+
+6. HERO SUBTEXT
+
+Subtext below the headline:
+Your data never leaves your device — get fair and explainable credit insights you can trust
+
+Behavior:
+- this should appear directly below the hero headline
+- use smaller normal text, not bold
+- keep it readable and calm
+- this line should reinforce privacy and trust without competing with the headline
+
+7. HERO IMAGE
+
+A related image must be shown in the hero section.
+
+Behavior:
+- the image source will be supplied by the user through a file path or asset path
+- the implementation should support plugging in the provided image path without changing layout structure
+- the image should appear after the subtext and before the feature cards
+- image should be responsive and not dominate the entire first viewport
+
+8. FEATURE CARDS SECTION
+
+Below the hero image, a feature section should show five cards with light background styling.
+
+Each card should contain:
+- small image or icon
+- short feature title
+- short supporting description
+
+Cards should feel clean, soft, and readable rather than promotional.
+
+9. FEATURE CARD 1
+
+Title:
+Alternative Credit Scoring
+
+Description:
+Based on UPI transactions, bill payments, and income patterns
+
+Meaning:
+This card tells users that GigCredit uses real-world financial behavior instead of traditional credit-only signals.
+
+10. FEATURE CARD 2
+
+Title:
+Explainable AI
+
+Description:
+Understand exactly why you got your score — no black-box decisions
+
+Meaning:
+This card reinforces transparency and score explainability.
+
+11. FEATURE CARD 3
+
+Title:
+Privacy-First Design
+
+Description:
+All processing happens on your device. Your data is never stored
+
+Meaning:
+This card reinforces the privacy promise and should feel especially trustworthy.
+
+12. FEATURE CARD 4
+
+Title:
+Personalized Insights
+
+Description:
+Get actionable suggestions to improve your score
+
+Meaning:
+This card emphasizes that the app gives users useful next steps, not just an output number.
+
+13. FEATURE CARD 5
+
+Title:
+Loan Recommendations
+
+Description:
+Get matched with lenders based on your eligibility
+
+Meaning:
+This card connects the score flow to the lending outcome.
+
+14. FEATURE CARDS LAYOUT RULES
+
+Visual layout rules:
+- use rounded cards with light background
+- keep consistent spacing between cards
+- each card should include an icon or image placeholder area
+- use short text blocks for quick scanning
+- cards can be stacked vertically on mobile
+
+The section should feel informative and calm.
+
+15. PRIMARY CTA BUTTON
+
+Main CTA text:
+Check Score
+
+Behavior:
+- shown below the feature cards
+- must be visually prominent
+- acts as the main action of the Home screen
+
+Navigation rule:
+- when user clicks Check Score, app must move to the Score tab
+- the Score icon in bottom navigation must become active
+- user proceeds with Score flow from there
+
+This is a critical navigation behavior and must be implemented clearly.
+
+16. PRIVACY-PRESERVING SECTION PURPOSE
+
+After the main CTA, the Home screen should explain how the product preserves privacy.
+
+This section exists to answer the user's question:
+How is it privacy preserving?
+
+The section should feel educational and trust-building.
+
+17. PRIVACY SECTION HEADING
+
+Suggested section heading:
+How it protects your privacy
+
+The heading can be slightly smaller than the hero headline but should still be clearly visible.
+
+18. PRIVACY SECTION CORE MESSAGE
+
+Main bold statement:
+Your Data Stays With You
+
+Behavior:
+- display this line as large and bold text
+- this should be the main emphasis inside the privacy section
+- it should feel like a trust anchor statement
+
+19. PRIVACY SECTION BULLET CONTENT
+
+The privacy section should display these points:
+- 100% on-device processing
+- No cloud storage of sensitive data
+- Data is deleted after report generation
+- Transparent and explainable decisions
+
+Behavior:
+- show these as bullet points or checklist-style points
+- spacing should make them easy to scan
+- this section should reinforce credibility, not marketing hype
+
+20. TRUST STATEMENT
+
+Below the privacy bullet points, show this line as big and bold text:
+Built for trust. Designed for security.
+
+Behavior:
+- display prominently
+- this should visually close the privacy section with a strong assurance line
+- text should feel premium and credible
+
+21. PROCESS FLOW SECTION PURPOSE
+
+After the trust statement, the Home page should visually show how GigCredit works in a simple linear flow.
+
+This section helps users understand the product journey before they start score generation.
+
+22. PROCESS FLOW CONTENT
+
+The process must be displayed in this order:
+financial behaviour → on device processing → explainable score → loan offers
+
+Each step should contain:
+- icon
+- short label
+
+The sequence must be horizontal where possible and should remain in the exact order given.
+
+23. PROCESS FLOW UX RULES
+
+The process flow section should:
+- feel simple and visual
+- not use long paragraphs
+- clearly communicate product progression
+- support responsive stacking on smaller screens if needed
+
+This section should function like a mini product map.
+
+24. HOME SCREEN SCROLLING BEHAVIOR
+
+The Home screen should be vertically scrollable.
+
+Expected order during scroll:
+- hero
+- cards
+- CTA
+- privacy section
+- trust statement
+- process flow
+
+This is a content-led screen, so scrolling should feel natural and readable.
+
+25. HOME SCREEN VISUAL STYLE
+
+The Home screen should feel:
+- light
+- clean
+- modern
+- reassuring
+- fintech-grade
+- slightly premium but simple
+
+It should not feel overly technical or crowded.
+
+26. IMAGE ASSET HANDLING
+
+The user said they will provide image paths.
+
+Frontend specification requirement:
+- the Home screen must support configurable image asset slots
+- hero image path should be defined externally or through a constant/config value
+- feature card icons should also support asset references
+- implementation should not hardcode temporary placeholder paths in production
+
+27. REUSABLE COMPONENTS INSIDE HOME MODULE
+
+Expected shared components:
+- AppTopBar or screen header if used globally
+- HeroSection
+- FeatureCard
+- PrimaryButton
+- SectionHeading
+- ChecklistBulletItem
+- ProcessFlowStep
+- BottomNavBar from app shell
+
+These components should be reusable and style-consistent with the rest of the app.
+
+28. STATE USED INSIDE HOME MODULE
+
+This module is relatively light in logic but may use:
+- user basic profile data for greeting if added later
+- asset path configuration
+- navigation state for tab switch to Score
+
+No heavy business state is required for the first version of Home.
+
+29. HOME TO SCORE TRANSITION DETAIL
+
+When Check Score is tapped:
+- the current screen should navigate to Score module root
+- active tab should switch from Home to Score
+- the user should land in the Score landing screen, not directly in the report or loan flow
+
+This transition must feel intentional and consistent with the navigation architecture.
+
+30. ERROR AND EMPTY STATE EXPECTATION
+
+The Home screen is primarily static content, so it does not require a traditional empty state.
+
+However, the implementation should still support:
+- missing image fallback behavior
+- icon load fallback behavior
+- safe layout behavior if an asset path is absent
+
+If a hero image is missing, layout should remain intact with fallback placeholder handling.
+
+31. ACCESSIBILITY AND READABILITY RULES
+
+The Home screen should follow these rules:
+- headline must be readable at first glance
+- supporting text should use comfortable body size
+- card text must not be too dense
+- buttons must be easy to tap
+- icons should support text meaning rather than replace it
+
+The screen should remain understandable even if images fail to load.
+
+32. BACKEND INTEGRATION NOTES
+
+The Home screen has minimal direct backend dependency, but it still participates in product flow.
+
+Important integration expectation:
+- the Check Score CTA must respect the navigation and credit restriction logic defined elsewhere
+- if later the Home screen includes personalized greeting or dynamic banners, those should use authenticated user profile state
+
+33. FUTURE EXTENSIBILITY
+
+The Home module should be structured so future versions can add:
+- personalized greeting
+- credit balance highlight
+- latest score summary
+- report shortcut
+- language banner
+
+These additions should not break the current trust-first structure.
+
+34. TESTING PRIORITIES FOR HOME MODULE
+
+Testing should verify:
+- correct content order
+- correct headline and subtext rendering
+- hero image loads from supplied path
+- all five feature cards render correctly
+- Check Score button switches to Score tab
+- privacy section renders all bullet points
+- trust statement displays correctly
+- process flow appears in correct order
+- layout remains stable on different mobile sizes
+
+35. FINAL MODULE DIRECTION
+
+The Home Module should feel like a strong first impression of the GigCredit product. It must clearly explain what the app is, why it can be trusted, and what the user should do next. If this module is implemented well, it will reduce hesitation, improve trust, and smoothly move users into the Score flow with confidence.

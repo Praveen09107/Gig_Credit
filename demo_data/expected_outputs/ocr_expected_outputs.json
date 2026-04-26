@@ -1,0 +1,126 @@
+{
+  "aadhaar_front": {
+    "id_number": "8765 4321 9012",
+    "name": "Ravi Kumar",
+    "dob": "15/06/1995",
+    "gender": "Male",
+    "confidence": 0.96
+  },
+  "aadhaar_back": {
+    "address": "42 Anna Nagar, Chennai, Tamil Nadu 600040",
+    "pin_code": "600040",
+    "confidence": 0.92
+  },
+  "pan": {
+    "id_number": "BXYPK4532N",
+    "name": "RAVI KUMAR",
+    "dob": "15/06/1995",
+    "father_name": "KUMAR S",
+    "confidence": 0.98
+  },
+  "selfie": {
+    "face_detected": true,
+    "liveness_score": 0.94,
+    "confidence": 0.95
+  },
+  "bank_statement": {
+    "bank_name": "HDFC Bank",
+    "account_number": "****2123",
+    "ifsc": "HDFC0001234",
+    "period": "Oct 2025 – Mar 2026",
+    "avg_monthly_credit": 28500.0,
+    "avg_monthly_debit": 22100.0,
+    "closing_balance": 34200.0,
+    "total_transactions": 127,
+    "emi_detected": 2,
+    "overdraft_days": 3,
+    "confidence": 0.88
+  },
+  "utility_electricity": {
+    "provider": "TANGEDCO",
+    "consumer_number": "TN-0987654",
+    "amount_due": 1850.0,
+    "due_date": "15/03/2026",
+    "address_match": true,
+    "confidence": 0.91
+  },
+  "utility_water": {
+    "provider": "CMWSSB",
+    "consumer_number": "CH-456789",
+    "amount_due": 450.0,
+    "due_date": "20/03/2026",
+    "confidence": 0.87
+  },
+  "utility_gas": {
+    "provider": "Indane Gas",
+    "consumer_number": "IG-112233",
+    "amount_due": 950.0,
+    "confidence": 0.85
+  },
+  "work_payout": {
+    "platform": "Swiggy",
+    "worker_id": "SWG-12345",
+    "period": "Jan – Mar 2026",
+    "total_earnings": 42500.0,
+    "total_trips": 312,
+    "avg_per_trip": 136.2,
+    "on_time_rate": 0.94,
+    "confidence": 0.89
+  },
+  "work_rc": {
+    "vehicle_number": "TN 09 AB 1234",
+    "owner_name": "Ravi Kumar",
+    "vehicle_type": "Two Wheeler",
+    "registration_valid": true,
+    "confidence": 0.93
+  },
+  "gov_eshram": {
+    "uan": "ESH-9876543210",
+    "name": "Ravi Kumar",
+    "occupation": "Platform Worker",
+    "enrolled_date": "2024-03-15",
+    "confidence": 0.90
+  },
+  "gov_ration": {
+    "card_number": "TN-RC-54321",
+    "family_head": "Kumar S",
+    "category": "PHH",
+    "confidence": 0.86
+  },
+  "insurance_health": {
+    "policy_number": "HDFC-HL-789012",
+    "provider": "HDFC Ergo",
+    "sum_assured": 500000,
+    "valid_until": "2027-01-15",
+    "premium_paid": true,
+    "confidence": 0.91
+  },
+  "insurance_vehicle": {
+    "policy_number": "ICICI-VH-345678",
+    "provider": "ICICI Lombard",
+    "vehicle_number": "TN 09 AB 1234",
+    "valid_until": "2026-12-31",
+    "confidence": 0.89
+  },
+  "insurance_life": {
+    "policy_number": "LIC-LF-901234",
+    "provider": "LIC",
+    "sum_assured": 1000000,
+    "confidence": 0.88
+  },
+  "tax_itr": {
+    "pan": "BXYPK4532N",
+    "assessment_year": "2025-26",
+    "acknowledgement_number": "CPC/2526/A1234567",
+    "total_income": 340000,
+    "tax_paid": 12500,
+    "filing_date": "2025-07-28",
+    "confidence": 0.94
+  },
+  "tax_gst": {
+    "gst_number": "33BXYPK4532N1Z5",
+    "trade_name": "Ravi Kumar Delivery Services",
+    "registration_date": "2024-06-01",
+    "confidence": 0.92
+  }
+}

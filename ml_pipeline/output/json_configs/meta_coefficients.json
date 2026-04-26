@@ -1,0 +1,29 @@
+{
+  "feature_order": [
+    "p1",
+    "p2",
+    "p3",
+    "p4",
+    "p5",
+    "p6",
+    "p7",
+    "w_platform",
+    "w_vendor",
+    "w_trades",
+    "w_free",
+    "p1_x_platform",
+    "p2_x_platform",
+    "p1_x_vendor",
+    "p2_x_vendor",
+    "p1_x_trades",
+    "p2_x_trades",
+    "p1_x_free",
+    "p2_x_free"
+  ],
+  "label_threshold": 0.616164,
+  "validation": {
+    "accuracy": 0.804,
+    "auc_roc": 0.8781
+  },
+  "note": "Meta-Learner is now an XGBRegressor trained on continuous target."
+}

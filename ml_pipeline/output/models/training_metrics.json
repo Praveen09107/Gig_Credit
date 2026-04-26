@@ -1,0 +1,27 @@
+{
+  "p1": {
+    "rmse": 0.014364,
+    "model_type": "xgb",
+    "n_features": 13
+  },
+  "p2": {
+    "rmse": 0.015424,
+    "model_type": "xgb",
+    "n_features": 15
+  },
+  "p3": {
+    "rmse": 0.013295,
+    "model_type": "xgb",
+    "n_features": 9
+  },
+  "p4": {
+    "rmse": 0.015593,
+    "model_type": "xgb",
+    "n_features": 12
+  },
+  "p6": {
+    "rmse": 0.016791,
+    "model_type": "xgb",
+    "n_features": 11
+  }
+}

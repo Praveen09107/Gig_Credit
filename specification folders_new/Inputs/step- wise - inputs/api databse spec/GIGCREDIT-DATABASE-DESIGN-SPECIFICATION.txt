@@ -1,0 +1,1221 @@
+
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                ║
+║         GIGCREDIT — DATABASE DESIGN SPECIFICATION                             ║
+║         MongoDB Collections for All Government API Simulations                ║
+║         All 9 Steps | All 18 API Endpoints | FastAPI + MongoDB                ║
+║                                                                                ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+PURPOSE
+───────
+This file defines every MongoDB database collection required to simulate
+government verification APIs in the GigCredit onboarding system.
+Each API endpoint fetches from one or more collections defined here.
+
+Architecture:
+  Backend   : FastAPI (Python)
+  Database  : MongoDB (document store)
+  Pattern   : Each government API = one or more MongoDB collections
+  Seeding   : Collections are pre-seeded with mock/test records
+  Response  : FastAPI queries collection → returns simulation response
+
+DATABASE NAME: gigcredit_gov_sim_db
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+COLLECTION INDEX — ALL 18 APIS → 20 COLLECTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ #  | Collection Name          | Used By API                        | Step
+----|--------------------------|------------------------------------|---------
+ 1  | aadhaar_db               | POST /verify-aadhaar               | Step-2
+ 2  | pan_db                   | POST /verify-pan                   | Step-2
+ 3  | ifsc_db                  | POST /verify-ifsc                  | Step-3
+ 4  | bank_accounts_db         | POST /verify-bank-account          | Step-3
+ 5  | eb_db                    | POST /gov/eb/verify                | Step-4
+ 6  | lpg_db                   | POST /gov/lpg/verify               | Step-4
+ 7  | vehicle_rc_db            | POST /gov/vehicle/rc-check         | Step-5A, Step-7
+ 8  | vehicle_insurance_db     | POST /gov/vehicle/insurance-check  | Step-5A, Step-7
+ 9  | svanidhi_db              | POST /gov/svanidhi/verify          | Step-5B, Step-6
+10  | fssai_db                 | POST /gov/fssai/verify             | Step-5B, Step-5C
+11  | skill_certificate_db     | POST /gov/skill/verify             | Step-5C
+12  | eshram_db                | POST /gov/eshram/verify            | Step-6
+13  | pmsym_db                 | GET  /api/pension/status           | Step-6
+14  | health_insurance_db      | POST /gov/insurance/health-policy-verify | Step-7
+15  | life_insurance_db        | POST /gov/insurance/life-policy-verify   | Step-7
+16  | income_tax_db            | POST /gov/income-tax/itr-verify    | Step-8
+17  | gst_db                   | POST /gov/gst/gstin-verify         | Step-8
+18  | gst_filing_db            | POST /gov/gst/filing-history       | Step-8
+19  | loan_obligations_db      | POST /gov/loan/verify              | Step-9
+20  | udyam_db                 | POST /gov/msme/udyam-verify        | Step-6
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. COLLECTION: aadhaar_db
+   API: POST /verify-aadhaar
+   Step: Step-2 (Identity KYC)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE:
+  Simulates UIDAI Aadhaar verification database.
+  API fetches record by aadhaar_number.
+  Returns name, DOB, mobile, status for OTP + OCR cross-check.
+
+SCHEMA:
+  Field               | Type    | Required | Description
+  --------------------|---------|----------|---------------------------------
+  _id                 | ObjectId| Auto     | MongoDB document ID
+  aadhaar_number      | String  | YES      | 12-digit Aadhaar (query key)
+  name                | String  | YES      | Registered name (used for OCR match)
+  date_of_birth       | String  | YES      | Format: YYYY-MM-DD
+  gender              | String  | YES      | Male / Female / Transgender
+  mobile              | String  | YES      | 10-digit registered mobile
+  email               | String  | NO       | Registered email (optional)
+  address             | Object  | YES      | Full address object (see below)
+  photo_hash          | String  | YES      | Hashed face embedding reference
+  status              | String  | YES      | active / inactive / locked
+  created_at          | Date    | Auto     | Record creation timestamp
+  updated_at          | Date    | Auto     | Last update timestamp
+
+  address sub-document:
+    house_number | street | area | city | district | state | pin_code
+
+INDEXES:
+  aadhaar_number : unique index (primary query field)
+  mobile         : index (for OTP routing)
+
+SAMPLE RECORD:
+  {
+    "aadhaar_number" : "123456789123",
+    "name"           : "Ravi Kumar",
+    "date_of_birth"  : "1997-06-12",
+    "gender"         : "Male",
+    "mobile"         : "9876543210",
+    "address"        : {
+      "house_number" : "No 14",
+      "street"       : "Anna Nagar Main Road",
+      "area"         : "Anna Nagar",
+      "city"         : "Chennai",
+      "district"     : "Chennai",
+      "state"        : "Tamil Nadu",
+      "pin_code"     : "600040"
+    },
+    "photo_hash"     : "sha256:a1b2c3d4...",
+    "status"         : "active"
+  }
+
+API QUERY:
+  db.aadhaar_db.findOne({ aadhaar_number: "123456789123" })
+
+API RESPONSE (to app):
+  { name, date_of_birth, mobile, status, otp_sent: true }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. COLLECTION: pan_db
+   API: POST /verify-pan
+   Step: Step-2 (Identity KYC)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE:
+  Simulates Income Tax Department PAN verification database.
+  API fetches by pan_number. Returns name, DOB, ITR filing status.
+
+SCHEMA:
+  Field              | Type    | Required | Description
+  -------------------|---------|----------|---------------------------------
+  _id                | ObjectId| Auto     | MongoDB document ID
+  pan_number         | String  | YES      | 10-char PAN (ABCDE1234F format) — query key
+  name               | String  | YES      | Name as per PAN
+  date_of_birth      | String  | YES      | Format: YYYY-MM-DD
+  father_name        | String  | YES      | Father's name as per PAN
+  aadhaar_linked     | Boolean | YES      | Whether Aadhaar is linked
+  itr_filed          | Boolean | YES      | Whether ITR was filed last AY
+  itr_assessment_year| String  | NO       | e.g. "2024-25"
+  status             | String  | YES      | Active / Inactive / Blocked
+  created_at         | Date    | Auto     | Timestamp
+
+INDEXES:
+  pan_number : unique index (primary query field)
+
+SAMPLE RECORD:
+  {
+    "pan_number"          : "ABCDE1234F",
+    "name"                : "Ravi Kumar",
+    "date_of_birth"       : "1997-06-12",
+    "father_name"         : "Suresh Kumar",
+    "aadhaar_linked"      : true,
+    "itr_filed"           : true,
+    "itr_assessment_year" : "2024-25",
+    "status"              : "Active"
+  }
+
+API QUERY:
+  db.pan_db.findOne({ pan_number: "ABCDE1234F" })
+
+API RESPONSE (to app):
+  { name, date_of_birth, status, itr_filed, itr_assessment_year }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. COLLECTION: ifsc_db
+   API: POST /verify-ifsc
+   Step: Step-3 (Bank Verification)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE:
+  Simulates RBI IFSC code dataset.
+  API fetches by ifsc_code. Returns bank name, branch, city, MICR.
+
+SCHEMA:
+  Field       | Type    | Required | Description
+  ------------|---------|----------|---------------------------------
+  _id         | ObjectId| Auto     | MongoDB document ID
+  ifsc_code   | String  | YES      | 11-char IFSC code — query key
+  bank_name   | String  | YES      | Full bank name
+  branch_name | String  | YES      | Branch name
+  address     | String  | YES      | Branch address
+  city        | String  | YES      | City
+  district    | String  | YES      | District
+  state       | String  | YES      | State
+  pin_code    | String  | YES      | 6-digit PIN
+  micr_code   | String  | YES      | 9-digit MICR code
+  upi_enabled | Boolean | YES      | UPI support flag
+  rtgs_enabled| Boolean | YES      | RTGS support flag
+  neft_enabled| Boolean | YES      | NEFT support flag
+
+INDEXES:
+  ifsc_code   : unique index
+  bank_name   : index (for bank-level queries)
+
+SAMPLE RECORD:
+  {
+    "ifsc_code"   : "HDFC0001234",
+    "bank_name"   : "HDFC Bank",
+    "branch_name" : "Anna Nagar",
+    "address"     : "No 5, Anna Nagar Main Road, Chennai",
+    "city"        : "Chennai",
+    "district"    : "Chennai",
+    "state"       : "Tamil Nadu",
+    "pin_code"    : "600040",
+    "micr_code"   : "600240012",
+    "upi_enabled" : true,
+    "rtgs_enabled": true,
+    "neft_enabled": true
+  }
+
+API QUERY:
+  db.ifsc_db.findOne({ ifsc_code: "HDFC0001234" })
+
+API RESPONSE (to app):
+  { bank_name, branch_name, city, state, micr_code }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. COLLECTION: bank_accounts_db
+   API: POST /verify-bank-account (Penny Drop Simulation)
+   Step: Step-3 (Bank Verification)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE:
+  Simulates penny drop / bank account verification.
+  API fetches by account_number + ifsc_code. Returns holder name, status.
+
+SCHEMA:
+  Field                | Type    | Required | Description
+  ---------------------|---------|----------|---------------------------------
+  _id                  | ObjectId| Auto     | MongoDB document ID
+  account_number       | String  | YES      | Bank account number — query key
+  ifsc_code            | String  | YES      | IFSC of the branch — query key
+  account_holder_name  | String  | YES      | Name as per bank records
+  bank_name            | String  | YES      | Bank name
+  branch_name          | String  | YES      | Branch name
+  account_type         | String  | YES      | Savings / Current / OD
+  status               | String  | YES      | Active / Closed / Frozen
+  aadhaar_linked       | Boolean | YES      | Aadhaar seeded flag
+  mobile_linked        | String  | YES      | Registered mobile with bank
+  opening_date         | String  | YES      | Account opening date YYYY-MM-DD
+  micr_code            | String  | YES      | 9-digit MICR
+
+INDEXES:
+  { account_number, ifsc_code } : compound unique index
+
+SAMPLE RECORD:
+  {
+    "account_number"      : "1234567890",
+    "ifsc_code"           : "HDFC0001234",
+    "account_holder_name" : "Ravi Kumar",
+    "bank_name"           : "HDFC Bank",
+    "branch_name"         : "Anna Nagar",
+    "account_type"        : "Savings",
+    "status"              : "Active",
+    "aadhaar_linked"      : true,
+    "mobile_linked"       : "9876543210",
+    "opening_date"        : "2019-04-15",
+    "micr_code"           : "600240012"
+  }
+
+API QUERY:
+  db.bank_accounts_db.findOne({ account_number: "1234567890", ifsc_code: "HDFC0001234" })
+
+API RESPONSE (to app):
+  { account_exists: true, is_active: true, account_holder_name, bank_name }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. COLLECTION: eb_db
+   API: POST /gov/eb/verify
+   Step: Step-4 (Electricity Bill Verification)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE:
+  Simulates state electricity board verification.
+  API fetches by service_number. Returns connection status.
+
+SCHEMA:
+  Field              | Type    | Required | Description
+  -------------------|---------|----------|---------------------------------
+  _id                | ObjectId| Auto     | MongoDB document ID
+  service_number     | String  | YES      | EB service/consumer number — query key
+  consumer_name      | String  | YES      | Name on EB account (may be landlord)
+  connection_type    | String  | YES      | Residential / Commercial
+  sanctioned_load    | String  | YES      | e.g. "2 kW"
+  connection_status  | String  | YES      | Active / Disconnected / Suspended
+  tariff_category    | String  | YES      | LT1A / LT2 etc.
+  address            | String  | YES      | Connection address
+  state_board        | String  | YES      | TNEB / BESCOM / MSEDCL etc.
+  phase              | String  | YES      | Single / Three
+  supply_type        | String  | YES      | Metered / Unmetered
+
+INDEXES:
+  service_number : unique index
+
+SAMPLE RECORD:
+  {
+    "service_number"   : "0119400742",
+    "consumer_name"    : "Rakimma Beevi",
+    "connection_type"  : "Residential",
+    "sanctioned_load"  : "2 kW",
+    "connection_status": "Active",
+    "tariff_category"  : "LT1A",
+    "address"          : "No 14, Anna Nagar, Chennai - 600040",
+    "state_board"      : "TNEB",
+    "phase"            : "Single",
+    "supply_type"      : "Metered"
+  }
+
+API QUERY:
+  db.eb_db.findOne({ service_number: "0119400742" })
+
+API RESPONSE (to app):
+  { valid: true, service_number, connection_status, tariff_category }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. COLLECTION: lpg_db
+   API: POST /gov/lpg/verify
+   Step: Step-4 (LPG/Gas Bill Verification)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE:
+  Simulates LPG consumer database (Indane / HP Gas / Bharat Gas).
+  API fetches by consumer_number + provider.
+
+SCHEMA:
+  Field              | Type    | Required | Description
+  -------------------|---------|----------|---------------------------------
+  _id                | ObjectId| Auto     | MongoDB document ID
+  consumer_number    | String  | YES      | LPG consumer ID — query key
+  provider           | String  | YES      | Indane / HP Gas / Bharat Gas — query key
+  consumer_name      | String  | YES      | Name on LPG account
+  distributor_name   | String  | YES      | Local distributor name
+  connection_type    | String  | YES      | Domestic / Commercial
+  connection_status  | String  | YES      | Active / Surrendered / Blocked
+  subsidy_status     | String  | YES      | Subsidised / Non-subsidised / PAHAL
+  cylinders_per_year | Number  | YES      | Allocated cylinders per year
+  address            | String  | YES      | Delivery address
+  mobile             | String  | YES      | Registered mobile number
+  bank_account       | String  | NO       | For DBTL subsidy transfer
+
+INDEXES:
+  { consumer_number, provider } : compound unique index
+
+SAMPLE RECORD:
+  {
+    "consumer_number"   : "45678912",
+    "provider"          : "Indane",
+    "consumer_name"     : "Ravi Kumar",
+    "distributor_name"  : "Sri Ram Gas Agency",
+    "connection_type"   : "Domestic",
+    "connection_status" : "Active",
+    "subsidy_status"    : "PAHAL",
+    "cylinders_per_year": 12,
+    "address"           : "No 14, Anna Nagar, Chennai",
+    "mobile"            : "9876543210"
+  }
+
+API QUERY:
+  db.lpg_db.findOne({ consumer_number: "45678912", provider: "Indane" })
+
+API RESPONSE (to app):
+  { valid: true, consumer_name, connection_status, provider }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. COLLECTION: vehicle_rc_db
+   API: POST /gov/vehicle/rc-check
+   Step: Step-5A (Platform Worker), Step-7 (Vehicle Insurance)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE:
+  Simulates Vahan / Transport Dept RC verification database.
+  API fetches by vehicle_number. Returns RC status, owner, class.
+
+SCHEMA:
+  Field               | Type    | Required | Description
+  --------------------|---------|----------|---------------------------------
+  _id                 | ObjectId| Auto     | MongoDB document ID
+  vehicle_number      | String  | YES      | Registration number — query key (e.g. TN09AB1234)
+  owner_name          | String  | YES      | Registered owner name
+  vehicle_type        | String  | YES      | Motorcycle / Car / Auto / LCV
+  vehicle_class       | String  | YES      | M/MCWG / LMV / Transport
+  make                | String  | YES      | Brand (Honda / Bajaj etc.)
+  model               | String  | YES      | Model name
+  chassis_number      | String  | YES      | Unique chassis ID
+  engine_number       | String  | YES      | Unique engine ID
+  fuel_type           | String  | YES      | Petrol / Diesel / EV / CNG
+  registration_date   | String  | YES      | YYYY-MM-DD
+  valid_till          | String  | YES      | RC validity date YYYY-MM-DD
+  rc_status           | String  | YES      | Active / Expired / Blacklisted
+  state               | String  | YES      | Registration state
+  rto_code            | String  | YES      | RTO office code
+
+INDEXES:
+  vehicle_number  : unique index
+  chassis_number  : unique index
+  engine_number   : unique index
+
+SAMPLE RECORD:
+  {
+    "vehicle_number"   : "TN09AB1234",
+    "owner_name"       : "Ravi Kumar",
+    "vehicle_type"     : "Motorcycle",
+    "vehicle_class"    : "M/MCWG",
+    "make"             : "Honda",
+    "model"            : "Activa 6G",
+    "chassis_number"   : "ME4JF501ED8275772",
+    "engine_number"    : "JF50E80275170",
+    "fuel_type"        : "Petrol",
+    "registration_date": "2019-03-15",
+    "valid_till"       : "2034-03-14",
+    "rc_status"        : "Active",
+    "state"            : "Tamil Nadu",
+    "rto_code"         : "TN09"
+  }
+
+API QUERY:
+  db.vehicle_rc_db.findOne({ vehicle_number: "TN09AB1234" })
+
+API RESPONSE (to app):
+  { vehicle_found: true, owner_name, vehicle_class, chassis_number,
+    engine_number, rc_status, valid_till }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. COLLECTION: vehicle_insurance_db
+   API: POST /gov/vehicle/insurance-check
+   Step: Step-5A (Platform Worker), Step-7 (Vehicle Insurance)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE:
+  Simulates IIB (Insurance Information Bureau) vehicle insurance database.
+  API fetches by vehicle_number. Returns policy details.
+
+SCHEMA:
+  Field              | Type    | Required | Description
+  -------------------|---------|----------|---------------------------------
+  _id                | ObjectId| Auto     | MongoDB document ID
+  vehicle_number     | String  | YES      | Registration number — query key
+  policy_number      | String  | YES      | Insurance policy number
+  insurance_company  | String  | YES      | Insurer name
+  policy_type        | String  | YES      | Comprehensive / Third Party
+  policy_start_date  | String  | YES      | YYYY-MM-DD
+  policy_expiry_date | String  | YES      | YYYY-MM-DD
+  insurance_status   | String  | YES      | Active / Expired / Cancelled
+  owner_name         | String  | YES      | Policy holder name
+  premium_amount     | Number  | YES      | Annual premium paid (₹)
+  idv_value          | Number  | YES      | Insured Declared Value (₹)
+  ncb_percent        | Number  | NO       | No Claim Bonus %
+
+INDEXES:
+  vehicle_number : index (primary query)
+  policy_number  : unique index
+
+SAMPLE RECORD:
+  {
+    "vehicle_number"    : "TN09AB1234",
+    "policy_number"     : "MTR987654321",
+    "insurance_company" : "ICICI Lombard",
+    "policy_type"       : "Comprehensive",
+    "policy_start_date" : "2025-04-10",
+    "policy_expiry_date": "2026-04-09",
+    "insurance_status"  : "Active",
+    "owner_name"        : "Ravi Kumar",
+    "premium_amount"    : 4800,
+    "idv_value"         : 65000,
+    "ncb_percent"       : 20
+  }
+
+API QUERY:
+  db.vehicle_insurance_db.findOne({ vehicle_number: "TN09AB1234" })
+
+API RESPONSE (to app):
+  { insurance_found: true, policy_number, insurance_company,
+    insurance_status, policy_expiry_date }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. COLLECTION: svanidhi_db
+   API: POST /gov/svanidhi/verify
+   Step: Step-5B (Vendor), Step-6 (Schemes)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE:
+  Simulates PM SVANidhi (Street Vendor Loan) scheme database.
+  API fetches by application_id. Returns loan status, beneficiary.
+
+SCHEMA:
+  Field               | Type    | Required | Description
+  --------------------|---------|----------|---------------------------------
+  _id                 | ObjectId| Auto     | MongoDB document ID
+  application_id      | String  | YES      | SVN12345678 format — query key
+  beneficiary_name    | String  | YES      | Vendor's name
+  loan_status         | String  | YES      | Disbursed / Pending / Rejected / Closed
+  loan_amount         | Number  | YES      | Amount sanctioned (₹10K / ₹20K / ₹50K)
+  loan_type           | String  | YES      | Term Loan 1 / Term Loan 2 / Term Loan 3
+  bank_name           | String  | YES      | Disbursing bank/MFI
+  disbursement_date   | String  | YES      | YYYY-MM-DD
+  repayment_status    | String  | YES      | Regular / Overdue / Closed
+  next_loan_eligible  | Number  | YES      | Next tier loan amount eligibility
+  ulb_name            | String  | YES      | Urban Local Body name
+  city                | String  | YES      | City of registration
+  category_of_vending | String  | YES      | Stationary / Mobile / Other
+
+INDEXES:
+  application_id : unique index
+
+SAMPLE RECORD:
+  {
+    "application_id"     : "SVN12345678",
+    "beneficiary_name"   : "Ravi Kumar",
+    "loan_status"        : "Disbursed",
+    "loan_amount"        : 10000,
+    "loan_type"          : "Term Loan 1",
+    "bank_name"          : "State Bank of India",
+    "disbursement_date"  : "2023-06-01",
+    "repayment_status"   : "Regular",
+    "next_loan_eligible" : 20000,
+    "ulb_name"           : "Greater Chennai Corporation",
+    "city"               : "Chennai",
+    "category_of_vending": "Stationary"
+  }
+
+API QUERY:
+  db.svanidhi_db.findOne({ application_id: "SVN12345678" })
+
+API RESPONSE (to app):
+  { application_id, loan_status, loan_amount, beneficiary_name, next_loan_eligible }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. COLLECTION: fssai_db
+    API: POST /gov/fssai/verify
+    Step: Step-5B (Vendor), Step-5C (Tradesperson — food related)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE:
+  Simulates FSSAI (Food Safety) license database.
+  API fetches by license_number (14-digit).
+
+SCHEMA:
+  Field              | Type    | Required | Description
+  -------------------|---------|----------|---------------------------------
+  _id                | ObjectId| Auto     | MongoDB document ID
+  license_number     | String  | YES      | 14-digit FSSAI number — query key
+  business_name      | String  | YES      | Registered food business name
+  license_holder     | String  | YES      | Proprietor/owner name
+  business_type      | String  | YES      | Manufacturer / Retailer / Distributor
+  food_category      | String  | YES      | Type of food handled
+  place_of_business  | String  | YES      | Business address
+  state              | String  | YES      | Registered state
+  license_type       | String  | YES      | Basic / State / Central
+  valid_from         | String  | YES      | YYYY-MM-DD
+  valid_upto         | String  | YES      | YYYY-MM-DD
+  license_status     | String  | YES      | Active / Expired / Suspended / Cancelled
+
+INDEXES:
+  license_number : unique index
+
+SAMPLE RECORD:
+  {
+    "license_number"   : "12345678901234",
+    "business_name"    : "Ravi Food Stall",
+    "license_holder"   : "Ravi Kumar",
+    "business_type"    : "Retailer",
+    "food_category"    : "Ready to Eat",
+    "place_of_business": "Anna Nagar Market, Chennai",
+    "state"            : "Tamil Nadu",
+    "license_type"     : "Basic",
+    "valid_from"       : "2023-04-01",
+    "valid_upto"       : "2026-03-31",
+    "license_status"   : "Active"
+  }
+
+API QUERY:
+  db.fssai_db.findOne({ license_number: "12345678901234" })
+
+API RESPONSE (to app):
+  { valid: true, license_holder, business_type, license_status, valid_upto }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. COLLECTION: skill_certificate_db
+    API: POST /gov/skill/verify
+    Step: Step-5C (Skilled Tradesperson)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE:
+  Simulates Skill India / NSDC certificate verification database.
+  API fetches by certificate_id.
+
+SCHEMA:
+  Field               | Type    | Required | Description
+  --------------------|---------|----------|---------------------------------
+  _id                 | ObjectId| Auto     | MongoDB document ID
+  certificate_id      | String  | YES      | NSDC-YYYY-XXXXXX format — query key
+  candidate_name      | String  | YES      | Name of certified candidate
+  job_role            | String  | YES      | e.g. Electrician / Plumber
+  sector              | String  | YES      | Construction / Automotive etc.
+  nsqf_level          | Number  | YES      | 1 to 8
+  training_institute  | String  | YES      | Certified institute name
+  training_partner    | String  | YES      | NSDC training partner
+  course_duration_hrs | Number  | YES      | Total training hours
+  assessment_date     | String  | YES      | YYYY-MM-DD
+  issue_date          | String  | YES      | YYYY-MM-DD
+  certificate_status  | String  | YES      | Valid / Expired / Cancelled
+  grade               | String  | YES      | A+ / A / B / C
+  enrollment_number   | String  | YES      | Unique enrollment ID
+
+INDEXES:
+  certificate_id   : unique index
+  enrollment_number: unique index
+
+SAMPLE RECORD:
+  {
+    "certificate_id"     : "NSDC-2023-457892",
+    "candidate_name"     : "Ravi Kumar",
+    "job_role"           : "Electrician",
+    "sector"             : "Construction",
+    "nsqf_level"         : 4,
+    "training_institute" : "Sri Ramakrishna Polytechnic, Chennai",
+    "training_partner"   : "CSDCI",
+    "course_duration_hrs": 400,
+    "assessment_date"    : "2023-08-15",
+    "issue_date"         : "2023-09-01",
+    "certificate_status" : "Valid",
+    "grade"              : "A",
+    "enrollment_number"  : "CSDCI2023TN00892"
+  }
+
+API QUERY:
+  db.skill_certificate_db.findOne({ certificate_id: "NSDC-2023-457892" })
+
+API RESPONSE (to app):
+  { candidate_name, job_role, nsqf_level, certificate_status, grade, issue_date }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. COLLECTION: eshram_db
+    API: POST /gov/eshram/verify
+    Step: Step-6 (Government Schemes — eShram)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE:
+  Simulates eShram worker registration database (Ministry of Labour).
+  API fetches by uan (12-digit). Returns worker name, occupation, status.
+
+SCHEMA:
+  Field               | Type    | Required | Description
+  --------------------|---------|----------|---------------------------------
+  _id                 | ObjectId| Auto     | MongoDB document ID
+  uan                 | String  | YES      | 12-digit UAN — query key
+  worker_name         | String  | YES      | Registered worker name
+  fathers_name        | String  | YES      | Father's name
+  date_of_birth       | String  | YES      | YYYY-MM-DD
+  gender              | String  | YES      | Male / Female / Other
+  primary_occupation  | String  | YES      | e.g. Electrician / Delivery Agent
+  occupation_code     | String  | YES      | NIC occupation code
+  state               | String  | YES      | Registered state
+  district            | String  | YES      | District
+  registration_date   | String  | YES      | YYYY-MM-DD
+  registration_status | String  | YES      | Active / Inactive
+  aadhaar_linked      | Boolean | YES      | Aadhaar seeding status
+  mobile              | String  | YES      | Registered mobile
+  category            | String  | YES      | Construction / Agriculture / Domestic etc.
+
+INDEXES:
+  uan    : unique index
+  mobile : index
+
+SAMPLE RECORD:
+  {
+    "uan"                : "123456789012",
+    "worker_name"        : "Ravi Kumar",
+    "fathers_name"       : "Suresh Kumar",
+    "date_of_birth"      : "1997-06-12",
+    "gender"             : "Male",
+    "primary_occupation" : "Electrician",
+    "occupation_code"    : "7411",
+    "state"              : "Tamil Nadu",
+    "district"           : "Chennai",
+    "registration_date"  : "2022-06-15",
+    "registration_status": "Active",
+    "aadhaar_linked"     : true,
+    "mobile"             : "9876543210",
+    "category"           : "Construction"
+  }
+
+API QUERY:
+  db.eshram_db.findOne({ uan: "123456789012" })
+
+API RESPONSE (to app):
+  { worker_name, occupation: primary_occupation, state, registration_status, registration_date }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. COLLECTION: pmsym_db
+    API: GET /api/pension/status
+    Step: Step-6 (Government Schemes — PM-SYM)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE:
+  Simulates PM-SYM pension subscriber database.
+  API fetches by pension_account_number or aadhaar_reference.
+
+SCHEMA:
+  Field                  | Type    | Required | Description
+  -----------------------|---------|----------|---------------------------------
+  _id                    | ObjectId| Auto     | MongoDB document ID
+  pension_account_number | String  | YES      | PM-SYM-XXXXXX format — query key
+  subscriber_name        | String  | YES      | Name of subscriber
+  date_of_birth          | String  | YES      | YYYY-MM-DD
+  gender                 | String  | YES      | Male / Female
+  aadhaar_reference      | String  | YES      | Masked Aadhaar (last 4 digits)
+  monthly_contribution   | Number  | YES      | ₹55 / ₹100 / ₹200 (age-based)
+  govt_contribution      | Number  | YES      | Matching govt amount
+  subscription_status    | String  | YES      | ACTIVE / INACTIVE / EXITED
+  enrollment_date        | String  | YES      | YYYY-MM-DD
+  last_payment_date      | String  | YES      | YYYY-MM-DD
+  bank_name              | String  | YES      | Bank for auto-debit
+  bank_account           | String  | YES      | Auto-debit account
+
+INDEXES:
+  pension_account_number : unique index
+  aadhaar_reference      : index
+
+SAMPLE RECORD:
+  {
+    "pension_account_number": "PM-SYM-829201",
+    "subscriber_name"       : "Ravi Kumar",
+    "date_of_birth"         : "1997-06-12",
+    "gender"                : "Male",
+    "aadhaar_reference"     : "XXXX-XXXX-3210",
+    "monthly_contribution"  : 100,
+    "govt_contribution"     : 100,
+    "subscription_status"   : "ACTIVE",
+    "enrollment_date"       : "2022-07-01",
+    "last_payment_date"     : "2026-04-01",
+    "bank_name"             : "HDFC Bank",
+    "bank_account"          : "1234567890"
+  }
+
+API QUERY:
+  db.pmsym_db.findOne({ pension_account_number: "PM-SYM-829201" })
+
+API RESPONSE (to app):
+  { scheme: "PM-SYM", status: subscription_status, monthly_contribution,
+    last_payment_date, pension_account_number }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. COLLECTION: health_insurance_db
+    API: POST /gov/insurance/health-policy-verify
+    Step: Step-7 (Health Insurance)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE:
+  Simulates health insurance policy verification (IRDAI simulation).
+  API fetches by policy_number + insurance_company.
+
+SCHEMA:
+  Field               | Type    | Required | Description
+  --------------------|---------|----------|---------------------------------
+  _id                 | ObjectId| Auto     | MongoDB document ID
+  policy_number       | String  | YES      | Unique policy ID — query key
+  insurance_company   | String  | YES      | Insurer name — query key
+  policy_holder_name  | String  | YES      | Insured person name
+  date_of_birth       | String  | YES      | Holder DOB YYYY-MM-DD
+  plan_type           | String  | YES      | Individual / Family Floater / Group
+  sum_insured         | Number  | YES      | Coverage amount (₹)
+  premium_amount      | Number  | YES      | Annual premium (₹)
+  policy_start_date   | String  | YES      | YYYY-MM-DD
+  policy_expiry_date  | String  | YES      | YYYY-MM-DD
+  policy_status       | String  | YES      | Active / Expired / Lapsed / Not Found
+  scheme_description  | String  | NO       | Plan name e.g. Family Health Optima
+  members_covered     | Number  | YES      | Number of members in policy
+  nominee_name        | String  | NO       | Nominee name
+
+INDEXES:
+  policy_number     : unique index
+  insurance_company : index
+
+SAMPLE RECORD:
+  {
+    "policy_number"      : "P700002012015007530",
+    "insurance_company"  : "Star Health",
+    "policy_holder_name" : "Ravi Kumar",
+    "date_of_birth"      : "1997-06-12",
+    "plan_type"          : "Individual",
+    "sum_insured"        : 500000,
+    "premium_amount"     : 8200,
+    "policy_start_date"  : "2025-06-01",
+    "policy_expiry_date" : "2026-05-31",
+    "policy_status"      : "Active",
+    "scheme_description" : "Smart Health Pro",
+    "members_covered"    : 1,
+    "nominee_name"       : "Priya Kumar"
+  }
+
+API QUERY:
+  db.health_insurance_db.findOne({ policy_number: "P700002012015007530",
+                                    insurance_company: "Star Health" })
+
+API RESPONSE (to app):
+  { policy_number, policy_holder_name, insurance_company, policy_status,
+    policy_expiry_date, sum_insured, verified: true }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. COLLECTION: life_insurance_db
+    API: POST /gov/insurance/life-policy-verify
+    Step: Step-7 (Life Insurance)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE:
+  Simulates life insurance policy verification (LIC / private insurers).
+  API fetches by policy_number + policy_holder_name.
+
+SCHEMA:
+  Field               | Type    | Required | Description
+  --------------------|---------|----------|---------------------------------
+  _id                 | ObjectId| Auto     | MongoDB document ID
+  policy_number       | String  | YES      | Unique policy ID — query key
+  policy_holder_name  | String  | YES      | Life insured name — query key
+  insurance_company   | String  | YES      | LIC / HDFC Life / SBI Life etc.
+  plan_name           | String  | YES      | e.g. Jeevan Anand / Term Plan
+  policy_type         | String  | YES      | Term / Endowment / ULIP / Whole Life
+  sum_assured         | Number  | YES      | Coverage amount (₹)
+  annual_premium      | Number  | YES      | Annual premium amount (₹)
+  premium_frequency   | String  | YES      | Monthly / Quarterly / Annually
+  policy_start_date   | String  | YES      | YYYY-MM-DD
+  policy_expiry_date  | String  | YES      | YYYY-MM-DD
+  coverage_period_yrs | Number  | YES      | Coverage duration in years
+  policy_status       | String  | YES      | Active / Lapsed / Surrendered / Matured
+  nominee_name        | String  | YES      | Nominee name
+  last_premium_date   | String  | YES      | Last premium payment date YYYY-MM-DD
+
+INDEXES:
+  policy_number : unique index
+
+SAMPLE RECORD:
+  {
+    "policy_number"      : "LIC78392812",
+    "policy_holder_name" : "Ravi Kumar",
+    "insurance_company"  : "LIC India",
+    "plan_name"          : "Jeevan Anand",
+    "policy_type"        : "Endowment",
+    "sum_assured"        : 500000,
+    "annual_premium"     : 18500,
+    "premium_frequency"  : "Annually",
+    "policy_start_date"  : "2022-04-10",
+    "policy_expiry_date" : "2042-04-09",
+    "coverage_period_yrs": 20,
+    "policy_status"      : "Active",
+    "nominee_name"       : "Priya Kumar",
+    "last_premium_date"  : "2026-04-10"
+  }
+
+API QUERY:
+  db.life_insurance_db.findOne({ policy_number: "LIC78392812" })
+
+API RESPONSE (to app):
+  { policy_number, policy_holder_name, insurance_company, policy_status,
+    sum_assured, annual_premium, verified: true }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+16. COLLECTION: income_tax_db
+    API: POST /gov/income-tax/itr-verify
+    Step: Step-8 (ITR Verification)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE:
+  Simulates Income Tax dept ITR filing status database.
+  API fetches by pan_number. Returns filing history, declared income.
+
+SCHEMA:
+  Field                | Type    | Required | Description
+  ---------------------|---------|----------|---------------------------------
+  _id                  | ObjectId| Auto     | MongoDB document ID
+  pan_number           | String  | YES      | 10-char PAN — query key
+  taxpayer_name        | String  | YES      | Name as per ITR filing
+  assessment_year      | String  | YES      | e.g. "2024-25"
+  acknowledgement_number| String | YES      | ITR-V acknowledgement number
+  itr_form_type        | String  | YES      | ITR-1 / ITR-2 / ITR-3 / ITR-4
+  filing_date          | String  | YES      | YYYY-MM-DD
+  total_income         | Number  | YES      | Total declared income (₹)
+  total_tax_paid       | Number  | YES      | TDS + advance tax total (₹)
+  total_tds            | Number  | YES      | TDS deducted at source (₹)
+  filing_status        | String  | YES      | Filed / Not Filed / Defective
+  e_verified           | Boolean | YES      | Whether e-verified or paper filed
+  refund_amount        | Number  | NO       | Refund if applicable (₹)
+  income_sources       | Array   | YES      | [Salary, Business, Capital Gains etc.]
+
+INDEXES:
+  pan_number       : index (primary query)
+  acknowledgement_number : unique index
+
+SAMPLE RECORD:
+  {
+    "pan_number"             : "ABCDE1234F",
+    "taxpayer_name"          : "Ravi Kumar",
+    "assessment_year"        : "2024-25",
+    "acknowledgement_number" : "123456789012345",
+    "itr_form_type"          : "ITR-4",
+    "filing_date"            : "2024-07-28",
+    "total_income"           : 264000,
+    "total_tax_paid"         : 5200,
+    "total_tds"              : 3100,
+    "filing_status"          : "Filed",
+    "e_verified"             : true,
+    "refund_amount"          : 0,
+    "income_sources"         : ["Business/Profession"]
+  }
+
+API QUERY:
+  db.income_tax_db.findOne({ pan_number: "ABCDE1234F" })
+  (returns latest assessment year record)
+
+API RESPONSE (to app):
+  { taxpayer_name, assessment_year, total_income, filing_status,
+    filing_date, acknowledgement_number }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+17. COLLECTION: gst_db
+    API: POST /gov/gst/gstin-verify
+    Step: Step-8 (GST Verification), Step-5 (GST cert cross-link)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE:
+  Simulates GST Portal taxpayer registration database.
+  API fetches by gstin. Returns registration status and business details.
+
+SCHEMA:
+  Field               | Type    | Required | Description
+  --------------------|---------|----------|---------------------------------
+  _id                 | ObjectId| Auto     | MongoDB document ID
+  gstin               | String  | YES      | 15-char GSTIN — query key
+  legal_name          | String  | YES      | Legal business name
+  trade_name          | String  | NO       | Trade name (if different)
+  pan_number          | String  | YES      | Linked PAN number
+  registration_date   | String  | YES      | GST registration date YYYY-MM-DD
+  business_type       | String  | YES      | Proprietorship / Partnership / LLP etc.
+  taxpayer_type       | String  | YES      | Regular / Composition / Casual
+  state_code          | String  | YES      | 2-digit state code (embedded in GSTIN)
+  state               | String  | YES      | State name
+  registration_status | String  | YES      | Active / Cancelled / Suspended
+  principal_address   | String  | YES      | Registered business address
+  nic_description     | String  | YES      | Business activity description
+  annual_aggregate_turnover | String | YES | Turnover slab category
+
+INDEXES:
+  gstin      : unique index
+  pan_number : index
+
+SAMPLE RECORD:
+  {
+    "gstin"              : "33ABCDE1234F1ZK",
+    "legal_name"         : "Ravi Kumar Enterprises",
+    "trade_name"         : "RK Traders",
+    "pan_number"         : "ABCDE1234F",
+    "registration_date"  : "2021-10-15",
+    "business_type"      : "Proprietorship",
+    "taxpayer_type"      : "Regular",
+    "state_code"         : "33",
+    "state"              : "Tamil Nadu",
+    "registration_status": "Active",
+    "principal_address"  : "No 14, Anna Nagar, Chennai - 600040",
+    "nic_description"    : "Retail Trade of Food and Beverages",
+    "annual_aggregate_turnover": "Up to 1.5 Crore"
+  }
+
+API QUERY:
+  db.gst_db.findOne({ gstin: "33ABCDE1234F1ZK" })
+
+API RESPONSE (to app):
+  { gstin, legal_name, registration_status, registration_date, taxpayer_type }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+18. COLLECTION: gst_filing_db
+    API: POST /gov/gst/filing-history
+    Step: Step-8 (GSTR-3B Filing History)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE:
+  Simulates GSTR-3B monthly return filing history from GST Portal.
+  API fetches by gstin, returns last 6 months of filing records.
+
+SCHEMA:
+  Field               | Type    | Required | Description
+  --------------------|---------|----------|---------------------------------
+  _id                 | ObjectId| Auto     | MongoDB document ID
+  gstin               | String  | YES      | 15-char GSTIN — query key
+  return_period       | String  | YES      | Filing period e.g. "012026" (Jan 2026)
+  return_type         | String  | YES      | GSTR-3B / GSTR-1
+  filing_date         | String  | YES      | Date filed YYYY-MM-DD
+  due_date            | String  | YES      | Due date for that period YYYY-MM-DD
+  filing_status       | String  | YES      | Filed / Not Filed / Late Filed
+  outward_taxable_supply | Number| YES     | Monthly turnover (₹) — taxable supplies
+  total_tax_liability | Number  | YES      | Total GST payable (₹)
+  igst_paid           | Number  | YES      | IGST paid (₹)
+  cgst_paid           | Number  | YES      | CGST paid (₹)
+  sgst_paid           | Number  | YES      | SGST paid (₹)
+  late_fee            | Number  | NO       | Late fee if filed after due date (₹)
+
+INDEXES:
+  { gstin, return_period } : compound unique index
+
+SAMPLE RECORDS (multiple per GSTIN):
+  [
+    {
+      "gstin"                  : "33ABCDE1234F1ZK",
+      "return_period"          : "042026",
+      "return_type"            : "GSTR-3B",
+      "filing_date"            : "2026-04-20",
+      "due_date"               : "2026-04-22",
+      "filing_status"          : "Filed",
+      "outward_taxable_supply" : 85000,
+      "total_tax_liability"    : 15300,
+      "igst_paid"              : 0,
+      "cgst_paid"              : 7650,
+      "sgst_paid"              : 7650,
+      "late_fee"               : 0
+    },
+    ...5 more monthly records...
+  ]
+
+API QUERY:
+  db.gst_filing_db.find({ gstin: "33ABCDE1234F1ZK" })
+                  .sort({ return_period: -1 })
+                  .limit(6)
+
+API RESPONSE (to app):
+  { gstin, filing_history: [ array of 6 monthly records ],
+    months_filed: 6, filing_consistency: 1.0 }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+19. COLLECTION: loan_obligations_db
+    API: POST /gov/loan/verify
+    Step: Step-9 (EMI and Loan Obligations)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE:
+  Simulates lender / CIBIL / bureau loan obligation database.
+  API fetches by lender_name + emi_amount + latest_debit_date.
+  Returns loan status, outstanding balance.
+
+SCHEMA:
+  Field               | Type    | Required | Description
+  --------------------|---------|----------|---------------------------------
+  _id                 | ObjectId| Auto     | MongoDB document ID
+  borrower_aadhaar    | String  | YES      | Linked Aadhaar (query helper)
+  borrower_pan        | String  | YES      | Linked PAN — query key
+  lender_name         | String  | YES      | Bank / NBFC name — query key
+  loan_account_number | String  | YES      | Unique loan account ID
+  loan_type           | String  | YES      | Personal / Home / Vehicle / MSME / Gold
+  sanctioned_amount   | Number  | YES      | Original loan amount (₹)
+  outstanding_balance | Number  | YES      | Current outstanding (₹)
+  emi_amount          | Number  | YES      | Monthly EMI (₹) — query key
+  emi_day             | Number  | YES      | Day of month for EMI debit (1-31)
+  loan_start_date     | String  | YES      | YYYY-MM-DD
+  loan_end_date       | String  | YES      | Expected closure date YYYY-MM-DD
+  loan_status         | String  | YES      | Active / Closed / Defaulted / NPA
+  dpd_count           | Number  | YES      | Days Past Due (0 = no overdue)
+  last_emi_date       | String  | YES      | Last EMI paid date YYYY-MM-DD
+  interest_rate       | Number  | YES      | Annual interest rate %
+
+INDEXES:
+  { borrower_pan, lender_name } : compound index
+  loan_account_number           : unique index
+
+SAMPLE RECORD:
+  {
+    "borrower_aadhaar"   : "123456789123",
+    "borrower_pan"       : "ABCDE1234F",
+    "lender_name"        : "HDFC Bank",
+    "loan_account_number": "HDFC00012345678",
+    "loan_type"          : "Personal",
+    "sanctioned_amount"  : 150000,
+    "outstanding_balance": 85000,
+    "emi_amount"         : 5000,
+    "emi_day"            : 5,
+    "loan_start_date"    : "2024-01-05",
+    "loan_end_date"      : "2026-12-05",
+    "loan_status"        : "Active",
+    "dpd_count"          : 0,
+    "last_emi_date"      : "2026-04-05",
+    "interest_rate"      : 14.5
+  }
+
+API QUERY:
+  db.loan_obligations_db.findOne({
+    borrower_pan: "ABCDE1234F",
+    lender_name : "HDFC Bank"
+  })
+
+API RESPONSE (to app):
+  { loan_found: true, loan_status, outstanding_balance,
+    loan_type, dpd_count, verified: true }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+20. COLLECTION: udyam_db
+    API: POST /gov/msme/udyam-verify
+    Step: Step-6 (Udyam/MSME Scheme)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURPOSE:
+  Simulates Udyam Registration Portal (Ministry of MSME) database.
+  API fetches by udyam_number. Returns enterprise details, category, status.
+
+SCHEMA:
+  Field                  | Type    | Required | Description
+  -----------------------|---------|----------|---------------------------------
+  _id                    | ObjectId| Auto     | MongoDB document ID
+  udyam_number           | String  | YES      | UDYAM-XX-00-0000000 format — query key
+  enterprise_name        | String  | YES      | Registered enterprise/business name
+  owner_name             | String  | YES      | Proprietor / partner name
+  pan_number             | String  | YES      | Linked PAN
+  aadhaar_linked         | Boolean | YES      | Aadhaar seeding status
+  nic_code               | String  | YES      | 5-digit NIC code
+  nic_activity           | String  | YES      | Business activity description
+  major_activity         | String  | YES      | Manufacturing / Services / Trading
+  category               | String  | YES      | Micro / Small / Medium
+  enterprise_type        | String  | YES      | Proprietorship / Partnership / OPC
+  registration_date      | String  | YES      | YYYY-MM-DD
+  commencement_date      | String  | YES      | Business commencement YYYY-MM-DD
+  state_code             | String  | YES      | 2-letter state code (e.g. TN)
+  state                  | String  | YES      | Full state name
+  district               | String  | YES      | District
+  registered_address     | String  | YES      | Full business address
+  gstin_linked           | String  | NO       | Linked GSTIN (if registered)
+  investment_plant       | Number  | YES      | Investment in plant & machinery (₹)
+  turnover               | Number  | YES      | Annual turnover (₹)
+  registration_status    | String  | YES      | Active / Cancelled / Suspended
+
+INDEXES:
+  udyam_number  : unique index
+  pan_number    : index
+  owner_name    : index
+
+SAMPLE RECORD:
+  {
+    "udyam_number"     : "UDYAM-TN-33-0012345",
+    "enterprise_name"  : "Ravi Kumar Enterprises",
+    "owner_name"       : "Ravi Kumar",
+    "pan_number"       : "ABCDE1234F",
+    "aadhaar_linked"   : true,
+    "nic_code"         : "47110",
+    "nic_activity"     : "Retail sale in non-specialised stores",
+    "major_activity"   : "Trading",
+    "category"         : "Micro",
+    "enterprise_type"  : "Proprietorship",
+    "registration_date": "2021-08-15",
+    "commencement_date": "2019-06-01",
+    "state_code"       : "TN",
+    "state"            : "Tamil Nadu",
+    "district"         : "Chennai",
+    "registered_address": "No 14, Anna Nagar, Chennai - 600040",
+    "gstin_linked"     : "33ABCDE1234F1ZK",
+    "investment_plant" : 500000,
+    "turnover"         : 2400000,
+    "registration_status": "Active"
+  }
+
+API QUERY:
+  db.udyam_db.findOne({ udyam_number: "UDYAM-TN-33-0012345" })
+
+API RESPONSE (to app):
+  { enterprise_name, owner_name, category, nic_activity, major_activity,
+    registration_date, state, status: registration_status, verified: true }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MONGODB SETUP REFERENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DATABASE NAME  : gigcredit_gov_sim_db
+
+CONNECTION     : mongodb://localhost:27017/gigcredit_gov_sim_db
+
+COLLECTIONS SUMMARY:
+  Collection               | Primary Index            | Step(s)
+  -------------------------|--------------------------|------------------
+  aadhaar_db               | aadhaar_number (unique)  | Step-2
+  pan_db                   | pan_number (unique)      | Step-2, Step-8
+  ifsc_db                  | ifsc_code (unique)       | Step-3
+  bank_accounts_db         | acct_no + ifsc (compound)| Step-3
+  eb_db                    | service_number (unique)  | Step-4
+  lpg_db                   | consumer_no + provider   | Step-4
+  vehicle_rc_db            | vehicle_number (unique)  | Step-5A, Step-7
+  vehicle_insurance_db     | policy_number (unique)   | Step-5A, Step-7
+  svanidhi_db              | application_id (unique)  | Step-5B, Step-6
+  fssai_db                 | license_number (unique)  | Step-5B, Step-5C
+  skill_certificate_db     | certificate_id (unique)  | Step-5C
+  eshram_db                | uan (unique)             | Step-6
+  pmsym_db                 | pension_account (unique) | Step-6
+  health_insurance_db      | policy_number (unique)   | Step-7
+  life_insurance_db        | policy_number (unique)   | Step-7
+  income_tax_db            | pan_number (index)       | Step-8
+  gst_db                   | gstin (unique)           | Step-8, Step-5
+  gst_filing_db            | gstin + period (compound)| Step-8
+  loan_obligations_db      | pan + lender (compound)  | Step-9
+  udyam_db                 | udyam_number (unique)    | Step-6
+
+TOTAL COLLECTIONS : 20
+TOTAL APIS SERVED : 18 endpoints
+BACKEND FRAMEWORK : FastAPI (Python)
+ORM / DRIVER      : PyMongo / Motor (async)
+
+SEEDING:
+  Each collection must be pre-seeded with at least 50-100 mock records
+  covering various Indian states, work types, and statuses.
+  Use faker-india or custom seed scripts for realistic data generation.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+END OF DATABASE DESIGN SPECIFICATION
+GigCredit | 20 Collections | 18 API Endpoints | All 9 Steps
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

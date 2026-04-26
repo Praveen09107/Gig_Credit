@@ -1,0 +1,538 @@
+GigCredit Frontend Specification — Score Module
+
+This document defines the complete frontend specification for the Score Module in the GigCredit application. The Score Module is the core functional experience of the app. It allows users to understand the purpose of the score, learn how to prepare inputs, complete the full multi-step data submission flow, generate a credit score, view a detailed report, inspect score explanations, and move toward the loan recommendation flow.
+
+This module must feel guided, understandable, flexible, and highly trustworthy because it represents the product's most important user journey.
+
+1. MODULE GOAL
+
+The Score Module exists to help the user:
+- understand what the score means
+- understand why checking the score is useful
+- learn how to provide inputs before starting
+- complete the required input steps
+- generate an explainable credit score
+- view score explanations and improvement suggestions
+- access downloadable report output
+- view score ownership proof
+- continue toward loan offers if desired
+
+This is the central value-delivery module of GigCredit.
+
+2. ENTRY POINTS
+
+Primary entry points:
+- bottom navigation → Score tab
+- Home screen → Check Score CTA
+- Loans module → Check Score CTA when report or score is missing
+
+All of these entry points should ultimately land the user inside the Score module root flow.
+
+3. NAVIGATION ACTIVATION RULE
+
+Whenever the user enters the Score module from another screen:
+- the Score icon in the bottom navigation must become active
+- the user must visibly understand that they are now inside the Score tab
+
+This is a required navigation behavior.
+
+4. SCORE MODULE STRUCTURE
+
+The Score Module contains these primary layers:
+- Score landing page
+- Show Me How instructional flow
+- 9-step input collection flow
+- Generate Score action
+- Report screen
+- Credit Assessment Certificate screen
+
+These layers must feel like one connected flow, not unrelated screens.
+
+5. SCORE LANDING PAGE PURPOSE
+
+The Score landing page is the first screen of the Score module.
+
+It should:
+- introduce the scoring journey
+- reassure the user that the score is useful and understandable
+- explain the value of checking the score
+- offer two clear actions: learn first or start now
+
+This screen should reduce hesitation before the input process begins.
+
+6. SCORE LANDING HEADLINE
+
+Headline text:
+Know your financial strength
+
+Behavior:
+- show this as the main headline on the Score landing page
+- it should be strong, large, and clearly visible at the top
+- the headline should feel supportive, not intimidating
+
+7. SCORE LANDING IMAGE
+
+Below the headline, display an image of a meter gauge with a needle.
+
+Behavior:
+- the gauge image should visually reinforce the idea of score measurement
+- it must appear directly under the headline as specified by the user
+- implementation should support an asset path or configurable image source
+
+8. SCORE LANDING SUBTEXT
+
+Subtext text:
+Check your credit score to understand financial behaviour and risk level
+
+Behavior:
+- show below the gauge image
+- render as normal supporting text, not bold
+- the text should clearly describe the purpose of the score
+
+9. SCORE BENEFIT CARDS
+
+Below the subtext, show three cards.
+
+Each card should be clean, readable, and informative.
+
+Card 1:
+Track your credit health
+
+Card 2:
+Understand your financial risk
+
+Card 3:
+Get insights to improve your score
+
+These cards should function as quick value reminders before the user starts.
+
+10. PRIMARY ACTION BUTTONS ON SCORE LANDING
+
+The Score landing page must show two buttons:
+- Show Me How
+- Check Credit Score
+
+These two buttons should be clearly distinct but visually connected to the same overall journey.
+
+11. SHOW ME HOW BUTTON PURPOSE
+
+The Show Me How button allows users to understand the input process before starting score generation.
+
+This is important because the score flow involves multiple steps and uploads, and the user should feel informed before beginning.
+
+12. SHOW ME HOW NAVIGATION RULE
+
+When the user taps Show Me How:
+- open an instructional view inside the Score module
+- do not start actual score generation yet
+- allow the user to review all steps and return to the Score landing page
+
+This flow is informational, not transactional.
+
+13. SHOW ME HOW SCREEN PURPOSE
+
+The Show Me How screen explains what inputs are needed and how the user should provide them.
+
+It should make the multi-step flow feel manageable and predictable.
+
+14. SHOW ME HOW STRUCTURE
+
+The Show Me How experience should display all 9 required input steps as square cards.
+
+Behavior:
+- each step appears as a separate square card
+- cards are tappable
+- tapping a card opens the instructions for that specific input
+
+This allows users to inspect one input at a time.
+
+15. SHOW ME HOW STEP CARD BEHAVIOR
+
+Each step card should include:
+- step number
+- input name
+- simple icon
+- brief label
+
+When a card is tapped:
+- open detailed instruction content for that step
+- explain what the user needs to upload or enter
+- explain preparation guidance if needed
+
+16. SHOW ME HOW BACK NAVIGATION
+
+After viewing step-level instructions:
+- the user should be able to return to the Show Me How overview
+- from the Show Me How overview, the user should be able to return to the Score landing screen using a back arrow
+
+This back behavior must be smooth and predictable.
+
+17. CHECK CREDIT SCORE BUTTON PURPOSE
+
+The Check Credit Score button starts the actual score generation process.
+
+It is the transactional start of the 9-step flow.
+
+18. CREDIT RESTRICTION RULE
+
+Before allowing the user to proceed with the score flow, the system must validate report access rules.
+
+Business rules:
+- first 3 reports are free
+- after that, credits are required
+- 1 report = 10 credits
+- 10 credits = Rs.79
+
+Behavior:
+- if the user has remaining free reports or enough credits, allow the flow
+- if not, block the flow and show buy credits prompt
+- if the user closes the prompt and taps Check Credit Score again without buying, the block must be shown again
+
+This rule must be enforced before input flow begins.
+
+19. BUY CREDITS REDIRECTION FROM SCORE
+
+When score flow is blocked due to insufficient credits:
+- show buy credits popup or blocking message
+- tapping Buy Credits should navigate the user to Profile tab or Buy Credits section
+- Profile tab must become active
+
+This must align with the navigation architecture and monetization logic.
+
+20. SCORE INPUT FLOW OVERVIEW
+
+The score generation process uses a 9-step input flow.
+
+Key rules:
+- progress bar must be shown
+- user should be able to move to any step at any time while filling
+- completed steps should be indicated visually
+- the experience should feel structured but flexible
+
+This is a guided non-linear form flow.
+
+21. INPUT FLOW UX PURPOSE
+
+The goal of the 9-step flow is to collect all required financial and identity-related inputs needed to generate the score while making the process feel manageable.
+
+The user should never feel trapped in a rigid form.
+
+22. INPUT FLOW UI REQUIREMENTS
+
+The input flow should include:
+- top progress bar or progress indicator
+- visible step count or step labels
+- completed-step status
+- current step form area
+- ability to switch to another step
+- final Generate Score button after completion requirements are satisfied
+
+23. INPUT FLOW NAVIGATION RULE
+
+Users should be able to:
+- move forward to the next step
+- return to previous steps
+- jump to any step at any time
+- revisit already filled inputs
+- edit step content before generating score
+
+This flexibility is explicitly required by the user.
+
+24. INPUT COMPLETION INDICATORS
+
+Each step should visually communicate whether it is:
+- not started
+- in progress
+- completed
+- invalid or incomplete if validation fails
+
+This is important for confidence and clarity.
+
+25. INPUT TYPES EXPECTATION
+
+The specific 9 inputs may include document uploads, profile information, bills, work details, bank or UPI data, and other financial inputs depending on the backend integration model.
+
+Even before backend finalization, the frontend structure must support:
+- upload-based steps
+- data entry steps
+- verification indicators
+- revisit and edit behavior
+
+26. VALIDATION BEHAVIOR IN INPUT FLOW
+
+Each input step should support validation.
+
+Expected behavior:
+- validate required fields or upload existence
+- prevent final score generation if critical steps are incomplete
+- clearly show which step needs attention
+- avoid vague error messages
+
+27. GENERATE SCORE BUTTON
+
+After required inputs are completed, the user can tap Generate Score.
+
+Behavior:
+- show loading / processing state
+- prevent duplicate taps while generation is running
+- move to Report screen after success
+- show retry guidance if score generation fails
+
+This is one of the most important action points in the app.
+
+28. SCORE GENERATION LOADING STATE
+
+While score generation is in progress:
+- show processing indicator
+- communicate that the app is generating score and analyzing financial behavior
+- avoid making the user feel stuck
+- do not allow accidental duplicate submission
+
+29. REPORT SCREEN PURPOSE
+
+After score generation, the user lands on the Report screen.
+
+This is the main output screen of the Score module.
+
+It must display:
+- credit score
+- explanation of why the score was generated
+- suggestions to improve score
+- valuable insights
+- pillar breakdown
+- contribution bars for each pillar
+- download report button
+- credit assessment certificate button
+- apply loan button
+
+30. REPORT SCREEN CONTROL RULE
+
+After the report appears:
+- user remains on the report screen
+- there should be no automatic redirect to Loans
+- user must choose whether to download, view certificate, or apply for loan
+
+This preserves user control.
+
+31. SCORE DISPLAY
+
+The report screen should prominently show the user's generated credit score.
+
+Behavior:
+- score should be the most visible numeric element
+- scale should be understandable, such as score out of 900 if backend confirms that scale
+- visual design should feel meaningful and credible
+
+32. SCORE EXPLANATION SECTION
+
+The report must explain why the user received the score.
+
+This section should:
+- describe key reasons in understandable language
+- connect score to behavior, not only numbers
+- avoid black-box feeling
+
+This is central to the product's explainability promise.
+
+33. IMPROVEMENT SUGGESTIONS SECTION
+
+The report must show suggestions to improve the score.
+
+These suggestions should:
+- be actionable
+- be behavior-based
+- feel useful rather than generic
+
+This turns the report into a decision-support tool rather than just an evaluation output.
+
+34. VALUABLE INSIGHTS SECTION
+
+The report may include additional financial observations or insights.
+
+These insights should help the user understand broader behavior patterns and risk indicators.
+
+35. PILLAR BREAKDOWN PURPOSE
+
+The report must contain a pillar breakdown section to explain score composition.
+
+This section is one of the strongest explainability features of the product and should visually communicate the contribution of each behavioral pillar.
+
+36. REQUIRED PILLARS
+
+The frontend must show these pillars in the report:
+- Income Stability — not how much, but how consistent
+- Payment Discipline — do they pay rent and bills on time
+- Debt Management — existing EMIs handled well or struggling
+- Savings Behavior — any buffer, any RD or SIP detected
+- Work and Identity — verified occupation, not a fake profile
+- Financial Resilience — how do they bounce back from bad months
+- Social Accountability — embedded in community, SHG, cooperatives
+
+These labels and their meaning should be shown clearly and understandably.
+
+37. PILLAR VISUALIZATION RULE
+
+Each pillar should show its contribution with a bar or progress-style visualization representing contribution percentage.
+
+Behavior:
+- bars should be easy to compare visually
+- each pillar row should include name, explanation, and contribution indicator
+- design should favor readability over decorative charts
+
+38. DOWNLOAD REPORT BUTTON
+
+The report screen must show a Download Report button.
+
+Behavior:
+- tapping it should download or export the report
+- report output should support the multilingual system defined elsewhere
+- UI should confirm success or show error if download fails
+
+39. CREDIT ASSESSMENT CERTIFICATE BUTTON
+
+The report screen must show a Credit Assessment Certificate button.
+
+Behavior:
+- tapping it opens a certificate-like interface
+- this is a child route under the Score / Report flow
+- back navigation should return to the report screen
+
+40. CERTIFICATE VIEW PURPOSE
+
+The certificate view acts as score ownership proof.
+
+It gives the user a formal-looking summary proving that a score was generated for their identity.
+
+41. CERTIFICATE CONTENT
+
+The certificate interface should display content in this structure:
+Gig Credit
+
+Score Ownership Proof
+
+Name: Prathika S
+Mobile: +91 XXXXXXXX
+
+Score: 742 / 900
+
+Generated On: 25 Apr 2026
+Proof ID: GC-PROOF-82931
+
+Verified
+
+Frontend requirement:
+- fields should be dynamically filled using real user/report data
+- styling should feel certificate-like and trustworthy
+- verified status should be visually clear
+
+42. APPLY LOAN BUTTON ON REPORT
+
+The report screen must show an Apply Loan button.
+
+Behavior:
+- tapping it navigates to Loans tab
+- Loans icon in bottom navigation must become active
+- the app should continue with the usual Loans functionality from there
+
+This creates the score-to-loans bridge.
+
+43. REPORT TO LOANS NAVIGATION RULE
+
+The handoff from Report to Loans must feel smooth and intentional.
+
+Behavior:
+- switch active tab to Loans
+- preserve score context if backend and navigation architecture require it
+- continue with standard loan offer flow
+
+44. ERROR STATES IN SCORE MODULE
+
+The Score module should support these error states:
+- no credits after free reports are exhausted
+- upload failure in any input step
+- invalid input validation
+- score generation failure
+- report download failure
+- certificate data load failure
+- asset missing state for gauge image or icons
+
+Each error should have clear recovery guidance.
+
+45. LOADING STATES IN SCORE MODULE
+
+The Score module should support:
+- instructional content loading if dynamic
+- step upload loading
+- verification loading
+- score generation loading
+- report loading
+- certificate loading
+
+Loading states should feel smooth and not confusing.
+
+46. COMPONENTS USED INSIDE SCORE MODULE
+
+Main reusable components expected here:
+- ScoreHeroSection
+- InfoCard
+- PrimaryButton
+- SecondaryButton
+- StepSquareCard
+- ProgressBar
+- StepNavigator
+- UploadInputCard
+- GenerateScoreButton
+- ScoreSummaryCard
+- InsightSection
+- SuggestionCard
+- PillarContributionBar
+- DownloadButton
+- CertificateView
+- BottomNavBar
+
+47. FRONTEND STATE USED INSIDE SCORE MODULE
+
+Important state includes:
+- credit access eligibility
+- free report count
+- credit balance
+- current score flow step data
+- completed steps map
+- step validation state
+- score generation state
+- generated score result
+- report content
+- certificate content
+
+This state must be structured cleanly for backend integration.
+
+48. ACCESSIBILITY AND READABILITY RULES
+
+The Score module should remain understandable throughout the full flow.
+
+Important rules:
+- step progress must be readable at a glance
+- buttons must remain easy to tap
+- score explanation text must be plain enough for normal users
+- pillar bars must not rely on color alone
+- important actions should remain visually clear
+
+49. TESTING PRIORITIES FOR SCORE MODULE
+
+Testing should verify:
+- Score tab activation from Home and Loans
+- Show Me How flow opens correctly
+- step cards open detailed instructions
+- back navigation works correctly
+- credit restrictions block flow correctly
+- input steps can be revisited in any order
+- progress bar updates correctly
+- Generate Score enables only when allowed
+- report content renders correctly
+- pillar bars display correctly
+- certificate view opens and returns correctly
+- Apply Loan activates Loans tab
+
+50. FINAL MODULE DIRECTION
+
+The Score Module should feel like the heart of GigCredit. It must guide users from curiosity to understanding, from input submission to score output, and from explanation to action. If this module is implemented well, users will feel that the app is not only evaluating them but also helping them understand their financial position in a respectful, explainable, and useful way.

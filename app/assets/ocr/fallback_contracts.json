@@ -1,0 +1,144 @@
+{
+  "_comment": "These fallback values are used when OCR confidence < 0.70 or when extraction fails entirely. All fields default to safe empty-state values that will not crash the scoring engine.",
+  "aadhaar_front": {
+    "id_number": "",
+    "name": "",
+    "dob": "",
+    "gender": "",
+    "confidence": 0.50,
+    "_fallback_reason": "Image too blurry or Aadhaar text not extractable"
+  },
+  "aadhaar_back": {
+    "address": "",
+    "pin_code": "",
+    "confidence": 0.50,
+    "_fallback_reason": "Back of card not clearly visible"
+  },
+  "pan": {
+    "id_number": "",
+    "name": "",
+    "dob": "",
+    "father_name": "",
+    "confidence": 0.50,
+    "_fallback_reason": "PAN card lamination reflection caused extraction failure"
+  },
+  "selfie": {
+    "face_detected": false,
+    "liveness_score": 0.0,
+    "confidence": 0.50,
+    "_fallback_reason": "Face not detected in selfie or poor lighting"
+  },
+  "bank_statement": {
+    "bank_name": "",
+    "account_number": "",
+    "ifsc": "",
+    "period": "",
+    "avg_monthly_credit": 0.0,
+    "avg_monthly_debit": 0.0,
+    "closing_balance": 0.0,
+    "total_transactions": 0,
+    "emi_detected": 0,
+    "overdraft_days": 0,
+    "confidence": 0.50,
+    "_fallback_reason": "PDF password-protected or scanned at low resolution"
+  },
+  "utility_electricity": {
+    "provider": "",
+    "consumer_number": "",
+    "amount_due": 0.0,
+    "due_date": "",
+    "address_match": false,
+    "confidence": 0.50,
+    "_fallback_reason": "Old bill format not supported"
+  },
+  "utility_water": {
+    "provider": "",
+    "consumer_number": "",
+    "amount_due": 0.0,
+    "due_date": "",
+    "confidence": 0.50,
+    "_fallback_reason": "Bill torn or partially visible"
+  },
+  "utility_gas": {
+    "provider": "",
+    "consumer_number": "",
+    "amount_due": 0.0,
+    "confidence": 0.50,
+    "_fallback_reason": "Digital bill format not parsed"
+  },
+  "work_payout": {
+    "platform": "",
+    "worker_id": "",
+    "period": "",
+    "total_earnings": 0.0,
+    "total_trips": 0,
+    "avg_per_trip": 0.0,
+    "on_time_rate": 0.0,
+    "confidence": 0.50,
+    "_fallback_reason": "Screenshot cropped or watermarked"
+  },
+  "work_rc": {
+    "vehicle_number": "",
+    "owner_name": "",
+    "vehicle_type": "",
+    "registration_valid": false,
+    "confidence": 0.50,
+    "_fallback_reason": "RC card worn out or text unreadable"
+  },
+  "gov_eshram": {
+    "uan": "",
+    "name": "",
+    "occupation": "",
+    "enrolled_date": "",
+    "confidence": 0.50,
+    "_fallback_reason": "eShram card printout quality too low"
+  },
+  "gov_ration": {
+    "card_number": "",
+    "family_head": "",
+    "category": "",
+    "confidence": 0.50,
+    "_fallback_reason": "Old laminated ration card not parseable"
+  },
+  "insurance_health": {
+    "policy_number": "",
+    "provider": "",
+    "sum_assured": 0,
+    "valid_until": "",
+    "premium_paid": false,
+    "confidence": 0.50,
+    "_fallback_reason": "Insurance e-document format not supported"
+  },
+  "insurance_vehicle": {
+    "policy_number": "",
+    "provider": "",
+    "vehicle_number": "",
+    "valid_until": "",
+    "confidence": 0.50,
+    "_fallback_reason": "Policy PDF encrypted"
+  },
+  "insurance_life": {
+    "policy_number": "",
+    "provider": "",
+    "sum_assured": 0,
+    "confidence": 0.50,
+    "_fallback_reason": "Life policy bond is too old — digitise first"
+  },
+  "tax_itr": {
+    "pan": "",
+    "assessment_year": "",
+    "acknowledgement_number": "",
+    "total_income": 0,
+    "tax_paid": 0,
+    "filing_date": "",
+    "confidence": 0.50,
+    "_fallback_reason": "ITR PDF downloaded from wrong portal"
+  },
+  "tax_gst": {
+    "gst_number": "",
+    "trade_name": "",
+    "registration_date": "",
+    "confidence": 0.50,
+    "_fallback_reason": "GST certificate image too small"
+  }
+}

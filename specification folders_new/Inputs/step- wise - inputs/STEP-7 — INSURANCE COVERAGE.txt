@@ -1,0 +1,213 @@
+STEP-7 — INSURANCE COVERAGE
+GigCredit Onboarding Specification
+Version: Final Input Structure
+Status: Locked — Inputs Only (No Verification Logic)
+
+--------------------------------------------------
+1. PURPOSE
+--------------------------------------------------
+
+Step-7 captures the user’s insurance coverage as
+evidence of financial resilience and risk management.
+
+This document defines ONLY user-facing inputs:
+  - Selection toggles
+  - Text fields
+  - File upload fields
+  - Mandatory / Optional rules
+
+All OCR, API checks, and validation logic are defined
+in a separate Step-7 verification specification.
+
+Supported insurance types:
+  1. Health Insurance
+  2. Vehicle (Motor) Insurance
+  3. Life Insurance
+
+Global rule:
+- All three insurance types are OPTIONAL at the step level.
+- Vehicle Insurance becomes CONDITIONALLY REQUIRED when
+  Step-1 Vehicle Ownership = Yes.
+
+--------------------------------------------------
+2. HOW THIS STEP IS PRESENTED
+--------------------------------------------------
+
+The screen shows three vertically stacked insurance cards:
+  - Health Insurance
+  - Vehicle Insurance
+  - Life Insurance
+
+Each card contains:
+  - A short description of what it covers
+  - A score impact hint (UX only, not inputs)
+  - A toggle: "I have this insurance" (Yes / No)
+  - When Yes → expand: show Policy Number, Policy Holder
+    Name, and Policy Document Upload fields.
+
+Dynamic behaviour:
+  - Health Insurance → always optional.
+  - Life Insurance   → always optional.
+  - Vehicle Insurance:
+      • Required if Step-1 Vehicle Ownership = Yes.
+      • Optional (or hidden) if Vehicle Ownership = No.[file:20][file:33]
+
+--------------------------------------------------
+3. MODULE 1 — HEALTH INSURANCE
+--------------------------------------------------
+
+Real-world documents:
+Indian health insurance policy schedules and bonds
+always contain:
+  - Policy Number
+  - Policy Holder Name
+  - Insurer Name
+  - Sum Insured
+  - Policy Start/Expiry Dates.[file:33][web:63][web:69][web:72][web:75]
+
+These are printed on the policy schedule or certificate,
+so “Policy Number” and “Policy Holder Name” are valid
+explicit input fields.
+
+Section A — Selection
+
+#  | Field Name                    | UI Element         | Input Format       | Mandatory
+---|-------------------------------|--------------------|--------------------|----------
+1  | Health Insurance Selected?    | Toggle Yes / No    | Boolean            | Optional
+
+Section B — Policy Details
+(Visible only when Selected? = Yes)
+
+#  | Field Name                    | UI Element         | Input Format       | Mandatory
+---|-------------------------------|--------------------|--------------------|----------
+2  | Health Policy Number          | Single-line text   | Alphanumeric ID    | Conditional Required
+3  | Policy Holder Name            | Single-line text   | Plain text         | Conditional Required
+4  | Health Policy Document Upload | File upload        | JPG/PNG/PDF        | Conditional Required
+
+Notes:
+- Field 2 maps to the Policy Number printed on the
+  health policy schedule/bond.[web:63][web:69][web:75]
+- Field 3 maps to the insured / proposer name printed
+  on the policy schedule.[web:63][web:69][web:75]
+- Field 4 accepts:
+    • Scanned policy schedule
+    • E-policy PDF
+    • Insurer-issued certificate
+
+--------------------------------------------------
+4. MODULE 2 — VEHICLE INSURANCE
+--------------------------------------------------
+
+Real-world documents:
+Indian motor insurance certificates and policy
+schedules always contain:
+  - Policy Number
+  - Vehicle Registration Number
+  - Policy Holder Name
+  - Insurer Name
+  - Period of Insurance.[file:33][web:67][web:70][web:76]
+
+These are printed on the car/bike insurance policy
+document, so these are valid fields to reference.
+
+Section A — Selection
+
+#  | Field Name                    | UI Element         | Input Format       | Mandatory
+---|-------------------------------|--------------------|--------------------|----------
+5  | Vehicle Insurance Selected?   | Toggle Yes / No    | Boolean            | Optional at UI level
+
+Dynamic mandatory rule:
+  - If Step-1 Vehicle Ownership = Yes:
+        → This module must be completed before Step-7 exit.
+  - If Step-1 Vehicle Ownership = No:
+        → User may leave this module off (never selected).[file:20][file:33]
+
+Section B — Policy Details
+(Visible only when Selected? = Yes)
+
+#  | Field Name                    | UI Element         | Input Format       | Mandatory
+---|-------------------------------|--------------------|--------------------|----------
+6  | Vehicle Policy Number         | Single-line text   | Alphanumeric ID    | Conditional Required
+7  | Policy Holder Name            | Single-line text   | Plain text         | Conditional Required
+8  | Vehicle Insurance Document    | File upload        | JPG/PNG/PDF        | Conditional Required
+
+Notes:
+- Field 6 maps to the policy number printed on the
+  motor insurance certificate/policy schedule.[web:67][web:70][web:76]
+- Field 7 maps to the insured’s name as printed on
+  the policy (can be owner or another family member).[web:67][web:76]
+- Field 8 accepts:
+    • Motor insurance certificate (third party / comprehensive)
+    • Policy schedule PDF from insurer portal
+
+--------------------------------------------------
+5. MODULE 3 — LIFE INSURANCE
+--------------------------------------------------
+
+Real-world documents:
+Indian life insurance policy bonds and premium
+certificates always contain:
+  - Policy Number
+  - Policy Holder / Life Assured Name
+  - Sum Assured
+  - Premium Amount
+  - Policy Term.[file:33][web:65][web:68][web:71][web:74][web:77]
+
+These are printed on the policy bond or certificate,
+so “Policy Number” and “Policy Holder Name” are valid
+explicit input fields.
+
+Section A — Selection
+
+#  | Field Name                    | UI Element         | Input Format       | Mandatory
+---|-------------------------------|--------------------|--------------------|----------
+9  | Life Insurance Selected?      | Toggle Yes / No    | Boolean            | Optional
+
+Section B — Policy Details
+(Visible only when Selected? = Yes)
+
+#  | Field Name                    | UI Element         | Input Format       | Mandatory
+---|-------------------------------|--------------------|--------------------|----------
+10 | Life Policy Number            | Single-line text   | Alphanumeric ID    | Conditional Required
+11 | Policy Holder Name            | Single-line text   | Plain text         | Conditional Required
+12 | Life Policy Document Upload   | File upload        | JPG/PNG/PDF        | Conditional Required
+
+Notes:
+- Field 10 maps to the policy number printed on the
+  life policy bond/certificate.[web:71][web:74]
+- Field 11 maps to the Life Assured / policyholder
+  name printed on the bond.[web:71][web:74]
+- Field 12 accepts:
+    • Policy bond scan
+    • Premium paid certificate PDF
+    • Insurer e-policy PDF
+
+--------------------------------------------------
+6. STEP-7 INPUT SUMMARY
+--------------------------------------------------
+
+Module           | Selection Field | Text Fields per Module             | Upload Fields per Module | Mandatory Behaviour
+-----------------|-----------------|------------------------------------|--------------------------|---------------------
+Health Insurance | 1               | 2 (Policy Number, Holder Name)     | 1 (Policy Document)      | All Conditional Required when selected
+Vehicle Insurance| 5               | 2 (Policy Number, Holder Name)     | 1 (Policy Document)      | Conditional Required when selected; overall module required if Step-1 has_vehicle = true
+Life Insurance   | 9               | 2 (Policy Number, Holder Name)     | 1 (Policy Document)      | All Conditional Required when selected
+
+Global rules:
+- User may select any combination of Health, Vehicle,
+  and Life Insurance.
+- For each insurance type with Selected? = Yes:
+    → Policy Number, Policy Holder Name, and Policy
+      Document Upload are REQUIRED before Step-7
+      can be marked complete for that type.[file:36]
+- Step-7 itself is part of the onboarding flow, but
+  only Vehicle Insurance can become structurally
+  mandatory based on Step-1 Vehicle Ownership.[file:20][file:33]
+
+--------------------------------------------------
+7. FINAL LOCK
+--------------------------------------------------
+
+This Step-7 input structure is final.
+All OCR fields, insurer identification logic, and
+backend verification APIs will be defined in a
+separate Step-7 verification specification file.

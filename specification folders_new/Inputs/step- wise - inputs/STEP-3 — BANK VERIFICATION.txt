@@ -1,0 +1,350 @@
+STEP-3 — BANK VERIFICATION
+GigCredit Onboarding Specification
+Version: Final Input Structure
+Status: Locked for UI/Input Definition
+
+--------------------------------------------------
+1. PURPOSE
+--------------------------------------------------
+
+Step-3 collects the user's bank account details and transaction history to evaluate income patterns, expense behaviour, EMI obligations, savings habits, and debt indicators.
+
+This is the most data-rich step in the GigCredit onboarding system and produces the majority of financial features used across P1 through P4 scoring.
+
+This document defines:
+- how Step-3 is shown on screen,
+- what inputs are collected,
+- which fields are mandatory or optional,
+- what gets extracted after submission,
+- and how bank and UPI transaction data are structured.
+
+This document does NOT define the validation and verification layers yet.
+Those will be discussed separately.
+
+--------------------------------------------------
+2. SCREEN PRESENTATION
+--------------------------------------------------
+
+Step-3 is shown as a three-part screen:
+
+Section A — Primary Bank Account
+Section B — Secondary Bank Account
+Section C — UPI Statement
+
+The primary bank section is shown by default.
+
+The secondary bank section is collapsed by default and shown only when the user enables a toggle.
+
+The UPI section appears below the bank sections and remains optional.
+
+--------------------------------------------------
+3. SECTION A — PRIMARY BANK ACCOUNT
+--------------------------------------------------
+
+This section is mandatory.
+
+The following fields are collected from the user:
+
+1. Bank Name
+   - UI Element: Searchable dropdown
+   - Format: Indian banks list
+   - Example: HDFC Bank
+   - Mandatory: Yes
+
+2. Account Holder Name
+   - UI Element: Single-line text field
+   - Format: Plain text
+   - Example: Ravi Kumar
+   - Mandatory: Yes
+
+3. Bank Branch Name
+   - UI Element: Single-line text field
+   - Format: Plain text
+   - Example: Anna Nagar Chennai
+   - Mandatory: Yes
+
+4. IFSC Code
+   - UI Element: Alphanumeric text field
+   - Format: Uppercase, 11 characters
+   - Example: HDFC0001234
+   - Mandatory: Yes
+
+5. Account Number
+   - UI Element: Numeric text field
+   - Format: 9–18 digits
+   - Example: 1234567890
+   - Mandatory: Yes
+
+6. Bank Statement
+   - UI Element: PDF file picker
+   - Format: PDF only
+   - Coverage Required: Minimum 6 months, maximum 12 months
+   - Mandatory: Yes
+
+7. MICR Code
+   - UI Element: Numeric text field
+   - Format: 9-digit number
+   - Example: 600240012
+   - Mandatory: No
+
+--------------------------------------------------
+4. SECTION B — SECONDARY BANK ACCOUNT
+--------------------------------------------------
+
+This section is optional and collapsed by default.
+
+It is shown behind a toggle labelled:
+
+"Add Secondary Bank Account (recommended for platform workers)"
+
+UI tip shown near the toggle:
+
+"Platform workers often receive gig income in a separate account. Adding it gives a more accurate picture of your total earnings and can significantly improve your score."
+
+If the user enables the secondary account toggle, the following fields become visible.
+
+8. Enable Secondary Account
+   - UI Element: Toggle switch
+   - Format: Boolean ON/OFF
+   - Mandatory: Optional
+
+9. Bank Name (secondary)
+   - UI Element: Same as primary
+   - Format: Same as primary
+   - Mandatory: Conditional
+
+10. Account Holder Name (secondary)
+    - UI Element: Same as primary
+    - Format: Same as primary
+    - Mandatory: Conditional
+
+11. Branch Name (secondary)
+    - UI Element: Same as primary
+    - Format: Same as primary
+    - Mandatory: Conditional
+
+12. IFSC Code (secondary)
+    - UI Element: Same as primary
+    - Format: Same as primary
+    - Mandatory: Conditional
+
+13. Account Number (secondary)
+    - UI Element: Same as primary
+    - Format: Same as primary
+    - Mandatory: Conditional
+
+14. Bank Statement (secondary)
+    - UI Element: PDF file picker
+    - Format: PDF
+    - Coverage Required: Minimum 6 months
+    - Mandatory: Conditional
+
+15. MICR Code (secondary)
+    - UI Element: Same as primary
+    - Format: 9-digit number
+    - Mandatory: Optional
+
+Conditional means:
+These fields become required only if the user enables the secondary account toggle.
+
+--------------------------------------------------
+5. SECTION C — UPI STATEMENT
+--------------------------------------------------
+
+This section is optional.
+
+The following fields are collected:
+
+16. UPI Platform
+    - UI Element: Dropdown selector
+    - Format: PhonePe / Google Pay / Paytm / BHIM / Other
+    - Mandatory: No
+
+17. UPI Statement
+    - UI Element: PDF file picker
+    - Format: PDF export from UPI app
+    - Mandatory: No
+
+--------------------------------------------------
+6. STEP-3 INPUT SUMMARY
+--------------------------------------------------
+
+Total Inputs: 17
+
+Primary Mandatory Inputs:
+- Bank Name
+- Account Holder Name
+- Bank Branch Name
+- IFSC Code
+- Account Number
+- Bank Statement
+
+Optional Inputs:
+- MICR Code
+- Entire secondary bank section
+- Entire UPI section
+
+Secondary bank fields are conditional and become required only when the secondary account toggle is enabled.
+
+--------------------------------------------------
+7. WHAT GETS EXTRACTED AFTER SUBMISSION
+--------------------------------------------------
+
+Step-3 produces structured extraction outputs from the uploaded bank statement and optional UPI statement.
+
+--------------------------------------------------
+7A. FROM BANK STATEMENT (PDF PARSER)
+--------------------------------------------------
+
+Every transaction is extracted with the following fields:
+
+1. Date
+   Description:
+   Transaction date
+
+2. Amount
+   Description:
+   Credit or debit value in rupees
+
+3. Description / Narration
+   Description:
+   Raw transaction text from bank statement
+
+4. Balance
+   Description:
+   Closing balance after transaction
+
+5. Transaction Mode
+   Description:
+   UPI / NEFT / IMPS / ATM / CASH / CHEQUE
+
+This transaction data becomes the core financial timeline used in downstream feature engineering.
+
+--------------------------------------------------
+7B. TRANSACTION CATEGORY TAGGING
+--------------------------------------------------
+
+Each extracted transaction is automatically tagged into one of the following categories:
+
+1. INCOME_SALARY
+   Meaning:
+   Regular salary credit
+
+2. INCOME_GIG
+   Meaning:
+   Platform or gig payout credit
+
+3. INCOME_UPI
+   Meaning:
+   UPI incoming transfer
+
+4. INCOME_CASH
+   Meaning:
+   Cash deposit
+
+5. EMI
+   Meaning:
+   Loan repayment debit
+
+6. UTILITY
+   Meaning:
+   Electricity, gas, or mobile bill debit
+
+7. RENT
+   Meaning:
+   Rent payment debit
+
+8. FOOD
+   Meaning:
+   Food or restaurant debit
+
+9. FUEL
+   Meaning:
+   Fuel-related debit
+
+10. ATM
+    Meaning:
+    ATM withdrawal
+
+11. TRANSFER
+    Meaning:
+    Outgoing transfer
+
+12. OTHER
+    Meaning:
+    Unclassified transaction
+
+--------------------------------------------------
+7C. SECONDARY BANK MERGE RULE
+--------------------------------------------------
+
+If the user provides both primary and secondary bank statements:
+
+- both transaction sets are merged into one unified timeline,
+- duplicate transactions are flagged and removed.
+
+Duplicate removal rule:
+- same date plus or minus 1 day,
+- and same amount plus or minus 5 rupees,
+- then the transaction is treated as a duplicate candidate and removed from the merged output.
+
+--------------------------------------------------
+7D. FROM UPI STATEMENT
+--------------------------------------------------
+
+If the user uploads a UPI statement, the system extracts UPI transaction records and uses them to cross-validate UPI credits against bank statement credits.
+
+This UPI upload acts as an additional supporting financial source and helps confirm transaction consistency across platforms.
+
+--------------------------------------------------
+8. STEP-3 OUTPUT ROLE IN GIGCREDIT
+--------------------------------------------------
+
+The data collected and extracted from Step-3 is later used to generate financial features related to:
+
+- income behaviour,
+- payment discipline,
+- debt burden,
+- expense patterns,
+- savings habits,
+- and transaction consistency.
+
+Step-3 is therefore a major input source for the scoring pillars P1 through P4.
+
+--------------------------------------------------
+9. IMPORTANT BOUNDARY FOR THIS DOCUMENT
+--------------------------------------------------
+
+This Step-3 specification includes only:
+
+- screen structure,
+- user inputs,
+- field requirements,
+- extraction outputs,
+- category tagging,
+- and merge behaviour.
+
+This document intentionally excludes:
+
+- individual validation rules,
+- cross-internal validation rules,
+- cross-step validation rules,
+- API verification logic,
+- OCR confidence rules,
+- parser error handling,
+- fraud checks,
+- and acceptance/rejection logic.
+
+Those validation and verification layers will be defined separately in the next specification.
+
+--------------------------------------------------
+10. FINAL LOCK
+--------------------------------------------------
+
+This Step-3 input structure is final.
+
+Do not add new inputs.
+Do not remove existing inputs.
+Do not rename the locked user-facing fields unless explicitly revised in a later version.
+
+End of Step-3 Specification.

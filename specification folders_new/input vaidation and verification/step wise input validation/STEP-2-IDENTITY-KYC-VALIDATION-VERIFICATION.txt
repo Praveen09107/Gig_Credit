@@ -1,0 +1,586 @@
+GIGCREDIT — STEP-2 VALIDATION & VERIFICATION SPECIFICATION
+Version 1.0 | Identity & KYC Verification
+============================================================
+
+PURPOSE
+-------
+Verify the user's government-issued identity documents
+(Aadhaar + PAN), perform a live face match against the
+Aadhaar photo, and update the global profile with verified
+identity data used by all later cross-step checks.
+
+No income or financial data is collected in this step.
+This step is a combination of document upload, OTP
+verification, and on-device face matching.
+
+============================================================
+SECTION 1 — INPUTS (AUTHORITATIVE LIST — 7 FIELDS)
+============================================================
+
+#   Field Name                        Type            Mandatory
+--  --------------------------------  --------------  ---------
+1   Aadhaar Number                    Numeric string  Required
+2   Aadhaar Front Image               Document upload Required
+3   Aadhaar Back Image                Document upload Required
+4   PAN Number                        Alphanumeric    Required
+5   PAN Card Image                    Document upload Required
+6   Live Selfie / Face Capture        Camera capture  Required
+7   Consent for Aadhaar OTP e-KYC     Checkbox        Required
+
+NOTE: No validation or verification logic references any
+field outside this list.
+
+============================================================
+SECTION 2 — UI GATE RULES (DEVELOPER MANDATORY)
+============================================================
+
+The Step-2 screen enforces a strict sequential unlock model.
+UI elements are LOCKED by default and unlock only when the
+preceding gate condition is met.
+
+------------------------------------------------------------
+GATE 1 — PAN Section LOCKED until:
+------------------------------------------------------------
+  Condition 1: Aadhaar number passes on-device format check
+  Condition 2: Aadhaar OTP verified via API
+               (aadhaar_verified = true)
+
+  Locked elements:
+    - PAN Number input field
+    - PAN Card Image upload button
+
+  Unlocked when: aadhaar_verified = true
+
+------------------------------------------------------------
+GATE 2 — Selfie / Face Capture LOCKED until:
+------------------------------------------------------------
+  Condition 1: aadhaar_verified = true
+  Condition 2: PAN verified via API (pan_verified = true)
+
+  Locked elements:
+    - Live Selfie / Face Capture camera button
+
+  Unlocked when: pan_verified = true
+
+------------------------------------------------------------
+GATE 3 — Continue / Submit Button LOCKED until:
+------------------------------------------------------------
+  Condition 1: aadhaar_verified = true
+  Condition 2: pan_verified = true
+  Condition 3: face_match_passed = true
+  Condition 4: All cross-internal validation checks passed
+
+  The Continue button remains greyed out / disabled until
+  ALL four conditions above are simultaneously true.
+
+============================================================
+SECTION 3 — INDIVIDUAL VALIDATION (ON-DEVICE)
+============================================================
+
+Runs locally on the device, field by field,
+before any API call is made.
+
+------------------------------------------------------------
+FIELD 1 — AADHAAR NUMBER
+------------------------------------------------------------
+Type        : Numeric string
+Rules
+  - Exactly 12 digits
+  - No letters, no spaces, no dashes
+  - First digit must not be 0 or 1
+  - Verhoeff checksum validation (recommended for simulation)
+Error Messages
+  - "Aadhaar number must be exactly 12 digits"
+  - "Aadhaar number cannot start with 0 or 1"
+  - "Invalid Aadhaar number"
+Valid Example   : 234567890123
+Invalid Example : 012345678901 | 12345 | ABCD12345678
+
+------------------------------------------------------------
+FIELD 2 — AADHAAR FRONT IMAGE
+------------------------------------------------------------
+Type        : Image file (JPG, PNG, PDF)
+Rules
+  - Accepted formats: JPG, PNG, PDF only
+  - File size <= 5MB
+  - Must not be blank / completely dark / all-white
+    (basic brightness check on-device)
+Error Messages
+  - "File too large. Maximum size is 5MB"
+  - "Invalid file format. Please upload JPG, PNG, or PDF"
+  - "Document image appears blank. Please retake"
+
+------------------------------------------------------------
+FIELD 3 — AADHAAR BACK IMAGE
+------------------------------------------------------------
+Type        : Image file (JPG, PNG, PDF)
+Rules       : Same as Aadhaar Front Image
+Error Messages: Same as Aadhaar Front Image
+
+------------------------------------------------------------
+FIELD 4 — PAN NUMBER
+------------------------------------------------------------
+Type        : Alphanumeric string (10 characters)
+Rules
+  - Exactly 10 characters
+  - Pattern: [A-Z]{5}[0-9]{4}[A-Z]{1}
+  - App must auto-uppercase the input
+  - 4th character must be "P" for individual accounts
+    (soft check — flag only, non-blocking)
+Error Messages
+  - "PAN must be exactly 10 characters"
+  - "Invalid PAN format. Example: ABCDE1234F"
+Valid Example   : ABCDE1234F
+Invalid Example : abcde1234f (before auto-uppercase)
+                  ABCDE12345 (ends with digit)
+                  AB1234567F (wrong structure)
+
+------------------------------------------------------------
+FIELD 5 — PAN CARD IMAGE
+------------------------------------------------------------
+Type        : Image file (JPG, PNG, PDF)
+Rules       : Same as Aadhaar Front Image
+  - Accepted formats: JPG, PNG, PDF
+  - File size <= 5MB
+  - Must not be blank
+
+------------------------------------------------------------
+FIELD 6 — LIVE SELFIE / FACE CAPTURE
+------------------------------------------------------------
+Type        : Camera capture (in-app only, not gallery)
+Rules
+  - Must be captured in-app via device camera
+  - Gallery upload is NOT allowed for selfie
+  - On-device face detection must find exactly 1 face
+  - Minimum resolution: 480 x 640 pixels
+  - Adequate lighting check (brightness threshold)
+Error Messages
+  - "No face detected. Please ensure your face is clearly
+     visible in good lighting"
+  - "Multiple faces detected. Please capture selfie alone"
+  - "Image too dark. Please move to better lighting"
+  - "Please use the camera to take a live selfie.
+     Gallery upload is not allowed"
+
+------------------------------------------------------------
+FIELD 7 — CONSENT FOR AADHAAR OTP e-KYC
+------------------------------------------------------------
+Type        : Checkbox / toggle
+Rules
+  - Must be explicitly checked / enabled by user
+  - Cannot call /verify-aadhaar-otp-request without
+    this being true
+  - Cannot be pre-checked by default (user must act)
+Error Messages
+  - "You must consent to Aadhaar OTP verification
+     to proceed"
+
+============================================================
+SECTION 4 — SERVER-SIDE VERIFICATION APIs
+============================================================
+
+MongoDB Collections Used in Step-2
+  - aadhaar_db           : Aadhaar identity records
+  - pan_db               : PAN identity records
+  - otp_verification_db  : OTP request/response tracking
+
+------------------------------------------------------------
+API 1 — AADHAAR OTP REQUEST
+------------------------------------------------------------
+Method   : POST
+Endpoint : /verify-aadhaar-otp-request
+MongoDB  : aadhaar_db, otp_verification_db
+
+Trigger Condition
+  - Aadhaar number passes on-device format check
+  - Consent checkbox = true
+  - User taps "Send OTP" button
+
+Request Body
+  {
+    "aadhaar_number": "234567890123"
+  }
+
+Backend Logic
+  - Validate Aadhaar format (server-side)
+  - Lookup Aadhaar in aadhaar_db
+  - If not found → return aadhaar_exists: false
+  - If found:
+    - Generate 6-digit OTP
+    - Store in otp_verification_db:
+      {
+        "aadhaar_number": "234567890123",
+        "otp_hash"      : "<hashed OTP>",
+        "created_at"    : "<timestamp>",
+        "expires_at"    : "<timestamp + 5 min>",
+        "status"        : "pending",
+        "attempts"      : 0
+      }
+    - Send OTP to Aadhaar-linked mobile (simulated in dev)
+
+Response (Success)
+  {
+    "otp_sent"       : true,
+    "expiry_seconds" : 300,
+    "masked_mobile"  : "XXXXXX7890"
+  }
+
+Error Responses
+  - 404 : { "error": "Aadhaar not found in database" }
+  - 429 : { "error": "Too many OTP requests. Try after 15 min" }
+  - 400 : { "error": "Invalid Aadhaar format" }
+
+------------------------------------------------------------
+API 2 — AADHAAR OTP VALIDATE
+------------------------------------------------------------
+Method   : POST
+Endpoint : /verify-aadhaar-otp-validate
+MongoDB  : aadhaar_db, otp_verification_db
+
+Request Body
+  {
+    "aadhaar_number": "234567890123",
+    "otp"           : "482961"
+  }
+
+Backend Logic
+  - Lookup OTP record in otp_verification_db by aadhaar_number
+  - Compare OTP hash
+  - Check expiry (expires_at > now)
+  - If expired → return error "OTP expired"
+  - If wrong OTP:
+    - Increment attempts counter
+    - After 3 failed attempts → lock for 15 minutes
+  - If match and not expired:
+    - Update record: status = "verified"
+    - Fetch full Aadhaar record from aadhaar_db
+    - Return identity fields
+
+Response (Success)
+  {
+    "verified"   : true,
+    "name"       : "Ravi Kumar",
+    "dob"        : "1997-06-12",
+    "gender"     : "Male",
+    "address"    : "No 14, Anna Nagar, Chennai",
+    "photo_hash" : "<base64 thumbnail of Aadhaar photo>"
+  }
+
+On-Device Action on Success
+  - Store aadhaar_name, aadhaar_dob, aadhaar_address,
+    aadhaar_gender, aadhaar_photo in local session state
+  - Set aadhaar_verified = true
+  - UNLOCK: PAN Number input + PAN Card upload (Gate 1 opens)
+
+Error Responses
+  - 400 : { "error": "Wrong OTP" }
+  - 400 : { "error": "OTP expired. Request a new OTP" }
+  - 429 : { "error": "Too many failed attempts. Locked 15 min" }
+
+------------------------------------------------------------
+API 3 — PAN VERIFICATION
+------------------------------------------------------------
+Method   : POST
+Endpoint : /verify-pan
+MongoDB  : pan_db
+
+Trigger Condition
+  - aadhaar_verified = true (Gate 1 passed)
+  - PAN number passes on-device format check
+  - PAN card image uploaded and passes size/format check
+  - User taps "Verify PAN" button
+
+Request Body
+  {
+    "pan_number" : "ABCDE1234F",
+    "name"       : "Ravi Kumar",
+    "dob"        : "1997-06-12"
+  }
+
+NOTE: name and dob are taken from the already-verified
+aadhaar_name and aadhaar_dob stored in local session state.
+User does not re-enter name or DOB for PAN.
+
+Backend Logic
+  - Lookup PAN in pan_db
+  - If not found → return pan_exists: false
+  - If found:
+    - Compare name from request vs pan_db record
+      (fuzzy match, threshold >= 85%)
+    - Compare dob from request vs pan_db record (exact)
+    - Return match status, ITR filed flag, PAN status
+
+Response (Success)
+  {
+    "pan_exists"  : true,
+    "name_match"  : true,
+    "dob_match"   : true,
+    "pan_name"    : "Ravi Kumar",
+    "pan_dob"     : "1997-06-12",
+    "itr_filed"   : true,
+    "pan_status"  : "Active"
+  }
+
+On-Device Action on Success
+  - Store pan_name, pan_dob, pan_status, itr_filed
+    in local session state
+  - Set pan_verified = true
+  - UNLOCK: Selfie / Face Capture button (Gate 2 opens)
+
+Error Responses
+  - 404 : { "error": "PAN not found in database" }
+  - 400 : { "error": "Name does not match PAN records" }
+  - 400 : { "error": "Date of birth does not match PAN records" }
+  - 400 : { "error": "PAN is inactive or blocked" }
+
+============================================================
+SECTION 5 — ON-DEVICE FACE MATCH (TFLite)
+============================================================
+
+Trigger Condition
+  - pan_verified = true (Gate 2 passed)
+  - User captures live selfie (passes Field 6 checks)
+
+Process
+  - Load face embedding model (TensorFlow Lite, on-device)
+  - Extract face embedding vector from live selfie
+  - Extract face embedding vector from aadhaar_photo
+    (returned as base64 in API 2 response)
+  - Compute cosine similarity between both vectors
+
+Threshold
+  - face_similarity_score >= 0.80 → PASS
+  - face_similarity_score <  0.80 → FAIL
+
+On Pass
+  - Set face_match_passed = true
+  - Store face_similarity_score in local session state
+
+On Fail
+  - Show error to user
+  - Allow 2 retakes (retry selfie capture)
+  - After 3 total failures → Step-2 cannot be completed,
+    show support contact message
+
+Error Messages
+  - "Face does not match your Aadhaar photo.
+     Please retake in good lighting"
+  - "Face match failed after 3 attempts.
+     Please contact support"
+
+============================================================
+SECTION 6 — CROSS INTERNAL VALIDATION (WITHIN STEP-2)
+============================================================
+
+Runs after all individual validations pass AND after
+Aadhaar API, PAN API, and face match all succeed.
+
+All checks use locally stored API response data only.
+No additional API call is required in this section.
+
+------------------------------------------------------------
+CHECK 6.1 — AADHAAR NAME vs PAN NAME
+------------------------------------------------------------
+Logic
+  - Normalize: trim, collapse spaces, lowercase both names
+  - Exact match → identity_name_consistent = true → PASS
+  - Fuzzy match score >= 85% → soft warning, non-blocking
+    (set identity_name_fuzzy_match = true, log flag)
+  - Fuzzy match score < 85% → HARD FAIL
+Blocking : YES (if fuzzy score < 85%)
+Error Message
+  - "Name on Aadhaar and PAN do not match.
+     Please check your documents."
+
+------------------------------------------------------------
+CHECK 6.2 — AADHAAR DOB vs PAN DOB
+------------------------------------------------------------
+Logic
+  - Normalize both DOBs to YYYY-MM-DD format
+  - Must match exactly
+  - Any mismatch → HARD FAIL
+Blocking : YES
+Error Message
+  - "Date of birth on Aadhaar and PAN do not match."
+
+------------------------------------------------------------
+CHECK 6.3 — FACE MATCH RESULT (Carried from Section 5)
+------------------------------------------------------------
+Logic
+  - face_similarity_score >= 0.80 → PASS
+  - face_similarity_score <  0.80 → HARD FAIL
+Blocking : YES
+Error Message
+  - "Face does not match Aadhaar photo."
+
+------------------------------------------------------------
+CHECK 6.4 — AADHAAR NAME vs STEP-1 FULL NAME (Global)
+------------------------------------------------------------
+Logic
+  - Compare aadhaar_name vs verified_profile.name
+    (from Step-1 global state)
+  - Normalize: trim, lowercase, collapse spaces
+  - Exact match OR fuzzy score >= 85% → PASS
+  - Below threshold → HARD FAIL
+Blocking : YES
+Error Message
+  - "Your Aadhaar name does not match the name entered
+     in Step-1. Please go back and correct your profile."
+
+------------------------------------------------------------
+CHECK 6.5 — AADHAAR DOB vs STEP-1 DATE OF BIRTH (Global)
+------------------------------------------------------------
+Logic
+  - Compare aadhaar_dob vs verified_profile.dob
+    (from Step-1 global state)
+  - Must match exactly (YYYY-MM-DD)
+  - Any mismatch → HARD FAIL
+Blocking : YES
+Error Message
+  - "Your Aadhaar date of birth does not match the date
+     of birth entered in Step-1."
+
+============================================================
+SECTION 7 — GLOBAL PROFILE UPDATE (AFTER STEP-2 VERIFIED)
+============================================================
+
+Triggered when ALL of the following are true:
+  - aadhaar_verified = true
+  - pan_verified = true
+  - face_match_passed = true
+  - All cross-internal checks 6.1 to 6.5 passed
+
+Add identity block to verified_profile:
+
+verified_profile.identity = {
+  "aadhaar_number"        : "XXXX-XXXX-3456",  // masked
+  "aadhaar_verified"      : true,
+  "aadhaar_name"          : "Ravi Kumar",
+  "aadhaar_dob"           : "1997-06-12",
+  "aadhaar_address"       : "No 14, Anna Nagar, Chennai",
+  "aadhaar_gender"        : "Male",
+
+  "pan_number"            : "ABCDE1234F",
+  "pan_verified"          : true,
+  "pan_name"              : "Ravi Kumar",
+  "pan_dob"               : "1997-06-12",
+  "pan_status"            : "Active",
+  "itr_filed"             : true,
+
+  "face_similarity_score" : 0.92,
+  "face_match_passed"     : true,
+  "kyc_completeness"      : 1.0
+}
+
+ML Features produced and stored in global state
+  - face_similarity_score   (used in P5 pillar)
+  - kyc_completeness        (used in P5 pillar)
+  - itr_filed               (used in P1, P6, P7 pillars)
+
+RULE: All later steps read identity data from
+verified_profile.identity only.
+They do NOT re-query Aadhaar or PAN APIs.
+
+============================================================
+SECTION 8 — TECHNICAL FLOW (FINAL)
+============================================================
+
+User opens Step-2
+  ↓
+User checks Consent checkbox (Field 7)
+  [Not checked] → "Send OTP" button disabled
+  ↓
+User enters Aadhaar number (Field 1)
+  → On-device format validation
+  [Fail] → Show field error, keep Send OTP disabled
+  ↓
+User uploads Aadhaar Front + Back (Fields 2, 3)
+  → File format + size check on-device
+  [Fail] → Show upload error
+  ↓
+User taps "Send OTP"
+  → POST /verify-aadhaar-otp-request
+  [404] → "Aadhaar not found"
+  [429] → "Too many requests"
+  ↓
+User enters OTP received on Aadhaar-linked mobile
+  → POST /verify-aadhaar-otp-validate
+  [Wrong OTP] → "Incorrect OTP. X attempts remaining"
+  [Expired]   → "OTP expired. Request new OTP"
+  [Success]   → aadhaar_verified = true
+  ↓
+*** GATE 1 OPENS ***
+PAN Number input + PAN Card upload ENABLED
+  ↓
+User enters PAN number (Field 4)
+  → On-device format validation (pattern + auto-uppercase)
+  [Fail] → Show field error
+  ↓
+User uploads PAN Card Image (Field 5)
+  → File format + size check on-device
+  [Fail] → Show upload error
+  ↓
+User taps "Verify PAN"
+  → POST /verify-pan (sends aadhaar_name + aadhaar_dob)
+  [404] → "PAN not found"
+  [400] → "Name / DOB mismatch"
+  [Success] → pan_verified = true
+  ↓
+*** GATE 2 OPENS ***
+Selfie / Face Capture button ENABLED
+  ↓
+User taps "Take Selfie"
+  → In-app camera opens (gallery not allowed)
+  → On-device face detection: exactly 1 face required
+  → On-device brightness check
+  [No face / multiple faces / dark] → Show error, retry
+  ↓
+On-device TFLite face match
+  → Compare selfie embedding vs aadhaar_photo embedding
+  → face_similarity_score computed
+  [Score < 0.80] → "Face does not match. Retake (X left)"
+  [Score >= 0.80] → face_match_passed = true
+  ↓
+Cross-internal validation
+  → Check 6.1: Aadhaar name vs PAN name
+  → Check 6.2: Aadhaar DOB vs PAN DOB
+  → Check 6.3: Face match result
+  → Check 6.4: Aadhaar name vs Step-1 name (global)
+  → Check 6.5: Aadhaar DOB vs Step-1 DOB (global)
+  [Any HARD FAIL] → Show specific error, block Continue
+  ↓
+All checks pass
+  ↓
+*** GATE 3 OPENS ***
+Continue button ENABLED
+  ↓
+Update verified_profile.identity
+  ↓
+Mark Step-2 Status = VERIFIED
+  ↓
+Enable navigation to Step-3
+
+============================================================
+SECTION 9 — OUTPUT OF STEP-2
+============================================================
+
+Step-2 Status          : VERIFIED
+verified_profile       : .identity block added and stored
+aadhaar_verified       : true
+pan_verified           : true
+face_match_passed      : true
+face_similarity_score  : <float 0.80 - 1.0>
+kyc_completeness       : 1.0
+itr_filed              : true / false
+Step-3 Status          : UNLOCKED
+
+Cross-step dependencies resolved by Step-2
+  - Step-3 : Bank account holder name vs aadhaar_name
+  - Step-4 : Utility account name vs verified name
+  - Step-6 : Scheme holder name/DOB vs aadhaar identity
+  - Step-8 : ITR name vs pan_name, itr_filed flag used
+  - Step-9 : KYC completeness used in scoring
+
+============================================================
+END OF STEP-2 VALIDATION & VERIFICATION SPECIFICATION
+============================================================

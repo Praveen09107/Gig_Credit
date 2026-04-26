@@ -1,0 +1,166 @@
+STEP-8 — ITR AND GST RECORDS
+GigCredit Onboarding Specification
+Version: Final Input Structure
+Status: Locked — Inputs Only (No Verification Logic)
+
+--------------------------------------------------
+1. PURPOSE
+--------------------------------------------------
+
+Step-8 captures formal tax records:
+  - Income Tax Return (ITR)
+  - Goods and Services Tax (GST) filings
+
+These documents provide:
+  - Declared annual income (from ITR)
+  - Turnover and formal business status (from GST)
+
+This file only defines user-facing inputs:
+  - Module toggles
+  - Text/number fields
+  - File upload fields
+  - Mandatory / Optional behavior
+
+All OCR, cross-checks, and backend verification
+are defined separately in the Step-8 verification spec.[file:20][file:33]
+
+Global rules:
+- Step-8 is OPTIONAL from a flow perspective.
+- Each module (ITR, GST) is also OPTIONAL.
+- If a user selects a module, all fields inside that
+  module become REQUIRED.
+
+--------------------------------------------------
+2. HOW THIS STEP IS PRESENTED
+--------------------------------------------------
+
+The screen shows two cards:
+  1. ITR (Income Tax Return)
+  2. GST Records
+
+Each card contains:
+  - Short description and score impact hint
+  - A toggle: "I have this" (Yes / No)
+  - When Yes → expand relevant fields and uploads.[file:20][file:36]
+
+Work-type emphasis:
+  - Vendor / Freelancer:
+      → GST card shown expanded by default with tip:
+        "GST registration and returns confirm business income."[file:20][file:36]
+  - Platform Worker / Tradesperson:
+      → GST card shown collapsed, can be expanded manually.
+
+--------------------------------------------------
+3. MODULE 1 — INCOME TAX RETURN (ITR)
+--------------------------------------------------
+
+Real-world mapping:
+- The ITR acknowledgement (ITR‑V / e‑Acknowledgement)
+  includes: PAN, Name, Assessment Year, e‑Filing
+  Acknowledgement Number, and a “Total Income” figure.[file:33][web:78][web:82][web:87][web:92]
+- Form 26AS and AIS are tax credit and information
+  statements linked to PAN.[web:79][web:84][web:89]
+
+These fields exist on real documents, so they are
+safe to use as explicit inputs.
+
+Section A — Selection
+
+#  | Field Name         | UI Element         | Input Format     | Mandatory
+---|--------------------|--------------------|------------------|----------
+1  | ITR Selected?      | Toggle Yes / No    | Boolean          | Optional
+
+Section B — ITR Details
+(Visible only when ITR Selected? = Yes)
+
+#  | Field Name                       | UI Element         | Input Format              | Mandatory
+---|----------------------------------|--------------------|---------------------------|----------
+2  | PAN Number (as per ITR)         | Single-line text   | 10-char PAN (ABCDE1234F) | Conditional Required
+3  | Name as per ITR                 | Single-line text   | Plain text               | Conditional Required
+4  | Assessment Year                 | Dropdown/select    | e.g. 2023-24, 2024-25    | Conditional Required
+5  | Annual Income in INR            | Numeric text field | Integer (Total Income)   | Conditional Required
+6  | ITR Acknowledgement Upload      | File upload        | JPG/PNG/PDF              | Conditional Required
+7  | Form 26AS Upload                | File upload        | PDF                      | Optional
+
+Field mapping notes:
+- Field 2 → PAN field printed on ITR acknowledgement.[web:78][web:82][web:87]
+- Field 3 → Name field printed on ITR acknowledgement.[web:78][web:82][web:87]
+- Field 4 → Assessment Year printed at the top of ITR ack.[web:78][web:82][web:88]
+- Field 5 → “Total Income” / taxable income value in the
+  acknowledgement; user enters the rupee amount.[web:78][web:82][web:87][web:92]
+- Field 6 → ITR acknowledgement PDF or scanned ITR‑V.
+- Field 7 → Optional Form 26AS PDF linked to PAN.[file:20][web:79][web:84][web:89]
+
+--------------------------------------------------
+4. MODULE 2 — GST RECORDS
+--------------------------------------------------
+
+Real-world mapping:
+- GSTR‑3B monthly returns contain: GSTIN, Legal
+  Name of registered person, Tax period (month),
+  and outward taxable supplies (turnover).[web:80][web:85][web:90]
+- GST Registration Certificate (Form GST REG‑06)
+  contains: Registration Number (GSTIN), Legal
+  Name, Trade Name, Constitution of business, and
+  address.[web:81][web:86][web:91]
+
+These document fields exist in real GST forms, so
+we can safely ask for GSTIN, Legal Name, and
+annual turnover derived from returns.
+
+Section A — Selection
+
+#  | Field Name         | UI Element         | Input Format     | Mandatory
+---|--------------------|--------------------|------------------|----------
+8  | GST Selected?      | Toggle Yes / No    | Boolean          | Optional
+
+Section B — GST Details
+(Visible only when GST Selected? = Yes)
+
+#  | Field Name                          | UI Element         | Input Format                         | Mandatory
+---|-------------------------------------|--------------------|--------------------------------------|----------
+9  | GSTIN                               | Single-line text   | 15-char alphanumeric GSTIN           | Conditional Required
+10 | Legal Name as per GST               | Single-line text   | Plain text (legal name on GST RC)    | Conditional Required
+11 | Annual Turnover in INR              | Numeric text field | Integer (approx. yearly turnover)    | Conditional Required
+12 | GST Document Upload                 | Multi-file upload  | PDF (GSTR-3B, GST RC)                | Conditional Required
+
+Field mapping notes:
+- Field 9 → “Registration Number: GSTIN/UIN” on
+  GST Registration Certificate and GSTIN field on
+  GSTR‑3B returns.[web:80][web:85][web:86][web:91]
+- Field 10 → “Legal Name” on GST Registration
+  Certificate and in GSTR‑3B header.[web:81][web:86][web:91]
+- Field 11 → Annual turnover in ₹; user-entered,
+  based on GSTR‑3B outward supplies totals.[web:85][web:90]
+- Field 12 → Accepts:
+    • Multiple GSTR‑3B return PDFs (up to 6 months)
+    • GST Registration Certificate PDF (REG‑06).[file:20][web:80][web:86][web:91]
+
+--------------------------------------------------
+5. STEP-8 INPUT SUMMARY
+--------------------------------------------------
+
+Module | Selection Field | Text/Number Fields                             | Upload Fields         | Mandatory Behaviour
+-------|------------------|-----------------------------------------------|-----------------------|---------------------
+ITR    | 1                | 2 (PAN, Name) + 1 (AY) + 1 (Annual Income)    | 1–2 (ITR, 26AS)       | Fields 2–6 Conditional Required when ITR Selected? = Yes; Field 7 Optional
+GST    | 8                | 1 (GSTIN) + 1 (Legal Name) + 1 (Turnover)     | 1 (GST Documents)     | Fields 9–12 Conditional Required when GST Selected? = Yes
+
+Global rules:
+- Both ITR and GST modules are OPTIONAL.
+- For each module:
+    - If Selected? = No → module is ignored.
+    - If Selected? = Yes → all text/number fields and
+      the main document upload are REQUIRED to mark
+      that module complete.[file:36]
+- Step-8 completion does not block onboarding if both
+  modules are unselected, but providing these documents
+  significantly improves scoring confidence.[file:20][file:36]
+
+--------------------------------------------------
+6. FINAL LOCK
+--------------------------------------------------
+
+This Step-8 input structure is final.
+All OCR extraction, PAN/ITR/GST matching, and backend
+verification flows will be documented separately in the
+Step-8 verification and scoring specification.

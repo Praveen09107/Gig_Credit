@@ -1,0 +1,417 @@
+GigCredit Frontend Specification — Loans Module
+
+This document defines the complete frontend specification for the Loans Module in the GigCredit application. The Loans Module is the opportunity and action layer of the product. It converts the generated score, risk insights, and eligibility logic into lender recommendations that the user can review and act on. It must feel useful, trustworthy, transparent, and conversion-focused without feeling pushy.
+
+The Loans Module is not just a list of lenders. It is a context-aware eligibility and application experience built on top of the user's generated score and validated behavior profile.
+
+1. MODULE GOAL
+
+The Loans Module exists to:
+- show eligible loan opportunities to the user
+- connect score output with lender matching
+- present offers in a clear and trustworthy way
+- help users understand why they are eligible
+- support consent before external lender sharing
+- redirect users into the lender application flow
+- create the bridge into the Applications tracking module
+
+This module is the monetizable action layer of GigCredit.
+
+2. ENTRY POINTS
+
+Primary entry points:
+- bottom navigation → Loans tab
+- Report screen → Apply Loan button
+- future deep-link or notification entry into a specific offer if supported later
+
+For the current version, the bottom navigation and report handoff are the main paths.
+
+3. NAVIGATION ACTIVATION RULE
+
+Whenever the user enters the Loans module:
+- the Loans tab icon must become active
+- the user should clearly understand they are now inside the Loans section
+
+This is required for tab consistency.
+
+4. LOANS MODULE DEPENDENCY RULE
+
+The Loans module depends on a generated score and report context.
+
+Without a generated score, the app should not show real lender offers.
+
+This dependency must be enforced in the frontend.
+
+5. NO-SCORE STATE PURPOSE
+
+If the user opens the Loans tab before generating a score, the app must show an instructional empty state rather than lender cards.
+
+This state exists to explain that loans depend on score-based eligibility.
+
+6. NO-SCORE STATE CONTENT
+
+The no-score state should include:
+- message explaining that user must complete score generation first
+- supporting explanation that loan offers depend on score and eligibility
+- primary CTA leading to Check Credit Score
+
+Suggested meaning:
+Complete your credit assessment to unlock personalized loan offers.
+
+7. NO-SCORE STATE CTA BEHAVIOR
+
+When the user taps the CTA in the no-score state:
+- navigate to the Score tab root
+- make Score tab active
+- allow user to start the score flow
+
+This must align with earlier navigation rules.
+
+8. LOANS MODULE PURPOSE AFTER SCORE
+
+Once a score exists, the Loans module should transform from an empty instructional state into a recommendation-driven offers experience.
+
+This state should feel personalized and relevant.
+
+9. LOANS SCREEN CONTENT OVERVIEW
+
+When a valid report and score exist, the Loans screen should include:
+- section heading or title
+- short contextual explanation
+- eligible loan offer cards
+- each card showing lender and offer details
+- apply action on every card
+- possible lender match rationale or score relevance if available
+
+10. SECTION TITLE
+
+Suggested title:
+Your Loan Offers
+
+Behavior:
+- place at top of Loans screen
+- clearly establish the purpose of the page
+- keep title strong but not overwhelming
+
+11. CONTEXTUAL EXPLANATION TEXT
+
+Near the title, show a short explanation such as:
+These offers are matched based on your score, risk level, and eligibility profile.
+
+This helps the user understand why the offers are relevant.
+
+12. OFFER CARDS PURPOSE
+
+Offer cards are the main UI units of the Loans module.
+
+They should communicate opportunity clearly and allow users to compare options quickly.
+
+13. OFFER CARD CORE CONTENT
+
+Each loan offer card should support these fields:
+- lender name
+- lender type (Fintech / NBFC / etc.)
+- eligible amount or amount range
+- indicative offer or label
+- short eligibility/support text
+- Apply button
+
+Optional fields if backend provides them:
+- tenure range
+- interest rate
+- EMI options
+- processing speed
+- confidence or match quality indicator
+- status
+
+14. OFFER CARD DESIGN EXPECTATION
+
+Cards should feel:
+- clean
+- trustworthy
+- structured
+- financially credible
+- easy to scan on mobile
+
+The card should not look like an ad banner.
+
+15. OFFER PRIORITIZATION RULE
+
+Offer cards should be ordered by relevance, such as:
+- best eligibility match first
+- higher approval confidence first
+- better lender fit first
+
+This ordering should be backend-driven where possible, but the frontend must support sorted rendering.
+
+16. MULTIPLE OFFERS EXPECTATION
+
+The Loans module should support multiple lender cards.
+
+The user should be able to view and compare more than one option if multiple eligible offers exist.
+
+17. EXPLAINABILITY INSIDE LOANS
+
+Where useful, the UI may include a short explanation for each match, such as:
+- matched for stable income behavior
+- matched due to strong payment discipline
+- matched for lower-risk profile
+
+This strengthens the explainable nature of the product.
+
+18. APPLY BUTTON PURPOSE
+
+Each offer card must include an Apply button.
+
+This button begins the lender handoff and consent process.
+
+19. APPLY FLOW RULE
+
+When the user taps Apply on a lender card:
+- the system should begin a consent and token-based application handoff flow
+- the user must not be silently redirected without consent
+
+This is critical to product trust.
+
+20. CONSENT FLOW PURPOSE
+
+Before GigCredit shares application context with a partner lender, the user must explicitly consent.
+
+This aligns with the privacy-first product promise.
+
+21. CONSENT SCREEN / MODAL CONTENT
+
+The consent step should explain:
+- which lender the user is applying to
+- that selected derived insights or application context will be used
+- that the user is authorizing the redirect or continuation
+- that the lender will review the application
+
+The tone must be transparent and not manipulative.
+
+22. CONSENT ACTIONS
+
+The consent interface should provide:
+- Confirm / Continue button
+- Cancel / Not now action
+
+Behavior:
+- cancel returns the user safely to the Loans screen
+- confirm continues the handoff process
+
+23. TOKEN GENERATION / SECURE HANDOFF RULE
+
+After user consent:
+- the system should begin secure token generation or secure redirect preparation as defined by backend architecture
+- the user should see a brief loading state while this happens
+- repeated taps must be prevented
+
+24. PREFILLED APPLICATION FLOW EXPECTATION
+
+After consent and token preparation, the user may be moved into:
+- redirect to lender page
+- pre-filled in-app application form
+- lender review flow depending on integration type
+
+The frontend must support these possibilities without changing user trust context.
+
+25. REDIRECT EXPERIENCE RULE
+
+If the user is redirected externally:
+- the UI should clearly communicate that they are moving to a lender process
+- the user should understand that GigCredit is handing them off intentionally
+- external redirection should not feel abrupt or suspicious
+
+26. PREFILLED FORM EXPERIENCE RULE
+
+If the lender flow remains inside the app through integrated forms:
+- key user data should already be prefilled where permitted
+- the user should review before submission
+- submission must feel separate from simple browsing
+
+27. LOAN APPLICATION SUBMISSION EXPECTATION
+
+After the user submits the lender application:
+- the application should move into tracking state
+- the system should create or update a record in the Applications module
+- the user should be able to monitor status later
+
+This is important for continuity.
+
+28. POST-APPLY FEEDBACK
+
+After a successful application handoff or submission:
+- show success confirmation
+- explain that the application is now under review or forwarded
+- provide route to Applications tracking
+
+The user should never wonder whether the application was recorded.
+
+29. APPLICATION STATUS INTEGRATION
+
+The Loans module should connect with the Applications module so the user can later track:
+- submitted
+- consent verified
+- under review
+- approved
+- rejected
+- disbursed
+
+Frontend structures should prepare for this integration.
+
+30. EMPTY OFFER STATE
+
+If a user has a score but no eligible offers, the Loans module should show a respectful empty state.
+
+This state should not feel like rejection.
+
+31. NO-ELIGIBLE-OFFER CONTENT
+
+The empty state can include:
+- message that no matching offers are currently available
+- reassurance that this can improve as financial behavior improves
+- CTA to return to report or view improvement suggestions
+
+This keeps the product supportive.
+
+32. REJECTION-SENSITIVE TONE RULE
+
+The Loans module must avoid harsh wording.
+
+Do not say:
+- You are not qualified
+- No lenders want you
+- Rejected
+
+Prefer supportive phrasing that preserves dignity.
+
+33. LOAN CARD DETAIL DEPTH
+
+Each offer card may support expandable details or a separate detail view.
+
+Possible details include:
+- lender summary
+- loan type
+- expected amount range
+- why this match fits the user
+- next steps after apply
+
+This can improve trust and clarity.
+
+34. LOAN DETAIL VIEW NAVIGATION
+
+If a detail view exists:
+- user should be able to open it from the lender card
+- back navigation returns to the Loans list
+- Apply CTA remains accessible from detail view as well
+
+35. LOANS MODULE LOADING STATES
+
+The module should support these loading states:
+- loading matched offers
+- loading lender detail
+- loading consent data
+- token generation loading
+- apply submission loading
+
+Each loading state must be specific enough for the user to understand what is happening.
+
+36. LOANS MODULE ERROR STATES
+
+The module should support these error cases:
+- score missing
+- offers fetch failure
+- lender details unavailable
+- consent load failure
+- token generation failure
+- redirect failure
+- prefilled application failure
+- submission failure
+
+Every error state should provide a clear next action.
+
+37. REENTRY RULE
+
+When the user comes back to the Loans tab after viewing report or after leaving a lender flow:
+- previously available offers should be shown again if still valid
+- if an application has already been submitted, the relevant offer may show updated status or disabled apply button depending on business logic
+
+38. OFFER STATUS AWARENESS
+
+Offer cards should eventually support status-aware rendering, such as:
+- ready to apply
+- in progress
+- already applied
+- expired
+
+This avoids duplicate confusion.
+
+39. STATE USED INSIDE LOANS MODULE
+
+Important frontend state includes:
+- score availability
+- report availability
+- matched lender list
+- selected lender
+- consent modal state
+- token generation state
+- application initiation state
+- application submission result
+- offer status per lender
+
+This state should be easy to integrate with backend recommendation APIs.
+
+40. REUSABLE COMPONENTS IN LOANS MODULE
+
+Expected components include:
+- LoansHeader
+- EmptyEligibilityState
+- LoanOfferCard
+- MatchReasonChip
+- ApplyButton
+- ConsentModal
+- RedirectPreparationSheet
+- LoanDetailPanel
+- SuccessConfirmationBanner
+- StatusBadge
+- BottomNavBar
+
+41. ACCESSIBILITY AND READABILITY RULES
+
+The Loans module must remain easy to use on mobile.
+
+Important rules:
+- offer cards must be scannable quickly
+- Apply buttons must be clearly tappable
+- consent text must be readable and not hidden in tiny text
+- status should not rely on color alone
+- loading and error states must explain what is happening
+
+42. PRIVACY POSITIONING INSIDE LOANS
+
+Even though Loans is a conversion-focused module, it must continue GigCredit's privacy and consent posture.
+
+That means:
+- no silent sharing
+- no hidden partner transfer
+- no unclear data handoff
+- explicit user confirmation before lender continuation
+
+43. TESTING PRIORITIES FOR LOANS MODULE
+
+Testing should verify:
+- Loans tab activates correctly
+- no-score state appears when expected
+- CTA from no-score state switches to Score tab
+- matched offers render correctly when score exists
+- offer order is stable and meaningful
+- Apply opens consent flow
+- cancel returns safely to Loans list
+- confirm starts token / redirect flow
+- post-apply confirmation appears correctly
+- applications integration is triggered correctly
+- no-offer state is handled gracefully
+
+44. FINAL MODULE DIRECTION
+
+The Loans Module should feel like a trustworthy gateway from financial understanding to opportunity. It must help users act on their score without pressure, preserve consent at every important point, and maintain the product's privacy-first, explainable identity even while moving toward partner application conversion.

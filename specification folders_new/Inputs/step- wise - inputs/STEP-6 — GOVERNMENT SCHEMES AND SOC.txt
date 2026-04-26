@@ -1,0 +1,284 @@
+STEP-6 — GOVERNMENT SCHEMES AND SOCIAL SECURITY
+GigCredit Onboarding Specification
+Version: Final Input Structure
+Status: Locked — Inputs Only (No Verification Logic)
+
+--------------------------------------------------
+1. PURPOSE
+--------------------------------------------------
+
+Step-6 captures the user’s participation in recognised
+government schemes and social security programs.
+
+All schemes in this step are OPTIONAL at the global level.
+
+Per-scheme rule:
+- If the user DOES NOT select a scheme → no inputs required.
+- If the user selects a scheme → that scheme’s ID/reference
+  field AND proof document become REQUIRED for that scheme.
+
+Verification and validation logic are defined in a
+separate Step-6 verification document.
+
+--------------------------------------------------
+2. HOW THIS STEP IS PRESENTED
+--------------------------------------------------
+
+The screen shows a vertical list of scheme modules.
+Each module has:
+  - A toggle: "I have this scheme" (Yes / No)
+  - When Yes → expand and show ID + proof upload fields.
+  - When No → module stays collapsed and ignored.
+
+Supported schemes:
+  1. PM SVANidhi (Street Vendor scheme)
+  2. eShram (Unorganised Workers UAN)
+  3. PM-SYM (Shram Yogi Maandhan Pension)
+  4. PMJJBY (Life Insurance)
+  5. PMMY / MUDRA Loan
+  6. PPF (Public Provident Fund)
+  7. Udyam / MSME Registration
+
+All modules follow the same pattern:
+  - Scheme Selected? (toggle)
+  - Scheme ID / Reference Number
+  - Scheme Document Upload
+
+--------------------------------------------------
+3. MODULE 1 — PM SVANIDHI (STREET VENDOR SCHEME)
+--------------------------------------------------
+
+Note:
+Real PM SVANidhi approval letters and certificates
+contain an Application ID or similar reference ID
+linked to the vendor’s loan/scheme record.[file:20][file:33]
+
+Section A — Selection
+
+#  | Field Name                  | UI Element           | Input Format          | Mandatory
+---|-----------------------------|----------------------|----------------------|----------
+1  | PM SVANidhi Selected?       | Toggle Yes / No      | Boolean              | Optional
+
+Section B — Scheme Details
+(Visible only when Selected? = Yes)
+
+#  | Field Name                  | UI Element           | Input Format          | Mandatory
+---|-----------------------------|----------------------|----------------------|----------
+2  | SVANidhi Reference / App ID | Single-line text     | Alphanumeric ID      | Conditional Required
+3  | SVANidhi Proof Document     | File upload          | JPG/PNG/PDF          | Conditional Required
+
+Field 2 justification:
+  - The PM SVANidhi approval/recommendation letters
+    include an Application ID / reference number which
+    uniquely identifies the vendor’s scheme record.[file:20][file:33]
+
+Accepted documents for Field 3:
+  - PM SVANidhi approval letter
+  - PM SVANidhi sanction letter
+  - PM SVANidhi beneficiary certificate
+
+--------------------------------------------------
+4. MODULE 2 — ESHRAM REGISTRATION
+--------------------------------------------------
+
+Note:
+The eShram card clearly prints a 12-digit
+“Universal Account Number (UAN)” as the primary
+identifier on the front of the card.[web:48][web:54]
+
+Section A — Selection
+
+#  | Field Name                  | UI Element           | Input Format          | Mandatory
+---|-----------------------------|----------------------|----------------------|----------
+4  | eShram Selected?            | Toggle Yes / No      | Boolean              | Optional
+
+Section B — Scheme Details
+(Visible only when Selected? = Yes)
+
+#  | Field Name                  | UI Element           | Input Format          | Mandatory
+---|-----------------------------|----------------------|----------------------|----------
+5  | UAN (Universal Account No.) | Numeric text field   | 12-digit UAN         | Conditional Required
+6  | eShram Card Upload          | File upload          | JPG/PNG/PDF          | Conditional Required
+
+Field 5 justification:
+  - UAN is the official 12-digit ID assigned on
+    registration and is printed as “Universal Account
+    Number (UAN)” on the eShram card itself.[web:48][web:54]
+
+--------------------------------------------------
+5. MODULE 3 — PM-SYM (PENSION SCHEME)
+--------------------------------------------------
+
+Note:
+During PM-SYM enrolment, a unique pension account
+number is generated and printed on the Shram Yogi
+pension card / acknowledgement.[file:33][web:55]
+
+Section A — Selection
+
+#  | Field Name                        | UI Element           | Input Format         | Mandatory
+---|-----------------------------------|----------------------|---------------------|----------
+7  | PM-SYM Selected?                  | Toggle Yes / No      | Boolean             | Optional
+
+Section B — Scheme Details
+(Visible only when Selected? = Yes)
+
+#  | Field Name                        | UI Element           | Input Format         | Mandatory
+---|-----------------------------------|----------------------|---------------------|----------
+8  | PM-SYM Pension Account Number     | Single-line text     | Alphanumeric ID     | Conditional Required
+9  | PM-SYM Pension Card / Proof       | File upload          | JPG/PNG/PDF         | Conditional Required
+
+Field 8 justification:
+  - The PM-SYM enrolment process generates a unique
+    pension account number printed on the pension
+    card/printout given to the subscriber.[file:33][web:55]
+
+--------------------------------------------------
+6. MODULE 4 — PMJJBY (LIFE INSURANCE)
+--------------------------------------------------
+
+Note:
+PMJJBY Certificates of Insurance (COI) printed by
+banks/insurers include a “Unique Reference Number (URN)”
+along with member name, bank account, and coverage
+details.[file:33][web:50][web:56][web:62]
+
+Section A — Selection
+
+#  | Field Name                        | UI Element           | Input Format         | Mandatory
+---|-----------------------------------|----------------------|---------------------|----------
+10 | PMJJBY Selected?                  | Toggle Yes / No      | Boolean             | Optional
+
+Section B — Scheme Details
+(Visible only when Selected? = Yes)
+
+#  | Field Name                        | UI Element           | Input Format         | Mandatory
+---|-----------------------------------|----------------------|---------------------|----------
+11 | PMJJBY Unique Reference Number    | Single-line text     | URN as on COI       | Conditional Required
+12 | PMJJBY Certificate Upload         | File upload          | JPG/PNG/PDF         | Conditional Required
+
+Field 11 justification:
+  - Real PMJJBY COI documents label this as
+    “Unique Reference Number (URN)” and show it as
+    an alphanumeric reference on the certificate.[web:50][web:56][web:62]
+
+--------------------------------------------------
+7. MODULE 5 — PMMY / MUDRA LOAN
+--------------------------------------------------
+
+Note:
+Mudra (PMMY) loans are issued by banks through
+standard loan sanction letters and account documents.
+These always include a loan account number or specific
+Mudra account reference for that borrower.[file:33][web:51][web:57]
+
+Section A — Selection
+
+#  | Field Name                        | UI Element           | Input Format         | Mandatory
+---|-----------------------------------|----------------------|---------------------|----------
+13 | PMMY / Mudra Selected?            | Toggle Yes / No      | Boolean             | Optional
+
+Section B — Scheme Details
+(Visible only when Selected? = Yes)
+
+#  | Field Name                        | UI Element           | Input Format         | Mandatory
+---|-----------------------------------|----------------------|---------------------|----------
+14 | Mudra Loan Account Number         | Single-line text     | Bank loan a/c no.   | Conditional Required
+15 | Mudra Loan Proof Document         | File upload          | JPG/PNG/PDF         | Conditional Required
+
+Accepted documents for Field 15:
+  - Mudra loan sanction letter
+  - Mudra loan account statement front page
+  - Mudra no-due certificate after closure
+
+Field 14 justification:
+  - Sanction letters and passbooks for PMMY loans
+    clearly print the loan account number or
+    Mudra card account number.[web:51][web:57]
+
+--------------------------------------------------
+8. MODULE 6 — PPF (PUBLIC PROVIDENT FUND)
+--------------------------------------------------
+
+Note:
+PPF passbooks issued by banks or post offices
+contain the PPF account number on the identity
+page along with branch details.[file:33][web:52][web:58]
+
+Section A — Selection
+
+#  | Field Name                        | UI Element           | Input Format         | Mandatory
+---|-----------------------------------|----------------------|---------------------|----------
+16 | PPF Selected?                     | Toggle Yes / No      | Boolean             | Optional
+
+Section B — Scheme Details
+(Visible only when Selected? = Yes)
+
+#  | Field Name                        | UI Element           | Input Format         | Mandatory
+---|-----------------------------------|----------------------|---------------------|----------
+17 | PPF Account Number                | Single-line text     | PPF account no.     | Conditional Required
+18 | PPF Passbook / Statement Upload   | File upload          | JPG/PNG/PDF         | Conditional Required
+
+Field 17 justification:
+  - The PPF account number is printed on the
+    passbook/statement front and is the natural
+    identifier for this scheme.[web:52][web:58]
+
+--------------------------------------------------
+9. MODULE 7 — UDYAM / MSME REGISTRATION
+--------------------------------------------------
+
+Note:
+Udyam Registration Certificates show a 16-character
+“Udyam Registration Number” (e.g. UDYAM-XX-00-0000000)
+on the top of the certificate.[file:36][web:53][web:59]
+
+Section A — Selection
+
+#  | Field Name                        | UI Element           | Input Format         | Mandatory
+---|-----------------------------------|----------------------|---------------------|----------
+19 | Udyam / MSME Selected?           | Toggle Yes / No      | Boolean             | Optional
+
+Section B — Scheme Details
+(Visible only when Selected? = Yes)
+
+#  | Field Name                        | UI Element           | Input Format                   | Mandatory
+---|-----------------------------------|----------------------|--------------------------------|----------
+20 | Udyam Registration Number         | Single-line text     | UDYAM-XX-00-0000000 format     | Conditional Required
+21 | Udyam / MSME Certificate Upload   | File upload          | JPG/PNG/PDF                    | Conditional Required
+
+Field 20 justification:
+  - The Udyam Registration Number is the main ID
+    printed in a dedicated field on the certificate
+    and is used for online verification.[web:53][web:59]
+
+--------------------------------------------------
+10. STEP-6 INPUT SUMMARY
+--------------------------------------------------
+
+Module            | Selection Field | ID / Reference Fields | Proof Upload Fields | Mandatory Behaviour
+------------------|-----------------|------------------------|---------------------|---------------------
+PM SVANidhi       | 1               | 2                      | 3                   | All Conditional Required when selected
+eShram            | 4               | 5                      | 6                   | All Conditional Required when selected
+PM-SYM            | 7               | 8                      | 9                   | All Conditional Required when selected
+PMJJBY            | 10              | 11                     | 12                  | All Conditional Required when selected
+PMMY / Mudra      | 13              | 14                     | 15                  | All Conditional Required when selected
+PPF               | 16              | 17                     | 18                  | All Conditional Required when selected
+Udyam / MSME      | 19              | 20                     | 21                  | All Conditional Required when selected
+
+Global rule:
+- User can select any combination of schemes.
+- For each selected scheme, both the ID/reference field
+  and the scheme proof upload are REQUIRED to complete
+  that module.
+- Step-6 itself remains OPTIONAL in terms of scoring:
+  skipping all schemes does not block onboarding.
+
+--------------------------------------------------
+11. FINAL LOCK
+--------------------------------------------------
+
+This Step-6 input structure is final.
+All verification APIs, OCR fields, and cross-step
+validation logic will be documented separately in
+the Step-6 verification specification.

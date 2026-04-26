@@ -1,0 +1,1848 @@
+{
+  "old_planning": {
+    "0_COPILOT_FINDINGS_VERIFICATION.md": {
+      "size": 7401,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/overridden",
+        "/index",
+        "/1_",
+        "/1_",
+        "/state"
+      ]
+    },
+    "0_PROJECT_CONTEXT.md": {
+      "size": 11593,
+      "headings": [
+        "---\n"
+      ],
+      "urls": [
+        "/bounds",
+        "/income",
+        "/gallery"
+      ]
+    },
+    "10_DEV_A_BACKEND_IMPLEMENTATION_SPEC.md": {
+      "size": 5217,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/app/main",
+        "/app/config",
+        "/app/database",
+        "/app/auth",
+        "/app/models/api"
+      ]
+    },
+    "11_DEV_A_OFFLINE_ML_IMPLEMENTATION_SPEC.md": {
+      "size": 7678,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/data_generator",
+        "/tune_models",
+        "/train_final",
+        "/extract_shap",
+        "/train_meta_learner"
+      ]
+    },
+    "12_DEV_A_AI_INTEGRATION_IMPLEMENTATION_SPEC.md": {
+      "size": 3576,
+      "headings": [
+        "---\n",
+        "- OCR",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/lib/ai/",
+        "/business",
+        "/business",
+        "/file",
+        "/suspicious/edited"
+      ]
+    },
+    "13_DEV_A_QA_HANDOFF_AND_CHANGE_CONTROL.md": {
+      "size": 3426,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/local",
+        "/fail/replay",
+        "/response",
+        "/schema",
+        "/real"
+      ]
+    },
+    "14_DEV_A_COMPLETION_GATE_REPORT.md": {
+      "size": 2869,
+      "headings": [],
+      "urls": [
+        "/schema/handoff/parity",
+        "/app/main",
+        "/auth",
+        "/tests/test_contract_smoke",
+        "/calibration/threshold/prod"
+      ]
+    },
+    "15_DEV_B_IMPLEMENTATION_PERCENTAGE_AND_DEV_A_BLOCKERS (1).md": {
+      "size": 2280,
+      "headings": [],
+      "urls": [
+        "/6_",
+        "/11_",
+        "/12_",
+        "/3_",
+        "/1_"
+      ]
+    },
+    "15_OCR_INPUT_CAPTURE_TEMPLATE.md": {
+      "size": 3474,
+      "headings": [],
+      "urls": [
+        "/overexposure",
+        "/capture"
+      ]
+    },
+    "16_DEV_A_REQUIRED_IMPLEMENTATION_FROM_WORKFLOW_AND_DEV_B_PLAN (1).md": {
+      "size": 5079,
+      "headings": [
+        "- KYC"
+      ],
+      "urls": [
+        "/lib/ai/verification_validation_engine",
+        "/utility/insurance",
+        "/lib/ai/transaction_engine",
+        "/lib/ai/secure_cleanup_policy",
+        "/authenticity/face"
+      ]
+    },
+    "17_DEV_A_FINAL_CROSSCHECK_AND_INTEGRATION_GUIDE.md": {
+      "size": 11329,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/deployment",
+        "/assets/models/",
+        "/package",
+        "/spec",
+        "/artifact"
+      ]
+    },
+    "18_DEV_B_HANDOFF_MESSAGE_AND_EXECUTION_PROMPTS.md": {
+      "size": 9344,
+      "headings": [
+        "---\n",
+        "---\n",
+        "PROMPT START\n",
+        "PROMPT END\n",
+        "---\n",
+        "PROMPT START\n",
+        "PROMPT END\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/checklists",
+        "/report",
+        "/authenticity/face",
+        "/17_",
+        "/16_"
+      ]
+    },
+    "19_ML_OWNER_PRODUCTION_ARTIFACT_RUNBOOK.md": {
+      "size": 7294,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/assets/models/",
+        "/assets/constants/artifact_manifest",
+        "/runtime",
+        "/assets/models/efficientnet_lite0",
+        "/assets/models/mobilefacenet"
+      ]
+    },
+    "1_GIGCREDIT_FULL_IMPLEMENTATION_PLAN.md": {
+      "size": 48412,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "     ",
+        "     ",
+        "     ",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/main",
+        "//",
+        "/gigcredit",
+        "/ai/ai_interfaces",
+        "/services/api_client_interface"
+      ]
+    },
+    "1_SCORING_ENGINE_SPEC_FREEZE.md": {
+      "size": 6295,
+      "headings": [],
+      "urls": [
+        "/20/52",
+        "/export",
+        "/scoring/p1_scorer",
+        "/scoring/p2_scorer",
+        "/scoring/p3_scorer"
+      ]
+    },
+    "20_RUNTIME_LOADER_MAPPING_ANDROID_IOS.md": {
+      "size": 2617,
+      "headings": [],
+      "urls": [
+        "/assets/models/",
+        "/android/app/src/main/kotlin/com/gigcredit/app/",
+        "/ai_native",
+        "/efficientnet_lite0",
+        "/mobilefacenet"
+      ]
+    },
+    "21_PRODUCTION_MODEL_ARTIFACT_PR_PACKAGE.md": {
+      "size": 2728,
+      "headings": [],
+      "urls": [
+        "/paste",
+        "/assets/models/efficientnet_lite0",
+        "/assets/models/mobilefacenet",
+        "/data/runtime_model_contract",
+        "/assets/constants/artifact_manifest"
+      ]
+    },
+    "22_DEV_B_RUNTIME_INTEGRATION_VALIDATION_PACK.md": {
+      "size": 1643,
+      "headings": [],
+      "urls": [
+        "/assets/models/efficientnet_lite0",
+        "/assets/models/mobilefacenet",
+        "/assets/constants/artifact_manifest",
+        "/fail",
+        "/screenshots"
+      ]
+    },
+    "23_TODO_COMPLETION_BLOCKER_AND_FINAL_STEPS.md": {
+      "size": 1574,
+      "headings": [],
+      "urls": [
+        "/assets/models/efficientnet_lite0",
+        "/assets/models/mobilefacenet",
+        "/assets/models/",
+        "/scripts/finalize_artifact_handoff",
+        "/data/runtime_model_handoff_report"
+      ]
+    },
+    "24_DEV_A_TO_DEV_B_PRODUCTION_HANDOFF_SIGNOFF_CHECKLIST.md": {
+      "size": 8161,
+      "headings": [],
+      "urls": [
+        "/32_",
+        "/data/scoring_release_metadata",
+        "/lib/scoring/generated/",
+        "/data/meta_coefficients",
+        "/27_"
+      ]
+    },
+    "25_DEV_A_INTEGRATION_RELEASE_NOTES.md": {
+      "size": 2716,
+      "headings": [],
+      "urls": [
+        "/packaged",
+        "/data/scoring_release_metadata",
+        "/data/golden_inference_pack",
+        "/data/shap_golden_examples",
+        "/data/feature_contract_freeze"
+      ]
+    },
+    "26_SHAP_RUNTIME_CONTRACT_AND_GOLDEN_VALIDATION.md": {
+      "size": 1495,
+      "headings": [],
+      "urls": [
+        "/data/shap_lookup",
+        "/data/shap_golden_examples",
+        "/negative"
+      ]
+    },
+    "27_SCORING_DETERMINISM_GOLDEN_INFERENCE_AND_TOLERANCE.md": {
+      "size": 1321,
+      "headings": [],
+      "urls": [
+        "/data/golden_inference_pack",
+        "/runtime",
+        "/data/meta_coefficients",
+        "/1_",
+        "/stds/coefficients/intercept"
+      ]
+    },
+    "28_FEATURE_CONTRACT_FREEZE_95_AND_PREPROCESSING.md": {
+      "size": 887,
+      "headings": [],
+      "urls": [
+        "/data/feature_contract_freeze",
+        "/invalid",
+        "/lib/scoring/feature_sanitizer"
+      ]
+    },
+    "29_DEV_B_HANDOFF_STATUS_MESSAGE_2026_03_20.md": {
+      "size": 2788,
+      "headings": [],
+      "urls": [
+        "/evidence",
+        "/constants",
+        "/data/scoring_release_metadata",
+        "/assets/constants/artifact_manifest",
+        "/data/meta_coefficients"
+      ]
+    },
+    "2_BACKEND_HARDENING_SPEC.md": {
+      "size": 3662,
+      "headings": [],
+      "urls": [
+        "/bank/policy/",
+        "/schemes/loans",
+        "/feature",
+        "//",
+        "//"
+      ]
+    },
+    "2_GIGCREDIT_TEAM_WORK_SPLIT.md": {
+      "size": 10633,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/lib/ai/",
+        "/lib/services/",
+        "/lib/ui/",
+        "/lib/core/",
+        "/lib/scoring/"
+      ]
+    },
+    "30_PRODUCTION_BLOCKER_CLOSURE_REQUIRED_INPUTS.md": {
+      "size": 1864,
+      "headings": [],
+      "urls": [
+        "/full",
+        "/environment",
+        "/32_",
+        "/assets/models/efficientnet_lite0",
+        "/assets/models/mobilefacenet"
+      ]
+    },
+    "31_DEV_B_EXECUTION_MESSAGE_AND_DAYWISE_CHECKLIST_2026_03_20.md": {
+      "size": 4897,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/24_",
+        "/paste",
+        "/29",
+        "/joint",
+        "/deployment"
+      ]
+    },
+    "32_DEV_A_SCORING_TFLITE_EXPORT_AND_PARITY_EXECUTION_PLAN.md": {
+      "size": 7106,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/export",
+        "/checksum",
+        "/runtime",
+        "/device",
+        "/lib/scoring/generated/"
+      ]
+    },
+    "33_SCORING_TFLITE_PULL_AND_UTILIZATION_GUIDE.md": {
+      "size": 3350,
+      "headings": [],
+      "urls": [
+        "/src/export_scoring_to_tflite",
+        "/src/validate_scoring_tflite_parity",
+        "/assets/models/scoring_model_v1",
+        "/readme/planning",
+        "/assets/models/scoring_model_v1"
+      ]
+    },
+    "3_END_TO_END_WORKFLOW_FREEZE.md": {
+      "size": 6472,
+      "headings": [],
+      "urls": [
+        "/validated",
+        "/insurance/e",
+        "/debugger/hook/integrity",
+        "/trim",
+        "/image"
+      ]
+    },
+    "3_PRODUCTION_REVIEW_REPORT.md": {
+      "size": 11565,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/assets/constants/state_income_anchors",
+        "/assets/constants/feature_means",
+        "/ui/",
+        "/core/",
+        "/gov/pan/verify"
+      ]
+    },
+    "4_IMPLEMENTATION_PLAN_20_PHASES.md": {
+      "size": 11194,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/3_",
+        "/1_",
+        "/2_",
+        "/2_",
+        "/lib/models/document_type"
+      ]
+    },
+    "5_DEV_A_EXECUTION_PLAN.md": {
+      "size": 14257,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/4_",
+        "/2_",
+        "/1_",
+        "/3_",
+        "/2_"
+      ]
+    },
+    "6_DEV_B_EXECUTION_PLAN.md": {
+      "size": 14610,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/4_",
+        "/3_",
+        "/1_",
+        "/2_",
+        "/lib/main"
+      ]
+    },
+    "7_MASTER_IMPLEMENTATION_BLUEPRINT_PRODUCTION_GRADE.md": {
+      "size": 6828,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/7_",
+        "/1_",
+        "/3_",
+        "/2_",
+        "/identifiers"
+      ]
+    },
+    "8_PHASE0_FREEZE_CHECKLIST_DEV_A.md": {
+      "size": 4318,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/7_",
+        "/1_",
+        "/3_",
+        "/2_",
+        "/9"
+      ]
+    },
+    "9_DEV_A_DAY1_EXECUTION_PACK.md": {
+      "size": 5516,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/lib/ai",
+        "/lib/services",
+        "/lib/services/api_client_interface",
+        "/lib/services/mock_api_client",
+        "/lib/ai/ai_interfaces"
+      ]
+    },
+    "ML_EVALUATION_CONFIDENCE_SHAP_REFERENCE_IMPLEMENTATION.md": {
+      "size": 16141,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "- ROC-AUC",
+        "- PR-AUC",
+        "- F1",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/val/test",
+        "/15/15",
+        "/noise",
+        "/payment",
+        "/proof"
+      ]
+    },
+    "README.md": {
+      "size": 1646,
+      "headings": [],
+      "urls": [
+        "/auth/schema/logging"
+      ]
+    }
+  },
+  "old_specs": {
+    "COMPREHENSIVE FIXES AND ADDITIONS \u2014 ALL IDENTIFIED ISSUES AND RESOLUTIONS.txt": {
+      "size": 30924,
+      "headings": [
+        "  THIS DOCUMENT SUPPLEMENTS ALL EXISTING SPECIFICATION FILES",
+        "DOCUMENT PURPOSE",
+        "-------------------------",
+        "-------------------------\n",
+        "-------------------------",
+        "-------------------------\n",
+        "-------------------------",
+        "-------------------------\n",
+        "-------------------------",
+        "-------------------------\n"
+      ],
+      "urls": [
+        "/packages/pdf",
+        "/pdf",
+        "/widgets",
+        "/share_plus",
+        "//"
+      ]
+    },
+    "GIGCREDIT \u2014 USER INPUT COLLECTION SPECIFICATION.txt": {
+      "size": 43263,
+      "headings": [
+        "DOCUMENT PURPOSE",
+        "SYSTEM OVERVIEW",
+        "FIELD                 TRIGGERS",
+        "DYNAMIC CONFIGURATION REFERENCE",
+        "WORK TYPE SELECTED       STEP 5 LAYOUT RENDERED",
+        "IN STEP 1                IN STEP 5",
+        "VEHICLE OWNERSHIP        STEP 7 VEHICLE INSURANCE",
+        "IN STEP 1                STATUS IN STEP 7",
+        "WORK TYPE SELECTED       GST SECTION IN STEP 8",
+        "COMPLETE INPUT COUNT SUMMARY"
+      ],
+      "urls": [
+        "/06/1997",
+        "/gallery",
+        "/off",
+        "/debit",
+        "/delivery"
+      ]
+    },
+    "Input_fields_final (1).txt": {
+      "size": 115556,
+      "headings": [
+        "GIGCREDIT  FINALIZED INPUT FIELD SPECIFICATION",
+        "DOCUMENT CONVENTIONS",
+        "STEP 2  IDENTITY DOCUMENTS\n",
+        "#",
+        "1",
+        "ID",
+        "2",
+        "P5",
+        "3",
+        "META"
+      ],
+      "urls": [
+        "/identity",
+        "/savings",
+        "/handwritten",
+        "/ride",
+        "/distribution"
+      ]
+    },
+    "MASTER BACKEND SYSTEM SPECIFICATION \u2014 GIGCREDIT VERIFICATION, API, AND REPORT GENERATION ARCHITECTURE.txt": {
+      "size": 5478,
+      "headings": [
+        "SYSTEM ROLE\n\n",
+        "---\n\n",
+        "BACKEND ARCHITECTURE OVERVIEW\n\n",
+        "---\n\n",
+        "BACKEND RESPONSIBILITIES\n\n",
+        "---\n\n",
+        "SECTION-1 VERIFICATION API LAYER\n\n",
+        "---\n\n",
+        "API ENDPOINTS\n\n",
+        "---\n\n"
+      ],
+      "urls": [
+        "/gov/pan/verify",
+        "/gov/aadhaar/verify",
+        "/bank/account/verify",
+        "/bank/ifsc/verify",
+        "/gov/vehicle/rc/verify"
+      ]
+    },
+    "MASTER IMPLEMENTATION PROMPT \u2014 GIGCREDIT FULL SYSTEM (ON-DEVICE + BACKEND + ML + REPORT).txt": {
+      "size": 6869,
+      "headings": [
+        "OBJECTIVE\n\n",
+        "---\n\n",
+        "GLOBAL SYSTEM ARCHITECTURE\n\n",
+        "---\n\n",
+        "---\n\n",
+        "   ",
+        "   SAVINGS",
+        "   ",
+        "   ",
+        "---\n\n"
+      ],
+      "urls": [
+        "/gov/pan/verify",
+        "/report/generate"
+      ]
+    },
+    "MASTER PROMPT \u2014 MODEL OUTPUT TO EXPLAINABLE MULTILINGUAL CREDIT REPORT PIPELINE.txt": {
+      "size": 5824,
+      "headings": [
+        "SYSTEM CONTEXT\n\n",
+        "---\n\n",
+        "INPUT TO THIS PIPELINE\n\n",
+        "---\n\n",
+        "PHASE-1 FEATURE VECTOR TO PILLAR COMPUTATION\n\n",
+        "---\n\n",
+        "PILLAR SCORE CALCULATION\n\n",
+        "---\n\n",
+        "PHASE-2 FINAL CREDIT SCORE COMPUTATION\n\n",
+        "---\n\n"
+      ],
+      "urls": [
+        "//",
+        "//"
+      ]
+    },
+    "MASTER SPEC \u2014 ERROR HANDLING, LOGGING, DEBUGGING & FAILURE RECOVERY SYSTEM.txt": {
+      "size": 6163,
+      "headings": [
+        "OBJECTIVE\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n"
+      ],
+      "urls": [
+        "/system"
+      ]
+    },
+    "MASTER SYSTEM DESIGN PROMPT \u2014 COMPLETE ON-DEVICE VERIFICATION, VALIDATION, SECURITY, AND CREDIT SCORING PIPELINE.txt": {
+      "size": 9560,
+      "headings": [
+        "SYSTEM CONTEXT\n\n",
+        "---\n\n",
+        "SYSTEM ARCHITECTURE OVERVIEW\n\n",
+        "---\n\n",
+        "ON-DEVICE PROCESSING RESPONSIBILITIES\n\n",
+        "---\n\n",
+        "ON-DEVICE SECURITY ARCHITECTURE\n\n",
+        "---\n\n",
+        "MODEL ENCRYPTION\n\n",
+        "---\n\n"
+      ],
+      "urls": [
+        "/evaluation_model"
+      ]
+    },
+    "MASTER SYSTEM DESIGN PROMPT \u2014 END-TO-END VERIFICATION & VALIDATION PIPELINE.txt": {
+      "size": 7712,
+      "headings": [
+        "SYSTEM CONTEXT\n\n",
+        "---\n\n",
+        "SYSTEM ARCHITECTURE OVERVIEW\n\n",
+        "---\n\n",
+        "CORE VALIDATION TYPES\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n",
+        "GLOBAL PROFILE OBJECT\n\n",
+        "---\n\n"
+      ],
+      "urls": [
+        "/gov/pan/verify",
+        "/gov/income-tax/itr/verify"
+      ]
+    },
+    "MASTER UI_UX DESIGN PROMPT \u2014 GIGCREDIT MOBILE APPLICATION.txt": {
+      "size": 6219,
+      "headings": [
+        "OBJECTIVE\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n",
+        "HEADER\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n",
+        "CALL TO ACTION\n\n"
+      ],
+      "urls": [
+        "/on-device"
+      ]
+    },
+    "ML workflow (1).txt": {
+      "size": 84431,
+      "headings": [
+        "DOCUMENT PURPOSE",
+        "ARCHITECTURAL OVERVIEW"
+      ],
+      "urls": [
+        "/7_",
+        "/1_",
+        "/month",
+        "/month",
+        "/month"
+      ]
+    },
+    "PHASE-1 \u2014 GIGCREDIT SYSTEM FOUNDATION & GLOBAL ARCHITECTURE SPECIFICATION.txt": {
+      "size": 5419,
+      "headings": [
+        "OBJECTIVE\n\n",
+        "---\n\n",
+        "SYSTEM DESIGN PRINCIPLE\n\n",
+        "ONLY VERIFIED DATA IS USED FOR CREDIT SCORING\n\n",
+        "---\n\n",
+        "GLOBAL SYSTEM COMPONENTS\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n"
+      ],
+      "urls": [
+        "/app_cache/verified_data/",
+        "/gov/pan/verify"
+      ]
+    },
+    "PHASE-2 \u2014 MACHINE LEARNING DEVELOPMENT, TRAINING PIPELINE, SHAP GENERATION, AND MOBILE DEPLOYMENT.txt": {
+      "size": 4778,
+      "headings": [
+        "OBJECTIVE\n\n",
+        "---\n\n",
+        "INPUT DATA SOURCES\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n",
+        "SALARY",
+        "SAVINGS",
+        "---\n\n",
+        "---\n\n"
+      ],
+      "urls": [
+        "/test",
+        "/assets/models/"
+      ]
+    },
+    "PHASE-3 \u2014 ANDROID ON-DEVICE IMPLEMENTATION, MODEL EXECUTION, OCR PIPELINE, AND SECURE RUNTIME.txt": {
+      "size": 5548,
+      "headings": [
+        "OBJECTIVE\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n",
+        "IMPORTANT CONCEPT\n\n",
+        "---\n\n",
+        "KEYSTORE FLOW\n\n",
+        "---\n\n",
+        "MODEL LOAD FLOW\n\n",
+        "---\n\n"
+      ],
+      "urls": [
+        "/gov/pan/verify",
+        "/app_cache/verified_data/"
+      ]
+    },
+    "PHASE-4 \u2014 BACKEND SERVER ARCHITECTURE, VERIFICATION APIS, DATABASE DESIGN, AND LLM REPORT ENGINE.txt": {
+      "size": 3924,
+      "headings": [
+        "OBJECTIVE\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n"
+      ],
+      "urls": [
+        "/bank",
+        "/gov/pan/verify",
+        "/gov/aadhaar/verify",
+        "/bank/ifsc/verify",
+        "/bank/penny-drop"
+      ]
+    },
+    "PHASE-5 \u2014 FULL END-TO-END EXECUTION FLOW (FROM USER INPUT TO FINAL CREDIT REPORT).txt": {
+      "size": 5544,
+      "headings": [
+        "OBJECTIVE\n\n",
+        "---\n\n",
+        "GLOBAL EXECUTION FLOW\n\n",
+        "---\n\n",
+        "DETAILED STEP-BY-STEP FLOW\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n",
+        "---\n\n"
+      ],
+      "urls": [
+        "/gov/aadhaar/verify",
+        "/gov/pan/verify",
+        "/bank/penny-drop",
+        "/report/generate"
+      ]
+    },
+    "REVISED \u2014 SCORING ENGINE ARCHITECTURE (SUPERSEDES ML WORKFLOW + PHASE-2 + PHASE-3 SCORING SECTIONS).txt": {
+      "size": 47933,
+      "headings": [
+        "DOCUMENT PURPOSE",
+        "WHAT CHANGED AND WHY",
+        "-------------------------",
+        "-------------------------\n",
+        "-------------------------",
+        "-------------------------\n",
+        "-------------------------",
+        "-------------------------\n",
+        "-------------------------",
+        "-------------------------\n"
+      ],
+      "urls": [
+        "/4",
+        "/5",
+        "/month",
+        "/month",
+        "/month"
+      ]
+    },
+    "SYSTEM DESIGN PROMPT \u2014 VALIDATION & VERIFICATION ARCHITECTURE (2).txt": {
+      "size": 58796,
+      "headings": [
+        "9876543210",
+        "1234567890",
+        "CROSS INTERNAL VALIDATION",
+        "GLOBAL PROFILE INITIALIZATION",
+        "CROSS STEP VALIDATION PREPARATION",
+        "TECHNICAL FLOW",
+        "EXAMPLE USER FLOW",
+        "OUTPUT OF STEP-1",
+        "---\n\n",
+        "INPUTS COLLECTED\n\n"
+      ],
+      "urls": [
+        "/11/2006",
+        "/11/2006",
+        "/verify-aadhaar",
+        "/verify-pan",
+        "/verify-ifsc"
+      ]
+    },
+    "Untitled document.txt": {
+      "size": 6531,
+      "headings": [
+        "---\n\n",
+        "DATA SOURCE\n\n",
+        "---\n\n",
+        "EMI DETECTION LOGIC\n\n",
+        "EMI",
+        "LOAN EMI",
+        "NACH EMI",
+        "FINANCE EMI",
+        "BAJAJ EMI",
+        "CARD EMI"
+      ],
+      "urls": [
+        "/month",
+        "/gov/loan/verify",
+        "/month"
+      ]
+    }
+  },
+  "new_specs": {
+    "end to end full piprline.txt": {
+      "size": 7361,
+      "headings": [
+        "DOCUMENT MUST COVER IN FULL DEPTH",
+        "- PAN",
+        "TLS",
+        "HMAC",
+        "BNPL",
+        "OUTPUT STYLE RULES",
+        "FINAL GOAL"
+      ],
+      "urls": [
+        "/auth/otp/send",
+        "/auth/otp/verify",
+        "/gov/pan/verify",
+        "/gov/aadhaar/verify",
+        "/bank/ifsc/verify"
+      ]
+    },
+    "error handling and error managing.txt": {
+      "size": 8088,
+      "headings": [
+        "LAST TIME FAILURES TO PREVENT",
+        "I NEED FULL SPECIFICATION WITH THESE SECTIONS",
+        "COMPLETE",
+        "VERIFIED",
+        "BLOCKED\n",
+        "INFO",
+        "WARN",
+        "ERROR",
+        "FATAL\n",
+        "UI"
+      ],
+      "urls": [
+        "/pull",
+        "/dev1-ui",
+        "/dev2-ml",
+        "/backend",
+        "/v1"
+      ]
+    },
+    "Feature engineering (1).txt": {
+      "size": 97803,
+      "headings": [],
+      "urls": [
+        "/mapping",
+        "/7_",
+        "/1_",
+        "/month",
+        "/payment"
+      ]
+    },
+    "GIGCREDIT-BACKEND-SERVER-SPECIFICATION.txt": {
+      "size": 41598,
+      "headings": [
+        "--------------------------------------------------------------------------------",
+        "--------------------------------------------------------------------------------\n",
+        "---\n",
+        "--------------------------------------------------------------------------------",
+        "--------------------------------------------------------------------------------\n",
+        "--------------------------------------------------------------------------------",
+        "--------------------------------------------------------------------------------\n",
+        "--------------------------------------------------------------------------------",
+        "--------------------------------------------------------------------------------\n",
+        "--------------------------------------------------------------------------------"
+      ],
+      "urls": [
+        "/response",
+        "/financial",
+        "/gov/aadhaar/verify",
+        "/api/report/generate",
+        "/gov/pan/verify"
+      ]
+    },
+    "GIGCREDIT-MASTER-PROJECT-SPECIFICATION.txt": {
+      "size": 56701,
+      "headings": [
+        "--------------------------------------------------------------------------------",
+        "--------------------------------------------------------------------------------\n",
+        "--------------------------------------------------------------------------------",
+        "--------------------------------------------------------------------------------\n",
+        "    VERIFIED",
+        "    REJECTED\n",
+        "--------------------------------------------------------------------------------",
+        "--------------------------------------------------------------------------------\n",
+        "--------------------------------------------------------------------------------",
+        "--------------------------------------------------------------------------------\n"
+      ],
+      "urls": [
+        "/auth/otp/send",
+        "/auth/otp/verify",
+        "/gov/aadhaar/verify",
+        "/gov/pan/verify",
+        "/gallery"
+      ]
+    },
+    "GIGCREDIT-OCR-ENGINE-PARSER-INSTRUCTIONS.txt": {
+      "size": 41002,
+      "headings": [
+        "--------------------------------------------------------------------------------",
+        "--------------------------------------------------------------------------------\n",
+        "--------------------------------------------------------------------------------",
+        "--------------------------------------------------------------------------------\n",
+        "--------------------------------------------------------------------------------",
+        "--------------------------------------------------------------------------------\n",
+        "--------------------------------------------------------------------------------",
+        "--------------------------------------------------------------------------------\n",
+        "--------------------------------------------------------------------------------",
+        "--------------------------------------------------------------------------------\n"
+      ],
+      "urls": [
+        "/inputs/",
+        "/gigcredit-ocr/",
+        "/white",
+        "/inputs/",
+        "/aadhaar_front_sample"
+      ]
+    },
+    "GIGCREDIT-SHAP-LLM-REPORT-PIPELINE-SPECIFICATION.txt": {
+      "size": 50814,
+      "headings": [
+        "PIPELINE SPECIFICATION",
+        "--------------------------------------------------------------------------------",
+        "--------------------------------------------------------------------------------\n",
+        "--------------------------------------------------------------------------------",
+        "--------------------------------------------------------------------------------\n",
+        "--------------------------------------------------------------------------------",
+        "--------------------------------------------------------------------------------\n",
+        "--------------------------------------------------------------------------------",
+        "--------------------------------------------------------------------------------\n",
+        "--------------------------------------------------------------------------------"
+      ],
+      "urls": [
+        "//",
+        "//",
+        "//",
+        "//",
+        "/api/report/generate"
+      ]
+    },
+    "gig_credit_flutter_on_device_technical_specification.md": {
+      "size": 7143,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/models/",
+        "/ocr/",
+        "/config/",
+        "/temp",
+        "/cache/uploads/"
+      ]
+    },
+    "0-app-overview.txt": {
+      "size": 13813,
+      "headings": [],
+      "urls": []
+    },
+    "1-auth-module.txt": {
+      "size": 11844,
+      "headings": [],
+      "urls": []
+    },
+    "10 state-management-and-global-rules.txt": {
+      "size": 13456,
+      "headings": [],
+      "urls": [
+        "/report",
+        "/account",
+        "/report",
+        "/signup",
+        "/application"
+      ]
+    },
+    "11-error-states-and-empty-states.txt": {
+      "size": 12674,
+      "headings": [],
+      "urls": [
+        "/screen-reader"
+      ]
+    },
+    "13.frontend-folder-structure-and-component-architecture.txt": {
+      "size": 14810,
+      "headings": [],
+      "urls": [
+        "/time",
+        "/auth/",
+        "/auth/",
+        "/home/",
+        "/score/"
+      ]
+    },
+    "14-flutter-screen-list-and-route-map.txt": {
+      "size": 11921,
+      "headings": [],
+      "urls": [
+        "/splash",
+        "/auth/login",
+        "/auth/signup",
+        "/auth/otp",
+        "/app"
+      ]
+    },
+    "15-sample-json-models-and-dummy-data-contracts..txt": {
+      "size": 14236,
+      "headings": [
+        "- APPLIED",
+        "- EXPIRED\n",
+        "- SUBMITTED",
+        "- APPROVED",
+        "- REJECTED",
+        "- DISBURSED\n"
+      ],
+      "urls": [
+        "/month",
+        "/month",
+        "/month",
+        "//example-lender",
+        "/apply/session/app_session_001"
+      ]
+    },
+    "2-navigation-architecture.txt": {
+      "size": 16226,
+      "headings": [],
+      "urls": [
+        "/or",
+        "/report",
+        "/minimize",
+        "/report"
+      ]
+    },
+    "3-home-module.txt": {
+      "size": 11346,
+      "headings": [
+        "- CTA"
+      ],
+      "urls": [
+        "/config"
+      ]
+    },
+    "4-score-module (1).txt": {
+      "size": 16374,
+      "headings": [],
+      "urls": [
+        "/report"
+      ]
+    },
+    "5-report-module.txt": {
+      "size": 14884,
+      "headings": [],
+      "urls": [
+        "/progress-style",
+        "/export",
+        "/report"
+      ]
+    },
+    "6-loans module.txt": {
+      "size": 12584,
+      "headings": [],
+      "urls": [
+        "/support"
+      ]
+    },
+    "7 applications module.txt": {
+      "size": 12274,
+      "headings": [],
+      "urls": [
+        "/help"
+      ]
+    },
+    "8 - profile module.txt": {
+      "size": 12248,
+      "headings": [],
+      "urls": [
+        "/help"
+      ]
+    },
+    "9 credit-system-and-purchase-flow.txt": {
+      "size": 12150,
+      "headings": [],
+      "urls": []
+    },
+    "api-integration-and-backend-contracts -12.txt": {
+      "size": 15404,
+      "headings": [],
+      "urls": [
+        "/report",
+        "/service",
+        "/service",
+        "/service",
+        "/response-based"
+      ]
+    },
+    "GIGCREDIT \u2014 STEP-1 VALIDATION & VER.txt": {
+      "size": 17209,
+      "headings": [
+        "PURPOSE",
+        "-------",
+        "--  -------------------------------- ------------- ---------",
+        "------------------------------------------------------------",
+        "------------------------------------------------------------",
+        "------------------------------------------------------------",
+        "------------------------------------------------------------",
+        "------------------------------------------------------------",
+        "------------------------------------------------------------",
+        "------------------------------------------------------------"
+      ],
+      "urls": [
+        "/06/1997",
+        "/03/2015",
+        "/review",
+        "/review",
+        "/verify-mobile"
+      ]
+    },
+    "GIGCREDIT-MASTER-VERIFICATION-VALIDATION-ALL-9-STEPS.txt": {
+      "size": 127766,
+      "headings": [
+        "DOCUMENT PURPOSE",
+        "PURPOSE",
+        "-------",
+        "PURPOSE",
+        "-------",
+        "AADHAAR VERIFICATION",
+        "PAN VERIFICATION",
+        "PURPOSE",
+        "-------",
+        "IFSC VERIFICATION"
+      ],
+      "urls": [
+        "/gallery",
+        "/gallery",
+        "/verify-aadhaar",
+        "/verify-pan",
+        "/text"
+      ]
+    },
+    "STEP-2-IDENTITY-KYC-VALIDATION-VERIFICATION.txt": {
+      "size": 19781,
+      "headings": [
+        "PURPOSE",
+        "-------",
+        "--  --------------------------------  --------------  ---------",
+        "------------------------------------------------------------",
+        "------------------------------------------------------------",
+        "------------------------------------------------------------",
+        "------------------------------------------------------------",
+        "------------------------------------------------------------",
+        "------------------------------------------------------------",
+        "------------------------------------------------------------"
+      ],
+      "urls": [
+        "/verify-aadhaar-otp-request",
+        "/response",
+        "/verify-aadhaar-otp-request",
+        "/verify-aadhaar-otp-validate",
+        "/verify-pan"
+      ]
+    },
+    "STEP-3-BANK-ACCOUNT-VERIFICATION.md": {
+      "size": 19472,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/verify-ifsc",
+        "/verify-bank-account",
+        "//",
+        "/verify-ifsc",
+        "/verify-bank-account"
+      ]
+    },
+    "STEP-4-UTILITY-BILL-VERIFICATION.md": {
+      "size": 25656,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/api/gov/eb-verify",
+        "/api/gov/lpg-verify",
+        "/api/gov/eb-verify",
+        "/api/gov/lpg-verify",
+        "/family"
+      ]
+    },
+    "STEP-5-WORK-PROOF-VERIFICATION.md": {
+      "size": 30441,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/api/gov/vehicle-rc-check",
+        "/api/gov/vehicle-insurance-check",
+        "/api/gov/svanidhi-verify",
+        "/api/gov/skill-verify",
+        "/api/gov/vehicle-rc-check"
+      ]
+    },
+    "STEP-6-GOVERNMENT-SCHEME-VERIFICATION-UPDATED.txt": {
+      "size": 27908,
+      "headings": [
+        "PURPOSE",
+        "-------",
+        "HOW IT IS PRESENTED ON SCREEN",
+        "SCHEME COVERAGE REFERENCE TABLE",
+        "OUTPUT OF STEP-6"
+      ],
+      "urls": [
+        "/gov/eshram/verify",
+        "/api/pension/status",
+        "/gov/msme/udyam-verify",
+        "/enterprise",
+        "/debit"
+      ]
+    },
+    "STEP-7-INSURANCE-VERIFICATION.txt": {
+      "size": 24487,
+      "headings": [
+        "PURPOSE",
+        "-------",
+        "HOW IT IS PRESENTED ON SCREEN",
+        "UI GATE RULES",
+        "OUTPUT OF STEP-7",
+        "END OF STEP-7 SPECIFICATION"
+      ],
+      "urls": [
+        "/gov/insurance/health-policy-verify",
+        "/gov/vehicle/rc-verify",
+        "/gov/insurance/vehicle-policy-verify",
+        "/gov/insurance/life-policy-verify",
+        "//"
+      ]
+    },
+    "STEP-8-ITR-AND-GST-RECORDS.txt": {
+      "size": 21128,
+      "headings": [
+        "PURPOSE",
+        "-------",
+        "HOW IT IS PRESENTED ON SCREEN",
+        "OUTPUT OF STEP-8",
+        "END OF STEP-8 SPECIFICATION"
+      ],
+      "urls": [
+        "/gov/income-tax/itr-verify",
+        "/gov/gst/gstin-verify",
+        "/gov/gst/filing-history",
+        "//",
+        "/1"
+      ]
+    },
+    "STEP-9-EMI-AND-LOAN-OBLIGATIONS.txt": {
+      "size": 18083,
+      "headings": [
+        "PURPOSE",
+        "-------",
+        "HOW IT IS PRESENTED ON SCREEN",
+        "ALL 9 STEPS COMPLETE",
+        "OUTPUT OF STEP-9",
+        "END OF STEP-9 SPECIFICATION"
+      ],
+      "urls": [
+        "/gov/loan/verify",
+        "/1",
+        "/1",
+        "/1",
+        "/1"
+      ]
+    },
+    "GigCredit \u2014 Complete Input Specif.txt": {
+      "size": 29474,
+      "headings": [],
+      "urls": [
+        "/entry",
+        "/entry",
+        "/06/1997",
+        "/notarised",
+        "/reference"
+      ]
+    },
+    "STEP-1-BASIC-PROFILE-INPUTS.txt.txt": {
+      "size": 6591,
+      "headings": [
+        "PURPOSE",
+        "------------------------------------------------------------",
+        "HOW THIS STEP IS PRESENTED",
+        "------------------------------------------------------------\n",
+        "------------------------------------------------------------",
+        "------------------------------------------------------------\n",
+        "------------------------------------------------------------\n",
+        "------------------------------------------------------------\n",
+        "------------------------------------------------------------\n",
+        "------------------------------------------------------------\n"
+      ],
+      "urls": [
+        "/optional",
+        "/06/1997"
+      ]
+    },
+    "STEP-2-IDENTITY-KYC-INPUTS.txt.txt": {
+      "size": 5276,
+      "headings": [
+        "PURPOSE",
+        "------------------------------------------------------------",
+        "HOW THIS STEP IS PRESENTED",
+        "------------------------------------------------------------\n",
+        "------------------------------------------------------------",
+        "------------------------------------------------------------\n",
+        "------------------------------------------------------------\n",
+        "------------------------------------------------------------\n",
+        "------------------------------------------------------------",
+        "------------------------------------------------------------\n"
+      ],
+      "urls": [
+        "/optional"
+      ]
+    },
+    "STEP-3 \u2014 BANK VERIFICATION.txt": {
+      "size": 9211,
+      "headings": [
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n"
+      ],
+      "urls": [
+        "/rejection"
+      ]
+    },
+    "STEP-4 \u2014 UTILITY BILLS AND RECURRIN.txt": {
+      "size": 11608,
+      "headings": [
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n"
+      ],
+      "urls": [
+        "/scan",
+        "/fiber",
+        "/end",
+        "/agreement",
+        "/agreement"
+      ]
+    },
+    "STEP-5 \u2014 WORK PROOF VERIFICATION.txt": {
+      "size": 4591,
+      "headings": [
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n"
+      ],
+      "urls": []
+    },
+    "STEP-6 \u2014 GOVERNMENT SCHEMES AND SOC.txt": {
+      "size": 12535,
+      "headings": [
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n"
+      ],
+      "urls": [
+        "/reference",
+        "/scheme",
+        "/recommendation",
+        "/printout",
+        "/insurers"
+      ]
+    },
+    "STEP-7 \u2014 INSURANCE COVERAGE.txt": {
+      "size": 8501,
+      "headings": [
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n"
+      ],
+      "urls": [
+        "/bond",
+        "/bike",
+        "/policy",
+        "/certificate"
+      ]
+    },
+    "STEP-8 \u2014 ITR AND GST RECORDS.txt": {
+      "size": 7486,
+      "headings": [
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n"
+      ],
+      "urls": [
+        "/number",
+        "/select",
+        "/number"
+      ]
+    },
+    "STEP-9 \u2014 EMI AND LOAN BEHAVIOUR.txt": {
+      "size": 6572,
+      "headings": [
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n",
+        "--------------------------------------------------",
+        "--------------------------------------------------\n"
+      ],
+      "urls": []
+    },
+    "GIGCREDIT-DATABASE-DESIGN-SPECIFICATION.txt": {
+      "size": 51239,
+      "headings": [
+        "PURPOSE",
+        "MONGODB SETUP REFERENCE",
+        "END OF DATABASE DESIGN SPECIFICATION"
+      ],
+      "urls": [
+        "/test",
+        "/verify-aadhaar",
+        "/verify-pan",
+        "/verify-ifsc",
+        "/verify-bank-account"
+      ]
+    },
+    "GigCredit_All_Artifacts_Code_Pack (1).md": {
+      "size": 21939,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "//"
+      ]
+    },
+    "GigCredit_Deep_Technical_Spec.md": {
+      "size": 20570,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/business",
+        "/validation",
+        "/20",
+        "/reliability/consistency"
+      ]
+    },
+    "GigCredit_Full_Technical_Workflow_Spec.md": {
+      "size": 25745,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/runtime",
+        "/state",
+        "/work",
+        "/validation",
+        "/20"
+      ]
+    },
+    "GigCredit_ML_Pipeline_A_to_Z.md": {
+      "size": 17013,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/validation",
+        "/validation"
+      ]
+    },
+    "GigCredit_Scoring_Engine_v2.0 (1).md": {
+      "size": 23304,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/ratio",
+        "/validation",
+        "/scoring/",
+        "/constants/",
+        "/bounds"
+      ]
+    },
+    "GigCredit_Unified_Implementation_Pack.md": {
+      "size": 16168,
+      "headings": [
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n",
+        "---\n"
+      ],
+      "urls": [
+        "/validation",
+        "/validation",
+        "/constants/shap_lookup",
+        "/constants/meta_coefficients",
+        "/constants/feature_means"
+      ]
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "version": "1.0.0",
+  "feature_count": 95,
+  "range": "[0.0, 1.0]",
+  "pillar_groups": {
+    "p1_income_stability": [0, 12],
+    "p2_payment_discipline": [13, 27],
+    "p3_debt_management": [28, 36],
+    "p4_savings_behaviour": [37, 48],
+    "p5_work_identity": [49, 66],
+    "p6_financial_resilience": [67, 77],
+    "p7_social_accountability": [78, 94]
+  },
+  "missing_value_default": 0.4,
+  "meta_learner_input_size": 19
+}

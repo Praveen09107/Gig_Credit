@@ -1,0 +1,1310 @@
+
+================================================================================
+GIGCREDIT — MASTER PROJECT SPECIFICATION
+FULL PROJECT IDEA, FLOW, AND ARCHITECTURE
+VERSION 1.0 FINAL
+================================================================================
+
+THIS DOCUMENT COVERS:
+  - What GigCredit is and the problem it solves
+  - Who the users are
+  - Complete 9-step onboarding flow (every input, every field)
+  - On-device processing (OCR, validation, feature engineering)
+  - Evaluation engine (7 pillars, 95 features)
+  - Confidence engine
+  - SHAP explainability
+  - Backend server (verification APIs + LLM report generation)
+  - Report assembly (4 components)
+  - Data deletion policy
+  - Loan matching engine (in-app application flow)
+  - Business model
+  - Full end-to-end system flow
+
+================================================================================
+PART 1 — WHAT IS GIGCREDIT
+================================================================================
+
+GigCredit is a privacy-first, on-device credit scoring mobile application
+built for Indian gig workers who have no CIBIL credit history.
+
+Millions of gig workers in India — delivery partners, street vendors,
+electricians, plumbers, freelancers — are denied credit by traditional
+banks because standard underwriting depends on salary slips, CIBIL scores,
+and formal employment history. Gig workers have none of these.
+
+GigCredit solves this by converting REAL FINANCIAL BEHAVIOR into a credit
+score (300–900). The scoring happens entirely on the user's mobile device.
+No sensitive data leaves the device for scoring purposes.
+
+After scoring, GigCredit connects verified gig workers to NBFC and fintech
+lenders through an in-app loan application marketplace.
+
+--------------------------------------------------------------------------------
+1.1 CORE VALUE PROPOSITION
+--------------------------------------------------------------------------------
+
+FOR GIG WORKERS:
+  - Get a credit score based on real behavior, not salary slips
+  - Understand exactly why you got your score (explainability)
+  - Apply for loans without visiting a bank
+  - Improve your score with personalized suggestions
+
+FOR LENDERS (NBFCs / Fintechs):
+  - Access a large underserved borrower segment
+  - Receive pre-qualified, decision-ready applicants
+  - Behavioral trust signals beyond bureau data
+  - Lower customer acquisition cost
+
+--------------------------------------------------------------------------------
+1.2 WHO USES GIGCREDIT
+--------------------------------------------------------------------------------
+
+FOUR WORK TYPES SUPPORTED:
+
+  1. PLATFORM WORKER
+     Examples: Swiggy delivery, Zomato delivery, Ola driver, Uber driver,
+               Rapido captain, Porter captain, Dunzo agent, Blinkit partner
+     Key identifier: Has a registered gig platform account and vehicle
+
+  2. VENDOR / SELLER
+     Examples: Fruit seller, vegetable vendor, street food, kirana shop,
+               small goods seller
+     Key identifier: May have SVANidhi scheme registration
+
+  3. SKILLED TRADESPERSON
+     Examples: Electrician, plumber, carpenter, welder, mason, tailor,
+               mechanic, painter
+     Key identifier: Has trade licence or skill certificate
+
+  4. FREELANCER / CREATIVE PROFESSIONAL
+     Examples: Designer, developer, writer, content creator, consultant,
+               photographer
+     Key identifier: Receives payments via Payoneer, Wise, Upwork, Fiverr
+
+Work type is selected in Step 1 and determines:
+  - Entire content of Step 5 (work proof documents)
+  - P1 income feature engineering routing
+  - Meta-learner work-type interaction terms
+  - Vehicle insurance mandatory status in Step 7
+
+================================================================================
+PART 2 — APP ENTRY AND NAVIGATION FLOW
+================================================================================
+
+  [USER OPENS APP]
+         │
+         ▼
+  [LOGIN / REGISTER SCREEN]
+  User creates account or logs in with mobile OTP
+         │
+         ▼
+  [DASHBOARD]
+  User sees their profile and a prominent "Get Started" button
+         │
+         ▼
+  [GET STARTED → TWO OPTIONS]
+  ┌─────────────────────────┬──────────────────────────────┐
+  │   INPUT GUIDELINES      │         CONTINUE             │
+  │                         │                              │
+  │ Separate page opens     │ Proceeds directly to Step 1  │
+  │ showing:                │ of the onboarding flow       │
+  │ - What documents are    │                              │
+  │   needed for each step  │                              │
+  │ - Why each document     │                              │
+  │   is required           │                              │
+  │ - How to photograph     │                              │
+  │   documents correctly   │                              │
+  │ - Estimated time to     │                              │
+  │   complete (15–20 min)  │                              │
+  └─────────────────────────┴──────────────────────────────┘
+
+If user selects INPUT GUIDELINES:
+  → Full guidelines page rendered
+  → Back button returns to dashboard
+  → "Start Now" button on guidelines page goes to Step 1
+
+If user selects CONTINUE:
+  → Step 1 begins immediately
+
+SESSION RECOVERY:
+  If user previously started onboarding and did not finish,
+  dashboard shows "Resume from Step X" button.
+  Progress is saved securely after each completed step.
+  User never loses completed steps.
+
+================================================================================
+PART 3 — 9-STEP ONBOARDING FLOW
+================================================================================
+
+OVERVIEW:
+  Total user-facing steps    : 9
+  Internal automated step    : 1 (EMI Auto-Analysis, runs after Step 3)
+  Steps with dynamic content : Step 5 (changes per work type)
+  Steps with conditional     : Step 4 (rent), Step 7 (vehicle insurance)
+  Backend API calls          : Steps 1, 2, 3, 5 (platform only), 6, 7, 8
+
+STEP STATE MODEL:
+  Each step has one of these states:
+    NOT_STARTED
+    IN_PROGRESS
+    OCR_COMPLETE
+    PENDING_VERIFICATION
+    VERIFIED
+    REJECTED
+
+--------------------------------------------------------------------------------
+STEP 1 — BASIC PROFILE
+--------------------------------------------------------------------------------
+
+PURPOSE:
+  Collect the user's fundamental personal and professional details.
+  Capture work type to configure Step 5 and all downstream feature
+  engineering. Verify mobile number via OTP.
+
+BACKEND CALL: /auth/otp/send + /auth/otp/verify
+
+HOW PRESENTED:
+  Multi-section scrollable form with text fields, date picker,
+  dropdown selectors, and a four-option work type card selector.
+
+SECTION A — PERSONAL DETAILS:
+
+  #  | Field                  | UI Element          | Format              | Mandatory
+  ---|------------------------|---------------------|---------------------|----------
+  1  | Full Name              | Single-line text    | Plain text          | Yes
+  2  | Date of Birth          | Date picker         | DD/MM/YYYY          | Yes
+  3  | Mobile Number          | Numeric field       | 10-digit            | Yes
+  4  | OTP Verification       | OTP input (6-digit) | Numeric             | Yes
+  5  | Current Address        | Multi-line text     | Free text           | Yes
+  6  | Permanent Address      | Multi-line text     | Free text           | Yes
+  7  | State of Residence     | Dropdown            | 28 states + 8 UTs   | Yes
+
+SECTION B — PROFESSIONAL DETAILS:
+
+  #  | Field                  | UI Element          | Format              | Mandatory
+  ---|------------------------|---------------------|---------------------|----------
+  8  | Work Type              | 4-card selector     | One of 4 types      | Yes
+  9  | Self-Declared Income   | Numeric field (₹)   | Integer per month   | Yes
+  10 | Years in Profession    | Numeric stepper     | Integer 0–40        | Yes
+  11 | Number of Dependents   | Numeric stepper     | Integer 0–10        | Yes
+  12 | Vehicle Ownership      | Radio Yes / No      | Boolean             | Yes
+  13 | Secondary Income       | Text + amount field | Free text + ₹       | Optional
+
+STEP 1 TOTAL: 13 fields | Mandatory: 12 | Optional: 1
+
+KEY OUTPUTS FROM STEP 1:
+  - work_type → drives Step 5 layout + feature routing
+  - vehicle_ownership → drives Step 7 vehicle insurance requirement
+  - state_of_residence → sets ANCHOR for income normalization
+  - mobile_verified = true after OTP
+
+--------------------------------------------------------------------------------
+STEP 2 — IDENTITY VERIFICATION
+--------------------------------------------------------------------------------
+
+PURPOSE:
+  Verify government-issued identity documents and confirm the person
+  physically present matches the identity on file.
+
+BACKEND CALLS: /gov/aadhaar/verify + /gov/pan/verify
+
+HOW PRESENTED:
+  Three upload cards (Aadhaar, PAN, Selfie) with camera/gallery options.
+  Each card shows a guide overlay illustrating correct photo angle.
+
+AADHAAR CARD:
+
+  #  | Field                  | UI Element          | Format              | Mandatory
+  ---|------------------------|---------------------|---------------------|----------
+  1  | Aadhaar Number         | Segmented text      | 12-digit numeric    | Yes
+  2  | Aadhaar Front Image    | Upload / Camera     | JPG or PNG          | Yes
+  3  | Aadhaar Back Image     | Upload / Camera     | JPG or PNG          | Yes
+
+  Why both sides:
+    Front → name, DOB, Aadhaar number, photo
+    Back  → full address, state, PIN code (for cross-match with utility bills)
+
+PAN CARD:
+
+  #  | Field                  | UI Element          | Format              | Mandatory
+  ---|------------------------|---------------------|---------------------|----------
+  4  | PAN Number             | Alphanumeric text   | ABCDE1234F format   | Yes
+  5  | PAN Card Photo         | Upload / Camera     | JPG or PNG          | Yes
+
+LIVE SELFIE:
+
+  #  | Field                  | UI Element          | Format              | Mandatory
+  ---|------------------------|---------------------|---------------------|----------
+  6  | Live Selfie            | In-app camera only  | Camera capture only | Yes
+
+  Why camera-only: Gallery uploads could be a photo of a photo.
+  Camera-only with liveness detection ensures physical presence.
+  On-device face matching: selfie vs Aadhaar front photo (MobileFaceNet).
+
+ON-DEVICE PROCESSING AFTER STEP 2:
+  - OCR extracts: name, DOB, Aadhaar number, address, state from card images
+  - API returns: name, DOB, state from government database
+  - Cross-match: API name vs OCR name (fuzzy match ≥ 85%)
+  - Face match: selfie vs Aadhaar photo (similarity ≥ 0.70)
+  - aadhaar_verified = true if API match + face match pass
+  - pan_verified = true if API match passes
+  - itr_filed status stored from PAN API for Step 8
+
+STEP 2 TOTAL: 6 fields | Mandatory: 6 | Optional: 0
+
+--------------------------------------------------------------------------------
+STEP 3 — BANK VERIFICATION
+--------------------------------------------------------------------------------
+
+PURPOSE:
+  Collect bank transaction history (minimum 6 months) to evaluate income
+  patterns, expense behaviour, EMI obligations, savings habits, and debt
+  indicators. This is the most data-rich step — produces majority of P1–P4
+  features.
+
+BACKEND CALLS: /bank/ifsc/verify + /bank/account/verify + /bank/loan/check
+
+HOW PRESENTED:
+  Primary bank section (visible by default), expandable secondary bank
+  section, and optional UPI section below both.
+
+PRIMARY BANK ACCOUNT:
+
+  #  | Field                  | UI Element          | Format              | Mandatory
+  ---|------------------------|---------------------|---------------------|----------
+  1  | Bank Name              | Searchable dropdown | Indian banks list   | Yes
+  2  | Account Holder Name    | Single-line text    | Plain text          | Yes
+  3  | Bank Branch Name       | Single-line text    | Plain text          | Yes
+  4  | IFSC Code              | Alphanumeric        | 11 characters       | Yes
+  5  | Account Number         | Numeric             | 9–18 digits         | Yes
+  6  | Bank Statement PDF     | PDF file picker     | Min 6 months        | Yes
+  7  | MICR Code              | Numeric             | 9-digit             | Optional
+
+SECONDARY BANK ACCOUNT (expandable toggle):
+
+  #  | Field                  | Mandatory
+  ---|------------------------|----------
+  8  | Enable Secondary       | Optional toggle
+  9–15 | Same 7 fields        | Optional
+
+  UI tip: "Platform workers often receive gig income in a separate account.
+  Adding it gives a more accurate picture of your total earnings."
+
+UPI STATEMENT (optional):
+
+  #  | Field                  | UI Element          | Format              | Mandatory
+  ---|------------------------|---------------------|---------------------|----------
+  16 | UPI Platform           | Dropdown            | PhonePe/GPay/Paytm  | Optional
+  17 | UPI Statement PDF      | PDF file picker     | PDF export from app | Optional
+
+ON-DEVICE PROCESSING AFTER STEP 3:
+  - Bank statement PDF parsed entirely on-device
+  - Every transaction extracted: date, amount, description, balance, mode
+  - Tagged: INCOME_GIG, INCOME_SALARY, EMI_DEBIT, UTILITY_DEBIT, RENT, ATM
+  - Monthly aggregates computed: credits, debits, closing balance
+  - IFSC API: confirms bank name and branch
+  - Account API: confirms account holder name, active status
+  - Loan API: returns active loan list with EMI amounts
+
+STEP 3 TOTAL: 17 fields | Mandatory: 6 | Optional: 11
+
+--------------------------------------------------------------------------------
+INTERNAL STEP — EMI AUTO-ANALYSIS (AUTOMATED, NO USER INPUT)
+--------------------------------------------------------------------------------
+
+PURPOSE:
+  Automatically detect recurring EMI debits from the parsed bank statement.
+  Runs immediately after Step 3 bank statement parsing completes.
+  No user interaction required.
+
+WHAT IT DOES:
+  - Scans all debit transactions for keywords:
+    EMI, LOAN, INSTALLMENT, NACH EMI, ECS EMI, BAJAJ, HDFC LOAN, ICICI EMI
+  - Identifies recurring debits with consistent amounts and monthly intervals
+  - Tags each detected EMI with: lender_name, emi_amount, detected_date
+  - Stores detected_emis list in VerifiedProfile
+  - This data is later cross-referenced with user-declared EMIs in Step 9
+
+OUTPUT:
+  auto_detected_emis = [
+    { lender: "HDFC Bank", emi_amount: 3500, last_debit: "2026-03-05" },
+    { lender: "Bajaj Finance", emi_amount: 1800, last_debit: "2026-03-07" }
+  ]
+
+--------------------------------------------------------------------------------
+STEP 4 — UTILITY BILL VERIFICATION
+--------------------------------------------------------------------------------
+
+PURPOSE:
+  Evaluate payment discipline and financial consistency through 6 months
+  of regular household bill payments. Bills cross-referenced against bank
+  statement to confirm actual payment.
+
+BACKEND CALL: None (entirely on-device)
+
+HOW PRESENTED:
+  Three mandatory accordion panels (Electricity, LPG, Mobile), each with a
+  6-slot upload grid labelled by month. Optional panels below.
+
+ELECTRICITY BILLS (Mandatory):
+
+  #  | Field                  | Format              | Mandatory
+  ---|------------------------|---------------------|----------
+  1–6 | Bills Month 1–6       | JPG, PNG, or PDF    | 6 bills required
+
+  OCR extracts per bill: consumer number, service address, bill month,
+  units consumed, amount due, due date, payment status.
+  Consumer number must be identical across all 6 bills.
+
+LPG / GAS BILLS (Mandatory):
+
+  #  | Field                  | Format              | Mandatory
+  ---|------------------------|---------------------|----------
+  7–12 | Bills Month 1–6      | JPG, PNG, or PDF    | 6 bills required
+
+  Accepted providers: Indane, HP Gas, Bharat Gas
+  OCR extracts: consumer number, distributor, month, cylinders, amount.
+
+MOBILE PHONE BILLS (Mandatory):
+
+  #  | Field                  | Format              | Mandatory
+  ---|------------------------|---------------------|----------
+  13–18 | Bills Month 1–6     | JPG, PNG, or PDF    | 6 bills required
+
+  Accepted: Jio, Airtel, Vi, BSNL postpaid bills or prepaid receipts
+  OCR extracts: mobile number, provider, month, plan type, amount.
+  Mobile number must match Step 1 mobile number.
+
+RENT PROOF (Conditional — shown only if user is a renter):
+
+  User selects ONE of three options:
+  #  | Option                 | Format              | Mandatory
+  ---|------------------------|---------------------|----------
+  19 | Rental Agreement       | PDF or image        | Conditional
+  20 | Monthly Rent Receipts  | 6-slot upload grid  | Conditional
+  21 | Bank Auto-Detection    | Automatic (no upload)| Conditional
+
+  Option C pre-selected if bank parser found RENT / HOUSE RENT in debits.
+
+OPTIONAL UTILITIES:
+
+  22 | WiFi / Broadband Bills | Up to 6 bills       | Optional
+  23 | OTT Subscription       | Screenshots / PDF   | Optional
+
+ON-DEVICE PROCESSING AFTER STEP 4:
+  - OCR extracts consumer number, month, amount, due date from each bill
+  - Cross-checks: bill debit amount found in bank statement
+  - On-time flag: payment date ≤ due date
+  - Consumer/mobile number consistency across 6 months verified
+  - All checks done entirely on-device, no backend call
+
+STEP 4 TOTAL: 18 mandatory + up to 13 optional
+
+--------------------------------------------------------------------------------
+STEP 5 — WORK PROOF (DYNAMIC BY WORK TYPE)
+--------------------------------------------------------------------------------
+
+PURPOSE:
+  Verify occupation, work history, and work-specific income sources.
+  Entirely reconfigured based on work type from Step 1.
+
+BACKEND CALL: /gov/vehicle/rc/verify (Platform Workers only)
+
+--- STEP 5A — PLATFORM WORKER ---
+
+SECTION 1: VEHICLE DOCUMENTS
+
+  #  | Field                  | Format              | Mandatory
+  ---|------------------------|---------------------|----------
+  1  | Vehicle Reg Number     | Text TN09AB1234     | Yes
+  2  | RC Book Front Page     | JPG or PNG          | Yes
+  3  | Driving Licence Front  | JPG or PNG          | Yes
+  4  | Driving Licence Back   | JPG or PNG          | Yes
+  5  | Vehicle Insurance Cert | JPG, PNG, or PDF    | Yes
+
+SECTION 2: PLATFORM EARNING SCREENSHOTS (3 months)
+
+  #  | Field                  | Format              | Mandatory
+  ---|------------------------|---------------------|----------
+  6  | Screenshot Month 1     | JPG or PNG          | Yes
+  7  | Screenshot Month 2     | JPG or PNG          | Yes
+  8  | Screenshot Month 3     | JPG or PNG          | Yes
+  9  | Second Platform App    | JPG or PNG          | Optional
+  10 | Third Platform App     | JPG or PNG          | Optional
+
+  OCR extracts per screenshot: monthly earnings total, number of trips,
+  platform rating, account name, joined date.
+  API verifies: RC validity, DL validity, DL class vs RC class match.
+
+STEP 5A TOTAL: 10 fields | Mandatory: 8 | Optional: 2
+
+--- STEP 5B — VENDOR / SELLER ---
+
+  #  | Field                  | Format              | Mandatory
+  ---|------------------------|---------------------|----------
+  1  | PM SVANidhi App ID     | Alphanumeric text   | Yes
+  2  | SVANidhi Approval Lttr | JPG, PNG, or PDF    | Yes
+  3  | Trade Licence          | JPG, PNG, or PDF    | Yes
+  4  | ULB Registration       | JPG, PNG, or PDF    | Optional
+  5  | Daily Sales Record     | PDF or image        | Optional
+
+STEP 5B TOTAL: 5 fields | Mandatory: 3 | Optional: 2
+
+--- STEP 5C — SKILLED TRADESPERSON ---
+
+  #  | Field                  | Format              | Mandatory
+  ---|------------------------|---------------------|----------
+  1  | Trade Licence / Cert   | JPG, PNG, or PDF    | Yes
+  2  | Skill Certificate      | JPG, PNG, or PDF    | Optional
+  3  | Client Invoice Sample  | PDF or image        | Yes
+  4  | Work Photo Evidence    | JPG or PNG          | Optional
+
+STEP 5C TOTAL: 4 fields | Mandatory: 2 | Optional: 2
+
+--- STEP 5D — FREELANCER ---
+
+  #  | Field                  | Format              | Mandatory
+  ---|------------------------|---------------------|----------
+  1  | Platform Profile URL   | Text (Upwork/Fiverr)| Yes
+  2  | Platform Screenshot    | JPG or PNG          | Yes
+  3  | Client Contract / PO   | PDF or image        | Optional
+  4  | Payment Receipt        | PDF or image        | Yes
+
+STEP 5D TOTAL: 4 fields | Mandatory: 3 | Optional: 1
+
+--------------------------------------------------------------------------------
+STEP 6 — GOVERNMENT SCHEME SIGNALS
+--------------------------------------------------------------------------------
+
+PURPOSE:
+  Verify participation in government welfare schemes as social accountability
+  and financial inclusion indicators. Feeds P7 (Social Accountability) pillar.
+
+BACKEND CALLS: /gov/eshram/verify + /gov/pmsym/verify
+
+  #  | Field                  | UI Element          | Format              | Mandatory
+  ---|------------------------|---------------------|---------------------|----------
+  1  | eShram UAN             | Text field          | UAN number          | Optional
+  2  | eShram Card Image      | Upload / Camera     | JPG or PNG          | Optional
+  3  | PM-SYM UAN             | Text field          | UAN number          | Optional
+  4  | PM-SYM Passbook Img    | Upload / Camera     | JPG or PNG          | Optional
+  5  | PM-Kisan Reg Number    | Text field          | Alphanumeric        | Optional
+  6  | Mudra Loan Ref         | Text field          | Reference number    | Optional
+  7  | SHG Membership Proof   | Upload / Camera     | JPG or PNG          | Optional
+
+  All fields optional — more scheme participation = higher P7 score.
+
+STEP 6 TOTAL: 7 fields | Mandatory: 0 | Optional: 7
+
+--------------------------------------------------------------------------------
+STEP 7 — INSURANCE SIGNALS
+--------------------------------------------------------------------------------
+
+PURPOSE:
+  Verify insurance coverage as financial resilience indicator.
+  Feeds P6 (Financial Resilience) pillar.
+
+BACKEND CALL: /gov/insurance/policy/verify (1–3 calls depending on policies)
+
+HEALTH INSURANCE (Optional):
+
+  #  | Field                  | Format              | Mandatory
+  ---|------------------------|---------------------|----------
+  1  | Policy Number          | Text                | If submitting
+  2  | Policy Document        | JPG, PNG, or PDF    | If submitting
+
+VEHICLE INSURANCE (Conditional — mandatory if vehicle_ownership = Yes):
+
+  #  | Field                  | Format              | Mandatory
+  ---|------------------------|---------------------|----------
+  3  | Policy Number          | Text                | If has vehicle
+  4  | Insurance Certificate  | JPG, PNG, or PDF    | If has vehicle
+
+LIFE INSURANCE (Optional):
+
+  #  | Field                  | Format              | Mandatory
+  ---|------------------------|---------------------|----------
+  5  | Policy Number          | Text                | If submitting
+  6  | Policy Bond / Receipt  | JPG, PNG, or PDF    | If submitting
+
+  API verifies per policy: policy holder name, expiry date, sum insured.
+  Policy holder name must match Aadhaar name.
+  Expiry date must be > today.
+
+STEP 7 TOTAL: 6 fields | Mandatory: 0–2 (conditional on vehicle) | Optional: rest
+
+--------------------------------------------------------------------------------
+STEP 8 — TAX AND COMPLIANCE
+--------------------------------------------------------------------------------
+
+PURPOSE:
+  Collect ITR (Income Tax Return) and GST filing records as compliance
+  and income declaration indicators.
+  Feeds P3 (Debt Management) and P6 (Financial Resilience) features.
+
+BACKEND CALL: /gov/income-tax/itr/verify
+
+  #  | Field                  | UI Element          | Format              | Mandatory
+  ---|------------------------|---------------------|---------------------|----------
+  1  | ITR Acknowledgement    | Upload / Camera     | PDF or JPG          | Optional
+  2  | Assessment Year        | Dropdown            | e.g. 2024–25        | If submitting
+  3  | ITR Form Type          | Dropdown            | ITR-1/2/3/4         | If submitting
+  4  | GST Registration No    | Text field          | 15-char alphanumeric| Optional
+  5  | GST Returns (6 months) | Multi-file upload   | PDF per return      | If GST reg
+
+  API verifies: ITR filing status, assessment year, gross vs net income.
+  All fields optional — filing ITR and GST increases score confidence.
+
+STEP 8 TOTAL: 5 fields | Mandatory: 0 | Optional: 5
+
+--------------------------------------------------------------------------------
+STEP 9 — EMI AND LOAN BEHAVIOUR
+--------------------------------------------------------------------------------
+
+PURPOSE:
+  Capture the user's existing loan and EMI obligations.
+  Feeds P3 (Debt Management) scoring pillar.
+  Cross-referenced against auto-detected EMIs from Step 3.
+
+BACKEND CALL: None (cross-check is on-device vs Step 3 bank data)
+
+TOP-LEVEL TOGGLE:
+
+  #  | Field                  | UI Element          | Mandatory
+  ---|------------------------|---------------------|----------
+  1  | Active Loans / EMIs?   | Toggle Yes / No     | Required
+
+  If No → Step 9 marked complete. No further inputs needed.
+  If Yes → Show loan entry cards (up to 5 entries).
+
+LOAN ENTRY CARD (Repeatable, up to 5):
+
+  #  | Field                  | UI Element          | Format              | Mandatory
+  ---|------------------------|---------------------|---------------------|----------
+  2  | Lender Name            | Dropdown + free text| Bank/NBFC/MFI/Other | Required per entry
+  3  | Monthly EMI Amount (₹) | Numeric field       | Positive integer    | Required per entry
+  4  | Previous Debit Date    | Date picker         | DD/MM/YYYY          | Required per entry
+  5  | Latest Debit Date      | Date picker         | DD/MM/YYYY          | Required per entry
+  6  | Loan Verification      | Action button       | Triggers on-device  | Optional per entry
+
+  Loan Verification button: cross-checks declared EMI against auto-detected
+  EMIs from Step 3 bank statement. Shows: Matched / Not Found tag.
+
+MULTI-ENTRY RULES:
+  - Minimum entries (if Yes): 1
+  - Maximum entries: 5
+  - "Add Another Loan" button after each card
+  - "Remove" icon on each card
+  - All required fields must be filled before Continue
+
+STEP 9 TOTAL:
+  1 toggle + (4 required × up to 5 entries) + (1 optional × up to 5 entries)
+  Maximum: 26 fields | Minimum: 6 fields (1 entry + toggle)
+
+================================================================================
+PART 4 — ON-DEVICE VALIDATION SYSTEM
+================================================================================
+
+During Steps 1–9, three levels of validation run entirely on-device:
+
+--------------------------------------------------------------------------------
+4.1 INDIVIDUAL FIELD VALIDATION
+--------------------------------------------------------------------------------
+
+  Runs immediately when user fills each field.
+  Examples:
+  - Aadhaar: must be exactly 12 numeric digits
+  - PAN: must match [A-Z]{5}[0-9]{4}[A-Z]{1} regex
+  - IFSC: must match [A-Z]{4}0[A-Z0-9]{6} regex
+  - Mobile: must be 10 digits, starts with 6–9
+  - Dates: previous date must be before latest date
+  - EMI amount: must be positive integer > 0
+  - Bank statement: must be PDF, must cover minimum 6 months
+
+--------------------------------------------------------------------------------
+4.2 CROSS-INTERNAL VALIDATION (Within Same Step)
+--------------------------------------------------------------------------------
+
+  Runs when user submits a step.
+  Examples:
+  - Step 2: Aadhaar OCR name vs PAN OCR name must match (fuzzy ≥ 85%)
+  - Step 2: Selfie face vs Aadhaar photo face similarity ≥ 0.70
+  - Step 4: Consumer number identical across all 6 electricity bills
+  - Step 4: Mobile number on bills matches Step 1 mobile number
+  - Step 5A: DL name must match Aadhaar name
+  - Step 5A: DL vehicle class must match RC vehicle class
+  - Step 9: Latest debit date must be ≥ Previous debit date
+
+--------------------------------------------------------------------------------
+4.3 GLOBAL CROSS-STEP VALIDATION
+--------------------------------------------------------------------------------
+
+  Runs after all steps are complete (before feature engineering begins).
+  Examples:
+  - Step 5A RC vehicle number must match Step 7 vehicle insurance policy
+  - Step 3 bank account holder name must match Step 2 Aadhaar name
+  - Step 3 detected EMIs cross-referenced with Step 9 declared EMIs
+  - Step 4 utility bill address must match Step 2 Aadhaar back address
+  - Step 8 ITR declared income vs Step 3 average monthly credit × 12
+
+================================================================================
+PART 5 — FEATURE ENGINEERING (ON-DEVICE)
+================================================================================
+
+After all 9 steps are complete and validation passes:
+
+  - All verified data assembled into VerifiedProfile object
+  - Feature engineering runs entirely in Dart on the user's device
+  - 95 features computed across 7 pillars
+  - All features normalized to Float32 in range [0.0, 1.0]
+    (0.0 = worst signal, 1.0 = best signal)
+  - NaN / Infinity → replaced with FALLBACK value (default 0.40)
+    unless pillar-specific fallback is defined
+  - ANCHOR: state median monthly income from Aadhaar state
+    (fallback ₹15,000/month national median if state not found)
+
+FEATURE DISTRIBUTION ACROSS 7 PILLARS:
+
+  Pillar  | Name                   | Feature Indices | Count
+  --------|------------------------|-----------------|-------
+  P1      | Income Stability       | 0–12            | 13
+  P2      | Payment Discipline     | 13–27           | 15
+  P3      | Debt Management        | 28–36           | 9
+  P4      | Savings Behaviour      | 37–48           | 12
+  P5      | Work and Identity      | 49–66           | 18
+  P6      | Financial Resilience   | 67–77           | 11
+  P7      | Social Accountability  | 78–94           | 17
+  --------|------------------------|-----------------|-------
+  TOTAL   |                        |                 | 95
+
+HARD SCORING BLOCKS (evaluated before any feature computation):
+  - aadhaar_verified = false → BLOCK (identity not verified)
+  - face_similarity_score < 0.70 → BLOCK (face match failed)
+  - bank_statement_absent = true → BLOCK (bank statement required)
+  If any block triggers → scoring does not proceed.
+  User shown: "Please complete required verification to proceed."
+
+================================================================================
+PART 6 — EVALUATION ENGINE (ON-DEVICE)
+================================================================================
+
+The evaluation engine runs entirely on the user's Flutter device.
+Models are exported from Python to pure Dart code via m2cgen.
+Zero runtime ML dependencies — pure Dart arithmetic.
+
+--------------------------------------------------------------------------------
+6.1 7 PILLAR MODELS
+--------------------------------------------------------------------------------
+
+  Pillar | Name                   | Model Type              | Dart File
+  -------|------------------------|-------------------------|------------------
+  P1     | Income Stability       | XGBoost (m2cgen Dart)   | p1_scorer.dart
+  P2     | Payment Discipline     | XGBoost (m2cgen Dart)   | p2_scorer.dart
+  P3     | Debt Management        | XGBoost (m2cgen Dart)   | p3_scorer.dart
+  P4     | Savings Behaviour      | XGBoost (m2cgen Dart)   | p4_scorer.dart
+  P5     | Work and Identity      | Dart Scorecard          | scorecard_p5.dart
+  P6     | Financial Resilience   | RandomForest (m2cgen)   | p6_scorer.dart
+  P7     | Social Accountability  | Dart Scorecard          | scorecard_p7.dart
+
+  P1–P4, P6: ML models trained offline in Python, exported to Dart via m2cgen
+  P5, P7: Deterministic weighted sum scorecards, hand-written in Dart
+  All pillar outputs: float in [0.0, 1.0]
+
+--------------------------------------------------------------------------------
+6.2 META-LEARNER
+--------------------------------------------------------------------------------
+
+  Type   : Logistic Regression (pure Dart dot product + sigmoid)
+  File   : scoring_constants.dart (coefficients embedded as constants)
+
+  Input  : 19 values total
+    - 7 pillar scores (confidence-adjusted)
+    - 4 work-type one-hot flags (platform / vendor / trades / freelancer)
+    - 8 interaction terms (P1 × work-type, P2 × work-type for each type)
+
+  Formula:
+    logit = dot(meta_inputs, coefficients) + intercept
+    probability = 1 / (1 + exp(-logit))
+    final_score = round(probability × 600) + 300
+
+  Output range: 300 (worst) → 900 (best)
+
+--------------------------------------------------------------------------------
+6.3 SCORE GRADES AND RISK BANDS
+--------------------------------------------------------------------------------
+
+  Score     | Grade | Label           | Risk Band
+  ----------|-------|-----------------|----------
+  800–900   | S     | Exceptional     | Low
+  720–799   | A     | Excellent       | Low
+  640–719   | B     | Good            | Low
+  560–639   | C     | Average         | Medium
+  480–559   | D     | Below Average   | Medium
+  300–479   | E     | Poor            | High
+
+--------------------------------------------------------------------------------
+6.4 HARD RULES (Applied After Model Inference)
+--------------------------------------------------------------------------------
+
+  DEBT BAND CAP:
+    If emi_to_income_ratio > 0.80:
+      P3 score capped at 0.30 regardless of model output
+      Applied AFTER model inference, BEFORE confidence adjustment
+
+--------------------------------------------------------------------------------
+6.5 EXECUTION ORDER (Sequential, No Isolates Needed)
+--------------------------------------------------------------------------------
+
+  1.  features = engineerFeatures(verifiedProfile)   // 95 features
+  2.  features = sanitizeFeatures(features)           // NaN guard
+  3.  p1Raw = scoreP1(features[0..12])               // XGBoost Dart
+  4.  p2Raw = scoreP2(features[13..27])              // XGBoost Dart
+  5.  p3Raw = scoreP3(features[28..36])              // XGBoost Dart
+  6.  p4Raw = scoreP4(features[37..48])              // XGBoost Dart
+  7.  p5Raw = scorecardP5(features[49..66])          // Dart scorecard
+  8.  p6Raw = scoreP6(features[67..77])              // RandomForest Dart
+  9.  p7Raw = scorecardP7(features[78..94])          // Dart scorecard
+  10. apply debt band cap to p3Raw if needed
+  11. validate all pillar outputs (clamp, NaN check)
+  12. apply confidence adjustment to each pillar
+  13. finalScore = metaLearner(adjustedPillars, workType)
+  14. grade = assignGrade(finalScore)
+  15. riskBand = assignRiskBand(finalScore)
+
+  Total inference time: 15–20ms on mid-range Android device
+
+================================================================================
+PART 7 — CONFIDENCE ENGINE (ON-DEVICE)
+================================================================================
+
+PURPOSE:
+  Each user input across Steps 1–9 has a data quality level.
+  The Confidence Engine processes each input's confidence and computes
+  a per-pillar confidence score that adjusts the pillar's raw ML score.
+
+HOW CONFIDENCE IS ASSIGNED PER INPUT:
+
+  Data Quality Level        | Confidence Value | Example
+  --------------------------|------------------|----------------------------
+  API verified              | 1.00             | Aadhaar API match confirmed
+  OCR extracted + verified  | 0.90             | Bill amount matches bank
+  OCR extracted only        | 0.75             | Bill month matches pattern
+  User declared + bank match| 0.85             | EMI matches bank debit
+  User declared only        | 0.60             | Self-declared income
+  Optional doc not provided | 0.40             | No insurance submitted
+  Missing / fallback used   | 0.20             | Field absent, default used
+
+PER-PILLAR CONFIDENCE SCORE:
+  Computed as weighted average of confidence values of all features
+  that feed that pillar.
+
+CONFIDENCE ADJUSTMENT FORMULA:
+  adjusted_score = raw_score × confidence + 0.50 × (1 − confidence)
+
+  Effect:
+    confidence = 1.00 → adjusted = raw_score (no change)
+    confidence = 0.50 → adjusted = 0.50 (neutral, no strong signal)
+    confidence = 0.00 → adjusted = 0.50 (forced neutral)
+
+MINIMUM CONFIDENCE THRESHOLD:
+  If pillar confidence < 0.30:
+    → Pillar excluded from meta-learner
+    → Set to 0.50 neutral
+    → Report shows "Not enough data for this pillar"
+
+MINIMUM SCORING GATE (must pass before final score is shown):
+  - Step 1 complete: required
+  - Step 2 identity verified: required
+  - Step 3 bank statement parsed with ≥ 30 transactions: required
+  If gate not satisfied → show "Complete required steps to see your score"
+
+================================================================================
+PART 8 — SHAP EXPLAINABILITY (ON-DEVICE)
+================================================================================
+
+PURPOSE:
+  Explain to the user WHY they got their score by identifying which
+  specific features helped or hurt their score the most.
+
+HOW IT WORKS:
+  - shap_lookup.json is pre-computed offline during ML pipeline training
+  - Bundled inside the app at install time (size: ~8–12 KB)
+  - For each of 95 features, the JSON stores binned SHAP impact values
+
+SHAP LOOKUP FORMAT:
+  {
+    "feature_name": {
+      "bins": [0.0, 0.1, 0.2, ..., 1.0],
+      "shap_values": [impact_bin_0, impact_bin_1, ..., impact_bin_9]
+    }
+  }
+
+ON-DEVICE LOOKUP PROCESS:
+  1. For each feature, find which bin the feature value falls into
+  2. Read the pre-computed SHAP impact for that bin
+  3. Collect all (feature, impact) pairs across all 95 features
+  4. Sort by absolute impact descending
+  5. Select top 3 POSITIVE impacts (strengths)
+  6. Select top 3 NEGATIVE impacts (areas to improve)
+  7. Map internal feature names to human-readable labels
+
+  Example mapping:
+    "emi_to_income_ratio"     → "EMI payments high relative to income"
+    "income_stability_cv"     → "Consistent monthly income"
+    "utility_on_time_ratio"   → "Utility bills paid on time"
+    "health_insurance_active" → "No active health insurance"
+
+SHAP IS FOR EXPLANATION ONLY:
+  SHAP values do NOT affect the credit score.
+  The score is computed solely by the meta-learner.
+
+WHAT GETS SENT TO BACKEND (LLM):
+  Only the SHAP output (top 3 positive + top 3 negative with labels).
+  The evaluation engine score and pillar breakdown go DIRECTLY to
+  the report template — they are NOT sent through the LLM.
+
+================================================================================
+PART 9 — BACKEND SERVER PROCESSING
+================================================================================
+
+The backend server has exactly TWO responsibilities:
+
+  1. VERIFICATION API — during onboarding Steps 1–9
+  2. LLM REPORT GENERATION — after on-device scoring completes
+
+The backend NEVER:
+  - Computes credit scores
+  - Runs ML models
+  - Processes bank statements
+  - Stores Aadhaar, PAN, bank data, feature vectors, or scores
+
+--------------------------------------------------------------------------------
+9.1 VERIFICATION API LAYER
+--------------------------------------------------------------------------------
+
+  During onboarding, the app sends ONLY minimal identifiers to the server.
+  The server queries MongoDB (simulated government/financial database).
+  The server returns matching record fields.
+  The app does all cross-validation on-device after receiving the response.
+
+  VERIFICATION CALLS BY STEP:
+
+  Step 1 : /auth/otp/send + /auth/otp/verify
+  Step 2 : /gov/aadhaar/verify + /gov/pan/verify
+  Step 3 : /bank/ifsc/verify + /bank/account/verify + /bank/loan/check
+  Step 4 : No backend call
+  Step 5 : /gov/vehicle/rc/verify (Platform Workers only)
+  Step 6 : /gov/eshram/verify + /gov/pmsym/verify
+  Step 7 : /gov/insurance/policy/verify (1–3 calls)
+  Step 8 : /gov/income-tax/itr/verify
+  Step 9 : No backend call (cross-check is on-device vs Step 3 data)
+
+  Total maximum backend calls across all 9 steps: 13 calls
+  All calls: lightweight (identifier only), response: 50–150ms
+
+--------------------------------------------------------------------------------
+9.2 LLM REPORT GENERATION LAYER
+--------------------------------------------------------------------------------
+
+WHAT THE APP SENDS (Explanation Payload):
+
+  {
+    "credit_score": 682,
+    "grade": "B",
+    "risk_level": "Medium",
+    "work_type": "platform_worker",
+    "language": "Tamil",
+    "pillar_scores": {
+      "income_stability": 72,
+      "payment_discipline": 68,
+      "debt_management": 55,
+      "savings_behaviour": 61,
+      "work_identity": 78,
+      "financial_resilience": 45,
+      "social_accountability": 60
+    },
+    "positive_factors": [
+      { "label": "Consistent monthly income", "pillar": "Income Stability", "impact": 15 },
+      { "label": "Utility bills paid on time", "pillar": "Payment Discipline", "impact": 12 },
+      { "label": "Bank balance growing steadily", "pillar": "Savings Behaviour", "impact": 9 }
+    ],
+    "negative_factors": [
+      { "label": "EMI payments high relative to income", "pillar": "Debt Management", "impact": -18 },
+      { "label": "No active health insurance", "pillar": "Financial Resilience", "impact": -10 },
+      { "label": "Low monthly savings rate", "pillar": "Savings Behaviour", "impact": -7 }
+    ],
+    "confidence_level": "High"
+  }
+
+  NOTE: No Aadhaar, PAN, bank transactions, or raw feature values sent.
+  NOTE: Credit score and pillar scores are in the payload for context
+        but the LLM does NOT modify them. They go directly to report template.
+
+WHAT THE BACKEND DOES:
+  1. Receive payload (HMAC authenticated)
+  2. Build structured Groq prompt from payload fields
+  3. Call Groq API (model: llama3-70b-8192, temperature: 0.4)
+  4. Parse LLM response JSON
+  5. Return formatted response to app
+
+WHAT GROQ RETURNS:
+  {
+    "explanation": "4–5 sentence plain language explanation of the score",
+    "suggestions": [
+      "Actionable suggestion 1 based on top negative factor",
+      "Actionable suggestion 2 based on second negative factor",
+      "Actionable suggestion 3 based on third negative factor"
+    ]
+  }
+
+  Supported languages: English, Hindi, Tamil, Telugu, Kannada
+  Response time: 800–2000ms
+
+WHAT HAPPENS ON-DEVICE AFTER LLM RESPONSE:
+  - App validates response (non-empty explanation, exactly 3 suggestions)
+  - LLM output merged with on-device score data
+  - Full report assembled on-device
+  - If LLM unavailable → fallback template text used
+
+================================================================================
+PART 10 — REPORT ASSEMBLY (ON-DEVICE)
+================================================================================
+
+After LLM response is received, the report is assembled entirely on-device.
+The backend is NOT involved in report assembly or PDF generation.
+
+REPORT TEMPLATE — 4 CORE COMPONENTS:
+
+  COMPONENT 1 — SCORE OUTPUT (from Evaluation Engine, direct)
+  ────────────────────────────────────────────────────────────
+    - Credit score badge (300–900)
+    - Grade (S / A / B / C / D / E)
+    - Risk band (Low / Medium / High)
+    - 7 pillar score breakdown bars (visual progress bars)
+    - Confidence level indicator
+
+  COMPONENT 2 — SHAP EXPLAINABILITY (from SHAP Lookup, direct)
+  ──────────────────────────────────────────────────────────────
+    - Top 3 strengths with human-readable labels and impact values
+    - Top 3 concerns with human-readable labels and impact values
+    - Visual positive/negative indicator per factor
+
+  COMPONENT 3 — LLM PLAIN ENGLISH EXPLANATION (from Groq via Backend)
+  ─────────────────────────────────────────────────────────────────────
+    - 4–5 sentence narrative explaining the score
+    - Written in user's selected language
+    - References the user's actual strengths and concerns
+
+  COMPONENT 4 — PERSONALIZATION SUGGESTIONS (from Groq via Backend)
+  ──────────────────────────────────────────────────────────────────
+    - 3 specific, actionable improvement tips
+    - Based on the top 3 negative SHAP factors
+    - Written in user's selected language
+
+ADDITIONAL REPORT SECTIONS:
+    - Loan recommendations (from Matching Engine)
+    - Score validity indicator (date of assessment)
+    - PDF export button (on-device PDF generation)
+
+DATA FLOW INTO REPORT TEMPLATE:
+
+  Evaluation Engine ──► Component 1 (Score + Pillar Breakdown)
+  SHAP Lookup       ──► Component 2 (Top Factors)
+  Groq LLM          ──► Component 3 (Explanation) + Component 4 (Suggestions)
+  Matching Engine   ──► Loan Recommendations Section
+
+================================================================================
+PART 11 — DATA DELETION POLICY
+================================================================================
+
+WHEN: Immediately after the final report is assembled and displayed.
+
+WHAT IS DELETED:
+  - All document images (Aadhaar, PAN, utility bills, RC, insurance)
+  - All OCR extracted text
+  - Bank statement transaction data
+  - Feature vector (95 features)
+  - Intermediate SHAP values
+  - Pillar raw scores (before confidence adjustment)
+  - VerifiedProfile intermediate object
+
+WHAT IS RETAINED (Encrypted Local Storage):
+  - Final ScoreReport JSON (score, grade, risk, pillar scores, top factors)
+  - LLM explanation text and suggestions
+  - Session metadata (completion timestamps)
+
+WHY:
+  GigCredit is privacy-first. The raw financial data was only needed
+  to generate the score. Once the score and report are generated,
+  retaining raw transaction data or document images serves no purpose
+  and creates a privacy liability.
+
+BACKEND DATA POLICY:
+  Backend never stores any of the above data.
+  Only operational logs retained: hashed device ID, timestamp, language,
+  response status, response time. No user-identifiable content in logs.
+
+================================================================================
+PART 12 — LOAN MATCHING ENGINE AND IN-APP APPLICATION
+================================================================================
+
+--------------------------------------------------------------------------------
+12.1 LOAN MATCHING ENGINE
+--------------------------------------------------------------------------------
+
+After report is generated, the matching engine runs on-device:
+
+  USER PROFILE (from report):         PARTNER RULES (from backend config):
+  - Credit score: 682                 - Min score requirement
+  - Risk band: Medium                 - Risk appetite (Low/Medium/High)
+  - Work type: Platform Worker        - Loan slab (min/max amount)
+  - Income range: ₹18,000–22,000/mo  - Work type acceptance
+  - State: Tamil Nadu                 - State / serviceability
+
+  ENGINE OUTPUT: Eligible lender offers displayed as cards
+  Example:
+    FinTech A — Eligible up to ₹1,00,000  [Apply Now]
+    NBFC B    — Eligible up to ₹50,000    [Apply Now]
+    FinTech C — Eligible up to ₹75,000    [Apply Now]
+
+  Offers are INDICATIVE estimates, not guaranteed approvals.
+
+--------------------------------------------------------------------------------
+12.2 IN-APP LOAN APPLICATION FLOW
+--------------------------------------------------------------------------------
+
+  [USER TAPS APPLY NOW on a lender card]
+         │
+         ▼
+  [LOAN APPLICATION FORM OPENS INSIDE GIGCREDIT APP]
+  (No redirect to external app or browser)
+         │
+         ▼
+  [FORM AUTO-FILLED WITH]:
+    - Name, mobile, occupation, income range (from Step 1)
+    - GigCredit score, risk level, grade (from report)
+    - Requested lender name and offer category
+    - GigCredit report attached (summary version)
+    - Pillar breakdown summary
+         │
+         ▼
+  [USER ADDS MINIMAL REMAINING FIELDS]:
+    - Loan purpose (Dropdown: business, personal, emergency, etc.)
+    - Requested loan amount (within eligible range)
+    - Address confirmation
+    - Any additional lender-required fields
+         │
+         ▼
+  [CONSENT SCREEN]:
+    ☑ I allow GigCredit to securely share my application
+      with the selected lender.
+    [SUBMIT APPLICATION] button
+         │
+         ▼
+  [GIGCREDIT SENDS STRUCTURED APPLICATION TO LENDER API]
+    Transferred data:
+    - Applicant basic details (name, mobile, occupation)
+    - GigCredit score + risk category
+    - Behavioral summary (pillar breakdown)
+    - KYC verification status (verified / not verified)
+    - Requested loan amount
+    - Report certificate (structured JSON)
+    NOT transferred: raw bank data, Aadhaar, PAN, transaction history
+         │
+         ▼
+  [LENDER REVIEWS APPLICATION]:
+    - Eligibility check
+    - Internal risk rules
+    - KYC validation
+    - Fraud screening
+    - Rule engine approval
+         │
+         ▼
+  [LENDER DECISION]:
+    ┌─────────────────────────────────────────┐
+    │ APPROVED    REJECTED    MODIFIED        │
+    │ ↓           ↓           ↓               │
+    │ User        User        New amount      │
+    │ notified    notified    offered         │
+    │ in app      in app      to user         │
+    └─────────────────────────────────────────┘
+         │
+         ▼
+  [IF APPROVED]:
+    - User notified in GigCredit app
+    - Lender contacts user directly for agreement
+    - Loan disbursed
+    - GigCredit earns commission
+
+--------------------------------------------------------------------------------
+12.3 WHY IN-APP (NOT REDIRECT)
+--------------------------------------------------------------------------------
+
+  OLD MODEL (Redirect):           NEW MODEL (In-App):
+  - User leaves GigCredit         - User stays in GigCredit
+  - High drop-off rate            - Higher completion rate
+  - No tracking after redirect    - Full journey tracked
+  - Weak lender trust signals     - Structured application sent
+  - Lower conversion              - Higher conversion
+  - No commission visibility      - Clear commission tracking
+
+================================================================================
+PART 13 — BUSINESS MODEL
+================================================================================
+
+B2C — GIG WORKER (User Revenue):
+  - First 3 reports: FREE
+  - Subsequent reports: ₹79–₹99 per report
+  - Future premium plan: unlimited reports, credit monitoring alerts,
+    faster lender offers, priority support
+
+B2B — LENDER PARTNERS (Partner Revenue):
+  - Commission per approved and disbursed loan
+  - API / SDK integration fee for lender connectivity
+  - Premium priority listing in offer cards (future)
+
+ONE-LINE BUSINESS SUMMARY:
+  GigCredit converts gig workers into pre-qualified borrowers and enables
+  in-app loan applications to multiple lenders, earning revenue from both
+  report purchases and successful loan disbursals.
+
+================================================================================
+PART 14 — FULL SYSTEM FLOW (END TO END)
+================================================================================
+
+  [USER OPENS APP]
+    ↓ Login / Register
+    ↓ Dashboard → Get Started
+    ↓ Input Guidelines (optional) or Continue
+    ↓
+  [STEP 1] Basic Profile + OTP verification
+    ↓ Backend: /auth/otp/send + /auth/otp/verify
+    ↓
+  [STEP 2] Aadhaar + PAN + Selfie
+    ↓ On-device: OCR + face match
+    ↓ Backend: /gov/aadhaar/verify + /gov/pan/verify
+    ↓ On-device: name cross-match, identity_verified = true
+    ↓
+  [STEP 3] Bank statement + IFSC + Account
+    ↓ On-device: PDF parsed, all transactions extracted and tagged
+    ↓ Backend: /bank/ifsc/verify + /bank/account/verify + /bank/loan/check
+    ↓ On-device: monthly aggregates, EMI detection, feature signals stored
+    ↓
+  [INTERNAL] EMI Auto-Analysis (automated, no user input)
+    ↓ On-device: recurring debit pattern detection from bank statement
+    ↓
+  [STEP 4] Utility bills (electricity + LPG + mobile, 6 months each)
+    ↓ On-device: OCR, cross-check vs bank debits, on-time flag computed
+    ↓ No backend call
+    ↓
+  [STEP 5] Work proof (dynamic per work type)
+    ↓ Platform Workers: RC + DL + platform screenshots
+    ↓ Backend (Platform only): /gov/vehicle/rc/verify
+    ↓ Vendors / Tradespeople / Freelancers: relevant docs, no backend call
+    ↓
+  [STEP 6] Government scheme signals
+    ↓ Backend: /gov/eshram/verify + /gov/pmsym/verify
+    ↓ On-device: scheme participation stored for P7 features
+    ↓
+  [STEP 7] Insurance policies
+    ↓ Backend: /gov/insurance/policy/verify (1–3 calls)
+    ↓ On-device: policy cross-check vs Aadhaar name, vehicle number
+    ↓
+  [STEP 8] Tax and compliance (ITR / GST)
+    ↓ Backend: /gov/income-tax/itr/verify
+    ↓ On-device: filing status stored for P3 / P6 features
+    ↓
+  [STEP 9] EMI and loan behaviour (user declares active loans)
+    ↓ On-device: cross-check declared EMIs vs auto-detected EMIs (Step 3)
+    ↓ No backend call
+    ↓
+  [GLOBAL CROSS-STEP VALIDATION]
+    ↓ On-device: RC vs insurance, Aadhaar address vs utility address, etc.
+    ↓
+  [FEATURE ENGINEERING]
+    ↓ On-device: 95 features computed, normalized [0.0–1.0], NaN sanitized
+    ↓
+  [EVALUATION ENGINE]
+    ↓ On-device: 7 pillar models run (XGBoost × 4, RF × 1, Scorecards × 2)
+    ↓ On-device: Meta-learner → Final score 300–900
+    ↓
+  [CONFIDENCE ENGINE]
+    ↓ On-device: Per-pillar confidence computed from input data quality
+    ↓ On-device: Pillar scores adjusted by confidence
+    ↓
+  [SHAP LOOKUP]
+    ↓ On-device: shap_lookup.json → 95 features → SHAP impact values
+    ↓ On-device: Top 3 positive + Top 3 negative selected, labels assigned
+    ↓
+  [EXPLANATION PAYLOAD BUILD]
+    ↓ On-device: Structured JSON assembled (SHAP factors + score context)
+    ↓ No raw data, no identifiers
+    ↓
+  [APP → BACKEND → GROQ]
+    ↓ POST /api/report/generate (HMAC authenticated)
+    ↓ Backend builds prompt → Groq (llama3-70b-8192) → plain English text
+    ↓ Groq returns: 4–5 sentence explanation + 3 suggestions (in user language)
+    ↓ Backend returns response to app
+    ↓
+  [REPORT ASSEMBLY — ON-DEVICE]
+    ↓ Component 1: Score + Grade + Risk + Pillar bars (from Evaluation Engine)
+    ↓ Component 2: SHAP top factors (from SHAP Lookup)
+    ↓ Component 3: Plain English explanation (from Groq via Backend)
+    ↓ Component 4: Personalization suggestions (from Groq via Backend)
+    ↓ Loan recommendations (from Matching Engine)
+    ↓
+  [DATA DELETION]
+    ↓ On-device: All raw data deleted (documents, transactions, features)
+    ↓ Only ScoreReport JSON retained (encrypted)
+    ↓
+  [REPORT DISPLAYED TO USER]
+    ↓ Score badge, grade, risk band, pillar breakdown
+    ↓ Strengths and concerns (SHAP)
+    ↓ LLM explanation + suggestions
+    ↓ Loan offer cards
+    ↓ PDF export option
+    ↓
+  [USER APPLIES FOR LOAN (OPTIONAL)]
+    ↓ Taps Apply Now on a lender card
+    ↓ In-app loan form opens (auto-filled)
+    ↓ User adds minimal inputs + consent
+    ↓ GigCredit sends structured application to lender API
+    ↓ Lender reviews → Approve / Reject / Modify
+    ↓ User notified in app
+    ↓ Loan disbursed → GigCredit earns commission
+
+  END OF FULL SYSTEM FLOW.
+
+================================================================================
+PART 15 — ML PIPELINE SUMMARY (OFFLINE — PYTHON)
+================================================================================
+
+The ML pipeline runs ONCE offline on a development machine.
+Output: trained model code (.dart files) + JSON assets bundled into app.
+
+  STEP 1  : Generate 15,000 synthetic gig worker profiles (95 features each)
+  STEP 2  : 80/20 stratified train/validation split (by work type + credit tier)
+  STEP 3  : Optuna hyperparameter search (100 trials, 5-fold CV per pillar)
+  STEP 4  : Train 4 XGBoost + 1 RandomForest models with best hyperparameters
+  STEP 5  : Validate models on held-out set (RMSE targets per pillar)
+  STEP 6  : Extract SHAP binned lookup tables → shap_lookup.json
+  STEP 7  : Generate cross-validated pillar predictions for meta-learner
+  STEP 8  : Train Logistic Regression meta-learner with work-type interactions
+  STEP 9  : Export all models to pure Dart via m2cgen
+  STEP 10 : Validation gate (Python vs Dart output must match within 1e-5)
+  STEP 11 : Copy .dart files + JSON assets to Flutter project
+
+  TOTAL PIPELINE TIME: 30–60 minutes on a modern laptop
+  OUTPUT ARTIFACTS:
+    p1_scorer.dart, p2_scorer.dart, p3_scorer.dart, p4_scorer.dart
+    p6_scorer.dart
+    scorecard_p5.dart, scorecard_p7.dart
+    scoring_constants.dart (meta-learner coefficients)
+    shap_lookup.json (SHAP bins, ~8–12KB)
+    meta_coefficients.json (LR weights, ~1KB)
+    feature_means.json (fallback values, ~1KB)
+
+================================================================================
+END OF GIGCREDIT MASTER PROJECT SPECIFICATION
+VERSION 1.0 — COMPLETE PROJECT IDEA AND FLOW
+================================================================================

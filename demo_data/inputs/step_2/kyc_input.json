@@ -1,0 +1,22 @@
+{
+  "aadhaar_front": {
+    "id_number": "8765 4321 9012",
+    "name": "Ravi Kumar",
+    "dob": "15/06/1995",
+    "gender": "Male"
+  },
+  "aadhaar_back": {
+    "address": "42 Anna Nagar, Chennai, Tamil Nadu 600040",
+    "pin_code": "600040"
+  },
+  "pan": {
+    "id_number": "BXYPK4532N",
+    "name": "RAVI KUMAR",
+    "dob": "15/06/1995",
+    "father_name": "KUMAR S"
+  },
+  "selfie": {
+    "face_detected": true,
+    "liveness_score": 0.94
+  }
+}

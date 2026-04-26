@@ -1,0 +1,626 @@
+GigCredit Frontend Specification — Frontend Folder Structure and Component Architecture
+
+This document defines the recommended Flutter frontend folder structure, module organization, reusable component strategy, and architectural layering for the GigCredit application. It is intended to help the team build the frontend in a scalable, maintainable, and hackathon-friendly way while keeping the code aligned with the product flow and cross-module logic already defined.
+
+This specification does not force one specific state-management library. Instead, it defines a structure that works with common Flutter patterns such as Provider, Riverpod, Bloc, or other controlled shared-state approaches.
+
+1. MODULE GOAL
+
+This specification exists to:
+- define a scalable Flutter folder structure
+- separate features into clear modules
+- reduce code duplication
+- support team collaboration on multiple screens
+- align UI components with app flows and global rules
+- make it easier to connect frontend screens to backend services later
+
+This is the code-architecture layer of the GigCredit frontend.
+
+2. TECHNOLOGY CONTEXT
+
+The project stack defines:
+- Flutter for the application layer
+- Dart for app logic, state management, and on-device processing flow
+
+This means the frontend architecture should be designed around Flutter widget composition, reusable UI building blocks, and modular feature folders. [file:3]
+
+3. ARCHITECTURE PRINCIPLE
+
+The frontend should be built using feature-based architecture rather than one flat screens folder.
+
+Why:
+- the app contains clearly distinct modules such as auth, score, loans, applications, profile, and credits
+- each module has its own screens, widgets, models, and logic
+- feature grouping improves ownership and maintainability
+
+This fits the product structure already defined in the app overview. [file:10]
+
+4. HIGH-LEVEL FOLDER STRATEGY
+
+Recommended architecture layers:
+- app shell / root
+- core shared utilities
+- shared UI components
+- feature modules
+- services / repositories
+- state / controllers / providers
+- models / entities
+- routing and navigation
+
+This structure is flexible but should remain intentional.
+
+5. RECOMMENDED TOP-LEVEL LIB STRUCTURE
+
+Suggested Flutter `lib/` structure:
+
+lib/
+  main.dart
+  app/
+    app.dart
+    app_router.dart
+    app_theme.dart
+    app_constants.dart
+  core/
+    utils/
+    helpers/
+    errors/
+    network/
+    storage/
+    extensions/
+  shared/
+    widgets/
+    components/
+    layouts/
+    dialogs/
+    states/
+    theme/
+  features/
+    auth/
+    home/
+    score/
+    loans/
+    applications/
+    profile/
+    credits/
+    reports/
+  services/
+  models/
+  state/
+  routes/
+
+This gives the team a clear mental model.
+
+6. MAIN.DART RESPONSIBILITY
+
+`main.dart` should stay small.
+
+It should primarily handle:
+- app startup
+- root dependency setup
+- theme and app shell entry
+- root navigation mounting
+
+It should not contain business logic or screen-specific code.
+
+7. APP LAYER RESPONSIBILITY
+
+The `app/` folder should contain the root-level setup for:
+- MaterialApp configuration
+- route registration
+- theme configuration
+- global constants
+- root shell behavior
+
+This is where the application is assembled, not where features are implemented.
+
+8. CORE LAYER PURPOSE
+
+The `core/` folder should hold low-level shared code that is not tied to one screen or one feature.
+
+Good examples:
+- network helpers
+- exception mapping
+- utility formatters
+- shared validators
+- date/time helpers
+- constants for API keys or environment-safe access wrappers
+- connectivity helpers
+
+This folder should remain feature-agnostic.
+
+9. SHARED LAYER PURPOSE
+
+The `shared/` folder should contain reusable UI-level elements.
+
+Good examples:
+- buttons
+- input fields
+- cards
+- loaders
+- bottom sheets
+- status badges
+- empty states
+- error states
+- reusable app bars
+- common section headers
+
+This reduces repeated UI code across modules.
+
+10. FEATURES LAYER PURPOSE
+
+The `features/` folder should contain the main product modules.
+
+Based on the app flow, the key feature folders should include:
+- auth
+- home
+- score
+- loans
+- applications
+- profile
+- credits
+- reports
+
+These directly map to the product’s major flows and modules. [file:10]
+
+11. AUTH FEATURE STRUCTURE
+
+Suggested structure for `features/auth/`:
+
+features/auth/
+  screens/
+  widgets/
+  models/
+  controllers/
+  services/
+  repository/
+  auth_routes.dart
+
+This module should include:
+- login screen
+- sign-up screen
+- OTP verification screen
+- auth-specific components like OTP input and resend timer
+
+This aligns with the authentication flow. [file:10]
+
+12. HOME FEATURE STRUCTURE
+
+Suggested `features/home/` may contain:
+- home dashboard screen
+- intro cards
+- privacy highlight section
+- CTA block for Check Credit Score
+- home-specific quick actions
+
+The Home module is simple, but it should still have its own clear ownership. [file:10]
+
+13. SCORE FEATURE STRUCTURE
+
+The Score module is one of the most complex and should be broken down properly.
+
+Suggested structure:
+
+features/score/
+  screens/
+  widgets/
+  models/
+  controllers/
+  repository/
+  services/
+  flow/
+  score_routes.dart
+
+This module should support:
+- score intro screen
+- show me how screen
+- multi-step input flow
+- upload and verification UI
+- score generation/loading UI
+- report screen
+- explanation cards
+- suggestions
+- language switch
+- download actions
+
+This is based on the defined score flow and report output. [file:10][file:3]
+
+14. SCORE FLOW SUBFOLDER SUGGESTION
+
+Inside `features/score/flow/`, the 9-step input flow can be further organized by step.
+
+Example:
+features/score/flow/
+  step_1_profile/
+  step_2_kyc/
+  step_3_bank/
+  step_4_bills/
+  step_5_work/
+  step_6_schemes/
+  step_7_insurance/
+  step_8_itr/
+  step_9_review/
+
+This is optional, but useful if the flow becomes large.
+
+15. LOANS FEATURE STRUCTURE
+
+Suggested structure:
+
+features/loans/
+  screens/
+  widgets/
+  models/
+  controllers/
+  repository/
+  services/
+  loans_routes.dart
+
+This module should include:
+- no-score empty state screen or view
+- offers list screen
+- lender detail view if used
+- consent modal logic
+- token / redirect preparation UI
+- post-apply success handoff behavior
+
+This matches the Loans flow. [file:10][file:3]
+
+16. APPLICATIONS FEATURE STRUCTURE
+
+Suggested structure:
+
+features/applications/
+  screens/
+  widgets/
+  models/
+  controllers/
+  repository/
+  services/
+  applications_routes.dart
+
+This module should include:
+- applications list
+- application card
+- status badge
+- progress tracker
+- application detail screen if used
+- refresh handling
+
+This follows the app overview’s tracking flow. [file:10]
+
+17. PROFILE FEATURE STRUCTURE
+
+Suggested structure:
+
+features/profile/
+  screens/
+  widgets/
+  models/
+  controllers/
+  repository/
+  services/
+  profile_routes.dart
+
+This module should include:
+- profile main screen
+- user info section
+- account details list
+- report history
+- logout actions
+- buy credits entry
+
+This aligns with the Profile module definition. [file:10]
+
+18. CREDITS FEATURE STRUCTURE
+
+Even though credits are linked to Profile and Score, they are important enough to maintain as their own reusable feature layer.
+
+Suggested structure:
+
+features/credits/
+  screens/
+  widgets/
+  models/
+  controllers/
+  repository/
+  services/
+
+This module should include:
+- buy credits sheet or screen
+- credit balance card
+- purchase quantity selector
+- payment state handling
+- purchase success/failure views
+
+This supports the defined credit system. [file:10]
+
+19. REPORTS FEATURE STRUCTURE
+
+Reports may be placed inside Score, but if report viewing, history, and download logic grow larger, they can be separated.
+
+Suggested optional structure:
+features/reports/
+  screens/
+  widgets/
+  models/
+  controllers/
+
+This is useful if reports become a major reusable surface across Score and Profile.
+
+20. SERVICES LAYER PURPOSE
+
+The root `services/` folder should contain app-wide technical service wrappers used by multiple features.
+
+Examples:
+- firebase auth service wrapper
+- connectivity service
+- secure storage wrapper
+- file download helper
+- share/export helper
+
+This is different from feature-local service code.
+
+21. MODELS LAYER PURPOSE
+
+The root `models/` folder should contain app-wide shared entities used across multiple modules.
+
+Examples:
+- user model
+- score summary model
+- loan offer model
+- application model
+- credit balance model
+- report summary model
+
+If a model is used only inside one feature, it can stay in that feature instead.
+
+22. STATE LAYER PURPOSE
+
+The root `state/` folder can contain shared state controllers or providers that coordinate multiple modules.
+
+Examples:
+- auth state
+- bottom navigation state
+- user session state
+- score eligibility state
+- credit balance state
+- loan/application shared state
+
+This is especially useful because the app has cross-module dependencies. [file:10]
+
+23. ROUTES LAYER PURPOSE
+
+The root `routes/` folder may define:
+- route names
+- guarded route logic
+- shell navigation helpers
+- deep-link mapping if needed later
+
+If routing is simple, this may stay inside `app/`, but keeping it separate helps scale the project.
+
+24. COMPONENT ARCHITECTURE PRINCIPLE
+
+UI should be built with layered component design:
+- page-level screens
+- section-level widgets
+- reusable atoms and controls
+- app-wide state views
+
+This prevents huge screens full of repeated inline UI code.
+
+25. SCREEN VS WIDGET RULE
+
+Use `screens/` for full pages or tab-level views.
+
+Use `widgets/` for reusable pieces inside those screens.
+
+Example:
+- `loans_screen.dart` = full page
+- `loan_offer_card.dart` = reusable widget
+- `consent_sheet.dart` = reusable sheet widget
+
+This distinction should remain consistent.
+
+26. REUSABLE SHARED COMPONENTS
+
+Shared reusable widgets should include items like:
+- PrimaryButton
+- SecondaryButton
+- AppTextField
+- PhoneInputField
+- OtpInputBox
+- ProgressStepper
+- AppCard
+- StatusBadge
+- EmptyStateView
+- ErrorStateView
+- LoadingView
+- SectionHeader
+- AppBottomNavBar
+- ConfirmationDialog
+- InfoBottomSheet
+
+These elements appear across multiple modules. [file:10]
+
+27. MODULE-SPECIFIC COMPONENTS
+
+Feature-specific widgets should remain within their own module when they are tightly tied to one flow.
+
+Examples:
+- loan_offer_card inside loans
+- application_progress_timeline inside applications
+- score_pillar_card inside score
+- credit_purchase_selector inside credits
+- report_language_toggle inside reports or score
+
+This prevents over-generalizing everything.
+
+28. CONTROLLER / PROVIDER RESPONSIBILITY
+
+Each feature should have one or more state controllers, providers, blocs, or notifiers responsible for:
+- loading data
+- reacting to user actions
+- handling submission states
+- exposing UI-ready state
+- coordinating repository or service calls
+
+UI screens should remain thin where possible.
+
+29. REPOSITORY RESPONSIBILITY
+
+Each feature-level repository should handle:
+- data access
+- API coordination
+- local data assembly
+- mapping service response to models
+
+Repositories should reduce direct API logic inside widgets or controllers.
+
+30. MODEL RESPONSIBILITY
+
+Models should represent clean UI/business objects.
+
+Examples:
+- AuthUser
+- CreditBalance
+- ScoreReport
+- ScorePillar
+- LoanOffer
+- LoanConsentPayload
+- LoanApplication
+- ApplicationStatusTimelineItem
+
+These models should be easy to test and reuse.
+
+31. APP SHELL ARCHITECTURE
+
+The bottom-navigation app can be implemented as a shell container.
+
+Suggested shell responsibilities:
+- hold active tab index
+- preserve tab state
+- mount child tab screens
+- control navigation-level transitions
+- host the persistent bottom nav bar
+
+This matches the defined bottom navigation and state persistence rule. [file:10]
+
+32. PERSISTENT TAB IMPLEMENTATION RULE
+
+Because state should persist across tabs, the shell should use a pattern that preserves child tab trees when appropriate.
+
+Examples in Flutter:
+- IndexedStack
+- nested navigators
+- keep-alive strategies
+
+The implementation choice can vary, but state persistence must be respected. [file:10]
+
+33. FEATURE OWNERSHIP GUIDELINE FOR TEAMWORK
+
+Since this is a hackathon team project, feature ownership should be divided clearly.
+
+Example:
+- one member on auth + navigation shell
+- one on score flow
+- one on loans + applications
+- one on profile + credits
+- one on shared components/theme
+
+This reduces merge conflicts and speeds development.
+
+34. NAMING CONVENTION RULE
+
+Use consistent, predictable file naming.
+
+Recommended pattern:
+- snake_case for file names
+- descriptive names
+- no vague names like temp.dart or screen1.dart
+
+Examples:
+- score_report_screen.dart
+- loan_offer_card.dart
+- buy_credits_bottom_sheet.dart
+- application_status_badge.dart
+
+35. TESTABILITY RULE
+
+Architecture should make it easy to test:
+- state logic separately from widgets
+- repositories separately from UI
+- model mapping separately from screens
+
+Do not bury critical business rules deep inside widget build methods.
+
+36. FUTURE SCALING RULE
+
+Even if hackathon scope is limited, the architecture should be ready for:
+- real API integration
+- expanded report history
+- more lender types
+- richer application tracking
+- settings and localization
+- analytics and logging
+
+A clean folder structure helps future scale without rewriting everything.
+
+37. GLOBAL FILES RECOMMENDATION
+
+Useful shared files may include:
+- app_constants.dart
+- app_strings.dart
+- color_palette.dart
+- spacing.dart
+- text_styles.dart
+- route_names.dart
+- app_assets.dart
+
+These support consistency across the UI.
+
+38. RECOMMENDED COMPONENT EXAMPLES BY MODULE
+
+Auth:
+- login_form.dart
+- otp_resend_timer.dart
+- mobile_number_field.dart
+
+Score:
+- score_step_header.dart
+- document_upload_card.dart
+- input_progress_indicator.dart
+- score_pillar_card.dart
+- report_action_bar.dart
+
+Loans:
+- loan_offer_card.dart
+- lender_detail_tile.dart
+- consent_confirmation_sheet.dart
+
+Applications:
+- application_card.dart
+- application_timeline.dart
+- application_status_chip.dart
+
+Profile:
+- user_info_card.dart
+- credit_balance_card.dart
+- account_option_tile.dart
+
+Credits:
+- purchase_quantity_selector.dart
+- purchase_summary_card.dart
+
+39. TESTING PRIORITIES FOR ARCHITECTURE
+
+Testing should verify:
+- feature folders stay organized
+- shared widgets are reused instead of duplicated
+- bottom navigation preserves tab state
+- module state remains isolated where needed and shared where required
+- repositories and services are not mixed directly into UI
+- score, loans, applications, profile, and credits remain separately maintainable
+
+40. FINAL DIRECTION
+
+The Frontend Folder Structure and Component Architecture should help GigCredit feel like a real product, not a collection of disconnected hackathon screens. A clean Flutter structure will make development faster, debugging easier, teamwork smoother, and future scaling much more practical.

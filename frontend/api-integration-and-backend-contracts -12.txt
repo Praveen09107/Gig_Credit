@@ -1,0 +1,439 @@
+GigCredit Frontend Specification — API Integration and Backend Contracts
+
+This document defines the frontend-facing backend integration rules for the GigCredit application. It explains which features depend on backend services, what the frontend should expect from those services, how API-driven features should behave, and how the frontend must remain aligned with the core product rule that scoring and analysis happen on-device while backend services are used for authentication, verification, partner interactions, and status-based flows.
+
+This file is not a backend implementation document. It is a frontend contract specification that helps the UI layer integrate correctly and consistently with backend systems.
+
+1. MODULE GOAL
+
+This specification exists to:
+- define which product features depend on backend services
+- clarify the boundary between on-device processing and server-assisted flows
+- standardize frontend expectations for APIs
+- define the contract behavior for auth, verification, loans, applications, payments, and reporting support
+- reduce ambiguity between frontend state and backend responses
+
+This is the integration contract layer of the frontend architecture.
+
+2. CORE ARCHITECTURE RULE
+
+GigCredit follows a privacy-first architecture where:
+- scoring and core analysis happen on-device
+- backend is used only where server-side coordination is required
+
+This separation is explicitly defined in the project materials. [file:3]
+
+3. ON-DEVICE VS BACKEND RESPONSIBILITY RULE
+
+The frontend must treat these as separate responsibility zones:
+
+On-device zone:
+- OCR-assisted extraction flow support
+- validation pipeline support
+- score generation support
+- explainability display support
+- report generation context
+- personalization insights display
+
+Backend-assisted zone:
+- authentication
+- verification APIs
+- credit purchase coordination
+- lender matching fetch
+- consent-based token generation
+- loan application handoff
+- applications status tracking
+- optional multilingual/report service integration where applicable
+
+This boundary must remain visible in app logic. [file:3][file:10]
+
+4. AUTHENTICATION BACKEND CONTRACT
+
+Authentication is backend-assisted and uses Firebase for secure user authentication.
+
+Frontend implication:
+- login and sign-up are not purely local flows
+- authenticated session state depends on service response
+- OTP-based login behavior must be treated as network-dependent
+
+This is directly defined in the project stack and app flow. [file:3][file:10]
+
+5. AUTHENTICATION API SCOPE
+
+Frontend should expect authentication-related service behavior for:
+- sign up
+- login
+- OTP send
+- OTP verify
+- session confirmation
+- logout or token invalidation support if needed
+
+These are the minimum auth integration surfaces for the defined user flow. [file:10]
+
+6. OTP SEND CONTRACT
+
+When the user enters mobile number and requests OTP:
+- frontend sends request to auth system
+- backend/service must acknowledge OTP send attempt
+- UI should move into OTP waiting state only after valid acknowledgement or defined optimistic behavior
+
+If OTP request fails, user must remain in safe retryable state.
+
+7. OTP VERIFY CONTRACT
+
+When the user enters OTP:
+- frontend submits OTP for verification
+- successful verification should return authenticated session context
+- failed verification should not partially authenticate the user
+
+The frontend must treat OTP verification as a strict gate into the main app.
+
+8. SIGN-UP VALIDATION CONTRACT
+
+For sign-up:
+- backend/service must verify whether the user already exists
+- if already registered, frontend should receive a meaningful failure state
+- if new account creation succeeds, frontend should receive authenticated or post-auth-ready state depending on final implementation
+
+This aligns with the defined auth edge cases. [file:10]
+
+9. LOGIN VALIDATION CONTRACT
+
+For login:
+- backend/service must verify whether the user is registered
+- if not registered, frontend should receive a structured non-success response
+- frontend must route user toward sign-up instead of showing vague failure
+
+This behavior is part of the app overview. [file:10]
+
+10. VERIFICATION API CONTRACT
+
+The project stack defines FastAPI as handling lightweight APIs for verification services.
+
+Frontend implication:
+- any KYC, validation, or document verification dependent server request should be treated as FastAPI-driven or equivalent verification service behavior
+- verification API requests must be separate from local scoring logic
+
+This is explicitly stated in the tech stack. [file:3]
+
+11. VERIFICATION RESPONSIBILITY RULE
+
+Backend verification APIs may support:
+- identity verification
+- document verification checks
+- backend-side validation responses
+- request/response-based confirmation needed by the architecture
+
+The frontend must not assume that all validation is local.
+
+12. SCORE BACKEND EXCLUSION RULE
+
+Core scoring must not depend on backend execution.
+
+The project explicitly states that core processing, scoring, and analysis happen on-device, not on the backend. [file:3]
+
+Frontend implication:
+- UI should not block score generation waiting for a scoring API
+- backend outages should not conceptually redefine the app into a cloud-scoring model
+- on-device score flows must remain architecturally distinct from server-assisted operations
+
+13. REPORT CONTRACT EXPECTATION
+
+The report screen contains:
+- score
+- explanation
+- improvement suggestions
+- language switch
+- download option
+
+The frontend should treat the report as a structured product output that may be assembled primarily from on-device outputs plus optional service support such as multilingual transformation or download coordination if implemented that way. [file:10][file:3]
+
+14. LANGUAGE / MULTILINGUAL SUPPORT CONTRACT
+
+The project stack includes Google Translate API for multilingual report generation, while the app flow includes language switching in the report for English, Tamil, and Hindi.
+
+Frontend implication:
+- report language switch may depend on a service response or preprocessed output
+- language switching UI must handle loading and failure states
+- the frontend should not assume translation is instant or offline unless implemented locally
+
+This is based on the defined stack and report behavior. [file:3][file:10]
+
+15. CREDIT PURCHASE CONTRACT
+
+Credit purchase is a backend-assisted flow even if UI selection is local.
+
+Frontend should expect a payment or transaction coordination contract for:
+- validating selected purchase amount
+- initiating payment
+- receiving payment success/failure result
+- updating user credit balance after confirmed success
+
+This is required by the defined credit system rules. [file:10]
+
+16. CREDIT BALANCE FETCH CONTRACT
+
+Frontend should be able to request or refresh:
+- current credit balance
+- free report usage count if tracked server-side
+- updated balance after purchase
+
+The balance shown in Profile and score gating must stay consistent.
+
+17. SCORE ACCESS ELIGIBILITY CONTRACT
+
+Before allowing score generation after free usage exhaustion:
+- frontend may need current balance and free-use status
+- eligibility evaluation should be deterministic
+- any backend dependency for current account credit state must return clean, usable values
+
+This prevents contradictory gating behavior across screens.
+
+18. LENDER MATCHING CONTRACT
+
+The product defines dynamic loan recommendations based on user score, risk level, and partner eligibility criteria.
+
+Frontend implication:
+- loan offers should be treated as backend-delivered or backend-coordinated recommendation data once score context is available
+- lender cards should render from structured offer response payloads
+
+This is directly described in the project materials. [file:3][file:10]
+
+19. LENDER OFFERS RESPONSE EXPECTATION
+
+A lender offers response should support fields such as:
+- lender name
+- lender type
+- amount or amount range
+- interest rate if available
+- EMI options if available
+- offer identifier
+- match reason or eligibility note
+- offer status if needed
+
+The frontend should be built to handle partial optional fields gracefully.
+
+20. LOAN ACCESS CONTRACT RULE
+
+The frontend must not request or display final lender offers unless score eligibility rules are satisfied.
+
+This means:
+- valid score/session state first
+- lender API request second
+- render offers only after contract success
+
+This preserves the latest-score-only and score-gated loan design. [file:10]
+
+21. CONSENT CONTRACT RULE
+
+Before lender handoff, the frontend must collect explicit user consent.
+
+After consent:
+- the frontend may request secure token generation or handoff authorization from backend systems
+- the backend should respond with the next valid action context
+
+This behavior is reflected in the dual architecture flow showing consent, token generation, redirect, pre-filled form, and lender review. [file:3]
+
+22. TOKEN GENERATION CONTRACT
+
+The architecture explicitly includes token generation and secure token flow.
+
+Frontend should treat token generation as a backend contract that:
+- starts only after user consent
+- may require lender/offer identifier and user session context
+- returns secure handoff or continuation data
+- must never be faked purely in UI state for production logic
+
+This is part of the partner network flow. [file:3]
+
+23. REDIRECT / PREFILLED FORM CONTRACT
+
+After consent and token generation, backend contract may return one of several continuation models:
+- external redirect URL
+- pre-filled form data
+- internal partner handoff token
+- application session reference
+
+Frontend must support these outcomes without breaking trust or navigation continuity.
+
+24. APPLICATION CREATION CONTRACT
+
+When a user successfully begins or submits a lender application:
+- the frontend should create or receive an application tracking record
+- that record must be available to the Applications module
+- the response should include initial status such as Submitted or Consent Verified
+
+This is necessary because Applications tracking is a defined module in the app flow. [file:10]
+
+25. APPLICATION STATUS CONTRACT
+
+The Applications module requires backend-supported status tracking.
+
+The backend contract should support statuses such as:
+- Submitted
+- Consent Verified
+- Under Review
+- Decision Pending
+- Approved
+- Rejected
+- Disbursed
+
+These states are part of the defined application flow. [file:10]
+
+26. APPLICATIONS LIST FETCH CONTRACT
+
+Frontend should expect an applications list endpoint or equivalent service contract that returns:
+- all relevant user applications
+- lender name
+- amount
+- status
+- interest / EMI if available
+- last updated data
+- progress stage if available
+
+This supports the Applications tab card structure. [file:10]
+
+27. APPLICATION DETAIL CONTRACT
+
+If a detailed application screen is used, frontend may need a detail contract supporting:
+- application ID
+- lender info
+- applied amount
+- timeline events
+- current status
+- next action if any
+- timestamps
+
+The frontend should be ready for both list-only and list-plus-detail implementations.
+
+28. REFRESH CONTRACT RULE
+
+Applications and lender offers may change over time.
+
+So the frontend should support:
+- explicit refresh requests
+- background refresh on re-entry if desired
+- clear handling of stale vs fresh data
+
+This is especially important for post-apply tracking.
+
+29. STANDARD API RESPONSE EXPECTATION
+
+Across backend contracts, frontend should expect responses to follow a predictable pattern with:
+- success indicator
+- data payload when successful
+- error message or error code when unsuccessful
+- optional metadata such as timestamps or request context
+
+Consistent contract shape reduces fragile UI logic.
+
+30. SUCCESS RESPONSE RULE
+
+On successful API response:
+- update module state
+- clear loading state
+- render data
+- allow next action
+
+Success should be explicit and not inferred from absence of error alone.
+
+31. ERROR RESPONSE RULE
+
+On failed API response:
+- do not silently fail
+- preserve safe prior state if possible
+- show contextual error messaging
+- offer retry if appropriate
+
+This should align with the shared error-state specification. [file:10]
+
+32. LOADING CONTRACT RULE
+
+For every backend-assisted action, the frontend should support loading states such as:
+- auth processing
+- OTP verification
+- verification request in progress
+- lender offers loading
+- token generation loading
+- applications loading
+- payment processing
+- report translation/loading if needed
+
+This creates predictable feedback.
+
+33. TIMEOUT / SLOW RESPONSE RULE
+
+If a request is slow:
+- keep the user informed with loading feedback
+- avoid frozen or inactive screens
+- allow safe retry or cancellation where meaningful
+- never pretend success before contract completion
+
+This is particularly important for OTP, lender fetch, and payment flows.
+
+34. CONNECTIVITY CONTRACT RULE
+
+Because OTP, verification, loan APIs, and status APIs require internet, the frontend must distinguish backend failures from local/offline-only states.
+
+This connectivity distinction is already defined in the app overview. [file:10]
+
+35. OFFLINE COMPATIBILITY RULE
+
+If the device is offline:
+- auth and OTP requests should not proceed as if online
+- lender offer fetch and application tracking should show connectivity-aware failure
+- on-device score-related UI may still be available depending on implementation boundaries
+
+This reflects the hybrid offline/online architecture. [file:10][file:3]
+
+36. SECURITY CONTRACT RULE
+
+The frontend must never expose sensitive partner or token behavior carelessly.
+
+This means:
+- secure tokens should be treated as backend-generated sensitive values
+- consent should occur before any partner handoff
+- frontend should not hardcode partner-sensitive values in UI logic
+
+This is necessary for the privacy-first architecture and secure token flow. [file:3]
+
+37. MOCK DATA VS PRODUCTION CONTRACT RULE
+
+During hackathon/demo development, mock responses may be used.
+
+However:
+- mock structures should match future backend contract shapes
+- frontend should not depend on unrealistic ad hoc mock fields
+- transition to real APIs should require minimal UI restructuring
+
+This improves maintainability.
+
+38. RECOMMENDED API SERVICE GROUPING
+
+Frontend integration can logically group service contracts into:
+- AuthService
+- VerificationService
+- CreditsService
+- LoanOffersService
+- ConsentAndTokenService
+- ApplicationsService
+- ReportLanguageService
+
+This is not mandatory naming, but it is a clean architectural division.
+
+39. TESTING PRIORITIES FOR API INTEGRATION
+
+Testing should verify:
+- login and signup flows respond correctly to success and failure
+- OTP resend and verify behave correctly
+- score flow does not incorrectly depend on scoring API
+- balance updates after purchase
+- loan offers render from structured API data
+- consent precedes token generation
+- token flow returns proper next-step behavior
+- applications list reflects submitted lender actions
+- offline handling differs correctly between local and backend-required features
+
+40. FINAL DIRECTION
+
+API Integration and Backend Contracts should preserve the core identity of GigCredit: private on-device scoring with carefully limited backend use for authentication, verification, financial partner handoff, and tracking. The frontend must reflect that separation clearly. A strong integration contract will make the app easier to build, test, explain, and scale.

@@ -1,0 +1,179 @@
+STEP-2-IDENTITY-KYC-INPUTS.txt
+
+GIGCREDIT — STEP 2 IDENTITY VERIFICATION INPUT SPECIFICATION
+Version 1.0
+Status: Finalized
+Scope: Input collection only
+Note: This file covers only Step 2 user inputs, UI structure, field details,
+mandatory/optional status, and OCR extraction fields. It does not include
+verification logic, validation logic, scoring features, or downstream rules.
+
+============================================================
+STEP 2 — IDENTITY VERIFICATION (KYC)
+============================================================
+
+PURPOSE
+Collect and capture the user's government-issued identity documents and a
+live selfie to confirm the person's identity. This step is document-upload
+based and uses on-device OCR to extract key fields from each document.
+
+------------------------------------------------------------
+HOW THIS STEP IS PRESENTED
+------------------------------------------------------------
+
+Step 2 is shown as a vertically scrolling screen with four clearly labelled
+upload cards displayed in sequence:
+
+1. Aadhaar Card — Front Side
+2. Aadhaar Card — Back Side
+3. PAN Card
+4. Live Selfie
+
+Each document card shows:
+- Card title
+- A guide overlay image showing the correct way to photograph the document
+- Upload button (camera or gallery)
+- A status indicator showing Pending / Uploaded / Processing
+
+The Live Selfie card uses camera capture only.
+No gallery upload is permitted for the selfie.
+
+At the bottom of the screen a Continue button is shown only after all
+four mandatory uploads are completed.
+
+------------------------------------------------------------
+SECTION A — AADHAAR CARD
+------------------------------------------------------------
+
+Field 1
+Field Name: Aadhaar Number
+UI Element: Numeric text field, segmented display 4-4-4
+Input Type: 12-digit numeric
+Example: 7494 2006 7990
+Mandatory: Yes
+
+Description:
+User manually enters their 12-digit Aadhaar number before uploading
+the Aadhaar card images.
+
+------------------------------------------------------------
+
+Field 2
+Field Name: Aadhaar Card — Front Side
+UI Element: Image upload card with guide overlay
+Input Type: Camera capture or gallery image
+Accepted Formats: JPG, PNG
+Example Reference: Card showing name, DOB, gender, photo, Aadhaar number
+Mandatory: Yes
+
+OCR Fields Extracted from Aadhaar Front:
+- Full name (English)
+- Full name (regional language if printed)
+- Date of birth
+- Gender
+- Aadhaar number
+- Photo (used for face match against selfie)
+- Issue date (if printed)
+
+------------------------------------------------------------
+
+Field 3
+Field Name: Aadhaar Card — Back Side
+UI Element: Image upload card with guide overlay
+Input Type: Camera capture or gallery image
+Accepted Formats: JPG, PNG
+Example Reference: Card showing full address, state, PIN code
+Mandatory: Yes
+
+OCR Fields Extracted from Aadhaar Back:
+- Full address (English)
+- District
+- State
+- PIN code
+- Father name or S/O name (if printed)
+
+------------------------------------------------------------
+SECTION B — PAN CARD
+------------------------------------------------------------
+
+Field 4
+Field Name: PAN Number
+UI Element: Alphanumeric text field, uppercase
+Input Type: 10-character alphanumeric
+Format: ABCDE1234F
+Example: IPZPP3254R
+Mandatory: Yes
+
+Description:
+User manually enters their 10-character PAN number before uploading
+the PAN card image.
+
+------------------------------------------------------------
+
+Field 5
+Field Name: PAN Card Photo
+UI Element: Image upload card with guide overlay
+Input Type: Camera capture or gallery image
+Accepted Formats: JPG, PNG
+Example Reference: Card showing name, father name, DOB, PAN number, photo
+Mandatory: Yes
+
+OCR Fields Extracted from PAN Card:
+- Full name
+- Father's name
+- Date of birth
+- PAN number
+- Signature (presence detected, not read)
+
+------------------------------------------------------------
+SECTION C — LIVE SELFIE
+------------------------------------------------------------
+
+Field 6
+Field Name: Live Selfie
+UI Element: In-app camera trigger button
+Input Type: Camera capture only
+Gallery upload: NOT permitted
+Accepted Format: JPG (captured in-app)
+Mandatory: Yes
+
+Screen guidance shown to user:
+"Position your face inside the oval frame.
+Make sure your face is well lit and clearly visible.
+Remove glasses or cap if possible."
+
+What is captured:
+- Single front-facing photo of the applicant
+- Used for on-device face match against Aadhaar front photo
+
+------------------------------------------------------------
+STEP 2 INPUT SUMMARY
+------------------------------------------------------------
+
+Total Input Fields: 6
+Mandatory Fields: 6
+Optional Fields: 0
+Document Uploads: 3 images (Aadhaar front, Aadhaar back, PAN card)
+Live Captures: 1 selfie (camera only)
+
+------------------------------------------------------------
+STEP 2 SCREEN STRUCTURE SUMMARY
+------------------------------------------------------------
+
+Recommended display order:
+
+A. Aadhaar Card
+1. Aadhaar Number (manual entry)
+2. Aadhaar Card Front Upload
+3. Aadhaar Card Back Upload
+
+B. PAN Card
+4. PAN Number (manual entry)
+5. PAN Card Photo Upload
+
+C. Live Selfie
+6. Selfie Capture (camera only)
+
+------------------------------------------------------------
+END OF STEP 2 SPECIFICATION
+------------------------------------------------------------

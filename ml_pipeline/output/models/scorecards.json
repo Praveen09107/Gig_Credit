@@ -1,0 +1,18 @@
+{
+  "p5": {
+    "feature_range": [
+      49,
+      66
+    ],
+    "method": "weighted_mean",
+    "weights": "uniform"
+  },
+  "p7": {
+    "feature_range": [
+      78,
+      94
+    ],
+    "method": "weighted_mean",
+    "weights": "uniform"
+  }
+}

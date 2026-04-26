@@ -1,0 +1,460 @@
+SYSTEM DESIGN PROMPT — STEP-8: ITR AND GST RECORDS
+GigCredit Onboarding | Version: Final | Pillars: P1, P6, P7, Meta-Learner
+===========================================================================
+
+PURPOSE
+-------
+Step-8 collects formal income declaration and tax compliance records.
+ITR and GST documents independently verify the income reported in the
+bank statement (Step-3) and the income declared in Step-1.
+
+These are the strongest formal income signals in the system. Submitting
+them improves confidence scores across P1 (Income Stability), P4
+(Savings Behaviour), P6 (Financial Resilience), and the Meta-Learner.
+
+All inputs in this step are optional. The user may skip either section
+or both. However, if the user provides any document, it must pass
+all validation layers. Invalid inputs are rejected and not used.
+
+Validation architecture:
+  - OCR Extraction       : On-device
+  - API Verification     : Government simulation (FastAPI + MongoDB)
+  - Individual Validation: Per-field rules on OCR extracted data
+  - Cross-Internal       : Consistency within and across documents
+  - Global Validation    : Consistency with all previous verified steps
+
+
+===========================================================================
+HOW IT IS PRESENTED ON SCREEN
+===========================================================================
+
+Two separate sections on one screen:
+  - Section A: ITR (Income Tax Return) — shown on top
+  - Section B: GST (Goods and Services Tax) — shown below
+
+Both sections are collapsed by default.
+
+Score impact message shown at top of screen:
+  "ITR and GST records are the strongest proof of income.
+   Submitting them can improve your score by up to 22 points
+   across multiple pillars."
+
+GST section is VISUALLY EXPANDED and PROMINENTLY DISPLAYED
+by default for:
+  - Vendor Seller (Step-1 work type)
+  - Freelancer (Step-1 work type)
+
+GST section remains collapsed for:
+  - Platform Worker
+  - Skilled Tradesperson
+
+
+===========================================================================
+INPUTS — STEP-8 (TOTAL: 4, ALL OPTIONAL)
+===========================================================================
+
+#  | Field                              | UI Element            | Format         | Count | Mandatory
+---|------------------------------------|-----------------------|----------------|-------|----------
+1  | ITR Acknowledgement Receipt        | Image/PDF upload card | JPG, PNG, PDF  | 1     | Optional
+   | (Form V)                           |                       |                |       |
+2  | Form 26AS                          | PDF upload card       | PDF only       | 1     | Optional
+3  | GSTIN Number                       | Text field (uppercase)| 15-char        | 1     | Optional
+   |                                    |                       | alphanumeric   |       |
+4  | GSTR-3B Monthly Returns            | Multi-file PDF upload | Up to 6 PDFs   | 1–6   | Optional
+
+Total Inputs  : 4
+Mandatory     : 0
+Optional      : 4
+Document uploads: Up to 8 (1 Form V + 1 Form 26AS + 6 GSTR-3B returns)
+
+UI Gate Rule:
+  → If user uploads Form V but NOT Form 26AS: acceptable, Form 26AS optional.
+  → If user uploads Form 26AS but NOT Form V: acceptable, Form V optional.
+  → If user enters GSTIN but uploads NO GSTR-3B: reject GSTIN alone;
+    at least 1 GSTR-3B return required to use GSTIN for scoring.
+  → If GSTIN not entered: GSTR-3B upload blocked (greyed out).
+
+
+===========================================================================
+SECTION A — ITR (INCOME TAX RETURN) VERIFICATION
+===========================================================================
+
+Score impact: Up to 15 points across P1 and P6.
+
+The user may upload one or both of the following documents:
+  1. ITR Acknowledgement Receipt (Form V / ITR-V)
+  2. Form 26AS (Annual Statement)
+
+Both documents are independent. Either alone is accepted.
+Both together produce more features.
+
+--- OCR EXTRACTION — ITR FORM V (ACKNOWLEDGEMENT RECEIPT) ---
+
+Field                  | Example Value          | Used For
+-----------------------|------------------------|-------------------------------
+taxpayer_name          | Ravi Kumar             | Step-1 + Step-2 name match
+pan_number             | ABCDE1234F             | Step-2 PAN cross-check
+assessment_year        | 2024-25                | Filing recency check
+acknowledgement_number | 123456789012345        | API verification (15 digits)
+date_of_filing         | 2025-07-18             | Filing window validation
+total_income           | 480000                 | P1 + P6 feature, bank match
+gross_total_income     | 510000                 | Income before deductions
+deductions             | 30000                  | Deduction signal
+net_taxable_income     | 480000                 | Final taxable income
+
+--- OCR EXTRACTION — FORM 26AS ---
+
+Field                            | Used For
+---------------------------------|-------------------------------
+taxpayer_name                    | Name consistency with Form V
+pan_number                       | PAN consistency with Form V
+total_tds_amount                 | Tax deduction signal (P6)
+total_income_from_all_sources    | Cross-check with Form V income
+employer_or_client_tan_details   | Formal income source signal
+advance_tax_payments             | Financial discipline signal
+
+--- API VERIFICATION — ITR ---
+
+Endpoint  : POST /gov/income-tax/itr-verify
+MongoDB   : itr_filings_db
+Trigger   : Automatic after OCR extracts acknowledgement_number
+
+Request:
+  {
+    "pan_number"             : "ABCDE1234F",
+    "acknowledgement_number" : "123456789012345",
+    "assessment_year"        : "2024-25"
+  }
+
+Response:
+  {
+    "itr_found"      : true,
+    "filing_status"  : "Valid",
+    "assessed_income": 480000,
+    "verified"       : true
+  }
+
+Possible filing_status values: Valid | Invalid Filing | Not Found
+
+AIS BACKEND CHECK (SIMULATED):
+  Backend performs simulated cross-check with Annual Information
+  Statement (AIS) data for high-value transaction anomaly detection.
+  If declared ITR income deviates > 50% from AIS estimated income:
+    → Flag: income_ais_mismatch = true (non-blocking, soft signal only)
+
+--- INDIVIDUAL VALIDATION — ITR FORM V ---
+
+#  | Field                    | Rule                                         | Blocking
+---|--------------------------|----------------------------------------------|---------
+1  | Taxpayer Name            | Min 2 words, alphabets + spaces only,        | HARD FAIL
+   |                          | no numbers, min 3 characters                 |
+2  | PAN Number               | Regex: [A-Z]{5}[0-9]{4}[A-Z]{1},            | HARD FAIL
+   |                          | exactly 10 characters, all uppercase         |
+3  | Assessment Year          | Valid FY format (e.g. 2024-25);              | HARD FAIL
+   |                          | not a future AY; within last 3 AYs           |
+4  | Acknowledgement Number   | Exactly 15 digits, numeric only              | HARD FAIL
+5  | Total Income             | Must be numeric, > 0                         | HARD FAIL
+6  | Date of Filing           | Must be valid date; must fall within          | HARD FAIL
+   |                          | valid ITR filing window for that AY           |
+   |                          | (typically April–December of filing year)    |
+
+--- INDIVIDUAL VALIDATION — FORM 26AS ---
+
+#  | Field                           | Rule                       | Blocking
+---|---------------------------------|----------------------------|---------
+1  | Taxpayer Name                   | Must be readable, alphabets| HARD FAIL
+2  | PAN Number                      | Same regex as Form V       | HARD FAIL
+3  | Total TDS Amount                | Numeric ≥ 0                | HARD FAIL
+4  | Total Income from All Sources   | Numeric ≥ 0                | HARD FAIL
+
+--- CROSS-INTERNAL VALIDATION — ITR ---
+
+#  | Check                                              | Rule                     | Blocking
+---|----------------------------------------------------|--------------------------|---------
+1  | Taxpayer name consistent within Form V             | Fuzzy ≥ 85%              | HARD FAIL
+2  | Assessment Year ↔ Filing Date                      | Filing date must fall    | HARD FAIL
+   |                                                    | within valid period for  |
+   |                                                    | that AY                  |
+3  | IF both Form V AND Form 26AS uploaded:             |                          |
+   |   PAN Number (Form V vs Form 26AS)                 | Must be identical        | HARD FAIL
+   |   Taxpayer Name (Form V vs Form 26AS)              | Fuzzy ≥ 85%              | HARD FAIL
+   |   Total Income (Form V vs Form 26AS)               | Within ± 30% tolerance   | Soft flag
+
+--- BANK TRANSACTION CROSS-CHECK — ITR ---
+
+Income consistency validation using Step-3 canonical CSV:
+  Formula:
+    expected_monthly = total_income (ITR) ÷ 12
+    lower_bound      = expected_monthly × 0.60
+    upper_bound      = expected_monthly × 1.40
+
+  Step-3 average monthly credit = avg monthly bank deposits
+
+  IF avg_monthly_credit is within [lower_bound, upper_bound]:
+    → income_consistency = "strong"
+    → itr_to_bank_ratio feature = computed
+  IF avg_monthly_credit is outside range:
+    → income_consistency = "medium" (non-blocking, does NOT reject ITR)
+    → Soft flag only; ITR still accepted
+
+  Note: Bank statement is converted to canonical CSV in Step-3.
+  Each transaction has: date, amount, merchant, category, transaction_id.
+
+--- GLOBAL VALIDATION — ITR ---
+
+#  | Check                          | Compared Against                    | Blocking
+---|--------------------------------|-------------------------------------|---------
+1  | Taxpayer Name (OCR)            | verified_profile.name (Step-1)      | HARD FAIL
+2  | Taxpayer Name (OCR)            | verified_profile.identity.pan_name  | HARD FAIL
+   |                                | (Step-2 PAN API name)               |
+3  | PAN Number (OCR)               | verified_profile.identity.          | HARD FAIL
+   |                                | pan_number (Step-2)                 |
+4  | ITR declared income ÷ 12       | Step-3 avg monthly bank credits     | Soft flag
+   |                                | (60%–140% tolerance band)           |
+
+
+===========================================================================
+SECTION B — GST RECORDS VERIFICATION
+===========================================================================
+
+Score impact: Up to 7 points in P7 (Social Accountability) and P1.
+
+The user:
+  1. Enters GSTIN Number (15-character)
+  2. Uploads up to 6 GSTR-3B Monthly Return PDFs
+
+GSTIN entry unlocks the GSTR-3B multi-file upload slot.
+If GSTIN is not entered, GSTR-3B upload remains disabled (greyed out).
+Minimum 1 GSTR-3B return required to register any GST score impact.
+
+--- OCR EXTRACTION — GSTR-3B (PER RETURN, UP TO 6 FILES) ---
+
+Field                             | Example Value  | Used For
+----------------------------------|----------------|-------------------------------
+gstin                             | 33AABCU9603R1Z5| API verification
+business_legal_name               | Ravi Kumar     | Step-1 name cross-check
+return_filing_month               | Jan-2026       | Filing consistency check
+outward_taxable_supplies_turnover | 65000          | P1 income feature
+filing_date                       | 2026-02-12     | Recency and regularity check
+tax_payable                       | 11700          | Tax compliance signal
+tax_paid                          | 11700          | Payment discipline signal
+
+--- API VERIFICATION — GST ---
+
+Endpoint  : POST /gov/gst/gstin-verify
+MongoDB   : gstin_db
+Trigger   : After user enters GSTIN and taps Verify
+
+Request:
+  { "gstin": "33AABCU9603R1Z5" }
+
+Response:
+  {
+    "gstin_found"         : true,
+    "business_legal_name" : "Ravi Kumar",
+    "gstin_status"        : "Active",
+    "registration_date"   : "2022-04-01",
+    "verified"            : true
+  }
+
+Possible gstin_status values: Active | Cancelled | Suspended | Not Found
+
+GSTR-3B FILING CONSISTENCY API CHECK (after OCR):
+  Endpoint  : POST /gov/gst/filing-history
+  MongoDB   : gstr3b_filings_db
+  Request   : { "gstin": "33AABCU9603R1Z5" }
+  Response  :
+    {
+      "months_filed"     : 5,
+      "latest_filing"    : "2026-01-12",
+      "consistency_flag" : "regular"
+    }
+
+--- INDIVIDUAL VALIDATION — GST ---
+
+#  | Field                            | Rule                              | Blocking
+---|----------------------------------|-----------------------------------|---------
+1  | GSTIN                            | Exactly 15 alphanumeric chars;    | HARD FAIL
+   |                                  | first 2 digits = state code;      |
+   |                                  | matches PAN in chars 3–12;        |
+   |                                  | API status = Active               |
+2  | Business Legal Name              | Must be readable; alphabets +     | HARD FAIL
+   |                                  | spaces; min 2 chars               |
+3  | Return Filing Month              | Must be a valid month-year format | HARD FAIL
+   |                                  | (e.g. Jan-2026, 01-2026)         |
+4  | Monthly Turnover                 | Must be numeric, ≥ 0              | HARD FAIL
+5  | Filing Date                      | Must be valid date                | HARD FAIL
+6  | Tax Payable                      | Must be numeric, ≥ 0              | HARD FAIL
+7  | Tax Paid                         | Must be numeric, ≥ 0;            | HARD FAIL
+   |                                  | ≤ tax_payable + 5% tolerance     |
+
+--- CROSS-INTERNAL VALIDATION — GST ---
+
+#  | Check                                              | Rule               | Blocking
+---|----------------------------------------------------|--------------------|----------
+1  | GSTIN consistent across all uploaded GSTR-3B files | Must be identical  | HARD FAIL
+2  | Business Legal Name consistent across all files    | Fuzzy ≥ 85%        | HARD FAIL
+3  | Filing months must represent distinct months       | No duplicate months| HARD FAIL
+4  | Filing months must be in chronological order       | Ascending dates    | Soft flag
+5  | Gap between filing months must be ≤ 35 days        | Consecutive months | Soft flag
+   | (regularity check)                                 |                    |
+
+--- BANK TRANSACTION CROSS-CHECK — GST ---
+
+GST tax payment verification in Step-3 canonical CSV:
+  Merchant  : contains GST-related keywords
+              e.g. "GST", "GSTIN", "TAX PAYMENT", "IGST", "CGST", "SGST"
+  Amount    : tax_paid (OCR) ± 5% tolerance
+  Date      : ± 10 days of filing date
+
+  Match found → gst_tax_bank_verified = true  (bonus P7 signal)
+  No match    → gst_tax_bank_verified = false  (soft flag, non-blocking)
+
+--- GLOBAL VALIDATION — GST ---
+
+#  | Check                          | Compared Against                    | Blocking
+---|--------------------------------|-------------------------------------|---------
+1  | Business Legal Name (OCR)      | verified_profile.name (Step-1)      | Soft flag
+   |                                | (Mismatch allowed if trading name   |
+   |                                |  differs from personal name;        |
+   |                                |  flagged but not rejected)          |
+2  | GSTIN (Step-8)                 | Step-5 GST certificate GSTIN        | HARD FAIL
+   |                                | (if Vendor/Freelancer submitted     |
+   |                                |  GST cert in Step-5)                |
+3  | Monthly turnover               | Step-3 avg monthly bank credits     | Soft flag
+   |                                | (± 30% tolerance)                   |
+
+
+===========================================================================
+DYNAMIC SECTION VISIBILITY — GST (Based on Step-1 Work Type)
+===========================================================================
+
+Work Type             | GST Section in Step-8
+----------------------|----------------------------------------------------
+Vendor Seller         | Expanded by default; visually prominent;
+                      | tip shown: "GST registration shows formal
+                      | business operation."
+Freelancer            | Expanded by default; tip shown: "GST registration
+                      | confirms professional income."
+Platform Worker       | Collapsed; expandable; low emphasis
+Skilled Tradesperson  | Collapsed; expandable; low emphasis
+
+
+===========================================================================
+GLOBAL PROFILE UPDATE — STEP-8
+===========================================================================
+
+After all validations pass, the global profile is updated:
+
+verified_profile.itr = {
+  "pan"              : "ABCDE1234F",
+  "assessment_year"  : "2024-25",
+  "declared_income"  : 480000,
+  "itr_verified"     : true,
+  "form_26as_linked" : true
+}
+
+verified_profile.gst = {
+  "gstin"              : "33AABCU9603R1Z5",
+  "gst_registered"     : true,
+  "filing_consistency" : 5,    // months out of 6 uploaded
+  "avg_monthly_turnover": 62000
+}
+
+
+===========================================================================
+ML FEATURES PRODUCED — STEP-8
+===========================================================================
+
+Feature                     | Description                            | Pillar
+----------------------------|----------------------------------------|-------
+itr_filed_binary            | ITR verified and filed (0/1)           | P6, Meta
+declared_income_ratio       | ITR annual ÷ 12 ÷ bank monthly avg     | P1
+itr_to_bank_ratio           | Income consistency cross-check ratio   | P1, P6
+gst_registered_binary       | GSTIN verified and active (0/1)        | P7
+gst_filing_consistency      | Months filed ÷ 6 (0.0–1.0)            | P7
+gst_monthly_turnover_norm   | Avg monthly turnover ÷ income anchor   | P1 (Vendor/
+                            |                                        | Freelancer)
+
+Total features produced: 6
+Pillars impacted: P1, P6, P7, Meta-Learner
+
+
+===========================================================================
+TECHNICAL FLOW — STEP-8
+===========================================================================
+
+User opens Step-8
+  ↓
+Step-level score message displayed
+  ↓
+System reads Step-1 work type:
+  Vendor / Freelancer → GST section expanded by default
+  Platform Worker / Tradesperson → GST section collapsed
+  ↓
+[SECTION A — ITR]
+
+  [IF user uploads ITR Form V]
+    → OCR: taxpayer_name, pan_number, assessment_year,
+            acknowledgement_number, date_of_filing,
+            total_income, gross_total_income,
+            deductions, net_taxable_income
+    → POST /gov/income-tax/itr-verify
+    → Individual validation: all 6 Form V fields (see table)
+    → AIS backend simulated cross-check
+
+  [IF user uploads Form 26AS]
+    → OCR: taxpayer_name, pan_number, total_tds_amount,
+            total_income_from_all_sources,
+            employer_tan_details, advance_tax_payments
+    → Individual validation: all 4 Form 26AS fields (see table)
+
+  [IF BOTH uploaded]
+    → Cross-internal: PAN match, name fuzzy match, income ± 30%
+
+  → Bank cross-check: ITR income vs Step-3 avg monthly credits
+    (60%–140% tolerance band)
+  → Global: taxpayer_name vs Step-1 name, Step-2 PAN name, Step-2 PAN number
+  [PASS] → itr_verified = true
+  [FAIL] → card shows error; user can retry; step not blocked overall
+  ↓
+[SECTION B — GST]
+
+  [IF user enters GSTIN]
+    → POST /gov/gst/gstin-verify
+    → GSTIN individual validation (format + API status = Active)
+    → GSTR-3B upload slot enabled
+  ↓
+  [IF user uploads GSTR-3B returns (1–6 files)]
+    → OCR per file: gstin, business_legal_name, return_filing_month,
+                    outward_taxable_supplies, filing_date,
+                    tax_payable, tax_paid
+    → POST /gov/gst/filing-history (filing consistency check)
+    → Individual validation: all 7 GSTR-3B fields per file (see table)
+    → Cross-internal: GSTIN consistent, business name consistent,
+                      distinct months, no duplicates
+    → Bank cross-check: GST tax payment in Step-3 CSV
+    → Global: business name vs Step-1 name (soft);
+              GSTIN vs Step-5 GST cert GSTIN (hard, if applicable)
+    [PASS] → gst_registered = true; filing_consistency computed
+    [FAIL] → card shows error; user can retry; step not blocked overall
+  ↓
+Update verified_profile.itr AND verified_profile.gst
+  ↓
+Step-8 Status = COMPLETED
+  ↓
+Proceed to Final Credit Scoring and Report Generation
+
+
+===========================================================================
+OUTPUT OF STEP-8
+===========================================================================
+
+Step-8 Status           : COMPLETED
+verified_profile update : itr and gst objects updated
+P1 + P6 + P7 features  : 6 ML features produced
+Next Step               : Final Credit Score Computation and Report
+
+===========================================================================
+END OF STEP-8 SPECIFICATION
+===========================================================================

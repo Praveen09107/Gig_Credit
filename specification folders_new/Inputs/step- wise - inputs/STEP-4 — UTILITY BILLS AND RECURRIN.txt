@@ -1,0 +1,261 @@
+STEP-4 — UTILITY BILLS AND RECURRING PAYMENTS
+GigCredit Onboarding Specification
+Version: Updated — Rent Bill Added
+Status: Locked — Inputs Only (No Verification Logic)
+
+--------------------------------------------------
+1. PURPOSE
+--------------------------------------------------
+
+Step-4 captures recurring payment bills to establish:
+  - Address continuity proof
+  - Regular payment behaviour
+  - Financial obligation consistency
+
+Supported bill types:
+  1. Electricity Bill
+  2. Water Bill
+  3. Gas / LPG Bill
+  4. Mobile / Phone Bill      ← existing
+  5. Internet / Broadband Bill
+  6. Rent Receipt / Agreement ← NEW ADDITION
+
+All modules are optional globally.
+If a module is selected, its fields become required.
+
+--------------------------------------------------
+2. HOW THIS STEP IS PRESENTED
+--------------------------------------------------
+
+Six bill cards displayed vertically.
+Each card shows:
+  - Bill type and brief description
+  - Score impact hint
+  - Toggle: "I have this bill" (Yes / No)
+  - When Yes → expand fields and upload
+
+--------------------------------------------------
+3. MODULE 1 — ELECTRICITY BILL
+--------------------------------------------------
+
+Section A — Selection
+
+#  | Field Name                  | UI Element       | Input Format   | Mandatory
+---|-----------------------------|------------------|----------------|----------
+1  | Electricity Bill Selected?  | Toggle Yes / No  | Boolean        | Optional
+
+Section B — Bill Details
+(Visible only when Selected? = Yes)
+
+#  | Field Name                  | UI Element         | Input Format          | Mandatory
+---|-----------------------------|--------------------|-----------------------|----------
+2  | Consumer Number             | Single-line text   | Alphanumeric          | Conditional Required
+3  | Name as per Bill            | Single-line text   | Plain text            | Conditional Required
+4  | Bill Month / Period         | Month-Year picker  | MM/YYYY               | Conditional Required
+5  | Amount Paid (₹)             | Numeric field      | Positive integer      | Conditional Required
+6  | Electricity Bill Upload     | File upload        | JPG/PNG/PDF           | Conditional Required
+
+--------------------------------------------------
+4. MODULE 2 — WATER BILL
+--------------------------------------------------
+
+Section A — Selection
+
+#  | Field Name               | UI Element       | Input Format   | Mandatory
+---|--------------------------|------------------|----------------|----------
+7  | Water Bill Selected?     | Toggle Yes / No  | Boolean        | Optional
+
+Section B — Bill Details
+(Visible only when Selected? = Yes)
+
+#  | Field Name               | UI Element         | Input Format          | Mandatory
+---|--------------------------|--------------------|-----------------------|----------
+8  | Consumer / Account No.   | Single-line text   | Alphanumeric          | Conditional Required
+9  | Name as per Bill         | Single-line text   | Plain text            | Conditional Required
+10 | Bill Month / Period      | Month-Year picker  | MM/YYYY               | Conditional Required
+11 | Amount Paid (₹)          | Numeric field      | Positive integer      | Conditional Required
+12 | Water Bill Upload        | File upload        | JPG/PNG/PDF           | Conditional Required
+
+--------------------------------------------------
+5. MODULE 3 — GAS / LPG BILL
+--------------------------------------------------
+
+Section A — Selection
+
+#  | Field Name               | UI Element       | Input Format   | Mandatory
+---|--------------------------|------------------|----------------|----------
+13 | Gas Bill Selected?       | Toggle Yes / No  | Boolean        | Optional
+
+Section B — Bill Details
+(Visible only when Selected? = Yes)
+
+#  | Field Name               | UI Element         | Input Format          | Mandatory
+---|--------------------------|--------------------|-----------------------|----------
+14 | Consumer / BP Number     | Single-line text   | Alphanumeric          | Conditional Required
+15 | Name as per Bill         | Single-line text   | Plain text            | Conditional Required
+16 | Bill Month / Period      | Month-Year picker  | MM/YYYY               | Conditional Required
+17 | Amount Paid (₹)          | Numeric field      | Positive integer      | Conditional Required
+18 | Gas Bill Upload          | File upload        | JPG/PNG/PDF           | Conditional Required
+
+--------------------------------------------------
+6. MODULE 4 — MOBILE / PHONE BILL
+--------------------------------------------------
+
+Real-world mapping:
+Indian postpaid mobile bills (Jio, Airtel, Vi,
+BSNL) always contain:
+  - Mobile Number
+  - Account / Customer Number
+  - Bill Period
+  - Amount Due / Paid
+  - Name of account holder
+
+Section A — Selection
+
+#  | Field Name                  | UI Element       | Input Format   | Mandatory
+---|-----------------------------|------------------|----------------|----------
+19 | Mobile Bill Selected?       | Toggle Yes / No  | Boolean        | Optional
+
+Section B — Bill Details
+(Visible only when Selected? = Yes)
+
+#  | Field Name                  | UI Element         | Input Format          | Mandatory
+---|-----------------------------|--------------------|-----------------------|----------
+20 | Mobile Number               | Numeric text       | 10-digit mobile no.   | Conditional Required
+21 | Account / Customer Number   | Single-line text   | Alphanumeric ID       | Conditional Required
+22 | Name as per Bill            | Single-line text   | Plain text            | Conditional Required
+23 | Bill Month / Period         | Month-Year picker  | MM/YYYY               | Conditional Required
+24 | Amount Paid (₹)             | Numeric field      | Positive integer      | Conditional Required
+25 | Mobile Bill Upload          | File upload        | JPG/PNG/PDF           | Conditional Required
+
+Notes:
+- Field 20: 10-digit mobile number as printed
+  on the postpaid bill header.
+- Field 21: Customer/Account number on the bill
+  (separate from mobile number).
+- Accepted documents: Postpaid bill PDF/scan,
+  operator app screenshot of bill summary.
+
+--------------------------------------------------
+7. MODULE 5 — INTERNET / BROADBAND BILL
+--------------------------------------------------
+
+Real-world mapping:
+Indian broadband/fiber bills (JioFiber, Airtel
+Xstream, ACT, BSNL Bharat Fiber) contain:
+  - Account / Customer Number
+  - Subscriber Name
+  - Plan Name / Period
+  - Amount Due / Paid
+
+Section A — Selection
+
+#  | Field Name                    | UI Element       | Input Format   | Mandatory
+---|-------------------------------|------------------|----------------|----------
+26 | Internet Bill Selected?       | Toggle Yes / No  | Boolean        | Optional
+
+Section B — Bill Details
+(Visible only when Selected? = Yes)
+
+#  | Field Name                    | UI Element         | Input Format          | Mandatory
+---|-------------------------------|--------------------|-----------------------|----------
+27 | Account / Customer Number     | Single-line text   | Alphanumeric ID       | Conditional Required
+28 | Name as per Bill              | Single-line text   | Plain text            | Conditional Required
+29 | Bill Month / Period           | Month-Year picker  | MM/YYYY               | Conditional Required
+30 | Amount Paid (₹)               | Numeric field      | Positive integer      | Conditional Required
+31 | Internet Bill Upload          | File upload        | JPG/PNG/PDF           | Conditional Required
+
+--------------------------------------------------
+8. MODULE 6 — RENT RECEIPT / AGREEMENT ← NEW
+--------------------------------------------------
+
+Real-world mapping:
+In India, rent proof exists in two forms:
+  a) Rent Receipt — issued by landlord monthly,
+     contains landlord name, tenant name, address,
+     rent amount, and month.
+  b) Rent Agreement (Leave & License) — a legal
+     document containing tenant name, landlord
+     name, property address, monthly rent amount,
+     and agreement period (start/end date).
+
+Both are widely used as address and payment proofs.
+These fields exist on real documents, so they are
+valid explicit inputs.
+
+Section A — Selection
+
+#  | Field Name               | UI Element       | Input Format   | Mandatory
+---|--------------------------|------------------|----------------|----------
+32 | Rent Proof Selected?     | Toggle Yes / No  | Boolean        | Optional
+
+Section B — Rent Details
+(Visible only when Selected? = Yes)
+
+#  | Field Name               | UI Element          | Input Format               | Mandatory
+---|--------------------------|---------------------|----------------------------|----------
+33 | Tenant Name              | Single-line text    | Plain text                 | Conditional Required
+34 | Landlord Name            | Single-line text    | Plain text                 | Conditional Required
+35 | Rental Address           | Multi-line text     | Plain text (full address)  | Conditional Required
+36 | Monthly Rent Amount (₹)  | Numeric field       | Positive integer           | Conditional Required
+37 | Rent Period / Month      | Month-Year picker   | MM/YYYY                    | Conditional Required
+38 | Rent Document Upload     | File upload         | JPG/PNG/PDF                | Conditional Required
+
+Field notes:
+- Field 33 (Tenant Name):
+    Name of the person paying rent — must match
+    Step-1 name for address proof purposes.
+- Field 34 (Landlord Name):
+    Name of property owner as printed on receipt
+    or agreement.
+- Field 35 (Rental Address):
+    Full address of the rented property. Used for
+    address continuity cross-check with Step-1
+    current address.
+- Field 36 (Monthly Rent Amount):
+    Rent in ₹ as stated on the receipt/agreement.
+    Cross-checked against bank statement debits
+    from Step-3.
+- Field 37 (Rent Period / Month):
+    Month and year the receipt/agreement covers.
+- Field 38 (Rent Document Upload):
+    Accepted documents:
+      • Monthly rent receipt (signed by landlord)
+      • Registered or notarised rent agreement
+      • Leave and License agreement PDF
+
+--------------------------------------------------
+9. STEP-4 INPUT SUMMARY (UPDATED)
+--------------------------------------------------
+
+Module             | Fields per Module | Mandatory Behaviour
+-------------------|-------------------|---------------------
+Electricity Bill   | 5                 | All Conditional Required when selected
+Water Bill         | 5                 | All Conditional Required when selected
+Gas / LPG Bill     | 5                 | All Conditional Required when selected
+Mobile Bill        | 6                 | All Conditional Required when selected
+Internet Bill      | 5                 | All Conditional Required when selected
+Rent Receipt       | 6                 | All Conditional Required when selected ← NEW
+
+Total selection toggles : 6
+Total fields (all modules selected) : 32 input fields
+                                     + 6 toggles = 38
+
+Global rules:
+- All modules are OPTIONAL at step level.
+- Selecting a module makes all its fields
+  REQUIRED before that module is complete.
+- User may select any combination of modules.
+- At least ONE bill is recommended for address
+  and payment continuity signals, but not
+  enforced as a hard block.
+
+--------------------------------------------------
+10. FINAL LOCK
+--------------------------------------------------
+
+This Step-4 input structure is final.
+All OCR extraction, bill API verification,
+cross-step address checks, and bank statement
+cross-references are defined in the Step-4
+verification specification.

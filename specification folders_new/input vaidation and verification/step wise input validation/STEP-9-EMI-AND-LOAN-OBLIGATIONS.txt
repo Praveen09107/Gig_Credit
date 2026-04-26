@@ -1,0 +1,410 @@
+SYSTEM DESIGN PROMPT — STEP-9: EMI AND LOAN OBLIGATIONS
+GigCredit Onboarding | Version: Final | Pillar: P3 Debt Management
+===========================================================================
+
+PURPOSE
+-------
+Step-9 captures the user's existing debt obligations and repayment
+behaviour. This is the FINAL onboarding step. EMI and loan data feeds
+the P3 (Debt Management) scoring pillar and cross-validates against
+the bank statement dataset collected in Step-3.
+
+The primary verification method is bank transaction cross-check.
+An optional API trigger provides additional verification signal.
+If the user has no active loans, they may declare "No active loans"
+and proceed directly.
+
+Validation architecture:
+  - Individual Validation : Per-field rules on user-entered data
+  - API Verification      : Optional loan verification (FastAPI + MongoDB)
+  - Bank Cross-Check      : EMI matching against Step-3 canonical CSV
+  - Cross-Internal        : Consistency across multiple loan entries
+  - Global Validation     : Declared loans vs auto-detected EMIs in Step-3
+
+
+===========================================================================
+HOW IT IS PRESENTED ON SCREEN
+===========================================================================
+
+A single screen with:
+  - A "No Active Loans" toggle at the top
+  - A primary loan entry card (shown by default)
+  - An "Add Another Loan" button below (adds up to 5 additional loans)
+  - A Verify button per loan card (optional API trigger)
+
+Score impact message shown at top of screen:
+  "Declaring your active loans helps us accurately assess your
+   debt burden. Honest disclosure improves your score reliability."
+
+No Active Loans Toggle:
+  User selects "I have no active loans"
+    → All loan fields hidden
+    → Step-9 marked as declared_no_loans = true
+    → System still runs auto-detection from Step-3 bank data
+    → If EMI-tagged debits found in Step-3 → undisclosed_emi_flag = true
+    → Step-9 COMPLETED (no blocking)
+
+Maximum loans allowed: 6 (1 primary + 5 additional)
+
+
+===========================================================================
+INPUTS — STEP-9 (5 FIELDS PER LOAN ENTRY)
+===========================================================================
+
+Per Loan Entry:
+
+#  | Field                     | UI Element              | Format                    | Mandatory
+---|---------------------------|-------------------------|---------------------------|----------
+1  | Lender Name               | Text field / Dropdown   | Free text or predefined   | Required
+   |                           |                         | list of Indian lenders    |
+2  | Monthly EMI Amount (INR)  | Numeric text field      | Positive integer, no      | Required
+   |                           | with ₹ prefix           | decimals                  |
+3  | Previous Debit Date       | Date picker             | DD-MM-YYYY                | Required
+4  | Latest Debit Date         | Date picker             | DD-MM-YYYY                | Required
+5  | Loan Verification API     | "Verify" button         | Tap to trigger            | Optional
+   | Trigger                   | per loan card           | API call                  | (action)
+
+Total Inputs per loan entry : 5 (4 data fields + 1 optional action)
+Total loan entries allowed  : Up to 6
+Total mandatory inputs      : 4 per loan × number of loans declared
+Total optional              : Verify button (per loan)
+
+Predefined Lender Dropdown options (examples):
+  HDFC Bank, ICICI Bank, SBI, Axis Bank, Bajaj Finserv, Muthoot Finance,
+  Shriram Finance, IIFL Finance, Fullerton India, KreditBee, MoneyTap,
+  PaySense, EarlySalary, Navi, Kreditech, Other (free text entry)
+
+UI Note:
+  Previous Debit Date and Latest Debit Date pickers show:
+  "Enter the last two months EMI debit dates from your bank statement."
+
+
+===========================================================================
+INDIVIDUAL VALIDATION — PER LOAN ENTRY
+===========================================================================
+
+#  | Field                  | Rule                                          | Blocking
+---|------------------------|-----------------------------------------------|---------
+1  | Lender Name            | Min 3 characters                              | HARD FAIL
+   |                        | Alphabets + spaces only                       |
+   |                        | Must not be blank                             |
+2  | Monthly EMI Amount     | Must be numeric                               | HARD FAIL
+   |                        | Must be > 0                                   |
+   |                        | Must be ≤ Step-1 declared monthly income      |
+   |                        | (EMI cannot exceed total income)              |
+3  | Previous Debit Date    | Must be valid date format (DD-MM-YYYY)        | HARD FAIL
+   |                        | Must be earlier than Latest Debit Date        |
+   |                        | Must not be a future date                     |
+4  | Latest Debit Date      | Must be valid date format (DD-MM-YYYY)        | HARD FAIL
+   |                        | Must not be a future date                     |
+   |                        | Must be within the last 90 days               |
+5  | EMI Frequency Sanity   | Gap between Previous and Latest Debit Date    | Soft flag
+   |                        | must be between 25 and 35 days                |
+   |                        | (monthly cycle check)                         |
+   |                        | If gap < 25 or > 35: flag as irregular cycle  |
+
+
+===========================================================================
+API VERIFICATION — LOAN (OPTIONAL TRIGGER)
+===========================================================================
+
+User taps "Verify" button on a loan card to trigger verification.
+This is optional. If not triggered, bank cross-check is used instead.
+
+Endpoint  : POST /gov/loan/verify
+MongoDB   : loan_obligations_db
+Trigger   : User taps Verify button per loan card
+
+Request:
+  {
+    "lender_name"      : "HDFC Bank",
+    "emi_amount"       : 5000,
+    "latest_debit_date": "2026-04-05"
+  }
+
+Response:
+  {
+    "loan_found"          : true,
+    "loan_status"         : "Active",
+    "outstanding_balance" : 85000,
+    "loan_type"           : "Personal Loan",
+    "verified"            : true
+  }
+
+Possible loan_status values: Active | Closed | Defaulted | Not Found
+
+Post-API Individual Validation:
+  IF loan_status = Active  → loan_api_verified = true
+  IF loan_status = Closed  → flag: loan_declared_as_closed = true
+                             (user declared active, API says closed)
+                             Soft flag, non-blocking
+  IF loan_status = Defaulted → flag: loan_defaulted = true
+                               Hard negative P3 signal; step NOT blocked
+  IF loan_status = Not Found → API verification inconclusive;
+                               fallback to bank cross-check only
+
+Outstanding balance stored as:
+  verified_profile.loans[i].outstanding_balance
+  Used to compute: debt_to_income_ratio (P3 feature)
+
+
+===========================================================================
+BANK TRANSACTION CROSS-CHECK — PRIMARY VERIFICATION METHOD
+===========================================================================
+
+This is the MAIN verification method for Step-9.
+Each declared EMI is matched against the Step-3 canonical CSV.
+
+Step-3 canonical CSV structure per transaction:
+  date | amount | merchant_narration | category | transaction_id
+
+Matching rules per loan entry:
+
+LATEST DEBIT MATCH:
+  Amount   : transaction amount = EMI amount ± 5% tolerance
+  Date     : transaction date = Latest Debit Date ± 5 days
+  Merchant : transaction narration contains lender keywords
+             e.g. "HDFC", "BAJAJ", "EMI", "LOAN", "EQUATED",
+                  "INSTALMENT", "ECS", "NACH", "AUTO DEBIT"
+  Category : tagged as EMI in Step-3 transaction parser
+
+PREVIOUS DEBIT MATCH:
+  Amount   : same EMI amount ± 5%
+  Date     : ~30 days before Latest Debit Date ± 5 days
+
+MATCH RESULTS:
+
+  Both Latest AND Previous debit found:
+    → emi_bank_verified = true
+    → emi_recurring     = true  (strongest P3 positive signal)
+
+  Only Latest debit found:
+    → emi_bank_verified = true
+    → emi_recurring     = false  (single confirmation)
+
+  No debit found:
+    → emi_bank_verified = false
+    → EMI still accepted as self-declared
+    → Soft flag: emi_unverified = true
+    → Negative P3 signal but NON-BLOCKING
+
+  EMI debit found in Step-3 but amount differs by > 30%:
+    → Soft flag: emi_amount_mismatch = true
+    → Step NOT blocked; discrepancy recorded as P3 signal
+
+
+===========================================================================
+UNDISCLOSED EMI AUTO-DETECTION (GLOBAL STEP-3 SCAN)
+===========================================================================
+
+The system scans ALL Step-3 bank transactions tagged as category EMI.
+It compares auto-detected EMI patterns against user-declared loans.
+
+Detection logic:
+  1. Collect all transactions in Step-3 where category = EMI
+  2. Group recurring debits:
+     same amount (± 5%) + same merchant + recurring monthly pattern
+     → identify as a distinct EMI obligation
+  3. For each auto-detected EMI group:
+     a. Check if user declared a loan with matching lender + amount
+     b. If matched → emi_declared = true
+     c. If NOT matched → undisclosed_emi detected
+
+Undisclosed EMI Rule:
+  IF auto-detected EMI NOT declared by user:
+    → undisclosed_emi_flag = true
+    → undisclosed_emi_count += 1
+    → Negative P3 signal
+    → Step-9 NOT blocked (user can still complete onboarding)
+    → Soft flag only
+
+  Example:
+    Step-3 shows: recurring ₹3,200 debit to "BAJAJ FINSERV EMI"
+                  on 7th of each month for 6 months.
+    User did NOT declare this loan in Step-9.
+    → System flags: undisclosed_emi_flag = true
+    → Negative scoring signal applied silently in P3.
+
+
+===========================================================================
+CROSS-INTERNAL VALIDATION — ACROSS ALL LOAN ENTRIES
+===========================================================================
+
+#  | Check                               | Rule                          | Blocking
+---|-------------------------------------|-------------------------------|---------
+1  | Total EMI burden vs income          | Sum of all declared EMIs must | Soft flag
+   |                                     | be < Step-1 declared monthly  |
+   |                                     | income                        |
+   |                                     | IF > 80% of income:           |
+   |                                     | flag high_emi_burden = true   |
+2  | Duplicate lender check              | Same lender name cannot appear| HARD FAIL
+   |                                     | more than once across all     |
+   |                                     | loan entries                  |
+3  | Debit date consistency              | Previous Debit Date must be   | Soft flag
+   |                                     | ~30 days (25–35 days) before  |
+   |                                     | Latest Debit Date for EACH    |
+   |                                     | loan entry                    |
+4  | EMI-to-income ratio computation     | total_emi ÷ declared_income   | Feature
+   |                                     | = emi_burden_ratio            | only
+   |                                     | Stored as P3 feature          |
+5  | EMI declared vs Step-3 auto-detect  | Declared count vs auto-       | Soft flag
+   |                                     | detected EMI groups from      |
+   |                                     | Step-3 bank data              |
+
+
+===========================================================================
+GLOBAL VALIDATION — STEP-9
+===========================================================================
+
+#  | Check                                   | Compared Against              | Blocking
+---|-----------------------------------------|-------------------------------|---------
+1  | Total EMI debits in bank                | Step-3 EMI-tagged transaction | Soft flag
+   |                                         | total vs declared total EMI   |
+2  | Auto-detected EMIs (Step-3) vs          | User-declared loans in Step-9 | Soft flag
+   | declared EMIs (Step-9)                  | (undisclosed_emi_flag rule)   |
+3  | Outstanding balance vs bank debits      | If API verified: outstanding  | Soft flag
+   |                                         | balance consistency with      |
+   |                                         | Step-3 debit history          |
+4  | EMI lender vs known NACH/ECS merchants  | Cross-check lender name       | Soft flag
+   |                                         | against NACH/ECS narrations   |
+   |                                         | in Step-3 bank data           |
+5  | Declared income vs total debt burden    | Step-1 monthly income vs      | Soft flag
+   |                                         | total_emi + utility + rent    |
+   |                                         | (full obligation scan)        |
+
+
+===========================================================================
+GLOBAL PROFILE UPDATE — STEP-9
+===========================================================================
+
+After all validations pass, the global profile is updated:
+
+verified_profile.loans = [
+  {
+    "lender_name"          : "HDFC Bank",
+    "emi_amount"           : 5000,
+    "previous_debit_date"  : "2026-03-05",
+    "latest_debit_date"    : "2026-04-05",
+    "emi_bank_verified"    : true,
+    "emi_recurring"        : true,
+    "loan_status"          : "Active",
+    "outstanding_balance"  : 85000
+  },
+  {
+    "lender_name"          : "Bajaj Finserv",
+    "emi_amount"           : 3200,
+    "previous_debit_date"  : "2026-03-07",
+    "latest_debit_date"    : "2026-04-07",
+    "emi_bank_verified"    : true,
+    "emi_recurring"        : true,
+    "loan_status"          : "Active",
+    "outstanding_balance"  : 42000
+  }
+]
+
+verified_profile.debt_summary = {
+  "total_monthly_emi"    : 8200,
+  "emi_burden_ratio"     : 0.37,
+  "active_loan_count"    : 2,
+  "undisclosed_emi_flag" : false,
+  "high_emi_burden"      : false
+}
+
+
+===========================================================================
+ML FEATURES PRODUCED — P3 DEBT MANAGEMENT
+===========================================================================
+
+Feature                     | Description                              | Pillar
+----------------------------|------------------------------------------|---------
+emi_burden_ratio            | Total declared EMI ÷ monthly income      | P3
+active_loan_count           | Number of declared active loans (0–6)    | P3
+emi_bank_verified_binary    | At least 1 EMI confirmed in bank (0/1)   | P3
+emi_recurring_binary        | Both prev + latest debit found (0/1)     | P3
+undisclosed_emi_flag        | Hidden EMI detected from Step-3 (0/1)    | P3
+emi_on_time_ratio           | On-time EMI payments ÷ total observed    | P3
+                            | months (from Step-3 transaction history) |
+debt_to_income_ratio        | Total outstanding balance ÷ annual income| P3
+                            | (if API verified)                        |
+high_emi_burden_binary      | emi_burden_ratio > 0.80 (0/1)            | P3
+
+Total features produced: 8
+Pillar impacted: P3 (Debt Management)
+
+
+===========================================================================
+TECHNICAL FLOW — STEP-9
+===========================================================================
+
+User opens Step-9
+  ↓
+Score impact message displayed
+  ↓
+GATE: "No Active Loans" toggle check
+  User selects "I have no active loans"
+    → All loan fields hidden
+    → declared_no_loans = true
+    → System silently scans Step-3 for undisclosed EMI patterns
+    → If undisclosed EMIs found → undisclosed_emi_flag = true (soft)
+    → Step-9 COMPLETED immediately
+  ↓
+[IF user declares loans]
+
+  User enters Loan 1:
+    → Lender Name
+    → Monthly EMI Amount
+    → Previous Debit Date
+    → Latest Debit Date
+    → Individual validation: all 4 fields + frequency sanity check
+    ↓
+  [OPTIONAL] User taps Verify button:
+    → POST /gov/loan/verify
+    → API response: loan_status, outstanding_balance, loan_type
+    → Post-API validation: Active / Closed / Defaulted / Not Found
+  ↓
+  Bank cross-check (automatic):
+    → Match Latest Debit Date in Step-3 canonical CSV (± 5%, ± 5 days)
+    → Match Previous Debit Date in Step-3 canonical CSV
+    → emi_bank_verified and emi_recurring flags set
+  ↓
+  [IF user taps "Add Another Loan"]
+    → Same 5-field card appears
+    → Same individual validation + optional API + bank cross-check
+    → Repeat up to 6 loans total
+  ↓
+  Cross-internal validation:
+    → Duplicate lender check (HARD FAIL if duplicate)
+    → Total EMI burden vs Step-1 income (soft flag if > 80%)
+    → EMI-to-income ratio computed (emi_burden_ratio)
+  ↓
+  Global validation:
+    → Auto-detect EMI patterns from Step-3 bank data
+    → Compare against declared loans
+    → undisclosed_emi_flag if mismatch found (soft, non-blocking)
+    → Full obligation scan: EMI + utility + rent vs declared income
+  ↓
+Update verified_profile.loans and verified_profile.debt_summary
+  ↓
+Step-9 Status = COMPLETED
+  ↓
+ALL 9 STEPS COMPLETE
+  ↓
+Meta-Learner (Logistic Regression) runs on all 89 features
+  ↓
+Final Credit Score computed (range: 300–900)
+  ↓
+Credit Report and Score Card generated for user
+
+
+===========================================================================
+OUTPUT OF STEP-9
+===========================================================================
+
+Step-9 Status           : COMPLETED
+verified_profile update : loans array and debt_summary updated
+P3 features produced    : 8 Debt Management features
+Final trigger           : Meta-Learner → Credit Score (300–900)
+
+===========================================================================
+END OF STEP-9 SPECIFICATION
+===========================================================================

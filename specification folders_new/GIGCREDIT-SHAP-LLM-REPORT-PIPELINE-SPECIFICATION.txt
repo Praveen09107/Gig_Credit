@@ -1,0 +1,1122 @@
+
+================================================================================
+GIGCREDIT — SHAP OUTPUT TO LLM RESPONSE TO REPORT TEMPLATE
+PIPELINE SPECIFICATION
+VERSION 1.0
+STATUS: PLANNING SPECIFICATION — NOT FINAL IMPLEMENTATION
+================================================================================
+
+SCOPE OF THIS DOCUMENT:
+  This specification covers ONLY the pipeline from:
+    SHAP Lookup Output
+      → LLM Payload Construction
+        → Backend Groq API Call
+          → LLM Response Processing
+            → Report Template Assembly
+
+  This document does NOT cover:
+    - Feature engineering (see Feature Engineering Specification)
+    - Evaluation engine / pillar model training (see ML Specification)
+    - Meta-learner architecture (see ML Specification)
+    - Confidence engine logic (see ML Specification)
+    - Verification API layer (see Backend Server Specification)
+    - Final report PDF export (see Report Export Specification)
+    - Loan matching engine (see Loan Matching Specification)
+
+IMPORTANT CORRECTIONS FROM PREVIOUS DRAFTS:
+  ✅ 7 pillars only (P8 Tax Compliance does NOT exist in GigCredit)
+  ✅ Confidence engine logic belongs entirely to ML pipeline (meta-learner)
+  ✅ Report template has NO risk level field
+  ✅ LLM returns ONLY explanation text + suggestions (nothing else)
+  ✅ Score + pillar breakdown go DIRECTLY from evaluation engine to report
+  ✅ SHAP factors go to BOTH report template (raw) AND LLM payload (as context)
+  ✅ Top 3 positive + Top 3 negative factors (not top 5)
+
+================================================================================
+SECTION 1 — PIPELINE OVERVIEW
+================================================================================
+
+This pipeline has two parallel tracks and one backend track.
+
+TRACK A — DIRECT TO REPORT (No LLM):
+  Evaluation Engine Output → Report Template Sections 1 and 2
+  SHAP Lookup Output → Report Template Section 3 (raw factors only)
+
+TRACK B — VIA LLM (Backend Required):
+  SHAP Lookup Output + Score Context → LLM Payload
+  LLM Payload → Backend → Groq API
+  Groq Response → Report Template Section 3 (explanation text)
+                → Report Template Section 4 (suggestions)
+
+TRACK C — LOAN RECOMMENDATIONS (Matching Engine, separate):
+  Evaluation Engine Output → Matching Engine → Report Template Section 5
+
+BOTH TRACKS RUN CONCURRENTLY:
+  Track A populates sections 1, 2, and 3 (raw) immediately on-device.
+  Track B runs in parallel — app shows loading indicator for sections 3
+  (explanation text) and 4 while waiting for Groq response.
+  If Track B fails → fallback text fills sections 3 and 4.
+  User is never blocked from seeing their score and pillar breakdown.
+
+================================================================================
+SECTION 2 — WHAT THIS PIPELINE RECEIVES (INPUTS)
+================================================================================
+
+This pipeline starts AFTER the following have completed on-device:
+
+  INPUT 1 — EVALUATION ENGINE FINAL OUTPUT
+  ─────────────────────────────────────────
+  Produced by: meta-learner (Logistic Regression, pure Dart)
+  Contains:
+    {
+      "final_score": 682,
+      "grade": "B",
+      "pillar_scores": {
+        "income_stability": 72,
+        "payment_discipline": 68,
+        "debt_management": 55,
+        "savings_behaviour": 61,
+        "work_identity": 78,
+        "financial_resilience": 45,
+        "social_accountability": 60
+      },
+      "confidence_level": "High"
+    }
+
+  NOTE ON CONFIDENCE LEVEL:
+    confidence_level is computed by the meta-learner as part of ML logic.
+    It reflects data quality across all 9 steps (missing docs, fallback
+    values, unverified fields reduce confidence).
+    It is an OUTPUT of the ML pipeline — NOT a separate engine in the
+    report pipeline. The report pipeline only READS it, never modifies it.
+    Values: "High" | "Medium" | "Low"
+
+  NOTE ON RISK LEVEL:
+    There is NO risk level in the report template.
+    The grade (S/A/B/C/D/E) is sufficient.
+    Risk level is NOT displayed to the user.
+
+  INPUT 2 — SHAP LOOKUP OUTPUT
+  ─────────────────────────────
+  Produced by: on-device SHAP lookup engine (reads shap_lookup.json)
+  Contains:
+    {
+      "positive_factors": [
+        {
+          "feature_key": "income_stability_cv",
+          "label": "Consistent monthly income",
+          "pillar": "Income Stability",
+          "impact": 15,
+          "severity": "Medium"
+        },
+        {
+          "feature_key": "utility_on_time_ratio",
+          "label": "Utility bills paid on time",
+          "pillar": "Payment Discipline",
+          "impact": 12,
+          "severity": "Medium"
+        },
+        {
+          "feature_key": "bank_balance_trend",
+          "label": "Bank balance growing steadily",
+          "pillar": "Savings Behaviour",
+          "impact": 9,
+          "severity": "Low"
+        }
+      ],
+      "negative_factors": [
+        {
+          "feature_key": "emi_to_income_ratio",
+          "label": "EMI payments high relative to income",
+          "pillar": "Debt Management",
+          "impact": -18,
+          "severity": "Medium"
+        },
+        {
+          "feature_key": "health_insurance_active",
+          "label": "No active health insurance",
+          "pillar": "Financial Resilience",
+          "impact": -10,
+          "severity": "Low"
+        },
+        {
+          "feature_key": "monthly_savings_rate",
+          "label": "Low monthly savings rate",
+          "pillar": "Savings Behaviour",
+          "impact": -7,
+          "severity": "Low"
+        }
+      ]
+    }
+
+  INPUT 3 — USER SESSION CONTEXT
+  ────────────────────────────────
+  Produced by: app session (available from Step 1 completion)
+  Contains:
+    {
+      "work_type": "platform_worker",
+      "language": "Tamil"
+    }
+
+================================================================================
+SECTION 3 — SHAP LOOKUP: HOW IT WORKS (DETAILED)
+================================================================================
+
+--------------------------------------------------------------------------------
+3.1 SHAP LOOKUP FILE FORMAT (shap_lookup.json)
+--------------------------------------------------------------------------------
+
+  The shap_lookup.json file is:
+    - Precomputed OFFLINE during the ML training pipeline
+    - Bundled inside the Flutter app at build time
+    - Read-only at runtime (never modified on-device)
+    - Size target: 8–15 KB (compact JSON)
+
+  FILE STRUCTURE:
+  {
+    "version": "1.0",
+    "feature_count": 95,
+    "features": {
+      "<feature_key>": {
+        "label": "<human-readable label string>",
+        "pillar": "<pillar name>",
+        "shap_coefficient": <float>,
+        "population_mean": <float>,
+        "bins": [<float>, <float>, ...],
+        "bin_impacts": [<float>, <float>, ...]
+      }
+    }
+  }
+
+  FIELD DEFINITIONS:
+    feature_key       : Internal feature name (matches feature vector index)
+    label             : Human-readable label shown in report
+    pillar            : Which of the 7 pillars this feature belongs to
+    shap_coefficient  : Pre-extracted SHAP coefficient from offline training
+    population_mean   : Mean value of this feature across training population
+    bins              : Array of boundary values for binning
+    bin_impacts       : Pre-computed SHAP impact per bin (same length as bins)
+
+  EXAMPLE ENTRY:
+  {
+    "emi_to_income_ratio": {
+      "label": "EMI payments high relative to income",
+      "pillar": "Debt Management",
+      "shap_coefficient": -0.342,
+      "population_mean": 0.38,
+      "bins": [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
+      "bin_impacts": [8.5, 4.2, -2.1, -12.4, -18.7, -28.3]
+    }
+  }
+
+--------------------------------------------------------------------------------
+3.2 IMPACT FORMULA
+--------------------------------------------------------------------------------
+
+  For each feature, the impact is computed as:
+
+    impact_i = shap_coefficient_i × (feature_value_i − population_mean_i)
+
+  Where:
+    shap_coefficient_i : from shap_lookup.json for feature i
+    feature_value_i    : the user's normalized feature value [0.0, 1.0]
+    population_mean_i  : average value across training population
+
+  RESULT INTERPRETATION:
+    impact > 0  →  feature is HELPING the user's score
+    impact < 0  →  feature is HURTING the user's score
+    impact = 0  →  feature has no effect (user is exactly at population mean)
+
+  ALTERNATIVE (BIN LOOKUP):
+    If feature_value falls into a specific bin, use bin_impacts[bin_index]
+    directly for higher accuracy. The formula above is the fallback when
+    bin lookup returns no match.
+
+--------------------------------------------------------------------------------
+3.3 TOP FACTOR SELECTION LOGIC
+--------------------------------------------------------------------------------
+
+  STEP 1: Compute impact for all 95 features using the formula above.
+
+  STEP 2: Split into two lists:
+    positive_list = all features where impact > 0
+    negative_list = all features where impact < 0
+
+  STEP 3: Sort each list by absolute impact value descending.
+    positive_list sorted by impact DESC
+    negative_list sorted by |impact| DESC
+
+  STEP 4: Select top 3 from each list.
+    top_positive = positive_list[0..2]   // 3 items
+    top_negative = negative_list[0..2]   // 3 items
+
+  EDGE CASES:
+    If fewer than 3 positive features: include all positive features found.
+    If fewer than 3 negative features: include all negative features found.
+    Minimum required: at least 1 positive + 1 negative.
+    If zero positives or zero negatives: confidence_level = "Low",
+    explanation template used instead of LLM.
+
+--------------------------------------------------------------------------------
+3.4 SEVERITY TAGGING
+--------------------------------------------------------------------------------
+
+  Each factor is tagged with a severity label based on |impact| magnitude.
+  Severity is used in the LLM prompt to guide tone (how strongly to phrase).
+
+  |impact| Range  | Severity Label  | LLM Prompt Guidance
+  ----------------|-----------------|-------------------------
+  > 30            | "High"          | Use "significantly" / "major"
+  15–30           | "Medium"        | Use "moderately" / "notable"
+  < 15            | "Low"           | Use "slightly" / "minor"
+
+  Severity is embedded in the SHAP output object and passed in LLM payload.
+
+================================================================================
+SECTION 4 — LLM PAYLOAD CONSTRUCTION (ON-DEVICE)
+================================================================================
+
+After SHAP lookup completes, the app builds the LLM payload.
+
+--------------------------------------------------------------------------------
+4.1 PAYLOAD SCHEMA
+--------------------------------------------------------------------------------
+
+  The LLM payload is the structured JSON sent from the app to the backend.
+  It contains ONLY what the LLM needs to generate the explanation and
+  suggestions. No raw data, no identifiers, no transaction data.
+
+  FULL PAYLOAD SCHEMA:
+  {
+    "credit_score": <integer, 300–900>,
+    "grade": <string, one of: "S" | "A" | "B" | "C" | "D" | "E">,
+    "work_type": <string, one of:
+                  "platform_worker" | "vendor" | "tradesperson" | "freelancer">,
+    "language": <string, one of:
+                  "English" | "Hindi" | "Tamil" | "Telugu" | "Kannada">,
+    "confidence_level": <string, one of: "High" | "Medium" | "Low">,
+    "pillar_scores": {
+      "income_stability": <integer, 0–100>,
+      "payment_discipline": <integer, 0–100>,
+      "debt_management": <integer, 0–100>,
+      "savings_behaviour": <integer, 0–100>,
+      "work_identity": <integer, 0–100>,
+      "financial_resilience": <integer, 0–100>,
+      "social_accountability": <integer, 0–100>
+    },
+    "positive_factors": [
+      {
+        "label": <string, human-readable>,
+        "pillar": <string, pillar name>,
+        "impact": <integer, positive>,
+        "severity": <string, "High" | "Medium" | "Low">
+      },
+      // exactly 3 items (or fewer if unavailable)
+    ],
+    "negative_factors": [
+      {
+        "label": <string, human-readable>,
+        "pillar": <string, pillar name>,
+        "impact": <integer, negative>,
+        "severity": <string, "High" | "Medium" | "Low">
+      },
+      // exactly 3 items (or fewer if unavailable)
+    ]
+  }
+
+--------------------------------------------------------------------------------
+4.2 WORK TYPE LABEL MAPPING
+--------------------------------------------------------------------------------
+
+  Internal value       → Display label in prompt
+  ──────────────────────────────────────────────
+  platform_worker      → "Delivery / Ride Partner"
+  vendor               → "Vendor / Seller"
+  tradesperson         → "Skilled Tradesperson"
+  freelancer           → "Freelancer / Creative Professional"
+
+--------------------------------------------------------------------------------
+4.3 GRADE CONTEXT MAPPING
+--------------------------------------------------------------------------------
+
+  Grade  | Score Range | Context phrase for prompt
+  -------|-------------|--------------------------------------------
+  S      | 800–900     | "an exceptional credit profile"
+  A      | 720–799     | "an excellent credit profile"
+  B      | 640–719     | "a good credit profile with room to grow"
+  C      | 560–639     | "an average credit profile"
+  D      | 480–559     | "a below-average credit profile"
+  E      | 300–479     | "a credit profile that needs significant improvement"
+
+--------------------------------------------------------------------------------
+4.4 WHAT IS NOT SENT IN THE PAYLOAD
+--------------------------------------------------------------------------------
+
+  The following are NEVER included in the LLM payload:
+    ✗ Aadhaar number
+    ✗ PAN number
+    ✗ Bank account number
+    ✗ Mobile number
+    ✗ Any transaction data
+    ✗ Raw feature values (e.g. emi_to_income_ratio: 0.72)
+    ✗ Feature vector (all 95 features)
+    ✗ Document images or OCR text
+    ✗ SHAP coefficients or population means
+    ✗ Any personally identifiable information
+
+  The payload is designed to be completely non-sensitive.
+  Even if intercepted, it reveals no actionable personal data.
+
+================================================================================
+SECTION 5 — BACKEND PROCESSING
+================================================================================
+
+--------------------------------------------------------------------------------
+5.1 REQUEST AUTHENTICATION
+--------------------------------------------------------------------------------
+
+  Every request to /api/report/generate must include:
+    Header: X-Api-Key: <SERVER_API_KEY>
+    Header: X-Device-Id: <hashed device fingerprint>
+    Header: X-Timestamp: <Unix timestamp>
+    Header: X-Signature: <HMAC-SHA256 of body>
+
+  Server rejects any request where:
+    - API key is invalid
+    - Timestamp is > 5 minutes old (replay protection)
+    - HMAC signature does not match
+
+--------------------------------------------------------------------------------
+5.2 BACKEND ENDPOINT
+--------------------------------------------------------------------------------
+
+  ENDPOINT : POST /api/report/generate
+  Auth     : HMAC-SHA256 + API key
+  Input    : LLM payload JSON (Section 4.1)
+  Output   : LLM response JSON (Section 6.1)
+
+  Backend processing steps:
+    1. Authenticate request (HMAC check)
+    2. Validate payload (all required fields present, types correct)
+    3. Build Groq prompt from payload (Section 5.3)
+    4. Call Groq API (Section 5.4)
+    5. Parse and validate Groq response
+    6. Format and return response to app (Section 6.1)
+    7. Write operation log (no user data — only timestamp, status, latency)
+
+--------------------------------------------------------------------------------
+5.3 PROMPT CONSTRUCTION (BACKEND)
+--------------------------------------------------------------------------------
+
+  The backend builds a structured prompt by filling a template.
+  The prompt is NEVER exposed to the app or to the user.
+
+  ┌────────────────────────────────────────────────────────────────────┐
+  │ SYSTEM CONTEXT (sent as system message to Groq):                  │
+  │                                                                    │
+  │ You are a friendly, empathetic financial advisor helping an        │
+  │ Indian gig worker understand their credit score. Your job is to   │
+  │ write a clear, encouraging explanation and actionable suggestions. │
+  │ Use simple, everyday language. Avoid technical jargon.            │
+  │ Write as if speaking directly to the person.                       │
+  │ Output only valid JSON — no extra text outside the JSON.          │
+  └────────────────────────────────────────────────────────────────────┘
+
+  ┌────────────────────────────────────────────────────────────────────┐
+  │ USER MESSAGE (constructed from payload):                          │
+  │                                                                    │
+  │ USER PROFILE:                                                      │
+  │ Work Type    : {work_type_label}                                   │
+  │ Credit Score : {credit_score} out of 900                          │
+  │ Grade        : {grade} — {grade_context}                          │
+  │ Confidence   : {confidence_level}                                  │
+  │                                                                    │
+  │ SCORE BREAKDOWN (out of 100 per pillar):                          │
+  │ Income Stability       : {income_stability}                        │
+  │ Payment Discipline     : {payment_discipline}                      │
+  │ Debt Management        : {debt_management}                         │
+  │ Savings Behaviour      : {savings_behaviour}                       │
+  │ Work and Identity      : {work_identity}                           │
+  │ Financial Resilience   : {financial_resilience}                    │
+  │ Social Accountability  : {social_accountability}                   │
+  │                                                                    │
+  │ STRENGTHS (factors helping this score):                           │
+  │ 1. {pos_1_label} — {pos_1_severity} positive impact               │
+  │ 2. {pos_2_label} — {pos_2_severity} positive impact               │
+  │ 3. {pos_3_label} — {pos_3_severity} positive impact               │
+  │                                                                    │
+  │ AREAS OF CONCERN (factors hurting this score):                    │
+  │ 1. {neg_1_label} — {neg_1_severity} negative impact               │
+  │ 2. {neg_2_label} — {neg_2_severity} negative impact               │
+  │ 3. {neg_3_label} — {neg_3_severity} negative impact               │
+  │                                                                    │
+  │ YOUR TASKS:                                                        │
+  │                                                                    │
+  │ TASK 1 — EXPLANATION:                                             │
+  │   Write exactly 4 to 5 sentences.                                 │
+  │   Sentence 1: State the score and grade, mention what it means.   │
+  │   Sentence 2: Mention the top 1–2 strengths by name.             │
+  │   Sentence 3: Mention the top 1–2 concerns by name.              │
+  │   Sentence 4: Reference the lowest-scoring pillar specifically.   │
+  │   Sentence 5: End with one encouraging closing sentence.          │
+  │                                                                    │
+  │ TASK 2 — SUGGESTIONS:                                             │
+  │   Write exactly 3 suggestions.                                     │
+  │   Each suggestion must directly address one of the 3 concerns.    │
+  │   Each suggestion must be actionable (user can do it this month). │
+  │   Each suggestion must be 1 to 2 sentences maximum.               │
+  │   Suggestions must be realistic for a {work_type_label}.          │
+  │                                                                    │
+  │ STRICT OUTPUT FORMAT (JSON only, no other text):                  │
+  │ {                                                                  │
+  │   "explanation": "<4-5 sentence paragraph>",                      │
+  │   "suggestions": [                                                 │
+  │     "<suggestion addressing concern 1>",                          │
+  │     "<suggestion addressing concern 2>",                          │
+  │     "<suggestion addressing concern 3>"                            │
+  │   ]                                                                │
+  │ }                                                                  │
+  │                                                                    │
+  │ LANGUAGE RULE:                                                     │
+  │ Write the ENTIRE response (explanation + suggestions) in {lang}.  │
+  │ If {lang} is Tamil, use clear Tamil. If English, use plain English.│
+  └────────────────────────────────────────────────────────────────────┘
+
+  PROMPT VARIABLE SUBSTITUTIONS:
+    {work_type_label}    → from work type label mapping (Section 4.2)
+    {credit_score}       → payload.credit_score
+    {grade}              → payload.grade
+    {grade_context}      → from grade context mapping (Section 4.3)
+    {confidence_level}   → payload.confidence_level
+    {income_stability}   → payload.pillar_scores.income_stability
+    {payment_discipline} → payload.pillar_scores.payment_discipline
+    {debt_management}    → payload.pillar_scores.debt_management
+    {savings_behaviour}  → payload.pillar_scores.savings_behaviour
+    {work_identity}      → payload.pillar_scores.work_identity
+    {financial_resilience} → payload.pillar_scores.financial_resilience
+    {social_accountability} → payload.pillar_scores.social_accountability
+    {pos_1_label}        → payload.positive_factors[0].label
+    {pos_1_severity}     → payload.positive_factors[0].severity
+    {pos_2_label}        → payload.positive_factors[1].label
+    {pos_2_severity}     → payload.positive_factors[1].severity
+    {pos_3_label}        → payload.positive_factors[2].label
+    {pos_3_severity}     → payload.positive_factors[2].severity
+    {neg_1_label}        → payload.negative_factors[0].label
+    {neg_1_severity}     → payload.negative_factors[0].severity
+    {neg_2_label}        → payload.negative_factors[1].label
+    {neg_2_severity}     → payload.negative_factors[1].severity
+    {neg_3_label}        → payload.negative_factors[2].label
+    {neg_3_severity}     → payload.negative_factors[2].severity
+    {lang}               → payload.language
+
+--------------------------------------------------------------------------------
+5.4 GROQ API CALL
+--------------------------------------------------------------------------------
+
+  Provider  : Groq (https://api.groq.com/openai/v1/chat/completions)
+  Model     : llama3-70b-8192
+  API Key   : GROQ_API_KEY (environment variable, NEVER exposed to app)
+
+  REQUEST BODY TO GROQ:
+  {
+    "model": "llama3-70b-8192",
+    "messages": [
+      {
+        "role": "system",
+        "content": "<system context from Section 5.3>"
+      },
+      {
+        "role": "user",
+        "content": "<user message from Section 5.3>"
+      }
+    ],
+    "temperature": 0.4,
+    "max_tokens": 600,
+    "response_format": { "type": "json_object" }
+  }
+
+  PARAMETER RATIONALE:
+    temperature 0.4   : Low randomness — consistent, professional tone
+                        High enough for natural language variation
+    max_tokens 600    : Enough for 4-5 sentence explanation + 3 suggestions
+                        (~400 tokens explanation + ~150 tokens suggestions)
+    json_object mode  : Groq enforces JSON output, prevents markdown wrapping,
+                        prevents "Here is your response:" prefix text
+
+  TIMEOUT SETTING:
+    Backend waits maximum 8 seconds for Groq response.
+    If no response within 8 seconds → trigger fallback (Section 7).
+
+  RETRY POLICY:
+    On HTTP 429 (rate limit) → wait 2 seconds, retry once.
+    On HTTP 500 (Groq error) → trigger fallback immediately.
+    On timeout → trigger fallback immediately.
+
+--------------------------------------------------------------------------------
+5.5 GROQ RESPONSE PARSING
+--------------------------------------------------------------------------------
+
+  EXPECTED GROQ RESPONSE STRUCTURE:
+  {
+    "id": "chatcmpl-xxx",
+    "choices": [
+      {
+        "message": {
+          "role": "assistant",
+          "content": "{"explanation": "...", "suggestions": ["...", "...", "..."]}"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 380,
+      "completion_tokens": 210,
+      "total_tokens": 590
+    }
+  }
+
+  BACKEND PARSING STEPS:
+    1. Extract choices[0].message.content
+    2. JSON.parse the content string
+    3. Validate: explanation is non-empty string
+    4. Validate: suggestions is array of exactly 3 non-empty strings
+    5. Validate: no extra fields (score or pillar modifications not allowed)
+    6. If any validation fails → trigger fallback
+
+  WHAT LLM IS NOT ALLOWED TO RETURN:
+    ✗ Modified credit_score
+    ✗ Modified pillar_scores
+    ✗ Additional fields not in the schema
+    ✗ HTML or markdown formatting
+    ✗ Introductory text outside JSON
+
+================================================================================
+SECTION 6 — BACKEND RESPONSE TO APP
+================================================================================
+
+--------------------------------------------------------------------------------
+6.1 SUCCESS RESPONSE SCHEMA
+--------------------------------------------------------------------------------
+
+  HTTP 200 OK
+  {
+    "status": "success",
+    "language": "Tamil",
+    "explanation": "<4-5 sentence paragraph in Tamil>",
+    "suggestions": [
+      "<suggestion 1 in Tamil>",
+      "<suggestion 2 in Tamil>",
+      "<suggestion 3 in Tamil>"
+    ],
+    "model_used": "llama3-70b-8192",
+    "generated_at": "2026-04-24T19:47:00Z",
+    "source": "llm"
+  }
+
+  FIELD DEFINITIONS:
+    status        : "success" | "fallback" | "error"
+    language      : language the response is written in (echoed from payload)
+    explanation   : 4-5 sentence plain language narrative
+    suggestions   : array of exactly 3 actionable improvement tips
+    model_used    : which model generated the response
+    generated_at  : ISO 8601 timestamp of generation
+    source        : "llm" (Groq generated) | "template" (fallback used)
+
+--------------------------------------------------------------------------------
+6.2 FALLBACK RESPONSE SCHEMA
+--------------------------------------------------------------------------------
+
+  HTTP 200 OK (backend always returns 200 even on fallback — app handles UX)
+  {
+    "status": "fallback",
+    "language": "English",
+    "explanation": "<template-generated explanation>",
+    "suggestions": [
+      "<template suggestion 1>",
+      "<template suggestion 2>",
+      "<template suggestion 3>"
+    ],
+    "model_used": null,
+    "generated_at": "2026-04-24T19:47:00Z",
+    "source": "template"
+  }
+
+  NOTE: The app NEVER shows the word "fallback" to the user.
+  If source = "template", the explanation and suggestions still render
+  normally. The user experience is identical.
+
+================================================================================
+SECTION 7 — FALLBACK SYSTEM (DETAILED)
+================================================================================
+
+--------------------------------------------------------------------------------
+7.1 FALLBACK TRIGGER CONDITIONS
+--------------------------------------------------------------------------------
+
+  TRIGGER 1 — No internet before sending payload:
+    App detects network unavailable before POST /api/report/generate.
+    Action: App uses on-device fallback template immediately.
+    No backend call attempted.
+
+  TRIGGER 2 — Backend unreachable (DNS/connection error):
+    App receives network error after attempting POST.
+    Action: App uses on-device fallback template.
+
+  TRIGGER 3 — Groq API timeout (> 8 seconds):
+    Backend waits 8 seconds, receives no response from Groq.
+    Action: Backend generates template response, returns with source="template".
+
+  TRIGGER 4 — Groq API returns HTTP 5xx:
+    Backend receives server error from Groq.
+    Action: Backend generates template response, returns with source="template".
+
+  TRIGGER 5 — Groq returns invalid JSON:
+    Backend parses Groq content, JSON.parse fails or required fields missing.
+    Action: Backend generates template response, returns with source="template".
+
+  TRIGGER 6 — App receives response but validation fails:
+    App receives backend response, explanation is empty or suggestions count ≠ 3.
+    Action: App uses on-device fallback template.
+
+--------------------------------------------------------------------------------
+7.2 ON-DEVICE FALLBACK TEMPLATE SYSTEM
+--------------------------------------------------------------------------------
+
+  Fallback templates are embedded in the Flutter app at build time.
+  Available for all 5 supported languages.
+  Templates use the evaluation engine output directly (no LLM needed).
+
+  EXPLANATION TEMPLATE (English):
+  ─────────────────────────────────
+  "Your GigCredit score is {credit_score} (Grade {grade}). Your score
+  reflects your financial behaviour as a {work_type_label}. Your key
+  strengths are {pos_1_label} and {pos_2_label}. The main areas pulling
+  your score down are {neg_1_label} and {neg_2_label}. With consistent
+  effort on these areas, your score can improve over time."
+
+  SUGGESTION TEMPLATES:
+  ─────────────────────
+  For each negative factor, a pre-written suggestion is mapped.
+
+  Example mappings:
+    "EMI payments high relative to income"
+      → "Try to reduce your monthly EMI burden by prepaying smaller loans
+         first. Lower EMI obligations will directly improve your debt score."
+
+    "No active health insurance"
+      → "Consider enrolling in a government health scheme like PM-JAY or
+         a low-premium private health policy. Insurance improves your
+         financial resilience score significantly."
+
+    "Low monthly savings rate"
+      → "Even saving ₹500–₹1000 per month in a recurring deposit account
+         will show consistent savings behaviour and improve your score."
+
+    "Inconsistent monthly income"
+      → "Try to maintain a minimum of 2–3 income deposits per month into
+         your bank account. Consistent deposits signal income stability."
+
+    "Utility bills paid late"
+      → "Set up automatic payment reminders or standing instructions for
+         utility bills. On-time payments have a strong positive impact."
+
+  Template coverage: Pre-written suggestions exist for all 95 feature keys
+  in the negative factor set. No user sees a blank suggestion.
+
+================================================================================
+SECTION 8 — ON-DEVICE PROCESSING AFTER LLM RESPONSE
+================================================================================
+
+After the app receives the backend response (or fallback), it processes and
+merges all data before passing to the report template.
+
+--------------------------------------------------------------------------------
+8.1 APP-SIDE VALIDATION OF RESPONSE
+--------------------------------------------------------------------------------
+
+  CHECK 1: status field present and not "error"
+  CHECK 2: explanation is a non-empty string (length > 20 chars)
+  CHECK 3: suggestions is an array
+  CHECK 4: suggestions.length == 3
+  CHECK 5: each suggestion is a non-empty string
+  CHECK 6: no field attempts to modify credit_score or pillar_scores
+
+  If any check fails → use on-device fallback template (Section 7.2)
+
+--------------------------------------------------------------------------------
+8.2 FINAL REPORT OBJECT ASSEMBLY
+--------------------------------------------------------------------------------
+
+  The app assembles the FinalReportObject by merging three sources:
+
+  SOURCE 1 — EVALUATION ENGINE (already on-device):
+    credit_score, grade, pillar_scores, confidence_level
+
+  SOURCE 2 — SHAP LOOKUP (already on-device):
+    positive_factors (3 items), negative_factors (3 items)
+
+  SOURCE 3 — LLM RESPONSE (from backend or fallback):
+    explanation, suggestions
+
+  FINAL REPORT OBJECT SCHEMA:
+  {
+    "report_version": "1.0",
+    "generated_at": "<ISO 8601 timestamp>",
+    "credit_score": <int>,
+    "grade": "<string>",
+    "confidence_level": "<string>",
+    "pillar_scores": {
+      "income_stability": <int>,
+      "payment_discipline": <int>,
+      "debt_management": <int>,
+      "savings_behaviour": <int>,
+      "work_identity": <int>,
+      "financial_resilience": <int>,
+      "social_accountability": <int>
+    },
+    "positive_factors": [
+      { "label": "<string>", "pillar": "<string>", "impact": <int>, "severity": "<string>" },
+      { ... },
+      { ... }
+    ],
+    "negative_factors": [
+      { "label": "<string>", "pillar": "<string>", "impact": <int>, "severity": "<string>" },
+      { ... },
+      { ... }
+    ],
+    "explanation": "<string, from LLM or template>",
+    "suggestions": [ "<string>", "<string>", "<string>" ],
+    "llm_source": "llm" | "template",
+    "language": "<string>"
+  }
+
+================================================================================
+SECTION 9 — REPORT TEMPLATE STRUCTURE
+================================================================================
+
+  THIS IS A PLANNING SPECIFICATION — REPORT IS NOT FINAL.
+  The report template below defines the SECTIONS and DATA SOURCES.
+  UI design, colour scheme, font, and layout are separate deliverables.
+
+  NOTE: This report does NOT contain a risk level field.
+
+--------------------------------------------------------------------------------
+SECTION 1 — CREDIT SCORE CARD
+--------------------------------------------------------------------------------
+
+  DATA SOURCE: Evaluation Engine (direct, no LLM)
+
+  FIELDS DISPLAYED:
+    - Credit Score (large badge): {credit_score} / 900
+    - Grade badge: {grade}
+    - Grade label: (Exceptional / Excellent / Good / Average /
+                    Below Average / Poor)
+    - Confidence indicator: {confidence_level}
+      → High confidence: solid badge
+      → Medium confidence: outlined badge
+      → Low confidence: warning badge with "Limited data" label
+
+  WHAT IS NOT DISPLAYED:
+    - Risk level (removed from report per project correction)
+    - Raw pillar weights
+    - Meta-learner probability
+
+--------------------------------------------------------------------------------
+SECTION 2 — PILLAR SCORE BREAKDOWN
+--------------------------------------------------------------------------------
+
+  DATA SOURCE: Evaluation Engine (direct, no LLM)
+
+  FIELDS DISPLAYED:
+    7 pillar rows, each showing:
+    - Pillar name
+    - Score (0–100)
+    - Visual progress bar (filled proportion = score / 100)
+    - Colour coding:
+        Score ≥ 70 → Green bar
+        Score 50–69 → Amber bar
+        Score < 50 → Red bar
+
+  ORDER:
+    P1 Income Stability
+    P2 Payment Discipline
+    P3 Debt Management
+    P4 Savings Behaviour
+    P5 Work and Identity
+    P6 Financial Resilience
+    P7 Social Accountability
+
+  MISSING PILLAR HANDLING:
+    If any pillar was excluded (confidence < 0.30), display:
+    "Not enough data — {pillar name}" with grey bar
+
+--------------------------------------------------------------------------------
+SECTION 3 — EXPLAINABLE AI INSIGHTS
+--------------------------------------------------------------------------------
+
+  DATA SOURCE (DUAL):
+    Part A (SHAP Raw Factors) → SHAP Lookup (direct, no LLM)
+    Part B (Explanation Text) → LLM via Backend
+
+  PART A — STRENGTH CARDS (3 items):
+    For each positive factor:
+    - Green checkmark icon
+    - Label: {positive_factors[i].label}
+    - Pillar tag: {positive_factors[i].pillar}
+    - Impact badge: +{positive_factors[i].impact} pts
+    - Severity label: {positive_factors[i].severity} impact
+
+  PART B — CONCERN CARDS (3 items):
+    For each negative factor:
+    - Amber warning icon
+    - Label: {negative_factors[i].label}
+    - Pillar tag: {negative_factors[i].pillar}
+    - Impact badge: {negative_factors[i].impact} pts (shown negative)
+    - Severity label: {negative_factors[i].severity} impact
+
+  PART C — EXPLANATION TEXT (from LLM):
+    - Paragraph block below the factor cards
+    - Text: {explanation}
+    - Language: {language}
+    - If source = "template": shown identically, no visual difference to user
+
+  LOADING STATE:
+    Parts A and B (raw SHAP cards) show immediately on-device.
+    Part C (LLM text) shows a loading shimmer while waiting for backend.
+    Maximum wait shown to user: 10 seconds, then fallback text renders.
+
+--------------------------------------------------------------------------------
+SECTION 4 — PERSONALIZED SUGGESTIONS
+--------------------------------------------------------------------------------
+
+  DATA SOURCE: LLM via Backend (or fallback template)
+
+  FIELDS DISPLAYED:
+    3 suggestion cards, each showing:
+    - Numbered icon (1, 2, 3)
+    - Suggestion text: {suggestions[i]}
+    - Linked concern label: references which negative factor it addresses
+    - Language: {language}
+
+  LOADING STATE:
+    Suggestions share the same loading state as explanation text (Section 3C).
+    Both render together when LLM response arrives.
+
+--------------------------------------------------------------------------------
+SECTION 5 — LOAN RECOMMENDATIONS
+--------------------------------------------------------------------------------
+
+  DATA SOURCE: Loan Matching Engine (separate pipeline, see Loan Spec)
+
+  FIELDS DISPLAYED:
+    Eligible lender offer cards:
+    - Lender name
+    - Eligible amount (indicative)
+    - [Apply Now] button
+
+  NOTE: This section is outside the scope of this specification.
+  It is mentioned here only to complete the report template structure.
+
+================================================================================
+SECTION 10 — COMPLETE PIPELINE SEQUENCE (TECHNICAL DEPTH)
+================================================================================
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │ STEP 1 — EVALUATION ENGINE COMPLETES (On-Device)                       │
+  │   Output: credit_score, grade, pillar_scores[7], confidence_level       │
+  │   Time: 15–20ms on mid-range Android                                   │
+  └────────────────────────────┬────────────────────────────────────────────┘
+                               │
+                               ▼
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │ STEP 2 — SHAP LOOKUP RUNS (On-Device)                                  │
+  │   Read shap_lookup.json (bundled in app, ~8–15 KB)                     │
+  │   For each of 95 features:                                              │
+  │     impact_i = shap_coefficient_i × (value_i − mean_i)                │
+  │   Sort all features by |impact| descending                              │
+  │   Select: top_positive[3] + top_negative[3]                            │
+  │   Assign severity labels per factor                                     │
+  │   Assign human-readable labels from shap_lookup.json                   │
+  │   Time: < 5ms                                                           │
+  └────────────────────────────┬────────────────────────────────────────────┘
+                               │
+               ┌───────────────┴───────────────┐
+               │ TRACK A (immediate)           │ TRACK B (async)
+               ▼                               ▼
+  ┌─────────────────────────┐   ┌─────────────────────────────────────────┐
+  │ STEP 3A — DIRECT TO     │   │ STEP 3B — BUILD LLM PAYLOAD (On-Device) │
+  │ REPORT TEMPLATE         │   │   Assemble JSON from:                   │
+  │                         │   │     - Evaluation engine output           │
+  │ → Section 1 populated   │   │     - SHAP top factors                  │
+  │   (score + grade)       │   │     - Work type + language              │
+  │ → Section 2 populated   │   │   No raw data, no identifiers           │
+  │   (pillar bars)         │   │   Time: < 2ms                           │
+  │ → Section 3 Parts A+B   │   └──────────────┬──────────────────────────┘
+  │   populated (SHAP cards)│                  │
+  │ → Sections 3C and 4     │                  ▼
+  │   show loading shimmer  │   ┌─────────────────────────────────────────┐
+  │                         │   │ STEP 4 — APP SENDS TO BACKEND           │
+  │ USER SEES SCORE         │   │   POST /api/report/generate             │
+  │ IMMEDIATELY             │   │   HMAC-SHA256 signed + API key auth     │
+  └─────────────────────────┘   │   Time: network dependent               │
+                                └──────────────┬──────────────────────────┘
+                                               │
+                                               ▼
+                               ┌─────────────────────────────────────────┐
+                               │ STEP 5 — BACKEND VALIDATES REQUEST      │
+                               │   Check HMAC signature                  │
+                               │   Check timestamp (< 5 min old)         │
+                               │   Check API key                         │
+                               │   Validate payload schema               │
+                               │   Time: < 5ms                           │
+                               └──────────────┬──────────────────────────┘
+                                              │
+                                              ▼
+                               ┌─────────────────────────────────────────┐
+                               │ STEP 6 — BACKEND BUILDS PROMPT          │
+                               │   Fill prompt template with all         │
+                               │   payload field values                  │
+                               │   Apply work_type_label mapping         │
+                               │   Apply grade_context mapping           │
+                               │   Apply severity labels                 │
+                               │   Time: < 5ms                           │
+                               └──────────────┬──────────────────────────┘
+                                              │
+                                              ▼
+                               ┌─────────────────────────────────────────┐
+                               │ STEP 7 — GROQ API CALL                  │
+                               │   Model: llama3-70b-8192                │
+                               │   Temperature: 0.4                      │
+                               │   Max tokens: 600                       │
+                               │   Format: json_object                   │
+                               │   Timeout: 8 seconds                    │
+                               │   Expected time: 700–1800ms             │
+                               └──────────────┬──────────────────────────┘
+                                              │
+                               ┌─────────────▼───────────────────────────┐
+                               │ SUCCESS?                                 │
+                               │  YES → Step 8A (parse + validate)       │
+                               │  NO  → Step 8B (fallback template)      │
+                               └──────────────┬──────────────────────────┘
+                                              │
+                    ┌─────────────────────────┴─────────────────────────┐
+                    │ STEP 8A — SUCCESS PATH                            │
+                    │   Parse choices[0].message.content               │
+                    │   JSON.parse the content                          │
+                    │   Validate: explanation non-empty                 │
+                    │   Validate: suggestions array length == 3        │
+                    │   Format success response (Section 6.1)           │
+                    └─────────────────────────┬─────────────────────────┘
+                                              │
+                    ┌─────────────────────────▼─────────────────────────┐
+                    │ STEP 8B — FALLBACK PATH                           │
+                    │   Build explanation from template                  │
+                    │   Map negative factor keys to template suggestions │
+                    │   Format fallback response (Section 6.2)           │
+                    │   source = "template"                              │
+                    └─────────────────────────┬─────────────────────────┘
+                                              │
+                                              ▼
+                               ┌─────────────────────────────────────────┐
+                               │ STEP 9 — BACKEND RETURNS TO APP         │
+                               │   HTTP 200 with JSON response           │
+                               │   Total backend time: 800–2000ms (LLM) │
+                               │                       < 50ms (fallback) │
+                               └──────────────┬──────────────────────────┘
+                                              │
+                                              ▼
+                               ┌─────────────────────────────────────────┐
+                               │ STEP 10 — APP VALIDATES RESPONSE        │
+                               │   Run 6 validation checks (Section 8.1) │
+                               │   If fail → use on-device template      │
+                               │   Time: < 2ms                           │
+                               └──────────────┬──────────────────────────┘
+                                              │
+                                              ▼
+                               ┌─────────────────────────────────────────┐
+                               │ STEP 11 — FINAL REPORT OBJECT ASSEMBLY  │
+                               │   Merge:                                 │
+                               │     Source 1: Evaluation engine output  │
+                               │     Source 2: SHAP lookup output        │
+                               │     Source 3: LLM response / template   │
+                               │   Assemble FinalReportObject (Sec 8.2)  │
+                               │   Time: < 2ms                           │
+                               └──────────────┬──────────────────────────┘
+                                              │
+                                              ▼
+                               ┌─────────────────────────────────────────┐
+                               │ STEP 12 — REPORT TEMPLATE RENDERS       │
+                               │   Section 1: Score + Grade              │
+                               │   Section 2: 7 Pillar bars              │
+                               │   Section 3A+B: SHAP factor cards       │
+                               │   Section 3C: LLM explanation text      │
+                               │   Section 4: 3 suggestion cards         │
+                               │   Section 5: Loan recommendations       │
+                               │   Loading shimmer clears for 3C + 4     │
+                               └──────────────┬──────────────────────────┘
+                                              │
+                                              ▼
+                               ┌─────────────────────────────────────────┐
+                               │ STEP 13 — DATA DELETION                 │
+                               │   All raw data wiped from device memory │
+                               │   FinalReportObject retained (encrypted)│
+                               └─────────────────────────────────────────┘
+
+================================================================================
+SECTION 11 — PERFORMANCE TARGETS
+================================================================================
+
+  Component                        | Target Time
+  ---------------------------------|------------------
+  SHAP lookup (95 features)        | < 5 ms
+  LLM payload build                | < 2 ms
+  HMAC signing (app side)          | < 3 ms
+  Backend request auth             | < 5 ms
+  Backend prompt build             | < 5 ms
+  Groq API response                | 700–1800 ms
+  Backend response format          | < 5 ms
+  App response validation          | < 2 ms
+  Report object assembly           | < 2 ms
+  Report template render           | < 100 ms
+  ---------------------------------|------------------
+  TOTAL (with LLM, fast Groq)      | ~1.0–2.5 seconds
+  TOTAL (fallback template)        | < 200 ms
+  Score + pillar bars visible at   | ~20 ms (Track A)
+  Full report visible at           | ~1.0–2.5 seconds
+
+  USER EXPERIENCE NOTE:
+    The user sees their credit score, grade, and pillar breakdown
+    within 20ms (Track A). This is instant from the user's perspective.
+    Sections 3C and 4 show a loading animation while Track B runs.
+    Even on slow networks, the user is never staring at a blank screen.
+
+================================================================================
+SECTION 12 — DATA PRIVACY RULES FOR THIS PIPELINE
+================================================================================
+
+  ON-DEVICE (No privacy concern):
+    Feature vector: computed on-device, never leaves device
+    SHAP values: computed on-device, never leaves device
+    Pillar scores: computed on-device, only in LLM payload as context
+    Credit score: computed on-device, only in LLM payload as context
+
+  LLM PAYLOAD (Low sensitivity):
+    Contains: score, grade, pillar scores, SHAP factor labels, work type
+    Does NOT contain: Aadhaar, PAN, bank data, transactions, addresses
+    Is non-identifiable: even if intercepted, cannot be traced to a person
+
+  BACKEND SERVER (No storage of user data):
+    Processes payload in memory only
+    Writes to log: hashed device ID, timestamp, status, latency
+    Does NOT log: score, explanation, suggestions, pillar scores
+
+  GROQ API (Third-party LLM):
+    Receives: prompt with score + SHAP labels (no personal identifiers)
+    Groq's data retention policy applies to prompt content
+    No Aadhaar, PAN, or financial transaction data reaches Groq
+
+================================================================================
+END OF SHAP OUTPUT → LLM RESPONSE → REPORT TEMPLATE PIPELINE SPECIFICATION
+VERSION 1.0 — GIGCREDIT
+STATUS: PLANNING SPECIFICATION — NOT FINAL IMPLEMENTATION
+================================================================================

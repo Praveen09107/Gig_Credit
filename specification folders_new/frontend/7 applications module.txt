@@ -1,0 +1,409 @@
+GigCredit Frontend Specification — Applications Module
+
+This document defines the complete frontend specification for the Applications Module in the GigCredit application. The Applications Module is the tracking layer of the product. It allows users to monitor every loan application submitted through GigCredit after lender handoff, consent completion, and application initiation. It must feel clear, organized, trustworthy, and status-driven.
+
+The Applications Module should reduce uncertainty after the user applies for a loan. Instead of making users wonder what happened after they tapped Apply, this module should make progress visible and understandable.
+
+1. MODULE GOAL
+
+The Applications Module exists to:
+- show all submitted loan applications in one place
+- help users track progress after loan application
+- reflect lender-side updates in a readable format
+- reduce uncertainty after apply flow
+- connect Loans activity with real outcome tracking
+- preserve trust through visibility and transparency
+
+This module turns the application process into an observable user journey.
+
+2. ENTRY POINTS
+
+Primary entry points:
+- bottom navigation → Applications tab
+- post-application success CTA from Loans module
+- future push notification or status update deep-link to a specific application
+
+For the current version, the bottom navigation and post-apply handoff are the main paths. [file:10]
+
+3. NAVIGATION ACTIVATION RULE
+
+Whenever the user enters the Applications module:
+- the Applications tab icon must become active
+- the user should clearly understand they are now inside the Applications section
+
+This is required for tab consistency. [file:10]
+
+4. MODULE PURPOSE IN USER JOURNEY
+
+The Applications module sits after the Loans apply flow.
+
+Expected journey:
+- user generates score
+- user views loan offers
+- user applies to lender
+- application gets recorded
+- application appears inside Applications tab for tracking
+
+This module exists to make that final part visible and manageable. [file:10]
+
+5. APPLICATION LIST PURPOSE
+
+The main Applications screen should show a list of all user applications.
+
+This list must help users quickly understand:
+- which lender they applied to
+- for how much
+- what the current status is
+- whether action is needed
+
+6. APPLICATIONS SCREEN TITLE
+
+Suggested title:
+Your Applications
+
+Behavior:
+- place at top of the Applications screen
+- keep it clear and structured
+- establish this page as a tracking area, not a discovery page
+
+7. APPLICATION LIST CARD STRUCTURE
+
+Each application should appear as a card or list item.
+
+Each application card should contain:
+- loan amount
+- lender name
+- current application status
+- interest / EMI information if available
+- progress tracking entry point or inline progress summary
+
+This card structure is directly aligned with the overall flow definition. [file:10]
+
+8. REQUIRED APPLICATION CARD FIELDS
+
+Minimum fields required on every application card:
+- Lender Name
+- Loan Amount
+- Status
+- Track Progress action or visible progress area
+
+Optional fields:
+- Interest Rate
+- EMI Option
+- Submitted Date
+- Loan Type
+- Offer Reference ID
+- Last Updated timestamp
+
+The UI should support both minimum and enhanced data versions. [file:10]
+
+9. STATUS PURPOSE
+
+Status is the most important field inside the Applications module.
+
+Users should be able to identify the current state of an application immediately without opening details.
+
+10. PRIMARY STATUS TYPES
+
+The Applications module must support statuses such as:
+- Submitted
+- Consent Verified
+- Under Review
+- Decision Pending
+- Approved
+- Rejected
+- Disbursed
+
+These states are derived from the defined app flow and partner handoff journey. [file:10][file:3]
+
+11. STATUS DISPLAY RULE
+
+Status should be shown clearly on every application card.
+
+Behavior:
+- make status easy to scan
+- use label + visual treatment
+- do not rely only on color
+- text must remain understandable even without design styling
+
+12. TRACK PROGRESS PURPOSE
+
+Each application card should include a Track Progress action or expandable progress section.
+
+This helps users move from static status labels to full application journey visibility. [file:10]
+
+13. TRACK PROGRESS CONTENT
+
+When the user opens Track Progress, the module should show the full journey for that application.
+
+Suggested progress stages:
+- Application Submitted
+- Consent Verified
+- Under Review
+- Decision Pending
+- Final Status
+
+This structure is based on the flow defined in your app summary. [file:10]
+
+14. PROGRESS STEP RULES
+
+Each progress step should visually communicate:
+- completed
+- current
+- upcoming
+- failed or stopped if rejected
+
+This makes progress feel easier to understand than a single label alone.
+
+15. CURRENT STEP EMPHASIS
+
+The active step in progress tracking should be clearly highlighted.
+
+Example:
+- if lender has received the application and is checking documents, show Under Review as current
+- if lender decision is not finalized, show Decision Pending as current
+
+This helps the user understand exactly where things stand.
+
+16. STATUS MESSAGE SUPPORT
+
+Below the progress tracker, the UI may show a short status message.
+
+Example message:
+Still under review. The lender is currently evaluating your application.
+
+This approach is aligned with the overall flow note that a status message should be shown. [file:10]
+
+17. APPROVED STATE EXPECTATION
+
+If an application is approved:
+- show approved status clearly
+- optionally show next-step message
+- support display of approved amount if backend provides it
+- keep tone positive but clear
+
+The user should understand that approval is a major stage change.
+
+18. REJECTED STATE EXPECTATION
+
+If an application is rejected:
+- show rejected status respectfully
+- avoid harsh or embarrassing tone
+- optionally suggest checking other loan offers or improving score
+
+The product should preserve dignity and trust even when the outcome is negative.
+
+19. DISBURSED STATE EXPECTATION
+
+If a loan is disbursed:
+- show disbursed status clearly
+- optionally include amount and date if available
+- treat this as the successful end state of the application lifecycle
+
+This should feel like a completed transaction state.
+
+20. DECISION PENDING STATE EXPECTATION
+
+Decision Pending should be used when the lender has advanced beyond review but has not finalized the result.
+
+The wording should reassure the user that the process is still active, not stuck.
+
+21. EMPTY STATE PURPOSE
+
+If the user has not applied to any lenders yet, the Applications module should show an empty state.
+
+This prevents the screen from feeling broken or unfinished.
+
+22. EMPTY STATE CONTENT
+
+The empty state should include:
+- message explaining that no applications have been submitted yet
+- short explanation that applied loan offers will appear here
+- CTA leading back to Loans tab
+
+Suggested meaning:
+No loan applications yet. Once you apply for an offer, you can track it here. [file:10]
+
+23. EMPTY STATE CTA BEHAVIOR
+
+When the user taps the empty-state CTA:
+- navigate to Loans tab
+- make Loans tab active
+- allow the user to explore eligible offers
+
+This preserves flow continuity across modules. [file:10]
+
+24. APPLICATION DETAIL VIEW PURPOSE
+
+In addition to the list view, the app may support an Application Detail view.
+
+This is useful when the user wants to inspect one application in more depth.
+
+25. APPLICATION DETAIL VIEW CONTENT
+
+If implemented, the detail view can include:
+- lender name
+- applied amount
+- status
+- progress timeline
+- submitted date
+- interest rate
+- EMI details
+- consent confirmation
+- next-step message
+- support/help information
+
+This screen should feel informational and calm.
+
+26. BACK NAVIGATION RULE
+
+If the user opens an application detail page:
+- back navigation should return to Applications list
+- the previously viewed list position should be preserved if possible
+
+This improves usability on mobile.
+
+27. SORTING AND ORDER RULE
+
+Applications should be ordered in a meaningful way.
+
+Suggested default sorting:
+- most recent applications first
+- active applications before closed ones if product prefers action visibility
+
+The frontend should support sorted rendering even if backend handles ordering.
+
+28. MULTIPLE APPLICATION SUPPORT
+
+The module should support multiple simultaneous applications.
+
+Users may apply to more than one lender, so the UI must handle:
+- multiple active cards
+- different statuses across lenders
+- clean scrolling behavior
+- clear distinction between applications
+
+29. STATUS-AWARE CARD DESIGN
+
+Cards may visually change depending on status.
+
+Examples:
+- active / in-progress application card
+- approved card
+- rejected card
+- disbursed card
+
+However, every card must remain readable and consistent.
+
+30. POST-APPLY INSERTION RULE
+
+After the user submits an application from the Loans module:
+- a new application must appear in the Applications module
+- the initial status should typically be Submitted or Consent Verified depending on backend behavior
+- the user should not need to manually refresh to trust the system
+
+This is critical for continuity. [file:10]
+
+31. REFRESH AND LIVE UPDATE EXPECTATION
+
+The Applications module should support update behavior such as:
+- pull to refresh
+- automatic refresh when re-entering tab
+- status sync from backend when app reconnects
+
+This is important because application states may change over time.
+
+32. LOADING STATES
+
+The Applications module should support:
+- loading application list
+- loading individual application detail
+- refreshing status
+- loading progress timeline
+
+Loading feedback should clearly indicate that tracking data is being fetched.
+
+33. ERROR STATES
+
+The module should support these error cases:
+- failed to load applications
+- failed to refresh status
+- missing application detail
+- network unavailable
+- inconsistent status response from backend
+
+Each error state should provide a clear retry path.
+
+34. OFFLINE OR CONNECTIVITY NOTE
+
+Unlike on-device scoring, loan and application tracking depends on backend and lender connectivity.
+
+So the Applications module should clearly handle no-internet conditions and tell users when fresh status cannot be fetched. [file:10][file:3]
+
+35. STATE USED INSIDE APPLICATIONS MODULE
+
+Important frontend state includes:
+- applications list
+- selected application
+- current status per application
+- progress timeline per application
+- refresh state
+- loading state
+- error state
+- empty state eligibility
+
+This state should be cleanly designed for backend integration.
+
+36. REUSABLE COMPONENTS IN APPLICATIONS MODULE
+
+Expected components include:
+- ApplicationsHeader
+- EmptyApplicationsState
+- ApplicationCard
+- StatusBadge
+- ProgressTimeline
+- TrackProgressButton
+- ApplicationDetailPanel
+- RefreshIndicator
+- BottomNavBar
+
+These should visually match the rest of the app.
+
+37. ACCESSIBILITY AND READABILITY RULES
+
+The Applications module must remain easy to understand on mobile.
+
+Important rules:
+- status labels must be readable at a glance
+- progress timeline must not rely only on color
+- card content must remain scannable
+- buttons must be easy to tap
+- long lender names or values should wrap safely without breaking layout
+
+38. PRIVACY AND TRUST POSITIONING
+
+The Applications module should continue GigCredit’s trust-first posture.
+
+That means:
+- show only necessary application details
+- avoid exposing sensitive data carelessly
+- keep status messaging clear and respectful
+- never make users feel lost after submission
+
+39. TESTING PRIORITIES FOR APPLICATIONS MODULE
+
+Testing should verify:
+- Applications tab activates correctly
+- empty state appears when there are no applications
+- CTA from empty state switches to Loans tab
+- new application appears after apply flow
+- each card shows lender, amount, and status correctly
+- Track Progress opens correctly
+- progress steps render in the right order
+- approved, rejected, and disbursed states render properly
+- refresh updates status correctly
+- application detail view returns safely to list
+
+40. FINAL MODULE DIRECTION
+
+The Applications Module should feel like a reliable tracking dashboard for the user's post-loan journey. It must reduce uncertainty, reflect progress clearly, and help users trust that GigCredit is not only matching them with lenders but also helping them follow through the full application lifecycle.

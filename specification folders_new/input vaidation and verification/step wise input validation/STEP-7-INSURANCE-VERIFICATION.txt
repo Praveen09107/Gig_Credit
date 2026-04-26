@@ -1,0 +1,545 @@
+SYSTEM DESIGN PROMPT — STEP-7: INSURANCE VERIFICATION
+GigCredit Onboarding | Version: Final | Pillar: P6 Financial Resilience
+===========================================================================
+
+PURPOSE
+-------
+Step-7 verifies the user's insurance coverage. Insurance participation
+strengthens financial responsibility signals and improves risk assessment.
+Three insurance types are supported:
+  1. Health Insurance
+  2. Vehicle Insurance
+  3. Life Insurance
+
+All insurance inputs are optional, EXCEPT Vehicle Insurance, which becomes
+REQUIRED if the user selected "Yes" for Vehicle Ownership in Step-1.
+
+Validation architecture:
+  - OCR Extraction       : On-device
+  - API Verification     : Government simulation (FastAPI + MongoDB)
+  - Individual Validation: OCR vs API data (per field)
+  - Cross-Internal       : Within document fields (consistency)
+  - Global Validation    : Consistency with previous steps
+
+
+===========================================================================
+HOW IT IS PRESENTED ON SCREEN
+===========================================================================
+
+Three insurance cards displayed vertically.
+Each card shows:
+  - Insurance type name
+  - Brief description of what it covers
+  - Estimated score impact
+
+Vehicle insurance card mandatory status is dynamically set based on
+Vehicle Ownership answer from Step-1.
+
+
+===========================================================================
+INPUTS — STEP-7 (TOTAL: 3)
+===========================================================================
+
+#  | Field                                  | UI Element            | Format           | Count | Mandatory
+---|----------------------------------------|-----------------------|------------------|-------|---------------------
+1  | Health Insurance Policy Document       | Image/PDF upload card | JPG, PNG, PDF    | 1     | Optional
+2  | Vehicle Insurance Policy               | Image/PDF upload card | JPG, PNG, PDF    | 1     | If Vehicle = Yes
+3  | Life Insurance Policy Bond or          | Image/PDF upload card | JPG, PNG, PDF    | 1     | Optional
+   | Premium Receipt                        |                       |                  |       |
+
+Total Inputs  : 3
+Mandatory     : 0–1 (vehicle insurance conditional on Step-1 answer)
+Optional      : 2–3
+Document uploads: Up to 3 images/PDFs
+
+
+===========================================================================
+UI GATE RULES
+===========================================================================
+
+GATE 1 — Vehicle Insurance Card Badge (dynamic from Step-1):
+  verified_profile.has_vehicle = true
+    → Card shows "REQUIRED" badge
+    → Upload is mandatory
+    → Missing = incomplete step
+
+  verified_profile.has_vehicle = false
+    → Card shows "OPTIONAL" badge
+    → Upload not required
+    → Skipping has no penalty
+
+GATE 2 — Continue Button:
+  has_vehicle = true  → vehicle insurance must be uploaded and pass
+                        all validations before Continue is enabled
+  has_vehicle = false → Continue available at any point (all 3 optional)
+
+GATE 3 — RC Deduplication (Step-5 cross-dependency):
+  IF verified_profile.work.rc_verified = true (Step-5A completed):
+    → RC verification SKIPPED in Step-7
+    → System reuses vehicle_number from Step-5 global state
+    → Vehicle insurance OCR vehicle number cross-checked against
+      Step-5 vehicle number
+  IF step5_skipped = true OR rc_verified = false:
+    → Normal RC verification flow applies in Step-7
+
+
+===========================================================================
+INSURANCE 1 — HEALTH INSURANCE
+===========================================================================
+
+Score impact shown on card: "Can add up to 18 points"
+
+--- OCR EXTRACTION — HEALTH INSURANCE POLICY ---
+
+Field                | Example Value              | Used For
+---------------------|----------------------------|-------------------------------
+policy_number        | P700002012015007530        | API verification
+policy_holder_name   | Ashwani Kumar Rai          | API + Step-1 + Step-2 match
+insurance_company    | Star Health                | API verification
+policy_start_date    | 2014-07-03                 | Active period check
+policy_expiry_date   | 2015-07-02                 | Active status check
+sum_insured          | 300000                     | P6 feature: health_sum_norm
+premium_amount       | 6067                       | Bank transaction cross-check
+scheme_description   | 2 Adults + 1 Child         | Coverage type signal
+
+INSURER DETECTION:
+  System detects insurer name from document.
+  Example: "Star Health and Allied Insurance"
+
+--- API VERIFICATION — HEALTH INSURANCE ---
+
+Endpoint  : POST /gov/insurance/health-policy-verify
+MongoDB   : health_insurance_db
+Trigger   : Automatic after OCR extracts policy_number
+
+Request:
+  {
+    "policy_number"      : "P700002012015007530",
+    "insurance_company"  : "Star Health",
+    "policy_holder_name" : "Ashwani Kumar Rai"
+  }
+
+Response:
+  {
+    "policy_number"      : "P700002012015007530",
+    "policy_holder_name" : "Ashwani Kumar Rai",
+    "insurance_company"  : "Star Health",
+    "policy_status"      : "Expired",
+    "policy_expiry_date" : "2015-07-02",
+    "sum_insured"        : 300000,
+    "verified"           : true
+  }
+
+Possible policy_status values: Active | Expired | Not Found
+
+--- INDIVIDUAL VALIDATION — HEALTH INSURANCE ---
+
+#  | Field                    | Rule                            | Blocking
+---|--------------------------|----------------------------------|----------
+1  | Policy Number            | OCR must match API               | HARD FAIL
+2  | Policy Holder Name       | OCR vs API fuzzy >= 85%          | HARD FAIL
+3  | Insurance Company        | OCR must match API               | HARD FAIL
+4  | Policy Start Date        | Must be valid date format        | HARD FAIL
+5  | Policy Expiry Date       | Valid date; API status = Active  | HARD FAIL
+6  | Sum Insured              | Must be numeric > 0              | HARD FAIL
+7  | Premium Amount           | Must be numeric > 0              | HARD FAIL
+8  | Scheme Description       | Must be readable (not blank)     | Soft flag
+
+--- CROSS-INTERNAL VALIDATION — HEALTH INSURANCE ---
+
+#  | Check                                          | Rule               | Blocking
+---|------------------------------------------------|---------------------|---------
+1  | Policy number consistent across document       | Identical in all   | HARD FAIL
+   | sections                                       | sections           |
+2  | Policy holder name consistent across document  | Same in all name   | HARD FAIL
+   |                                                | fields             |
+
+--- BANK TRANSACTION CROSS-CHECK — HEALTH INSURANCE ---
+
+Premium debit matching in Step-3 canonical CSV:
+  Amount   : premium_amount (OCR) ± 5%
+             OR annual_premium ÷ 12 (if monthly mode) ± 5%
+  Merchant : contains insurer name keywords
+             e.g. "STAR HEALTH", "HDFC ERGO", "NIVA BUPA",
+                  "CARE HEALTH", "ICICI LOMBARD", "HEALTH INSURANCE"
+  Category : INSURANCE_PREMIUM
+
+  Match found → health_premium_bank_verified = true  (bonus P6 signal)
+  No match    → health_premium_bank_verified = false  (soft flag, non-blocking)
+
+  Note: Step-3 bank statement is converted to a canonical CSV format.
+  Each transaction has: date, amount, merchant, category, transaction_id.
+  Matching uses: transaction date ± 7 days of premium due date AND
+                 amount within ± 5% tolerance.
+
+--- GLOBAL VALIDATION — HEALTH INSURANCE ---
+
+#  | Check                                          | Compared Against        | Blocking
+---|------------------------------------------------|--------------------------|----------
+1  | Policy holder name (OCR)                       | verified_profile.name    | HARD FAIL
+   |                                                | (Step-1 full name)       |
+2  | Policy holder name (OCR)                       | verified_profile.        | HARD FAIL
+   |                                                | identity.aadhaar_name    |
+   |                                                | (Step-2 Aadhaar name)    |
+
+
+===========================================================================
+INSURANCE 2 — VEHICLE INSURANCE
+===========================================================================
+
+Score impact shown on card: "Can add up to 12 points"
+
+Dynamic Behaviour:
+  Vehicle Ownership in Step-1 = Yes → Card shows REQUIRED badge
+                                       Upload is mandatory
+  Vehicle Ownership in Step-1 = No  → Card shows OPTIONAL badge
+                                       Upload not required, no penalty
+
+Vehicle insurance is verified in TWO stages:
+  Stage 1: RC Book Verification
+  Stage 2: Vehicle Insurance Policy Verification
+
+--- STAGE 1: RC BOOK VERIFICATION ---
+
+RC Deduplication Check (run first):
+  IF verified_profile.work.rc_verified = true (from Step-5A):
+    → SKIP RC API call
+    → Reuse from global state:
+        vehicle_number = verified_profile.work.vehicle_number
+        owner_name     = verified_profile.work.rc_owner_name
+        vehicle_class  = verified_profile.work.vehicle_class
+    → Show user: "RC already verified in Step-5. Proceeding to
+                  insurance check."
+  ELSE:
+    → User uploads RC Book document
+    → Run OCR + API verification (below)
+
+OCR EXTRACTION — RC BOOK:
+
+Field               | Example Value   | Used For
+--------------------|-----------------|-------------------------------
+vehicle_number      | TN09AB1234      | API verification + insurance
+owner_name          | Ravi Kumar      | API match + global comparison
+vehicle_class       | Motorcycle      | API match + insurance check
+registration_date   | 2019-03-15      | Valid date check
+engine_number       | ENG983421       | Readable field check
+chassis_number      | CHS776543       | Readable field check
+
+API VERIFICATION — RC BOOK:
+
+Endpoint  : POST /gov/vehicle/rc-verify
+MongoDB   : vehicle_rc_db
+
+Request:
+  { "vehicle_number": "TN09AB1234" }
+
+Response:
+  {
+    "vehicle_number"      : "TN09AB1234",
+    "owner_name"          : "Ravi Kumar",
+    "vehicle_class"       : "Motorcycle",
+    "registration_status" : "Active",
+    "verified"            : true
+  }
+
+INDIVIDUAL VALIDATION — RC BOOK:
+
+#  | Field              | Rule                              | Blocking
+---|--------------------|-----------------------------------|---------
+1  | Vehicle Number     | OCR must match API                | HARD FAIL
+2  | Owner Name         | OCR must match API                | HARD FAIL
+3  | Vehicle Class      | OCR must match API                | HARD FAIL
+4  | Registration Date  | Must be valid date format         | HARD FAIL
+5  | Engine Number      | Must be readable (not blank)      | Soft flag
+6  | Chassis Number     | Must be readable (not blank)      | Soft flag
+
+--- STAGE 2: VEHICLE INSURANCE POLICY VERIFICATION ---
+
+OCR EXTRACTION — VEHICLE INSURANCE POLICY:
+
+Field               | Example Value   | Used For
+--------------------|-----------------|-------------------------------
+policy_number       | MTR987654321    | API verification
+vehicle_number      | TN09AB1234      | RC Book cross-check
+owner_name          | Ravi Kumar      | RC owner name consistency
+insurance_company   | ICICI Lombard   | API cross-check
+policy_start_date   | 2024-04-10      | Active period check
+policy_expiry_date  | 2025-04-09      | Active status check
+premium_amount      | 1106            | Bank transaction cross-check
+chassis_number      | CHS776543       | RC Book consistency
+engine_number       | ENG983421       | RC Book consistency
+
+API VERIFICATION — VEHICLE INSURANCE:
+
+Endpoint  : POST /gov/insurance/vehicle-policy-verify
+MongoDB   : vehicle_insurance_db
+
+Request:
+  {
+    "policy_number"  : "MTR987654321",
+    "vehicle_number" : "TN09AB1234"
+  }
+
+Response:
+  {
+    "policy_number"      : "MTR987654321",
+    "vehicle_number"     : "TN09AB1234",
+    "insurance_company"  : "ICICI Lombard",
+    "policy_status"      : "Active",
+    "policy_expiry_date" : "2025-04-09",
+    "verified"           : true
+  }
+
+INDIVIDUAL VALIDATION — VEHICLE INSURANCE POLICY:
+
+#  | Field              | Rule                              | Blocking
+---|--------------------|-----------------------------------|---------
+1  | Policy Number      | OCR must match API                | HARD FAIL
+2  | Vehicle Number     | OCR must match API                | HARD FAIL
+3  | Insurance Company  | OCR must match API                | HARD FAIL
+4  | Owner Name         | OCR must match API                | HARD FAIL
+5  | Policy Start Date  | Must be valid date format         | HARD FAIL
+6  | Policy Expiry Date | Not expired; API status = Active  | HARD FAIL
+7  | Premium Amount     | Must be numeric > 0               | HARD FAIL
+8  | Chassis Number     | OCR must match RC Book            | HARD FAIL
+9  | Engine Number      | OCR must match RC Book            | HARD FAIL
+
+--- CROSS-INTERNAL VALIDATION — VEHICLE INSURANCE ---
+
+#  | Check                                          | Rule               | Blocking
+---|------------------------------------------------|--------------------|---------
+1  | Vehicle number consistent across RC Book and   | Must be identical  | HARD FAIL
+   | Insurance Policy                               |                    |
+2  | Chassis number consistent across RC Book and   | Must be identical  | HARD FAIL
+   | Insurance Policy                               |                    |
+3  | Engine number consistent across RC Book and    | Must be identical  | HARD FAIL
+   | Insurance Policy                               |                    |
+
+--- BANK TRANSACTION CROSS-CHECK — VEHICLE INSURANCE ---
+
+Premium debit matching in Step-3 canonical CSV:
+  Amount   : premium_amount (OCR) ± 5%
+  Merchant : contains insurer name keywords
+             e.g. "ICICI LOMBARD", "BHARTI AXA", "BAJAJ ALLIANZ",
+                  "TATA AIG", "MOTOR INSURANCE", "VEHICLE INSURANCE"
+  Category : INSURANCE_PREMIUM
+
+  Match found → vehicle_premium_bank_verified = true  (bonus P6 signal)
+  No match    → vehicle_premium_bank_verified = false  (soft flag, non-blocking)
+
+--- GLOBAL VALIDATION — VEHICLE INSURANCE ---
+
+#  | Check                              | Compared Against                      | Blocking
+---|------------------------------------|---------------------------------------|----------
+1  | RC owner name (OCR)                | verified_profile.name (Step-1)        | Soft flag
+   |                                    | If mismatch → vehicle_owner_          | only
+   |                                    | mismatch = true                       |
+   |                                    | (family vehicle allowed)              |
+2  | Vehicle number (insurance OCR)     | verified_profile.work.vehicle_number  | HARD FAIL
+   |                                    | (Step-5A) — if Step-5 completed       |
+3  | Policy number (insurance OCR)      | verified_profile.work.policy_number   | HARD FAIL
+   |                                    | (Step-5A) — if Step-5 completed       |
+
+
+===========================================================================
+INSURANCE 3 — LIFE INSURANCE
+===========================================================================
+
+Score impact shown on card: "Can add up to 10 points"
+
+Accepted documents:
+  - Life Insurance Policy Bond
+  - OR most recent Premium Payment Receipt / Certificate
+  (Either document is accepted)
+
+--- OCR EXTRACTION — LIFE INSURANCE ---
+
+Field               | Example Value                        | Used For
+--------------------|--------------------------------------|-------------------------------
+policy_number       | 00779114                             | API verification
+policy_holder_name  | Mr Shoeb Ahmed Siraj Ahmed Ansari   | API + Step-1 + Step-2 match
+insurance_company   | BSLI / LIC India                    | API verification
+sum_assured         | 550500                               | P6 feature: life_sum_norm
+total_premium_paid  | 51198.67                             | Bank cross-check
+policy_issue_date   | 25-FEB-2015                         | Valid date check
+coverage_start      | 25-FEB-2015                         | Coverage period check
+coverage_end        | 24-FEB-2016                         | Expiry check
+coverage_status     | Premium Paying Maturity              | Active status check
+payment_mode        | Yearly                               | Premium frequency signal
+coverage_name       | BSLI Easy Protector                 | Policy type signal
+
+--- API VERIFICATION — LIFE INSURANCE ---
+
+Endpoint  : POST /gov/insurance/life-policy-verify
+MongoDB   : life_insurance_db
+Trigger   : Automatic after OCR extracts policy_number
+
+Request:
+  {
+    "policy_number"     : "00779114",
+    "policy_holder_name": "Shoeb Ahmed Siraj Ahmed Ansari"
+  }
+
+Response:
+  {
+    "policy_number"      : "00779114",
+    "policy_holder_name" : "Shoeb Ahmed",
+    "insurance_company"  : "LIC India",
+    "policy_status"      : "Active",
+    "verified"           : true
+  }
+
+--- INDIVIDUAL VALIDATION — LIFE INSURANCE ---
+
+#  | Field                        | Rule                                   | Blocking
+---|------------------------------|----------------------------------------|---------
+1  | Policy Number                | OCR must match API                     | HARD FAIL
+2  | Policy Holder Name           | OCR vs API fuzzy >= 85%                | HARD FAIL
+3  | Insurance Company            | OCR must match API                     | HARD FAIL
+4  | Sum Assured                  | Must be numeric > 0                    | HARD FAIL
+5  | Total Premium Paid           | Must be numeric > 0                    | HARD FAIL
+6  | Policy Issue Date            | Must be valid date format              | HARD FAIL
+7  | Coverage Period (Start–End)  | Start < End; End date not expired      | HARD FAIL
+8  | Coverage Status              | Must be "Active" or "Premium Paying"   | HARD FAIL
+9  | Payment Mode                 | Must be readable (Yearly/Monthly/      | Soft flag
+   |                              | Quarterly)                             |
+
+--- CROSS-INTERNAL VALIDATION — LIFE INSURANCE ---
+
+#  | Check                                         | Rule               | Blocking
+---|-----------------------------------------------|--------------------|---------
+1  | Policy number consistent across document      | Identical in all   | HARD FAIL
+   | sections                                      | sections           |
+2  | Policy holder name consistent across document | Same in all name   | HARD FAIL
+   |                                               | fields             |
+
+--- BANK TRANSACTION CROSS-CHECK — LIFE INSURANCE ---
+
+Premium debit matching in Step-3 canonical CSV:
+  Amount   : total_premium_paid (OCR) ± 5%
+             OR annual_premium ÷ 12 (if monthly mode) ± 5%
+  Merchant : contains insurer keywords
+             e.g. "LIC", "BSLI", "HDFC LIFE", "ICICI PRU",
+                  "SBI LIFE", "MAX LIFE", "LIFE INSURANCE", "PREMIUM"
+  Category : INSURANCE_PREMIUM
+  Date     : ± 7 days of premium due date
+
+  Match found → life_premium_bank_verified = true  (bonus P6 signal)
+  No match    → life_premium_bank_verified = false  (soft flag, non-blocking)
+
+--- GLOBAL VALIDATION — LIFE INSURANCE ---
+
+#  | Check                          | Compared Against                    | Blocking
+---|--------------------------------|-------------------------------------|---------
+1  | Policy holder name (OCR)       | verified_profile.name (Step-1)      | HARD FAIL
+2  | Policy holder name (OCR)       | verified_profile.identity.          | HARD FAIL
+   |                                | aadhaar_name (Step-2)               |
+
+
+===========================================================================
+GLOBAL PROFILE UPDATE — STEP-7
+===========================================================================
+
+After all validations pass, the global profile is updated:
+
+verified_profile.insurance = {
+  "health_insurance"  : true,   // true if health policy verified
+  "vehicle_insurance" : true,   // true if vehicle policy verified
+  "life_insurance"    : false   // true if life policy verified
+}
+
+
+===========================================================================
+ML FEATURES PRODUCED — P6 FINANCIAL RESILIENCE
+===========================================================================
+
+Feature                       | Description                            | Pillar
+------------------------------|----------------------------------------|-------
+health_insurance_active_binary| Health policy verified and active (0/1)| P6
+health_insurance_sum_norm     | sum_insured ÷ anchor value (0.0–1.0)   | P6
+vehicle_insurance_active_binary| Vehicle insurance validated (0/1)     | P6
+vehicle_insurance_valid_binary | Vehicle policy not expired (0/1)      | P6
+life_insurance_active_binary  | Life insurance validated (0/1)         | P6
+life_insurance_sum_norm       | sum_assured ÷ anchor value (0.0–1.0)  | P6
+insurance_coverage_count      | Total types verified (0–3)             | P6
+
+Total P6 features from Step-7: 7
+
+
+===========================================================================
+TECHNICAL FLOW — STEP-7
+===========================================================================
+
+User opens Step-7
+  ↓
+System reads verified_profile.has_vehicle from Step-1
+  ↓
+Three insurance cards rendered with correct badges (REQUIRED / OPTIONAL)
+  ↓
+[HEALTH INSURANCE — Optional]
+  User uploads Health Insurance Policy Document
+    → OCR: policy_number, holder_name, company, start_date,
+            expiry_date, sum_insured, premium_amount, scheme_desc
+    → POST /gov/insurance/health-policy-verify
+    → Individual validation: all 8 OCR fields validated (see table)
+    → Cross-internal: policy_number + holder_name consistent
+    → Bank cross-check: premium debit in Step-3 CSV (± 5%, ± 7 days)
+    → Global: holder_name vs Step-1 name AND Step-2 Aadhaar name
+    [PASS] → health_insurance = true
+    [FAIL] → card shows error; user can retry; step not blocked
+  ↓
+[VEHICLE INSURANCE — Mandatory if has_vehicle = true]
+
+  GATE: IF rc_verified = true from Step-5A:
+    → Skip RC API, reuse vehicle_number from global state
+  ELSE:
+    → User uploads RC Book
+    → OCR: vehicle_number, owner_name, vehicle_class,
+            registration_date, engine_number, chassis_number
+    → POST /gov/vehicle/rc-verify
+    → RC Individual validation: all 6 fields (see table)
+  ↓
+  User uploads Vehicle Insurance Policy
+    → OCR: policy_number, vehicle_number, owner_name, company,
+            start_date, expiry_date, premium_amount,
+            chassis_number, engine_number
+    → POST /gov/insurance/vehicle-policy-verify
+    → Individual validation: all 9 fields (see table)
+    → Cross-internal: vehicle_number, chassis_number, engine_number
+                      consistent across RC + insurance
+    → Bank cross-check: premium debit in Step-3 CSV
+    → Global: vehicle_number vs Step-5 vehicle_number (if applicable)
+    [PASS] → vehicle_insurance = true
+    [FAIL] → HARD FAIL if has_vehicle = true (blocks Continue)
+  ↓
+[LIFE INSURANCE — Optional]
+  User uploads Life Insurance Policy or Premium Receipt
+    → OCR: policy_number, holder_name, company, sum_assured,
+            total_premium_paid, issue_date, coverage_period,
+            coverage_status, payment_mode, coverage_name
+    → POST /gov/insurance/life-policy-verify
+    → Individual validation: all 9 fields (see table)
+    → Cross-internal: policy_number + holder_name consistent
+    → Bank cross-check: premium debit in Step-3 CSV (± 5%, ± 7 days)
+    → Global: holder_name vs Step-1 name AND Step-2 Aadhaar name
+    [PASS] → life_insurance = true
+    [FAIL] → card shows error; user can retry; step not blocked
+  ↓
+Update verified_profile.insurance
+  ↓
+Step-7 Status = COMPLETED
+Enable navigation to Step-8
+
+
+===========================================================================
+OUTPUT OF STEP-7
+===========================================================================
+
+Step-7 Status          : COMPLETED
+verified_profile update: verified_profile.insurance updated
+P6 ML features         : 7 financial resilience features produced
+Next Step              : Step-8 (ITR and GST Records) — UNLOCKED
+
+===========================================================================
+END OF STEP-7 SPECIFICATION
+===========================================================================
