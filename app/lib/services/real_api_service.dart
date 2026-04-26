@@ -6,13 +6,36 @@ class RealApiService implements ApiService {
   final String baseUrl;
   RealApiService({this.baseUrl = 'http://10.0.2.2:8000/api'});
   @override
-  Future<Map<String, dynamic>> sendOtp(String mobile, {bool isSignup = false}) {
-    throw UnimplementedError();
+  Future<Map<String, dynamic>> sendOtp(String mobile, {bool isSignup = false}) async {
+    final response = await http.post(
+      // The API base url is /api, but auth routes are at /auth. We need to construct the URL:
+      Uri.parse(baseUrl.replaceAll('/api', '') + '/auth/otp/send'),
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': 'gigcredit-demo-api-key-2026',
+      },
+      body: jsonEncode({'mobile': mobile}),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    throw Exception('Failed to send OTP: ${response.body}');
   }
 
   @override
-  Future<Map<String, dynamic>> verifyOtp(String mobile, String otp) {
-    throw UnimplementedError();
+  Future<Map<String, dynamic>> verifyOtp(String mobile, String otp) async {
+    final response = await http.post(
+      Uri.parse(baseUrl.replaceAll('/api', '') + '/auth/otp/verify'),
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': 'gigcredit-demo-api-key-2026',
+      },
+      body: jsonEncode({'mobile': mobile, 'otp': otp}),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    throw Exception('Failed to verify OTP: ${response.body}');
   }
 
   @override
