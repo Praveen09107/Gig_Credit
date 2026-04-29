@@ -99,7 +99,7 @@ dart analyze .  # MUST pass with zero errors/warnings
 
 ## Part 2: Constants Exporter — ALL JSON Files
 
-Dev A generates **11 JSON files** total:
+Dev A generates **12 JSON files** total:
 
 | # | File | Source | Content |
 |---|------|--------|---------|
@@ -114,6 +114,27 @@ Dev A generates **11 JSON files** total:
 | 9 | `work_type_medians.json` | Synthetic data | 4 work types × 5 normalisation constants |
 | 10 | `causal_chains.json` | Hand-written | 15 causal rule triggers |
 | 11 | `loan_thresholds.json` | Loan trainer | Per work_type × product thresholds |
+| 12 | `feature_defaults.json` | constants_exporter.py | Training set medians/modes for 95 base features |
+
+### JSON Export Validations (CRITICAL)
+
+Before writing the JSON files, Dev A MUST run these assertions:
+
+**1. Calibration Knot Monotonicity**
+```python
+# x_knots MUST be strictly increasing for Dart interpolation
+assert all(x[i] < x[i+1] for i in range(len(x)-1)), f"Non-monotone knots in {pillar}"
+# Keep high precision! Use round(float(val), 6)
+```
+
+**2. Causal Rule Schema Validator**
+```python
+ALLOWED_OPS = {">", "<", ">=", "<="}
+for rule in causal_rules:
+    assert rule["trigger_logic"] in {"AND", "OR"}
+    for trigger in rule["triggers"]:
+        assert trigger["operator"] in ALLOWED_OPS, f"Invalid operator: {trigger['operator']}"
+```
 
 ### actionability_tags.json (3-tier, not just boolean)
 ```json

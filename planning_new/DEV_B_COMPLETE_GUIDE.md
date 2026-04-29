@@ -123,9 +123,73 @@ Create/modify 11 model classes. **Start here** — everything depends on these.
 **Ref**: V3_18, V3_26, V3_27
 
 **3 things happen in extract()**:
-1. Compute 95 base features from VerifiedProfile (mostly existing code)
+1. Compute 95 base features from VerifiedProfile. **CRITICAL: Use the null-safety fallback pattern below**.
 2. **NEW**: Normalise 5 features by work-type medians (Stage 1)
 3. **NEW**: Compute 20 cross-pillar features f95-f114 (Stage 2)
+
+**Missing Data Fallback Pattern (Zero Nulls allowed)**:
+```dart
+double getFeature(String key, VerifiedProfile profile) {
+  double? raw = profile.extractFeature(key);   // 1. Try real value
+  if (raw != null && !raw.isNaN && raw >= 0.0 && raw <= 1.0) return raw;
+  return ScoringConstants.featureDefaults[key]!; // 2. Fall back to median
+}
+```
+
+**Feature Sourcing Map**:
+```text
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SOURCE 1 — Bank Statement OCR (P1, P2, P3, P4)
+  Computable from parsed transactions:
+  ✅ avg_monthly_income_norm       (mean of monthly credits)
+  ✅ income_stability_cv           (std/mean of monthly credits)
+  ✅ income_growth_slope           (linear regression slope, 6 months)
+  ✅ utility_ontime_ratio          (utility debit timing vs due dates)
+  ✅ emi_to_income_ratio           (outgoing EMI debits / total credits)
+  ✅ bounce_count_norm             (returned cheques / total transactions)
+  ✅ savings_rate_norm             (end-of-month balance trend)
+  ✅ avg_balance_norm              (mean daily balance)
+  → If bank OCR fails: USE feature_defaults.json
+
+SOURCE 2 — KYC API Response (P5)
+  ✅ aadhaar_verified              (UIDAI API boolean)
+  ✅ pan_verified                  (IT API boolean)
+  ✅ face_match_score              (Aadhaar face match confidence 0–1)
+  ✅ address_match_score           (declared vs Aadhaar address match)
+  ✅ dob_consistent                (DOB matches across documents)
+  → These are ALWAYS available if user completed KYC
+
+SOURCE 3 — Insurance OCR (P6)
+  ✅ health_insurance_active       (policy active boolean)
+  ✅ life_insurance_active         (policy active boolean)
+  ✅ insurance_premium_norm        (monthly premium / income)
+  → Default 0.0 if document not uploaded
+
+SOURCE 4 — ITR/GST Upload (P8)
+  ✅ itr_filed_binary              (ITR acknowledgement present)
+  ✅ gst_registered                (GST certificate present)
+  ✅ itr_income_vs_bank_match      (declared vs bank income ratio)
+  → Default 0.0 if document not uploaded
+
+SOURCE 5 — Onboarding Form (self-declared)
+  ✅ declared_work_type            (from Step 2 selection)
+  ✅ gig_experience_months_norm    (from Step 3 form input)
+  ✅ eshram_enrolled               (from Step 6 checkbox)
+  ⚠️ pmsym_active                 (checkbox — user may not know)
+  → Use feature_defaults for uncertain self-declared fields
+
+SOURCE 6 — NOT COLLECTABLE (use feature_defaults always)
+  ❌ peer_review_score_norm        (no collection mechanism yet)
+  ❌ customer_rating_norm          (platform API not integrated)
+  ❌ multi_platform_count_norm     (cannot verify without platform API)
+  ❌ advance_tax_paid              (requires CA letter — skip for demo)
+  ❌ ppf_account_active            (no document upload for this yet)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RULE FOR DEV B: Features in Source 6 ALWAYS use
+feature_defaults.json. Never attempt to compute them.
+Add a comment in the code: // TODO: connect platform API post-hackathon
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
 
 **Array size changes from 95 to 115**.
 
@@ -165,7 +229,34 @@ features[1] = (features[1] / median['income_cv']).clamp(0.0, 2.0) / 2.0;
 
 **P5 KYC Gate**: If f[49] < 0.5 or f[50] < 0.5, force P5 = 0.0.
 
-**Calibration**: Add isotonic calibration using knots from `calibration_knots.json` (linear interpolation between knot points). Only for P1, P2, P3, P4, P6.
+**Calibration**: Add isotonic calibration using knots from `calibration_knots.json`. Only for P1, P2, P3, P4, P6.
+
+**Exact Isotonic Math Function (Use verbatim)**:
+```dart
+/// Sklearn-compatible isotonic interpolation.
+/// Matches sklearn.isotonic.IsotonicRegression.predict() exactly.
+/// [xKnots] and [yKnots] are from calibration_knots.json per pillar.
+double isotonicInterpolate(
+    double x, List<double> xKnots, List<double> yKnots) {
+
+  // Below lower bound → return leftmost y (sklearn clips, not extrapolates)
+  if (x <= xKnots.first) return yKnots.first;
+
+  // Above upper bound → return rightmost y (sklearn clips, not extrapolates)
+  if (x >= xKnots.last) return yKnots.last;
+
+  // Binary search for the interval [xKnots[i], xKnots[i+1]] containing x
+  int lo = 0, hi = xKnots.length - 2;
+  while (lo < hi) {
+    int mid = (lo + hi) ~/ 2;
+    if (xKnots[mid + 1] < x) { lo = mid + 1; } else { hi = mid; }
+  }
+
+  // Linear interpolation within interval (piecewise linear = sklearn default)
+  double t = (x - xKnots[lo]) / (xKnots[lo + 1] - xKnots[lo]);
+  return yKnots[lo] + t * (yKnots[lo + 1] - yKnots[lo]);
+}
+```
 
 **Checklist**:
 - [ ] Cross-pillar indices match V3_26 routing table exactly
@@ -262,6 +353,25 @@ Each path shows projected score + projected grade.
 **Ref**: V3_19
 
 Loads `causal_chains.json` (15 rules). For each rule: check trigger conditions against feature values, check work_type applicability. Return max 3 matched chains.
+
+**Exact Evaluator Logic (Use verbatim)**:
+```dart
+bool evaluateRule(CausalRule rule, List<double> features) {
+  List<bool> results = rule.triggers.map((t) {
+    double val = features[t.featureIndex];
+    return switch (t.operator) {
+      ">"  => val > t.threshold,
+      "<"  => val < t.threshold,
+      ">=" => val >= t.threshold,
+      "<=" => val <= t.threshold,
+      _    => false,
+    };
+  }).toList();
+  return rule.triggerLogic == "AND"
+      ? results.every((r) => r)
+      : results.any((r) => r);
+}
+```
 
 ---
 

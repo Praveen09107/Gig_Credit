@@ -1,4 +1,4 @@
-# V3.0 JSON Asset Schemas (CORRECTED — 11 Files)
+# V3.0 JSON Asset Schemas (CORRECTED — 12 Files)
 
 ## Complete List of JSON Files Dev A Generates → Dev B Consumes
 
@@ -15,6 +15,7 @@
 | 9 | `work_type_medians.json` | <1KB | synthetic_data_gen.py | feature_engineer.dart |
 | 10 | `causal_chains.json` | ~5KB | hand-written | layer8_causal_rules.dart |
 | 11 | `loan_thresholds.json` | <1KB | threshold_calibrator.py | backend loan_router.py |
+| 12 | `feature_defaults.json` | ~3KB | constants_exporter.py | feature_engineer.dart |
 
 ---
 
@@ -76,30 +77,26 @@
 ```json
 {
   "P1": {
-    "knots_x": [0.0, 0.15, 0.30, 0.45, 0.60, 0.75, 0.90, 1.0],
-    "knots_y": [0.0, 0.12, 0.28, 0.47, 0.62, 0.78, 0.92, 1.0],
+    "pillar": "P1",
+    "x_knots": [0.000000, 0.124831, 0.287654],  // min 6 decimals
+    "y_knots": [0.000000, 0.118203, 0.301045],  // strictly increasing
+    "n_knots": 42,
+    "input_range": [0.0, 1.0],
+    "output_range": [0.0, 1.0],
     "model_type": "lgbm"
   },
   "P2": {
-    "knots_x": [...],
-    "knots_y": [...],
+    "pillar": "P2",
+    "x_knots": [...],
+    "y_knots": [...],
+    "n_knots": 35,
+    "input_range": [0.0, 1.0],
+    "output_range": [0.0, 1.0],
     "model_type": "xgb"
   },
-  "P3": {
-    "knots_x": [...],
-    "knots_y": [...],
-    "model_type": "xgb_shallow"
-  },
-  "P4": {
-    "knots_x": [...],
-    "knots_y": [...],
-    "model_type": "lgbm"
-  },
-  "P6": {
-    "knots_x": [...],
-    "knots_y": [...],
-    "model_type": "extratrees"
-  }
+  "P3": {...},
+  "P4": {...},
+  "P6": {...}
 }
 ```
 - Only 5 entries (ML pillars). P5/P7/P8 scorecards skip calibration.
@@ -238,22 +235,31 @@
 ## 10. `causal_chains.json`
 
 ```json
-[
-  {
-    "id": "high_emi_low_income",
-    "trigger_conditions": [
-      {"feature": "emi_to_income_ratio", "index": 28, "op": "<", "value": 0.40},
-      {"feature": "income_stability_cv", "index": 1, "op": "<", "value": 0.50}
-    ],
-    "root_cause": "income_seasonality",
-    "chain": "Seasonal income drop → difficulty meeting EMI → low debt score",
-    "user_message": "Your debt burden is high relative to volatile income...",
-    "fix": "Consider multi-platform registration to smooth seasonal dips",
-    "applicable_work_types": ["platform_worker", "street_vendor"]
-  }
-]
+{
+  "version": "v3.0",
+  "rules": [
+    {
+      "rule_id": "CC_001",
+      "name": "high_emi_low_income",
+      "triggers": [
+        { "feature_index": 28, "operator": ">", "threshold": 0.50 },
+        { "feature_index": 1,  "operator": "<", "threshold": 0.20 }
+      ],
+      "trigger_logic": "AND",
+      "root_cause": "income_seasonality",
+      "causal_chain": "Seasonal income drop → difficulty meeting EMI → low P3 score",
+      "applicant_message": "Your debt burden is high relative to your income. The root cause appears to be income volatility, not overspending. Stabilising income across months is the primary fix.",
+      "actionable": true,
+      "action_text": "Register on 2–3 gig platforms to smooth seasonal income dips.",
+      "pillar_affected": "P3",
+      "work_types": ["platform_worker", "street_vendor"]
+    }
+  ]
+}
 ```
 - **15 rules** covering 80% of common gig worker patterns
+- Allowed operators: `>`, `<`, `>=`, `<=` (only these 4)
+- `trigger_logic`: `AND` or `OR` (never nested)
 
 ---
 
@@ -288,5 +294,89 @@ flutter:
     - assets/constants/feature_display_names.json
     - assets/constants/work_type_medians.json
     - assets/constants/causal_chains.json
+    - assets/constants/feature_defaults.json
 ```
 (loan_thresholds.json is server-side only, not bundled in app)
+
+---
+
+## 12. `feature_defaults.json`
+
+```json
+{
+  "version": "v3.0",
+  "strategy": "training_set_median",
+  "note": "Apply before Stage 1 normalisation. Never pass null/NaN to m2cgen.",
+  "defaults": {
+    "avg_monthly_income_norm":        0.42,
+    "income_stability_cv":            0.55,
+    "income_growth_slope":            0.50,
+    "utility_ontime_ratio":           0.72,
+    "emi_to_income_ratio":            0.38,
+    "aadhaar_verified":               1.00,
+    "pan_verified":                   0.00,
+    "health_insurance_active":        0.00,
+    "eshram_enrolled":                0.00,
+    "itr_filed_binary":               0.00,
+    "...":                            "..."
+  }
+}
+```
+
+---
+
+## FEATURE SOURCING MAP — Dev B Reference
+
+```text
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SOURCE 1 — Bank Statement OCR (P1, P2, P3, P4)
+  Computable from parsed transactions:
+  ✅ avg_monthly_income_norm       (mean of monthly credits)
+  ✅ income_stability_cv           (std/mean of monthly credits)
+  ✅ income_growth_slope           (linear regression slope, 6 months)
+  ✅ utility_ontime_ratio          (utility debit timing vs due dates)
+  ✅ emi_to_income_ratio           (outgoing EMI debits / total credits)
+  ✅ bounce_count_norm             (returned cheques / total transactions)
+  ✅ savings_rate_norm             (end-of-month balance trend)
+  ✅ avg_balance_norm              (mean daily balance)
+  → If bank OCR fails: USE feature_defaults.json
+
+SOURCE 2 — KYC API Response (P5)
+  ✅ aadhaar_verified              (UIDAI API boolean)
+  ✅ pan_verified                  (IT API boolean)
+  ✅ face_match_score              (Aadhaar face match confidence 0–1)
+  ✅ address_match_score           (declared vs Aadhaar address match)
+  ✅ dob_consistent                (DOB matches across documents)
+  → These are ALWAYS available if user completed KYC
+
+SOURCE 3 — Insurance OCR (P6)
+  ✅ health_insurance_active       (policy active boolean)
+  ✅ life_insurance_active         (policy active boolean)
+  ✅ insurance_premium_norm        (monthly premium / income)
+  → Default 0.0 if document not uploaded
+
+SOURCE 4 — ITR/GST Upload (P8)
+  ✅ itr_filed_binary              (ITR acknowledgement present)
+  ✅ gst_registered                (GST certificate present)
+  ✅ itr_income_vs_bank_match      (declared vs bank income ratio)
+  → Default 0.0 if document not uploaded
+
+SOURCE 5 — Onboarding Form (self-declared)
+  ✅ declared_work_type            (from Step 2 selection)
+  ✅ gig_experience_months_norm    (from Step 3 form input)
+  ✅ eshram_enrolled               (from Step 6 checkbox)
+  ⚠️ pmsym_active                 (checkbox — user may not know)
+  → Use feature_defaults for uncertain self-declared fields
+
+SOURCE 6 — NOT COLLECTABLE (use feature_defaults always)
+  ❌ peer_review_score_norm        (no collection mechanism yet)
+  ❌ customer_rating_norm          (platform API not integrated)
+  ❌ multi_platform_count_norm     (cannot verify without platform API)
+  ❌ advance_tax_paid              (requires CA letter — skip for demo)
+  ❌ ppf_account_active            (no document upload for this yet)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RULE FOR DEV B: Features in Source 6 ALWAYS use
+feature_defaults.json. Never attempt to compute them.
+Add a comment in the code: // TODO: connect platform API post-hackathon
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
