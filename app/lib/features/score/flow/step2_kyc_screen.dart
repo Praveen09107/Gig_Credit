@@ -241,12 +241,22 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
 
   void _onAadhaarFrontExtracted(Map<String, dynamic> data) {
     ref.read(ocrResultsProvider.notifier).addResult('aadhaar_front', data);
+    
+    if (data.containsKey('aadhaar_number') && data['aadhaar_number'] != null) {
+      _aadhaarController.text = data['aadhaar_number'];
+    }
+
     setState(() => _aadhaarFrontExtracted = true);
     _runCrossValidation();
   }
 
   void _onPanExtracted(Map<String, dynamic> data) {
     ref.read(ocrResultsProvider.notifier).addResult('pan', data);
+
+    if (data.containsKey('pan_number') && data['pan_number'] != null) {
+      _panController.text = data['pan_number'];
+    }
+
     setState(() => _panExtracted = true);
     _runCrossValidation();
   }
@@ -398,38 +408,24 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
             ),
           const SizedBox(height: 16),
 
-          // Aadhaar Front Upload — enabled only after Aadhaar verified
-          AnimatedOpacity(
-            opacity: (_aadhaarVerified || isVerified) ? 1.0 : 0.4,
-            duration: const Duration(milliseconds: 400),
-            child: IgnorePointer(
-              ignoring: !_aadhaarVerified && !isVerified,
-              child: DocumentUploadCard(
-                title: 'Aadhaar Card — Front Side',
-                subtitle: _aadhaarVerified ? 'Photo showing name, DOB, Aadhaar number' : '🔒 Verify Aadhaar number first',
-                docType: 'aadhaar_front',
-                ocrService: ocrService,
-                onExtracted: _onAadhaarFrontExtracted,
-              ),
-            ),
+          // Aadhaar Front Upload
+          DocumentUploadCard(
+            title: 'Aadhaar Card — Front Side',
+            subtitle: 'Photo showing name, DOB, Aadhaar number',
+            docType: 'aadhaar_front',
+            ocrService: ocrService,
+            onExtracted: _onAadhaarFrontExtracted,
           ),
           const SizedBox(height: 12),
 
-          // Aadhaar Back Upload — enabled only after Aadhaar verified
-          AnimatedOpacity(
-            opacity: (_aadhaarVerified || isVerified) ? 1.0 : 0.4,
-            duration: const Duration(milliseconds: 400),
-            child: IgnorePointer(
-              ignoring: !_aadhaarVerified && !isVerified,
-              child: DocumentUploadCard(
-                title: 'Aadhaar Card — Back Side',
-                subtitle: _aadhaarVerified ? 'Photo showing full address, PIN code' : '🔒 Verify Aadhaar number first',
-                docType: 'aadhaar_back',
-                ocrService: ocrService,
-                isRequired: false,
-                onExtracted: _onAadhaarBackExtracted,
-              ),
-            ),
+          // Aadhaar Back Upload
+          DocumentUploadCard(
+            title: 'Aadhaar Card — Back Side',
+            subtitle: 'Photo showing full address, PIN code',
+            docType: 'aadhaar_back',
+            ocrService: ocrService,
+            isRequired: false,
+            onExtracted: _onAadhaarBackExtracted,
           ),
 
           const SizedBox(height: 28),
@@ -468,20 +464,13 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
             ),
           const SizedBox(height: 16),
 
-          // PAN Card Photo Upload — enabled only after PAN verified
-          AnimatedOpacity(
-            opacity: (_panVerified || isVerified) ? 1.0 : 0.4,
-            duration: const Duration(milliseconds: 400),
-            child: IgnorePointer(
-              ignoring: !_panVerified && !isVerified,
-              child: DocumentUploadCard(
-                title: 'PAN Card Photo',
-                subtitle: _panVerified ? 'Photo showing PAN number, name, DOB' : '🔒 Verify PAN number first',
-                docType: 'pan',
-                ocrService: ocrService,
-                onExtracted: _onPanExtracted,
-              ),
-            ),
+          // PAN Card Photo Upload
+          DocumentUploadCard(
+            title: 'PAN Card Photo',
+            subtitle: 'Photo showing PAN number, name, DOB',
+            docType: 'pan',
+            ocrService: ocrService,
+            onExtracted: _onPanExtracted,
           ),
 
           const SizedBox(height: 28),

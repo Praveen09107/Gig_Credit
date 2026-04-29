@@ -14,10 +14,17 @@ class _HeroImageSliderState extends State<HeroImageSlider> {
   final PageController _controller = PageController(viewportFraction: 0.85);
 
   final List<String> _images = [
-    'assets/images/testing_1.jpeg',
-    'assets/images/testing_2.jpeg',
-    'assets/images/testing_3.jpeg',
-    'assets/images/testing_4.jpeg',
+    'assets/images/gig_delivery.jpeg',
+    'assets/images/gig_plumber.jpeg',
+    'assets/images/gig_electrician.jpeg',
+    'assets/images/gig_construction.jpeg',
+  ];
+
+  final List<String> _captions = [
+    'Delivery Partners',
+    'Skilled Tradespeople',
+    'Electricians & Technicians',
+    'Construction Workers',
   ];
 
   @override
@@ -32,12 +39,12 @@ class _HeroImageSliderState extends State<HeroImageSlider> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Real World Testing',
+          'Empowering India\'s Gig Workers',
           style: AppTypography.titleLarge,
         ),
         const SizedBox(height: 8),
         Text(
-          'Empowering gig workers with accessible credit across the nation.',
+          'Building financial inclusion for 300M+ informal workers across India.',
           style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
         ),
         const SizedBox(height: 16),
@@ -94,7 +101,7 @@ class _HeroImageSliderState extends State<HeroImageSlider> {
                     alignment: Alignment.bottomLeft,
                     padding: const EdgeInsets.all(16),
                     child: Text(
-                      'Community Testing ${index + 1}',
+                      _captions[index],
                       style: AppTypography.titleMedium.copyWith(color: Colors.white),
                     ),
                   ),

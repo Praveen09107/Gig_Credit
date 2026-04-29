@@ -76,12 +76,11 @@ class RealOcrService implements OcrService {
     final cleanText = text.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
 
     // 1. Identity Check
-    // Removed short keywords (VID) and generic words (DEPARTMENT) which cause false positives.
-    // Also requiring the word AADHAAR/UIDAI explicitly rather than just any 12 digits (since invoices have 12 digits).
     final isAadhaar = _fuzzyMatch(text, ['AADHAAR', 'AADHAR', 'UNIQUEIDENTIFICATION', 'GOVERNMENTOFINDIA', 'UIDAI']);
-    
-    // PAN check strictly requires the 10-char regex OR extremely explicit tax keywords.
-    final isPan = _fuzzyMatch(text, ['INCOMETAX', 'PERMANENTACCOUNT', 'GOVTOFINDIA', 'PANCARD']) || RegExp(r'[A-Z]{5}\d{4}[A-Z]').hasMatch(cleanText);
+    final panMatch = RegExp(r'[A-Z]{5}\d{4}[A-Z]').firstMatch(cleanText);
+    final isPan = _fuzzyMatch(text, ['INCOMETAX', 'PERMANENTACCOUNT', 'GOVTOFINDIA', 'PANCARD']) || panMatch != null;
+
+    Map<String, dynamic> extractedData = {};
 
     if (docType == 'aadhaar_front' || docType == 'aadhaar_back') {
       if (isPan && !isAadhaar) {
@@ -90,7 +89,14 @@ class RealOcrService implements OcrService {
       if (!isAadhaar) {
         throw Exception('Could not detect Aadhaar details. Please upload a clear Aadhaar card image.');
       }
-      return {'raw_text': text, 'doc_type': docType, 'confidence': 0.95, 'image_path': imagePath};
+      
+      // Extract 12 digit Aadhaar number
+      final aadhaarMatch = RegExp(r'\d{4}\s?\d{4}\s?\d{4}').firstMatch(text);
+      if (aadhaarMatch != null) {
+        extractedData['aadhaar_number'] = aadhaarMatch.group(0)?.replaceAll(' ', '');
+      }
+      
+      return {'raw_text': text, 'doc_type': docType, 'confidence': 0.95, 'image_path': imagePath, ...extractedData};
     } 
     else if (docType == 'pan') {
       if (isAadhaar && !isPan) {
@@ -99,11 +105,14 @@ class RealOcrService implements OcrService {
       if (!isPan) {
         throw Exception('Could not detect PAN details. Please upload a clear PAN card image.');
       }
-      return {'raw_text': text, 'doc_type': docType, 'confidence': 0.95, 'image_path': imagePath};
+      
+      if (panMatch != null) {
+        extractedData['pan_number'] = panMatch.group(0);
+      }
+      
+      return {'raw_text': text, 'doc_type': docType, 'confidence': 0.95, 'image_path': imagePath, ...extractedData};
     }
     else if (docType == 'bank_statement') {
-      // Replaced short acronyms (SBI, IFSC, MICR) with long explicit forms to prevent false positives in spaceless strings.
-      // E.g. 'IFSCCODE' instead of 'IFSC', 'HDFCBANK' instead of 'HDFC'.
       final isBank = _fuzzyMatch(text, [
         'HDFCBANK', 'ICICIBANK', 'AXISBANK', 'STATEBANK', 'PUNJAB', 'BANKOFBARODA', 
         'KOTAKMAHINDRA', 'CANARABANK', 'IFSCCODE', 'MICRCODE', 'SAVINGSACCOUNT', 'SAVINGACCOUNT',
@@ -113,27 +122,31 @@ class RealOcrService implements OcrService {
       if (!isBank) {
         throw Exception('Not a valid Bank Statement. Please upload a clear PDF or image of your statement.');
       }
-      return {'raw_text': text, 'doc_type': docType, 'confidence': 0.95, 'parsed': true, 'image_path': imagePath};
+      return {'raw_text': text, 'doc_type': docType, 'confidence': 0.95, 'parsed': true, 'image_path': imagePath, 'statement_verified': true};
     }
     else if (docType == 'utility_elec' || docType == 'utility_water' || docType == 'utility_gas' || docType == 'utility_mobile' || docType == 'utility_internet' || docType == 'utility_wifi' || docType == 'utility_rent') {
       if (!_fuzzyMatch(text, ['BILL', 'INVOICE', 'AMOUNT', 'PAYMENT', 'DUE', 'CONSUMER', 'ACCOUNT', 'RECEIPT'])) {
         throw Exception('This does not look like a valid bill or receipt. Please upload a clear image.');
       }
+      extractedData['bill_verified'] = true;
     }
     else if (docType == 'work_rc') {
       if (!_fuzzyMatch(text, ['REGISTRATION', 'VEHICLE', 'CHASSIS', 'ENGINE', 'CLASS'])) {
         throw Exception('This does not look like an RC Book. Please upload a clear image.');
       }
+      extractedData['rc_verified'] = true;
     }
     else if (docType == 'work_dl_front' || docType == 'work_dl_back') {
       if (!_fuzzyMatch(text, ['DRIVING', 'LICENCE', 'LICENSE', 'TRANSPORT', 'AUTHORIZATION', 'DOB'])) {
         throw Exception('This does not look like a Driving Licence. Please upload a clear image.');
       }
+      extractedData['dl_verified'] = true;
     }
     else if (docType.contains('eshram')) {
       if (!_fuzzyMatch(text, ['ESHRAM', 'SHRAM', 'UAN', 'LABOUR', 'WORKER'])) {
         throw Exception('This does not look like an eShram card. Please upload a clear image.');
       }
+      extractedData['eshram_verified'] = true;
     }
 
     // Default fallback
@@ -142,6 +155,7 @@ class RealOcrService implements OcrService {
       'doc_type': docType,
       'confidence': confidence,
       'image_path': imagePath,
+      ...extractedData
     };
   }
 }
