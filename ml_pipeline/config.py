@@ -1,13 +1,16 @@
 """
-GigCredit ML Pipeline — Shared Configuration
-==============================================
-Central config for all training, export, and validation scripts.
+GigCredit ML Pipeline — Shared Configuration (V3.0 RESOLVED)
+==============================================================
+Single source of truth. All 6 gap-analysis answers locked here.
 Version 3.0 | April 2026
 """
 
+import os
 from pathlib import Path
 
-# ─── Paths ──────────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════
+# PATHS
+# ═══════════════════════════════════════════════════════════════════════════
 ROOT_DIR    = Path(__file__).resolve().parent
 DATA_DIR    = ROOT_DIR / "data" / "generated"
 MODELS_DIR  = ROOT_DIR / "output" / "models"
@@ -15,385 +18,491 @@ ASSETS_DIR  = ROOT_DIR / "output" / "assets"
 EXPORT_DIR  = ROOT_DIR / "output" / "dart_export"
 GOLDEN_DIR  = ROOT_DIR / "output" / "golden"
 
-# Flutter app asset target
 FLUTTER_ASSETS = ROOT_DIR.parent / "app" / "assets" / "constants"
 FLUTTER_MODELS = ROOT_DIR.parent / "app" / "lib" / "scoring" / "models"
 
-# Ensure all output dirs exist
 for d in [DATA_DIR, MODELS_DIR, ASSETS_DIR, EXPORT_DIR, GOLDEN_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
-# ─── Constants ──────────────────────────────────────────────────────────────
-SEED          = 42
-N_PROFILES    = 15_000
-N_FEATURES    = 95
-N_PILLARS_ML  = 5         # P1, P2, P3, P4, P6 (ML-scored)
-N_PILLARS     = 8         # P1–P8 total
+# ═══════════════════════════════════════════════════════════════════════════
+# RESOLVED CONSTANTS (Gap Analysis Q1–Q6, locked April 2026)
+# ═══════════════════════════════════════════════════════════════════════════
+SEED       = 42
+N_PROFILES = 15_000          # Q6: 15K (hackathon speed)
+N_FEATURES = 95              # base features
+N_CROSS    = 20              # cross-pillar features
+N_TOTAL    = N_FEATURES + N_CROSS  # 115 total
 
-ML_PILLARS    = ["P1", "P2", "P3", "P4", "P6"]
-RULE_PILLARS  = ["P5", "P7", "P8"]
-ALL_PILLARS   = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"]
+N_PILLARS_ML = 5             # P1, P2, P3, P4, P6
+N_PILLARS    = 8             # P1–P8
 
-WORK_TYPES    = ["platform_worker", "street_vendor",
-                 "skilled_tradesperson", "freelancer"]
+ML_PILLARS   = ["P1", "P2", "P3", "P4", "P6"]
+RULE_PILLARS = ["P5", "P7", "P8"]
+ALL_PILLARS  = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"]
 
-# ─── 95-Feature Schema ─────────────────────────────────────────────────────
+# Q3: Work type distribution — 30/30/20/20 (V3_07)
+WORK_TYPES = ["platform_worker", "street_vendor",
+              "skilled_tradesperson", "freelancer"]
+WORK_TYPE_DIST = {
+    "platform_worker":      0.30,
+    "street_vendor":        0.30,
+    "skilled_tradesperson": 0.20,
+    "freelancer":           0.20,
+}
+
+# Q4: Data split — 70/20/10 (conformal needs own set)
+TRAIN_RATIO = 0.70
+VAL_RATIO   = 0.20
+CAL_RATIO   = 0.10
+
+# Model types per pillar
+MODEL_TYPES = {
+    "P1": "lgbm", "P2": "xgb", "P3": "xgb_shallow",
+    "P4": "lgbm", "P6": "extratrees",
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Q1: FEATURE NAMES — ml A-Z spec (authoritative, single source)
+# ═══════════════════════════════════════════════════════════════════════════
 FEATURE_NAMES = [
-    # P1 Income Stability (0–12, 13 features)
-    "avg_monthly_income_norm",
-    "income_stability_cv",
-    "income_growth_slope",
-    "income_months_active",
-    "income_platform_verified_ratio",
-    "income_bank_deposit_match_ratio",
-    "income_zero_month_count",
-    "income_irregular_spike_count",
-    "income_state_percentile_rank",
-    "income_seasonality_amplitude",
-    "income_source_diversity",
-    "multi_platform_count_norm",
-    "platform_tenure_months_norm",
+    # P1 Income Stability (f0–f12, 13 features)
+    "avg_monthly_income_norm",           # f0
+    "income_stability_cv",               # f1
+    "income_growth_slope",               # f2
+    "income_months_active",              # f3
+    "income_platform_verified_ratio",    # f4
+    "income_seasonality_amplitude",      # f5
+    "income_source_diversity",           # f6
+    "income_bank_deposit_match_ratio",   # f7
+    "income_lowest_to_avg_ratio",        # f8
+    "income_last_3_vs_prev_3",           # f9
+    "income_zero_month_count",           # f10
+    "income_irregular_spike_count",      # f11
+    "income_state_percentile_rank",      # f12
 
-    # P2 Payment Discipline (13–27, 15 features)
-    "utility_ontime_ratio",
-    "emi_ontime_ratio",
-    "bounce_count_norm",
-    "late_payment_frequency",
-    "payment_regularity_streak",
-    "standing_instruction_success_rate",
-    "rent_ontime_ratio",
-    "mobile_recharge_regularity",
-    "postpaid_ontime_ratio",
-    "loan_prepayment_indicator",
-    "digital_payment_adoption",
-    "autopay_enrollment",
-    "payment_channel_diversity",
-    "oldest_active_credit_months_norm",
-    "credit_utilization_ratio",
+    # P2 Payment Discipline (f13–f27, 15 features)
+    "utility_ontime_ratio",              # f13
+    "emi_ontime_ratio",                  # f14
+    "bounce_count_norm",                 # f15
+    "late_payment_frequency",            # f16
+    "payment_regularity_streak",         # f17
+    "rent_ontime_ratio",                 # f18
+    "credit_card_min_payment_rate",      # f19
+    "p2p_repayment_ratio",              # f20
+    "utility_advance_payment_ratio",     # f21
+    "late_fee_incidence_norm",           # f22
+    "payment_channel_digital_ratio",     # f23
+    "emi_prepayment_count_norm",         # f24
+    "missed_payment_recovery_speed",     # f25
+    "standing_instruction_success_rate", # f26
+    "payment_amount_consistency",        # f27
 
-    # P3 Debt Management (28–36, 9 features)
-    "emi_to_income_ratio",
-    "debt_count_norm",
-    "debt_service_coverage_ratio",
-    "debt_to_asset_ratio",
-    "short_term_debt_ratio",
-    "avg_loan_tenure_norm",
-    "debt_reduction_trend",
-    "new_debt_last_3m_indicator",
-    "debt_consolidation_flag",
+    # P3 Debt Management (f28–f36, 9 features)
+    "emi_to_income_ratio",               # f28
+    "debt_count_norm",                   # f29
+    "outstanding_debt_to_income_ratio",  # f30
+    "debt_repayment_progress_ratio",     # f31
+    "mfi_loan_presence",                 # f32
+    "informal_debt_ratio",               # f33
+    "debt_stacking_indicator",           # f34
+    "debt_service_coverage_ratio",       # f35
+    "debt_consolidation_behavior",       # f36
 
-    # P4 Savings Behaviour (37–48, 12 features)
-    "savings_rate",
-    "avg_month_end_balance_norm",
-    "emergency_fund_months",
-    "savings_consistency_score",
-    "balance_volatility_norm",
-    "liquid_asset_to_income",
-    "recurring_savings_deposit_indicator",
-    "fixed_deposit_indicator",
-    "digital_wallet_balance_norm",
-    "gold_investment_indicator",
-    "savings_growth_slope",
-    "financial_shock_recovery",
+    # P4 Savings Behaviour (f37–f48, 12 features)
+    "avg_month_end_balance_norm",        # f37
+    "savings_rate",                      # f38
+    "balance_growth_slope",              # f39
+    "savings_consistency_score",         # f40
+    "emergency_fund_months",             # f41
+    "recurring_savings_deposit_indicator",# f42
+    "balance_volatility_norm",           # f43
+    "withdrawal_pattern_regularity",     # f44
+    "savings_to_debt_ratio",             # f45
+    "digital_wallet_balance_norm",       # f46
+    "surplus_after_obligations_ratio",   # f47
+    "savings_goal_consistency",          # f48
 
-    # P5 Work & Identity (49–66, 18 features)
-    "aadhaar_verified",
-    "pan_verified",
-    "work_proof_present",
-    "gig_experience_months_norm",
-    "eshram_enrolled",
-    "customer_rating_norm",
-    "platform_level_norm",
-    "professional_certification",
-    "multi_skill_indicator",
-    "work_regularity_score",
-    "avg_daily_hours_norm",
-    "weekly_active_days_norm",
-    "peak_season_availability",
-    "reference_count_norm",
-    "professional_network_size_norm",
-    "repeat_client_ratio",
-    "dispute_resolution_ratio",
-    "work_area_stability_score",
+    # P5 Work & Identity (f49–f66, 18 features)
+    "aadhaar_verified",                  # f49
+    "pan_verified",                      # f50
+    "face_match_score",                  # f51
+    "address_match_score",               # f52
+    "dob_consistent",                    # f53
+    "name_consistency_score",            # f54
+    "work_proof_present",                # f55
+    "work_proof_type_score",             # f56
+    "platform_onboarding_verified",      # f57
+    "employer_verification_score",       # f58
+    "work_type_income_consistency",      # f59
+    "gig_experience_months_norm",        # f60
+    "multi_platform_count_norm",         # f61
+    "professional_certification",        # f62
+    "work_continuity_score",             # f63
+    "customer_rating_norm",              # f64
+    "income_to_worktype_ratio",          # f65
+    "alternate_id_present",              # f66
 
-    # P6 Financial Resilience (67–77, 11 features)
-    "health_insurance_active",
-    "life_insurance_active",
-    "pm_sym_enrollment",
-    "vehicle_insurance_active",
-    "crop_insurance_active",
-    "welfare_scheme_active",
-    "self_help_group_member",
-    "family_support_index",
-    "asset_ownership_score",
-    "income_replacement_ratio",
-    "pm_svanidhi_enrolled",
+    # P6 Financial Resilience (f67–f77, 11 features)
+    "health_insurance_active",           # f67
+    "life_insurance_active",             # f68
+    "vehicle_insurance_active",          # f69
+    "crop_insurance_active",             # f70
+    "accident_coverage_active",          # f71
+    "pm_sym_enrollment",                 # f72
+    "total_insurance_count_norm",        # f73
+    "insurance_premium_regularity",      # f74
+    "medical_expense_ratio",             # f75
+    "financial_shock_recovery",          # f76
+    "liquid_asset_to_income",            # f77
 
-    # P7 Social Accountability (78–87, 10 features)
-    "community_standing_score",
-    "group_lending_participant",
-    "trade_association_member",
-    "cooperative_member",
-    "mentor_mentee_active",
-    "social_media_business_presence",
-    "community_event_participation",
-    "neighbourhood_trust_score",
-    "years_at_current_address_norm",
-    "family_dependents_norm",
+    # P7 Social Accountability (f78–f87, 10 features)
+    "eshram_enrolled",                   # f78
+    "mudra_loan_history",                # f79
+    "pm_svanidhi_enrolled",              # f80
+    "pm_kisan_enrolled",                 # f81
+    "government_scheme_count_norm",      # f82
+    "welfare_scheme_active",             # f83
+    "self_help_group_member",            # f84
+    "community_lending_record",          # f85
+    "social_reference_score",            # f86
+    "civic_identity_score",              # f87
 
-    # P8 Tax & Compliance (88–94, 7 features)
-    "itr_filed_this_year",
-    "itr_years_filed_norm",
-    "gst_registered",
-    "pan_linked_to_bank",
-    "udyam_registered",
-    "fssai_license_active",
-    "professional_tax_paid",
+    # P8 Tax & Compliance (f88–f94, 7 features)
+    "itr_filed_this_year",               # f88
+    "itr_years_filed_norm",              # f89
+    "itr_income_match_ratio",            # f90
+    "gst_registered",                    # f91
+    "gst_return_regularity",             # f92
+    "pan_linked_to_bank",                # f93
+    "tax_liability_settled",             # f94
 ]
 
 assert len(FEATURE_NAMES) == N_FEATURES, \
     f"Expected {N_FEATURES} features, got {len(FEATURE_NAMES)}"
 
-# ─── Pillar Feature Slicing ────────────────────────────────────────────────
-PILLAR_FEATURE_SLICES = {
-    "P1": FEATURE_NAMES[0:13],
-    "P2": FEATURE_NAMES[13:28],
-    "P3": FEATURE_NAMES[28:37],
-    "P4": FEATURE_NAMES[37:49],
-    "P5": FEATURE_NAMES[49:67],
-    "P6": FEATURE_NAMES[67:78],
-    "P7": FEATURE_NAMES[78:88],
-    "P8": FEATURE_NAMES[88:95],
-}
+# ── Cross-pillar feature names (f95–f114) ────────────────────────────────
+CROSS_FEATURE_NAMES = [
+    # Group A: Income × Debt (4)
+    "income_debt_stress_index",              # f95
+    "debt_vulnerability_score",              # f96
+    "income_emi_coverage",                   # f97
+    "income_trend_vs_debt_trend",            # f98
+    # Group B: Payment × Savings (3)
+    "payment_savings_alignment",             # f99
+    "buffer_payment_composite",              # f100
+    "digital_savings_discipline",            # f101
+    # Group C: Resilience Composite (3)
+    "financial_shock_resistance",            # f102
+    "resilience_debt_mismatch",              # f103
+    "insurance_income_anchor",               # f104
+    # Group D: Gig Stability Streaks (4)
+    "consistent_earning_payment_streak",     # f105
+    "income_payment_trend_alignment",        # f106
+    "platform_payment_reliability",          # f107
+    "income_floor_payment_consistency",      # f108
+    # Group E: Formal Recognition (3)
+    "formal_recognition_income_alignment",   # f109
+    "tax_income_consistency_ratio",          # f110
+    "scheme_income_combined",                # f111
+    # Group F: Temporal (3)
+    "seasonal_income_volatility",            # f112
+    "payment_regularity_entropy",            # f113
+    "balance_recovery_speed",                # f114
+]
 
+assert len(CROSS_FEATURE_NAMES) == N_CROSS
+ALL_FEATURE_NAMES = FEATURE_NAMES + CROSS_FEATURE_NAMES
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PILLAR FEATURE SLICING
+# ═══════════════════════════════════════════════════════════════════════════
 PILLAR_FEATURE_RANGES = {
     "P1": (0, 13),   "P2": (13, 28),  "P3": (28, 37),
     "P4": (37, 49),  "P5": (49, 67),  "P6": (67, 78),
     "P7": (78, 88),  "P8": (88, 95),
 }
 
-# ─── Pillar Weights (for final score composition) ──────────────────────────
+PILLAR_FEATURE_SLICES = {
+    p: FEATURE_NAMES[s:e] for p, (s, e) in PILLAR_FEATURE_RANGES.items()
+}
+
+# Cross-pillar routing (which cross features go to which pillar)
+P1_CROSS = [95, 96, 97, 98]        # Group A
+P2_CROSS = [105, 106, 107, 108]    # Group D
+P3_CROSS = [95, 96, 97, 98]        # Group A (shared with P1)
+P4_CROSS = [99, 100, 101, 102]     # Group B + C[0]
+P6_CROSS = [102, 103, 104]         # Group C
+
+PILLAR_CROSS_INDICES = {
+    "P1": P1_CROSS, "P2": P2_CROSS, "P3": P3_CROSS,
+    "P4": P4_CROSS, "P6": P6_CROSS,
+}
+
+# Full input sizes (base + cross)
+PILLAR_INPUT_SIZES = {
+    "P1": 17, "P2": 19, "P3": 13, "P4": 16,
+    "P5": 18, "P6": 14, "P7": 10, "P8": 7,
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Q2: PILLAR WEIGHTS — Set A, used EVERYWHERE (one set only)
+# ═══════════════════════════════════════════════════════════════════════════
 PILLAR_WEIGHTS = {
     "P1": 0.22, "P2": 0.18, "P3": 0.12, "P4": 0.13,
     "P5": 0.10, "P6": 0.10, "P7": 0.08, "P8": 0.07,
 }
+assert abs(sum(PILLAR_WEIGHTS.values()) - 1.0) < 1e-9, "Pillar weights must sum to 1.0"
 
-# ─── Scorecard Weights (P5, P7, P8 — rule-based) ──────────────────────────
-P5_WEIGHTS = {
-    "aadhaar_verified": 0.15, "pan_verified": 0.15,
-    "work_proof_present": 0.10, "gig_experience_months_norm": 0.08,
-    "eshram_enrolled": 0.08, "customer_rating_norm": 0.06,
-    "platform_level_norm": 0.05, "professional_certification": 0.04,
-    "multi_skill_indicator": 0.03, "work_regularity_score": 0.06,
-    "avg_daily_hours_norm": 0.04, "weekly_active_days_norm": 0.04,
-    "peak_season_availability": 0.02, "reference_count_norm": 0.02,
-    "professional_network_size_norm": 0.02, "repeat_client_ratio": 0.03,
-    "dispute_resolution_ratio": 0.02, "work_area_stability_score": 0.01,
+# ═══════════════════════════════════════════════════════════════════════════
+# Q5: SCORECARD WEIGHTS — DEV_A Guide positional (verified sums)
+# ═══════════════════════════════════════════════════════════════════════════
+P5_WEIGHTS = [0.15, 0.15, 0.10, 0.08, 0.08, 0.06, 0.05, 0.04,
+              0.03, 0.06, 0.04, 0.04, 0.02, 0.02, 0.02, 0.03, 0.02, 0.01]
+assert abs(sum(P5_WEIGHTS) - 1.0) < 1e-9, "P5 weights must sum to 1.0"
+
+P7_WEIGHTS = [0.15, 0.12, 0.10, 0.10, 0.08, 0.10, 0.08, 0.12, 0.10, 0.05]
+assert abs(sum(P7_WEIGHTS) - 1.0) < 1e-9, "P7 weights must sum to 1.0"
+
+P8_WEIGHTS = [0.25, 0.15, 0.20, 0.15, 0.10, 0.08, 0.07]
+assert abs(sum(P8_WEIGHTS) - 1.0) < 1e-9, "P8 weights must sum to 1.0"
+
+# ── Work-Type Normalisation (5 features rescaled) ───────────────────────
+NORMALISED_INDICES = {
+    1:  "income_cv",
+    2:  "income_growth_norm",
+    4:  "gig_share_norm",
+    28: "payment_gap_freq",
+    47: "balance_variability",
 }
 
-P7_WEIGHTS = {
-    "community_standing_score": 0.15, "group_lending_participant": 0.12,
-    "trade_association_member": 0.10, "cooperative_member": 0.10,
-    "mentor_mentee_active": 0.08, "social_media_business_presence": 0.10,
-    "community_event_participation": 0.08,
-    "neighbourhood_trust_score": 0.12,
-    "years_at_current_address_norm": 0.10,
-    "family_dependents_norm": 0.05,
+# ── State Income Anchors (₹/month) ──────────────────────────────────────
+STATE_INCOME_ANCHORS = {
+    "Tamil Nadu": 22000, "Maharashtra": 28000, "Karnataka": 26000,
+    "Delhi": 35000, "Bihar": 13000, "Uttar Pradesh": 15000,
+    "Kerala": 24000, "West Bengal": 18000, "Rajasthan": 16000,
+    "Madhya Pradesh": 14000, "Gujarat": 24000, "Andhra Pradesh": 20000,
+    "Telangana": 25000, "Haryana": 26000, "Punjab": 22000,
+    "Odisha": 15000, "Chhattisgarh": 14000, "Jharkhand": 13000,
+    "Assam": 14000, "Uttarakhand": 18000, "Himachal Pradesh": 20000,
+    "Goa": 30000, "Tripura": 13000,
 }
+STATES = list(STATE_INCOME_ANCHORS.keys())
 
-P8_WEIGHTS = {
-    "itr_filed_this_year": 0.25, "itr_years_filed_norm": 0.15,
-    "gst_registered": 0.20, "pan_linked_to_bank": 0.15,
-    "udyam_registered": 0.10, "fssai_license_active": 0.08,
-    "professional_tax_paid": 0.07,
-}
-
-# ─── Display Names ─────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════
+# DISPLAY NAMES (115 human-readable labels)
+# ═══════════════════════════════════════════════════════════════════════════
 FEATURE_DISPLAY_NAMES = {
     "avg_monthly_income_norm":        "Average Monthly Income",
     "income_stability_cv":            "Income Stability",
     "income_growth_slope":            "Income Growth Trend",
     "income_months_active":           "Active Income Months",
     "income_platform_verified_ratio": "Platform-Verified Income",
+    "income_seasonality_amplitude":   "Income Seasonality",
+    "income_source_diversity":        "Income Source Diversity",
     "income_bank_deposit_match_ratio":"Bank Deposit Match",
+    "income_lowest_to_avg_ratio":     "Lowest-to-Average Income",
+    "income_last_3_vs_prev_3":        "Recent Income Trend",
     "income_zero_month_count":        "Zero-Income Months",
     "income_irregular_spike_count":   "Irregular Income Spikes",
     "income_state_percentile_rank":   "State Income Rank",
-    "income_seasonality_amplitude":   "Income Seasonality",
-    "income_source_diversity":        "Income Source Diversity",
-    "multi_platform_count_norm":      "Multi-Platform Count",
-    "platform_tenure_months_norm":    "Platform Tenure",
     "utility_ontime_ratio":           "Utility Bills On-Time",
     "emi_ontime_ratio":               "EMI Payments On-Time",
     "bounce_count_norm":              "ECS Bounces",
     "late_payment_frequency":         "Late Payment Frequency",
     "payment_regularity_streak":      "Payment Streak",
-    "standing_instruction_success_rate": "Standing Instructions",
     "rent_ontime_ratio":              "Rent On-Time",
-    "mobile_recharge_regularity":     "Mobile Recharge Regularity",
-    "postpaid_ontime_ratio":          "Postpaid Bills On-Time",
-    "loan_prepayment_indicator":      "Loan Prepayment",
-    "digital_payment_adoption":       "Digital Payment Adoption",
-    "autopay_enrollment":             "Autopay Enrolled",
-    "payment_channel_diversity":      "Payment Channels",
-    "oldest_active_credit_months_norm": "Credit History Length",
-    "credit_utilization_ratio":       "Credit Utilization",
+    "credit_card_min_payment_rate":   "Credit Card Min Payment",
+    "p2p_repayment_ratio":           "P2P Repayment",
+    "utility_advance_payment_ratio":  "Utility Advance Payment",
+    "late_fee_incidence_norm":        "Late Fee Incidence",
+    "payment_channel_digital_ratio":  "Digital Payment Ratio",
+    "emi_prepayment_count_norm":      "EMI Prepayment",
+    "missed_payment_recovery_speed":  "Missed Payment Recovery",
+    "standing_instruction_success_rate": "Standing Instructions",
+    "payment_amount_consistency":     "Payment Consistency",
     "emi_to_income_ratio":            "EMI-to-Income Ratio",
     "debt_count_norm":                "Number of Active Loans",
+    "outstanding_debt_to_income_ratio":"Outstanding Debt Ratio",
+    "debt_repayment_progress_ratio":  "Debt Repayment Progress",
+    "mfi_loan_presence":              "MFI Loan Present",
+    "informal_debt_ratio":            "Informal Debt Ratio",
+    "debt_stacking_indicator":        "Debt Stacking",
     "debt_service_coverage_ratio":    "Debt Service Coverage",
-    "debt_to_asset_ratio":            "Debt-to-Asset Ratio",
-    "short_term_debt_ratio":          "Short-Term Debt Ratio",
-    "avg_loan_tenure_norm":           "Average Loan Tenure",
-    "debt_reduction_trend":           "Debt Reduction Trend",
-    "new_debt_last_3m_indicator":     "New Debt (Last 3m)",
-    "debt_consolidation_flag":        "Debt Consolidation",
-    "savings_rate":                   "Monthly Savings Rate",
+    "debt_consolidation_behavior":    "Debt Consolidation",
     "avg_month_end_balance_norm":     "Average Bank Balance",
-    "emergency_fund_months":          "Emergency Fund Months",
+    "savings_rate":                   "Monthly Savings Rate",
+    "balance_growth_slope":           "Balance Growth Trend",
     "savings_consistency_score":      "Savings Consistency",
-    "balance_volatility_norm":        "Balance Volatility",
-    "liquid_asset_to_income":         "Liquid Assets",
+    "emergency_fund_months":          "Emergency Fund Months",
     "recurring_savings_deposit_indicator": "Recurring Savings",
-    "fixed_deposit_indicator":        "Fixed Deposits",
+    "balance_volatility_norm":        "Balance Volatility",
+    "withdrawal_pattern_regularity":  "Withdrawal Regularity",
+    "savings_to_debt_ratio":          "Savings-to-Debt Ratio",
     "digital_wallet_balance_norm":    "Digital Wallet Balance",
-    "gold_investment_indicator":      "Gold Investment",
-    "savings_growth_slope":           "Savings Growth Trend",
-    "financial_shock_recovery":       "Shock Recovery",
+    "surplus_after_obligations_ratio":"Surplus After Obligations",
+    "savings_goal_consistency":       "Savings Goal Consistency",
     "aadhaar_verified":               "Aadhaar Verified",
     "pan_verified":                   "PAN Verified",
+    "face_match_score":               "Face Match Score",
+    "address_match_score":            "Address Match Score",
+    "dob_consistent":                 "DOB Consistent",
+    "name_consistency_score":         "Name Consistency",
     "work_proof_present":             "Work Proof Document",
+    "work_proof_type_score":          "Work Proof Quality",
+    "platform_onboarding_verified":   "Platform Onboarding",
+    "employer_verification_score":    "Employer Verification",
+    "work_type_income_consistency":   "Work-Income Consistency",
     "gig_experience_months_norm":     "Gig Work Experience",
-    "eshram_enrolled":                "e-Shram Registered",
-    "customer_rating_norm":           "Customer Rating",
-    "platform_level_norm":            "Platform Level",
+    "multi_platform_count_norm":      "Multi-Platform Count",
     "professional_certification":     "Professional Certification",
-    "multi_skill_indicator":          "Multi-Skill",
-    "work_regularity_score":          "Work Regularity",
-    "avg_daily_hours_norm":           "Daily Work Hours",
-    "weekly_active_days_norm":        "Weekly Active Days",
-    "peak_season_availability":       "Peak Season Availability",
-    "reference_count_norm":           "References",
-    "professional_network_size_norm": "Professional Network",
-    "repeat_client_ratio":            "Repeat Clients",
-    "dispute_resolution_ratio":       "Dispute Resolution",
-    "work_area_stability_score":      "Work Area Stability",
+    "work_continuity_score":          "Work Continuity",
+    "customer_rating_norm":           "Customer Rating",
+    "income_to_worktype_ratio":       "Income-to-WorkType Ratio",
+    "alternate_id_present":           "Alternate ID Present",
     "health_insurance_active":        "Health Insurance",
     "life_insurance_active":          "Life Insurance",
-    "pm_sym_enrollment":              "PM-SYM Enrollment",
     "vehicle_insurance_active":       "Vehicle Insurance",
     "crop_insurance_active":          "Crop Insurance",
+    "accident_coverage_active":       "Accident Coverage",
+    "pm_sym_enrollment":              "PM-SYM Enrollment",
+    "total_insurance_count_norm":     "Insurance Count",
+    "insurance_premium_regularity":   "Premium Regularity",
+    "medical_expense_ratio":          "Medical Expense Ratio",
+    "financial_shock_recovery":       "Shock Recovery",
+    "liquid_asset_to_income":         "Liquid Assets",
+    "eshram_enrolled":                "e-Shram Registered",
+    "mudra_loan_history":             "Mudra Loan History",
+    "pm_svanidhi_enrolled":           "PM SVANidhi",
+    "pm_kisan_enrolled":              "PM-KISAN",
+    "government_scheme_count_norm":   "Govt Scheme Count",
     "welfare_scheme_active":          "Welfare Scheme",
     "self_help_group_member":         "SHG Member",
-    "family_support_index":           "Family Support",
-    "asset_ownership_score":          "Asset Ownership",
-    "income_replacement_ratio":       "Income Replacement",
-    "pm_svanidhi_enrolled":           "PM SVANidhi",
-    "community_standing_score":       "Community Standing",
-    "group_lending_participant":      "Group Lending",
-    "trade_association_member":       "Trade Association",
-    "cooperative_member":             "Cooperative Member",
-    "mentor_mentee_active":           "Mentor/Mentee",
-    "social_media_business_presence": "Social Media Business",
-    "community_event_participation":  "Community Events",
-    "neighbourhood_trust_score":      "Neighbourhood Trust",
-    "years_at_current_address_norm":  "Years at Address",
-    "family_dependents_norm":         "Family Dependents",
+    "community_lending_record":       "Community Lending",
+    "social_reference_score":         "Social Reference",
+    "civic_identity_score":           "Civic Identity",
     "itr_filed_this_year":            "ITR Filed",
     "itr_years_filed_norm":           "ITR History",
+    "itr_income_match_ratio":         "ITR Income Match",
     "gst_registered":                 "GST Registered",
+    "gst_return_regularity":          "GST Return Regularity",
     "pan_linked_to_bank":             "PAN Linked to Bank",
-    "udyam_registered":               "Udyam Registered",
-    "fssai_license_active":           "FSSAI License",
-    "professional_tax_paid":          "Professional Tax",
+    "tax_liability_settled":          "Tax Liability Settled",
+    # Cross-pillar
+    "income_debt_stress_index":       "Income-Debt Stress",
+    "debt_vulnerability_score":       "Debt Vulnerability",
+    "income_emi_coverage":            "Income-EMI Coverage",
+    "income_trend_vs_debt_trend":     "Income vs Debt Trend",
+    "payment_savings_alignment":      "Payment-Savings Alignment",
+    "buffer_payment_composite":       "Buffer-Payment Composite",
+    "digital_savings_discipline":     "Digital Savings Discipline",
+    "financial_shock_resistance":     "Financial Shock Resistance",
+    "resilience_debt_mismatch":       "Resilience-Debt Mismatch",
+    "insurance_income_anchor":        "Insurance-Income Anchor",
+    "consistent_earning_payment_streak": "Earning-Payment Streak",
+    "income_payment_trend_alignment": "Income-Payment Trend",
+    "platform_payment_reliability":   "Platform Payment Reliability",
+    "income_floor_payment_consistency":"Income Floor Consistency",
+    "formal_recognition_income_alignment":"Formal Recognition",
+    "tax_income_consistency_ratio":   "Tax-Income Consistency",
+    "scheme_income_combined":         "Scheme-Income Combined",
+    "seasonal_income_volatility":     "Seasonal Volatility",
+    "payment_regularity_entropy":     "Payment Regularity Entropy",
+    "balance_recovery_speed":         "Balance Recovery Speed",
 }
 
-# ─── Actionable Feature Tags ──────────────────────────────────────────────
-ACTIONABLE_TAGS = {
-    "health_insurance_active":  {"actionable": True, "difficulty": "easy",
-                                  "horizon": "1-7 days", "expected_gain_pts": 18,
-                                  "action_text": "Upload health insurance in Documents tab"},
-    "eshram_enrolled":          {"actionable": True, "difficulty": "easy",
-                                  "horizon": "1-7 days", "expected_gain_pts": 12,
-                                  "action_text": "Register on eshram.gov.in (free)"},
-    "itr_filed_this_year":      {"actionable": True, "difficulty": "easy",
-                                  "horizon": "1-7 days", "expected_gain_pts": 10,
-                                  "action_text": "Upload ITR acknowledgement"},
-    "life_insurance_active":    {"actionable": True, "difficulty": "easy",
-                                  "horizon": "7-14 days", "expected_gain_pts": 10,
-                                  "action_text": "Upload life insurance policy"},
-    "pan_verified":             {"actionable": True, "difficulty": "easy",
-                                  "horizon": "1 day", "expected_gain_pts": 15,
-                                  "action_text": "Complete PAN verification"},
-    "pan_linked_to_bank":       {"actionable": True, "difficulty": "easy",
-                                  "horizon": "1 day", "expected_gain_pts": 7,
-                                  "action_text": "Link PAN to bank account"},
-    "work_proof_present":       {"actionable": True, "difficulty": "easy",
-                                  "horizon": "1-3 days", "expected_gain_pts": 10,
-                                  "action_text": "Upload work ID or platform screenshot"},
-    "pm_svanidhi_enrolled":     {"actionable": True, "difficulty": "easy",
-                                  "horizon": "1-7 days", "expected_gain_pts": 8,
-                                  "action_text": "Apply for PM SVANidhi scheme"},
-    "gst_registered":           {"actionable": True, "difficulty": "medium",
-                                  "horizon": "7-30 days", "expected_gain_pts": 8,
-                                  "action_text": "Register for GST on gst.gov.in"},
-    "savings_rate":             {"actionable": True, "difficulty": "medium",
-                                  "horizon": "3-6 months", "expected_gain_pts": 10,
-                                  "action_text": "Increase monthly savings by ₹500"},
-    "emi_to_income_ratio":      {"actionable": True, "difficulty": "hard",
-                                  "horizon": "3-6 months", "expected_gain_pts": 20,
-                                  "action_text": "Reduce EMI burden by closing one loan"},
-    "debt_count_norm":          {"actionable": True, "difficulty": "hard",
-                                  "horizon": "3-12 months", "expected_gain_pts": 15,
-                                  "action_text": "Consolidate or close existing loans"},
-    "bounce_count_norm":        {"actionable": True, "difficulty": "medium",
-                                  "horizon": "1-3 months", "expected_gain_pts": 12,
-                                  "action_text": "Ensure sufficient balance for auto-debits"},
-    "pm_sym_enrollment":        {"actionable": True, "difficulty": "easy",
-                                  "horizon": "1-7 days", "expected_gain_pts": 5,
-                                  "action_text": "Enroll in PM-SYM pension scheme"},
-    "income_bank_deposit_match_ratio": {"actionable": True, "difficulty": "easy",
-                                  "horizon": "immediate", "expected_gain_pts": 8,
-                                  "action_text": "Route all platform income through bank"},
-    "utility_ontime_ratio":     {"actionable": True, "difficulty": "medium",
-                                  "horizon": "1-3 months", "expected_gain_pts": 8,
-                                  "action_text": "Pay utility bills on time consistently"},
-    # Non-actionable features
-    "gig_experience_months_norm":    {"actionable": False, "difficulty": "none",
-                                      "horizon": "N/A", "expected_gain_pts": 0},
-    "income_state_percentile_rank":  {"actionable": False, "difficulty": "none",
-                                      "horizon": "N/A", "expected_gain_pts": 0},
-    "income_seasonality_amplitude":  {"actionable": False, "difficulty": "none",
-                                      "horizon": "N/A", "expected_gain_pts": 0},
+# ═══════════════════════════════════════════════════════════════════════════
+# TRAINING HYPERPARAMETERS
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Pre-Training (skipped per user decision — proxy attention instead)
+PRETRAIN = {
+    "epochs": 100, "batch_size": 256, "lr": 1e-3,
+    "weight_decay": 1e-4, "mask_ratio": 0.15,
+    "early_stop_patience": 15, "grad_clip": 1.0,
+    "hidden_dim": 256, "backbone_out": 128,
+    "work_embed_dim": 32, "dropout": 0.15,
+    "target_loss": 0.015,
 }
 
-# ─── State Income Anchors (for normalization) ─────────────────────────────
-STATE_INCOME_ANCHORS = {
-    "Tamil Nadu": 1.05, "Karnataka": 1.10, "Maharashtra": 1.15,
-    "Delhi": 1.20, "Telangana": 1.08, "Gujarat": 1.05,
-    "West Bengal": 0.90, "Uttar Pradesh": 0.85, "Rajasthan": 0.88,
-    "Kerala": 1.02, "Andhra Pradesh": 0.95, "Bihar": 0.80,
-    "Madhya Pradesh": 0.85, "Punjab": 1.00, "Haryana": 1.05,
+# XGBoost (for P2, P3 — requires tree_method=exact for m2cgen)
+XGB_PARAMS_P2 = {
+    "max_depth": 4, "n_estimators": 300, "learning_rate": 0.05,
+    "colsample_bytree": 0.7, "min_child_weight": 10,
+    "reg_lambda": 2.0, "reg_alpha": 0.5, "subsample": 0.8,
+    "tree_method": "exact", "random_state": SEED, "n_jobs": -1,
 }
-NATIONAL_P90_INCOME = 45000  # INR
-
-# ─── Magnitude Thresholds (SHAP) ──────────────────────────────────────────
-MAGNITUDE_THRESHOLDS = {
-    "high":       0.05,
-    "medium":     0.02,
-    "low":        0.005,
-    "negligible": 0.0,
+XGB_PARAMS_P3 = {
+    "max_depth": 2, "n_estimators": 80, "learning_rate": 0.05,
+    "colsample_bytree": 0.8, "reg_lambda": 5.0, "reg_alpha": 1.0,
+    "tree_method": "exact", "random_state": SEED, "n_jobs": -1,
 }
 
-# ─── XGBoost Training Params ─────────────────────────────────────────────
-XGB_DISTILL_PARAMS = {
-    "n_estimators": 300,
-    "max_depth": 6,
-    "learning_rate": 0.05,
-    "subsample": 0.8,
-    "colsample_bytree": 0.8,
-    "reg_alpha": 0.1,
-    "reg_lambda": 1.0,
-    "tree_method": "exact",  # REQUIRED for m2cgen export
-    "random_state": SEED,
-    "n_jobs": -1,
+# Conformal
+CONFORMAL_ALPHA   = 0.10
+MIN_CALIBRATION_N = 100
+
+# Meta-Learner
+META_CV_FOLDS = 5
+META_C        = 1.0
+META_MAX_ITER = 1000
+
+# ── Scoring Output ───────────────────────────────────────────────────────
+SCORE_MIN   = 300
+SCORE_MAX   = 900
+SCORE_RANGE = SCORE_MAX - SCORE_MIN
+
+GRADE_BANDS = [
+    (800, 900, "A+", "Exceptional",   "Low Risk"),
+    (750, 799, "A",  "Excellent",     "Low Risk"),
+    (700, 749, "B+", "Very Good",     "Low Risk"),
+    (650, 699, "B",  "Good",          "Low Risk"),
+    (600, 649, "C+", "Above Average", "Medium Risk"),
+    (550, 599, "C",  "Average",       "Medium Risk"),
+    (300, 549, "D",  "Below Average", "High Risk"),
+]
+
+# ── Parity Gate ──────────────────────────────────────────────────────────
+PARITY_MAX_ABS_DIFF  = 1e-5
+PARITY_MEAN_ABS_DIFF = 1e-6
+
+# ── Fairness Thresholds ─────────────────────────────────────────────────
+FAIRNESS_FOUR_FIFTHS      = 0.80
+EQUALIZED_ODDS_TPR_GAP    = 0.10
+CALIBRATION_ECE_THRESHOLD = 0.05
+
+# ── Loan Engine ─────────────────────────────────────────────────────────
+PRODUCT_THRESHOLDS = {
+    "emergency_micro": 450,
+    "income_bridge":   550,
+    "growth":          650,
 }
+PRODUCT_AMOUNTS = {
+    "emergency_micro": (5_000,   25_000),
+    "income_bridge":   (25_000, 100_000),
+    "growth":          (100_000, 500_000),
+}
+APR_TABLE = [
+    (800, 900, 12.0),
+    (720, 799, 15.0),
+    (640, 719, 18.0),
+    (560, 639, 21.0),
+    (480, 559, 24.0),
+    (300, 479, None),
+]
+MIN_DSCR       = 1.25
+MAX_EMI_RATIO  = 0.50
+MAX_LTI_RATIO  = 10.0
+
+# ── Gemini / LLM ────────────────────────────────────────────────────────
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL   = "gemini-2.0-flash"
+
+# ── Loan LightGBM Features ──────────────────────────────────────────────
+LOAN_FEATURES = [
+    "final_score",
+    "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8",
+    "dscr", "post_loan_emi_ratio", "loan_to_income",
+    "payment_streak", "insurance_coverage",
+    "savings_buffer_months", "income_growth_slope",
+    "w_platform", "w_vendor",
+]

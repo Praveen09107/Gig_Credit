@@ -1,0 +1,30 @@
+{
+  "platform_worker": {
+    "income_cv": 0.6849011104182947,
+    "income_growth_norm": 0.49942084829880873,
+    "gig_share_norm": 0.7571461874485039,
+    "payment_gap_freq": 0.755429411443732,
+    "balance_variability": 0.4954665575276142
+  },
+  "street_vendor": {
+    "income_cv": 0.44977039970192084,
+    "income_growth_norm": 0.3993598752478027,
+    "gig_share_norm": 0.24831842451690503,
+    "payment_gap_freq": 0.7531711637268436,
+    "balance_variability": 0.5041363198072781
+  },
+  "skilled_tradesperson": {
+    "income_cv": 0.5527313002417324,
+    "income_growth_norm": 0.4516218179749083,
+    "gig_share_norm": 0.01,
+    "payment_gap_freq": 0.7566503914656426,
+    "balance_variability": 0.4982064290519306
+  },
+  "freelancer": {
+    "income_cv": 0.4033119227990103,
+    "income_growth_norm": 0.5451923538567353,
+    "gig_share_norm": 0.38821622941240314,
+    "payment_gap_freq": 0.757160780465862,
+    "balance_variability": 0.5003097838545946
+  }
+}

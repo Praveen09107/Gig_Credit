@@ -9,6 +9,9 @@ from app.api import (
     insurance_verification,
     otp_routes,
     report_routes,
+    scoring_router,
+    loan_router,
+    explainability_router,
 )
 from app.db.connection import close_db, connect_db
 from app.utils.error_handlers import register_error_handlers
@@ -47,3 +50,6 @@ app.include_router(
     tags=["insurance"],
 )
 app.include_router(report_routes.router, prefix="/api", tags=["report"])
+app.include_router(scoring_router.router, prefix="/score", tags=["scoring"])
+app.include_router(loan_router.router, prefix="/loan", tags=["loan"])
+app.include_router(explainability_router.router, prefix="/explain", tags=["explainability"])
