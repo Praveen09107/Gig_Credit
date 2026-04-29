@@ -15,5 +15,5 @@ final apiServiceProvider = Provider<ApiService>((ref) {
   }
   // RealApiService connects to Dev A's backend at the configured base URL.
   // HMAC signing is handled automatically via HmacSigner.
-  return RealApiService(baseUrl: 'https://gig-credit.onrender.com/api');
+  return RealApiService(baseUrl: 'https://gig-credit.onrender.com');
 });

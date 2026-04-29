@@ -11,6 +11,8 @@ import '../../../state/loan_provider.dart';
 import '../../../models/loan_offer_model.dart';
 import '../../../scoring/score_pipeline.dart';
 import '../../../app/app_router.dart';
+import '../../../models/score_report_model.dart';
+import '../../../state/api_service_provider.dart';
 import '../widgets/score_status_message.dart';
 
 /// P6-11: Score Generating Screen
@@ -48,13 +50,53 @@ class _ScoreGeneratingScreenState extends ConsumerState<ScoreGeneratingScreen>
     // Allow UI to breathe before heavy computation
     await Future.delayed(const Duration(seconds: 2));
 
-    // Run the full scoring pipeline
-    final report = ScorePipeline.run(profile);
+    // 1. Run local scoring & SHAP pipeline
+    var report = ScorePipeline.run(profile);
 
-    // Wait total of 30 seconds for realistic cinematic AI processing feel
-    await Future.delayed(const Duration(seconds: 30));
+    // Wait for realistic AI processing feel
+    await Future.delayed(const Duration(seconds: 4));
+
+    try {
+      // 2. Prepare payload for LLM explanation (passing SHAP outputs)
+      final payload = {
+        "credit_score": report.finalScore,
+        "grade": report.grade,
+        "risk_level": report.riskBand,
+        "work_type": profile.personalInfo.workType.isNotEmpty ? profile.personalInfo.workType : 'platform_worker',
+        "language": "English",
+        "positive_factors": report.topStrengths.map((e) => {"feature_label": e.featureName, "impact": e.impactStrength}).toList(),
+        "negative_factors": report.topConcerns.map((e) => {"feature_label": e.featureName, "impact": e.impactStrength}).toList(),
+      };
+
+      // 3. Request LLM generated explanation via the live backend
+      final api = ref.read(apiServiceProvider);
+      final llmResponse = await api.generateReportScore(payload);
+
+      if (llmResponse['status'] == 'success' || llmResponse['status'] == 'fallback') {
+        // Merge the backend LLM response with our local score report
+        report = ScoreReportModel(
+          finalScore: report.finalScore,
+          grade: report.grade,
+          riskBand: report.riskBand,
+          proofId: report.proofId,
+          generatedAt: report.generatedAt,
+          overallConfidence: report.overallConfidence,
+          pillars: report.pillars,
+          topStrengths: report.topStrengths,
+          topConcerns: report.topConcerns,
+          llmExplanation: llmResponse['explanation'],
+          tailoredSuggestions: List<String>.from(llmResponse['suggestions'] ?? []),
+        );
+      }
+    } catch (e) {
+      print('LLM API Error: $e');
+      // If network fails, we just use the on-device fallback suggestions
+    }
 
     if (!mounted) return;
+
+    // 4. Delete sensitive PII data post-evaluation for privacy
+    ref.read(verifiedProfileProvider.notifier).reset();
 
     // Store result in provider
     ref.read(scoreProvider.notifier).setSuccess(report);

@@ -35,7 +35,15 @@ async def verify_aadhaar(
     record = await db.aadhaar_db.find_one({"aadhaar": request.aadhaar}) if db is not None else None
     if not record:
         raise AppException(404, "not_found", "Aadhaar record not found")
-    return {"status": "valid", "name": record["name"], "dob": record["dob"], "state": record["state"]}
+    
+    # Generate OTP for Aadhaar and print to terminal
+    import random
+    otp = str(random.randint(100000, 999999))
+    print("\n" + "="*50)
+    print(f"✅ AADHAAR OTP for {request.aadhaar} : {otp}")
+    print("="*50 + "\n")
+    
+    return {"status": "valid", "name": record["name"], "dob": record["dob"], "state": record["state"], "otp": otp}
 
 
 @router.post("/pan/verify", response_model=PanVerifyResponse)
@@ -49,6 +57,14 @@ async def verify_pan(
     record = await db.pan_db.find_one({"pan": request.pan}) if db is not None else None
     if not record:
         raise AppException(404, "not_found", "PAN record not found")
+    
+    # Generate OTP for PAN and print to terminal
+    import random
+    otp = str(random.randint(100000, 999999))
+    print("\n" + "="*50)
+    print(f"✅ PAN OTP for {request.pan} : {otp}")
+    print("="*50 + "\n")
+
     return {
         "status": "valid",
         "name": record["name"],
@@ -56,6 +72,7 @@ async def verify_pan(
         "pan_active": record.get("pan_active", True),
         "itr_filed": record.get("itr_filed", False),
         "itr_years": record.get("itr_years", []),
+        "otp": otp
     }
 
 

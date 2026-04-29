@@ -1,4 +1,8 @@
-import 'package:flutter/material.dart';
+import os
+
+file_path = r"C:\Users\PRAVEEN\Desktop\rotatech hackathon\Gig_Credit\app\lib\features\score\flow\step5_work_screen.dart"
+
+new_code = """import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../shared/theme/app_colors.dart';
@@ -342,3 +346,8 @@ class _Step5WorkScreenState extends ConsumerState<Step5WorkScreen> {
     );
   }
 }
+"""
+
+with open(file_path, "w", encoding="utf-8") as f:
+    f.write(new_code)
+print("Updated step5_work_screen.dart")

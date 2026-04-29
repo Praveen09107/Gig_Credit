@@ -114,20 +114,21 @@ class _Step7InsuranceScreenState extends ConsumerState<Step7InsuranceScreen> {
             ],
           ),
 
-          // ── Vehicle Insurance ──
-          _buildInsuranceModule(
-            title: '🚗 Vehicle Insurance',
-            hint: 'Required if you own a vehicle (Step 1)',
-            selected: _hasVehicle,
-            onToggle: (v) => setState(() => _hasVehicle = v),
-            children: [
-              AppTextField(label: 'Vehicle Policy Number *', controller: _vehiclePolicyCtrl),
-              const SizedBox(height: 12),
-              AppTextField(label: 'Policy Holder Name *', controller: _vehicleHolderCtrl),
-              const SizedBox(height: 12),
-              DocumentUploadCard(title: 'Vehicle Insurance Document *', subtitle: 'Motor insurance certificate', docType: 'insurance_vehicle', ocrService: ocrService, onExtracted: (_) => setState(() => _vehicleUploaded = true)),
-            ],
-          ),
+          // ── Vehicle Insurance (Dynamic based on Step 1) ──
+          if (ref.watch(verifiedProfileProvider).personalInfo.vehicleOwnership)
+            _buildInsuranceModule(
+              title: '🚗 Vehicle Insurance',
+              hint: 'Required if you own a vehicle (Step 1)',
+              selected: _hasVehicle,
+              onToggle: (v) => setState(() => _hasVehicle = v),
+              children: [
+                AppTextField(label: 'Vehicle Policy Number *', controller: _vehiclePolicyCtrl),
+                const SizedBox(height: 12),
+                AppTextField(label: 'Policy Holder Name *', controller: _vehicleHolderCtrl),
+                const SizedBox(height: 12),
+                DocumentUploadCard(title: 'Vehicle Insurance Document *', subtitle: 'Motor insurance certificate', docType: 'insurance_vehicle', ocrService: ocrService, onExtracted: (_) => setState(() => _vehicleUploaded = true)),
+              ],
+            ),
 
           // ── Life Insurance ──
           _buildInsuranceModule(

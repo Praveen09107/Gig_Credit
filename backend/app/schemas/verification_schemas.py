@@ -63,6 +63,7 @@ class AadhaarVerifyResponse(BaseModel):
     name: str
     dob: str
     state: str
+    otp: Optional[str] = None
 
 
 class PanVerifyResponse(BaseModel):
@@ -72,6 +73,7 @@ class PanVerifyResponse(BaseModel):
     pan_active: bool
     itr_filed: bool
     itr_years: List[int]
+    otp: Optional[str] = None
 
 
 class IfscVerifyResponse(BaseModel):

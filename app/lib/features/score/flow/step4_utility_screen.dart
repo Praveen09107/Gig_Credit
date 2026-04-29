@@ -68,7 +68,13 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
   final _rentLandlordCtrl = TextEditingController();
   final _rentAddressCtrl = TextEditingController();
   final _rentAmountCtrl = TextEditingController();
-  bool _rentUploaded = false;
+  // Counters for allowing up to 6 consecutive bills
+  int _elecUploadCount = 1;
+  int _waterUploadCount = 1;
+  int _gasUploadCount = 1;
+  int _mobileUploadCount = 1;
+  int _internetUploadCount = 1;
+  int _rentUploadCount = 1;
 
   @override
   void dispose() {
@@ -137,24 +143,46 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
               const SizedBox(height: 12),
               AppTextField(label: 'Amount Paid (₹) *', controller: _elecAmountCtrl, keyboardType: TextInputType.number),
               const SizedBox(height: 12),
-              DocumentUploadCard(title: 'Electricity Bill Upload *', subtitle: 'JPG/PNG/PDF', docType: 'utility_electricity', ocrService: ocrService, onExtracted: (_) => setState(() => _elecUploaded = true)),
+              ...List.generate(_elecUploadCount, (index) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: DocumentUploadCard(
+                  title: 'Electricity Bill ${index + 1} *', 
+                  subtitle: 'Consecutive last 6 months bills from current date', 
+                  docType: 'utility_electricity', 
+                  ocrService: ocrService, 
+                  onExtracted: (_) {
+                    if (_elecUploadCount < 6) setState(() => _elecUploadCount++);
+                  }
+                ),
+              )),
             ],
           ),
 
-          // ── Water ──
+          // ── WiFi ──
           _buildBillModule(
-            title: '💧 Water Bill',
+            title: '📶 WiFi / Broadband Bill',
             hint: 'Address and payment regularity proof',
             selected: _hasWater,
             onToggle: (v) => setState(() => _hasWater = v),
             children: [
-              AppTextField(label: 'Consumer / Account No *', controller: _waterConsumerCtrl),
+              AppTextField(label: 'Account / Customer No *', controller: _waterConsumerCtrl),
               const SizedBox(height: 12),
               AppTextField(label: 'Name as per Bill *', controller: _waterNameCtrl),
               const SizedBox(height: 12),
               AppTextField(label: 'Amount Paid (₹) *', controller: _waterAmountCtrl, keyboardType: TextInputType.number),
               const SizedBox(height: 12),
-              DocumentUploadCard(title: 'Water Bill Upload *', subtitle: 'JPG/PNG/PDF', docType: 'utility_water', ocrService: ocrService, onExtracted: (_) => setState(() => _waterUploaded = true)),
+              ...List.generate(_waterUploadCount, (index) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: DocumentUploadCard(
+                  title: 'WiFi Bill ${index + 1} *', 
+                  subtitle: 'Consecutive last 6 months bills from current date', 
+                  docType: 'utility_wifi', 
+                  ocrService: ocrService, 
+                  onExtracted: (_) {
+                    if (_waterUploadCount < 6) setState(() => _waterUploadCount++);
+                  }
+                ),
+              )),
             ],
           ),
 
@@ -171,7 +199,18 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
               const SizedBox(height: 12),
               AppTextField(label: 'Amount Paid (₹) *', controller: _gasAmountCtrl, keyboardType: TextInputType.number),
               const SizedBox(height: 12),
-              DocumentUploadCard(title: 'Gas Bill Upload *', subtitle: 'JPG/PNG/PDF', docType: 'utility_gas', ocrService: ocrService, onExtracted: (_) => setState(() => _gasUploaded = true)),
+              ...List.generate(_gasUploadCount, (index) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: DocumentUploadCard(
+                  title: 'Gas Bill ${index + 1} *', 
+                  subtitle: 'Consecutive last 6 months bills from current date', 
+                  docType: 'utility_gas', 
+                  ocrService: ocrService, 
+                  onExtracted: (_) {
+                    if (_gasUploadCount < 6) setState(() => _gasUploadCount++);
+                  }
+                ),
+              )),
             ],
           ),
 
@@ -190,7 +229,18 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
               const SizedBox(height: 12),
               AppTextField(label: 'Amount Paid (₹) *', controller: _mobileAmountCtrl, keyboardType: TextInputType.number),
               const SizedBox(height: 12),
-              DocumentUploadCard(title: 'Mobile Bill Upload *', subtitle: 'JPG/PNG/PDF', docType: 'utility_mobile', ocrService: ocrService, onExtracted: (_) => setState(() => _mobileUploaded = true)),
+              ...List.generate(_mobileUploadCount, (index) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: DocumentUploadCard(
+                  title: 'Mobile Bill ${index + 1} *', 
+                  subtitle: 'Consecutive last 6 months bills from current date', 
+                  docType: 'utility_mobile', 
+                  ocrService: ocrService, 
+                  onExtracted: (_) {
+                    if (_mobileUploadCount < 6) setState(() => _mobileUploadCount++);
+                  }
+                ),
+              )),
             ],
           ),
 
@@ -207,7 +257,18 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
               const SizedBox(height: 12),
               AppTextField(label: 'Amount Paid (₹) *', controller: _internetAmountCtrl, keyboardType: TextInputType.number),
               const SizedBox(height: 12),
-              DocumentUploadCard(title: 'Internet Bill Upload *', subtitle: 'JPG/PNG/PDF', docType: 'utility_internet', ocrService: ocrService, onExtracted: (_) => setState(() => _internetUploaded = true)),
+              ...List.generate(_internetUploadCount, (index) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: DocumentUploadCard(
+                  title: 'Internet Bill ${index + 1} *', 
+                  subtitle: 'Consecutive last 6 months bills from current date', 
+                  docType: 'utility_internet', 
+                  ocrService: ocrService, 
+                  onExtracted: (_) {
+                    if (_internetUploadCount < 6) setState(() => _internetUploadCount++);
+                  }
+                ),
+              )),
             ],
           ),
 
@@ -226,7 +287,18 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
               const SizedBox(height: 12),
               AppTextField(label: 'Monthly Rent (₹) *', controller: _rentAmountCtrl, keyboardType: TextInputType.number),
               const SizedBox(height: 12),
-              DocumentUploadCard(title: 'Rent Document Upload *', subtitle: 'Receipt / Agreement JPG/PNG/PDF', docType: 'utility_rent', ocrService: ocrService, onExtracted: (_) => setState(() => _rentUploaded = true)),
+              ...List.generate(_rentUploadCount, (index) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: DocumentUploadCard(
+                  title: 'Rent Document ${index + 1} *', 
+                  subtitle: 'Consecutive last 6 months bills from current date', 
+                  docType: 'utility_rent', 
+                  ocrService: ocrService, 
+                  onExtracted: (_) {
+                    if (_rentUploadCount < 6) setState(() => _rentUploadCount++);
+                  }
+                ),
+              )),
             ],
           ),
         ],

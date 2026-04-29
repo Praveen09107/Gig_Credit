@@ -91,13 +91,23 @@ class _DocumentUploadCardState extends State<DocumentUploadCard> {
         
         widget.onExtracted(data);
       } catch (e) {
-        // OCR error: fallback with demo data (silent fallback per plan)
-        final fallbackData = {'data': 'Uploaded. Please verify below.', 'confidence': 0.50};
+        // Strict OCR error: Display the error and prevent extraction
+        String errorMessage = 'Failed to extract data. Please try again.';
+        if (e is Exception) {
+          errorMessage = e.toString().replaceFirst('Exception: ', '');
+        }
+
         setState(() {
-          _extractedData = fallbackData;
-          _state = UploadCardState.fallback;
+          _state = UploadCardState.uploadError;
         });
-        widget.onExtracted(fallbackData);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
+        );
+
+        Future.delayed(const Duration(seconds: 4), () {
+          if (mounted) setState(() => _state = UploadCardState.empty);
+        });
       }
     }
   }

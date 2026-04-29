@@ -42,15 +42,44 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
   bool _isLoading = false;
   List<ValidationIssue> _validationIssues = [];
 
+  bool _aadhaarOtpSent = false;
+  String? _expectedAadhaarOtp;
+  final _aadhaarOtpController = TextEditingController();
+
+  bool _panOtpSent = false;
+  String? _expectedPanOtp;
+  final _panOtpController = TextEditingController();
+
   @override
   void dispose() {
     _aadhaarController.dispose();
     _panController.dispose();
+    _aadhaarOtpController.dispose();
+    _panOtpController.dispose();
     super.dispose();
   }
 
   /// Verify Aadhaar number with real API call to Render backend
   Future<void> _verifyAadhaar() async {
+    // If OTP is already sent, this button press means "Verify OTP"
+    if (_aadhaarOtpSent) {
+      if (_aadhaarOtpController.text == _expectedAadhaarOtp) {
+        setState(() {
+          _aadhaarVerified = true;
+          _aadhaarOtpSent = false; // Hide OTP field
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Aadhaar OTP Verified Successfully!'), backgroundColor: Colors.green),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Incorrect Aadhaar OTP. Please try again.'), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
+
+    // Initial step: Verify Aadhaar number
     final text = _aadhaarController.text.replaceAll(' ', '');
     if (text.length != 12) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -63,23 +92,58 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
     try {
       final api = ref.read(apiServiceProvider);
       // Hits https://gig-credit.onrender.com/api/gov/aadhaar/verify
-      await api.verifyAadhaar(text); 
+      final result = await api.verifyAadhaar(text); 
       
       if (mounted) {
         setState(() {
           _aadhaarVerifying = false;
-          _aadhaarVerified = true;
+          _aadhaarOtpSent = true;
+          // Generate locally if backend hasn't been deployed yet, or use backend's OTP
+          String otp = result['otp'] ?? (100000 + (DateTime.now().millisecondsSinceEpoch % 900000)).toString();
+          _expectedAadhaarOtp = otp; 
+          print('\n========================================');
+          print('✅ AADHAAR OTP for $text : $otp');
+          print('========================================\n');
         });
+        
+        // Show simulated SMS notification as a dialog so it's highly visible on phone
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Row(children: [Icon(Icons.message, color: Colors.blue), SizedBox(width: 8), Text('New Message')]),
+            content: Text('UIDAI: Your Aadhaar verification OTP is $_expectedAadhaarOtp. Valid for 10 minutes.'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Dismiss'))
+            ],
+          )
+        );
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _aadhaarVerifying = false);
-        // During the hackathon demo, if the mock DB doesn't have the Aadhaar, 
-        // we can still let them pass for the sake of the demo flow, 
-        // OR show an error. Let's allow them to proceed visually for demo fluidity.
-        setState(() => _aadhaarVerified = true); 
+        setState(() {
+          _aadhaarVerifying = false;
+          _aadhaarOtpSent = true;
+          // Trigger mock OTP flow for demo if DB is empty
+          String otp = (100000 + (DateTime.now().millisecondsSinceEpoch % 900000)).toString();
+          _expectedAadhaarOtp = otp; 
+          print('\n========================================');
+          print('✅ AADHAAR OTP for $text : $otp');
+          print('========================================\n');
+        });
+        
+        // Show simulated SMS notification as a dialog
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Row(children: [Icon(Icons.message, color: Colors.blue), SizedBox(width: 8), Text('New Message')]),
+            content: Text('UIDAI: Your Aadhaar verification OTP is $_expectedAadhaarOtp. Valid for 10 minutes.'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Dismiss'))
+            ],
+          )
+        );
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('API Note: $e (Simulating success for demo)'), backgroundColor: Colors.orange),
+          SnackBar(content: Text('API Note: simulated DB response for demo.'), backgroundColor: Colors.orange),
         );
       }
     }
@@ -87,6 +151,25 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
 
   /// Verify PAN number with real API call to Render backend
   Future<void> _verifyPan() async {
+    // If OTP is already sent, this button press means "Verify OTP"
+    if (_panOtpSent) {
+      if (_panOtpController.text == _expectedPanOtp) {
+        setState(() {
+          _panVerified = true;
+          _panOtpSent = false; // Hide OTP field
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('PAN OTP Verified Successfully!'), backgroundColor: Colors.green),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Incorrect PAN OTP. Please try again.'), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
+
+    // Initial step: Verify PAN number
     final text = _panController.text.trim();
     if (text.length != 10) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -104,21 +187,53 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
       if (mounted) {
         setState(() {
           _panVerifying = false;
-          _panVerified = true;
+          _panOtpSent = true;
+          // Generate locally if backend hasn't been deployed yet, or use backend's OTP
+          String otp = result['otp'] ?? (100000 + (DateTime.now().millisecondsSinceEpoch % 900000)).toString();
+          _expectedPanOtp = otp; 
+          print('\n========================================');
+          print('✅ PAN OTP for $text : $otp');
+          print('========================================\n');
         });
         
-        // Show success snackbar with name from MongoDB!
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PAN Verified! Welcome ${result["name"]}'), backgroundColor: Colors.green),
+        // Show simulated SMS notification as a dialog so it's highly visible on phone
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Row(children: [Icon(Icons.message, color: Colors.blue), SizedBox(width: 8), Text('New Message')]),
+            content: Text('NSDL: Your PAN verification OTP is $_expectedPanOtp. Valid for 10 minutes.'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Dismiss'))
+            ],
+          )
         );
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _panVerifying = false);
-        // Allow proceeding for demo even if mock data isn't seeded
-        setState(() => _panVerified = true);
+        setState(() {
+          _panVerifying = false;
+          _panOtpSent = true;
+          // Trigger mock OTP flow for demo if DB is empty
+          String otp = (100000 + (DateTime.now().millisecondsSinceEpoch % 900000)).toString();
+          _expectedPanOtp = otp; 
+          print('\n========================================');
+          print('✅ PAN OTP for $text : $otp');
+          print('========================================\n');
+        });
+        
+        // Show simulated SMS notification as a dialog
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Row(children: [Icon(Icons.message, color: Colors.blue), SizedBox(width: 8), Text('New Message')]),
+            content: Text('NSDL: Your PAN verification OTP is $_expectedPanOtp. Valid for 10 minutes.'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Dismiss'))
+            ],
+          )
+        );
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('API Note: $e (Simulating success)'), backgroundColor: Colors.orange),
+          SnackBar(content: Text('API Note: simulated DB response for demo.'), backgroundColor: Colors.orange),
         );
       }
     }
@@ -149,15 +264,39 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
 
   Future<void> _verifySelfie(Map<String, dynamic> data) async {
     ref.read(ocrResultsProvider.notifier).addResult('selfie', data);
+    
+    final ocrResults = ref.read(ocrResultsProvider);
+    final aadhaarPath = ocrResults['aadhaar_front']?['image_path'] as String? ?? '';
+    final panPath = ocrResults['pan']?['image_path'] as String? ?? '';
+    final selfiePath = data['image_path'] as String? ?? 'mock_selfie';
+
     final result = await DemoFaceVerifier.verify(
-      selfieBase64: 'mock_selfie',
-      docFaceBase64: 'mock_doc_face',
+      aadhaarPath: aadhaarPath,
+      panPath: panPath,
+      selfiePath: selfiePath,
     );
+    
     setState(() => _selfieVerified = result.matched);
+    
+    if (!result.matched) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Verification Failed: ${result.error ?? "Faces do not match!"}'), 
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      // Remove the invalid selfie so they can try again
+      ref.read(ocrResultsProvider.notifier).addResult('selfie', {});
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selfie Verified! Faces match.'), backgroundColor: Colors.green),
+      );
+    }
   }
 
   bool get _isFormValid {
-    return _aadhaarVerified && _aadhaarFrontExtracted && _panVerified && _panExtracted;
+    return _aadhaarVerified && _aadhaarFrontExtracted && _panVerified && _panExtracted && _selfieVerified;
   }
 
   Future<void> _submit() async {
@@ -177,9 +316,9 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final api = ref.read(apiServiceProvider);
-      await api.verifyAadhaar('1234');
-      await api.verifyPan('ABCDE');
+      // The individual numbers have already been verified via the OTP flow
+      // We just simulate final KYC report compilation delay here
+      await Future.delayed(const Duration(seconds: 2));
 
       ref.read(verifiedProfileProvider.notifier).updateStep2(
         KycInfo(isVerified: true, backVerified: _aadhaarBackExtracted, selfieVerified: _selfieVerified),
@@ -233,17 +372,30 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
           const SizedBox(height: 16),
 
           // Aadhaar Number + Verify button
-          _buildVerifyInputRow(
-            controller: _aadhaarController,
-            label: 'Aadhaar Number',
-            hint: 'Enter 12-digit Aadhaar',
-            maxLength: 12,
-            keyboardType: TextInputType.number,
-            isVerified: _aadhaarVerified,
-            isVerifying: _aadhaarVerifying,
-            isStepVerified: isVerified,
-            onVerify: _verifyAadhaar,
-          ),
+          if (_aadhaarOtpSent)
+            _buildVerifyInputRow(
+              controller: _aadhaarOtpController,
+              label: 'Aadhaar OTP',
+              hint: 'Enter 6-digit OTP',
+              maxLength: 6,
+              keyboardType: TextInputType.number,
+              isVerified: false,
+              isVerifying: false,
+              isStepVerified: isVerified,
+              onVerify: _verifyAadhaar,
+            )
+          else
+            _buildVerifyInputRow(
+              controller: _aadhaarController,
+              label: 'Aadhaar Number',
+              hint: 'Enter 12-digit Aadhaar',
+              maxLength: 12,
+              keyboardType: TextInputType.number,
+              isVerified: _aadhaarVerified,
+              isVerifying: _aadhaarVerifying,
+              isStepVerified: isVerified,
+              onVerify: _verifyAadhaar,
+            ),
           const SizedBox(height: 16),
 
           // Aadhaar Front Upload — enabled only after Aadhaar verified
@@ -289,18 +441,31 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
           const SizedBox(height: 16),
 
           // PAN Number + Verify button
-          _buildVerifyInputRow(
-            controller: _panController,
-            label: 'PAN Number',
-            hint: 'e.g. ABCDE1234F',
-            maxLength: 10,
-            keyboardType: TextInputType.text,
-            textCapitalization: TextCapitalization.characters,
-            isVerified: _panVerified,
-            isVerifying: _panVerifying,
-            isStepVerified: isVerified,
-            onVerify: _verifyPan,
-          ),
+          if (_panOtpSent)
+            _buildVerifyInputRow(
+              controller: _panOtpController,
+              label: 'PAN OTP',
+              hint: 'Enter 6-digit OTP',
+              maxLength: 6,
+              keyboardType: TextInputType.number,
+              isVerified: false,
+              isVerifying: false,
+              isStepVerified: isVerified,
+              onVerify: _verifyPan,
+            )
+          else
+            _buildVerifyInputRow(
+              controller: _panController,
+              label: 'PAN Number',
+              hint: 'e.g. ABCDE1234F',
+              maxLength: 10,
+              keyboardType: TextInputType.text,
+              textCapitalization: TextCapitalization.characters,
+              isVerified: _panVerified,
+              isVerifying: _panVerifying,
+              isStepVerified: isVerified,
+              onVerify: _verifyPan,
+            ),
           const SizedBox(height: 16),
 
           // PAN Card Photo Upload — enabled only after PAN verified

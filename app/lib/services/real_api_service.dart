@@ -7,35 +7,23 @@ class RealApiService implements ApiService {
   RealApiService({this.baseUrl = 'http://10.0.2.2:8000/api'});
   @override
   Future<Map<String, dynamic>> sendOtp(String mobile, {bool isSignup = false}) async {
-    final response = await http.post(
-      // The API base url is /api, but auth routes are at /auth. We need to construct the URL:
-      Uri.parse(baseUrl.replaceAll('/api', '') + '/auth/otp/send'),
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': 'gigcredit-demo-api-key-2026',
-      },
-      body: jsonEncode({'mobile': mobile}),
-    );
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    }
-    throw Exception('Failed to send OTP: ${response.body}');
+    // MOCK AUTHENTICATION AS REQUESTED
+    await Future.delayed(const Duration(milliseconds: 800));
+    return {'status': 'success', 'message': 'OTP sent successfully'};
   }
 
   @override
   Future<Map<String, dynamic>> verifyOtp(String mobile, String otp) async {
-    final response = await http.post(
-      Uri.parse(baseUrl.replaceAll('/api', '') + '/auth/otp/verify'),
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': 'gigcredit-demo-api-key-2026',
-      },
-      body: jsonEncode({'mobile': mobile, 'otp': otp}),
-    );
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+    // MOCK AUTHENTICATION AS REQUESTED
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (mobile == '7810039326' && otp == '0000') {
+      return {'status': 'success', 'token': 'mock_jwt_token', 'user': {'name': 'Praveen Kumar', 'mobile': mobile}};
     }
-    throw Exception('Failed to verify OTP: ${response.body}');
+    // Also accept 000000 as a fallback
+    if (otp == '000000' || otp == '0000') {
+      return {'status': 'success', 'token': 'mock_jwt_token', 'user': {'name': 'Praveen Kumar', 'mobile': mobile}};
+    }
+    throw Exception('Invalid OTP');
   }
 
   @override
@@ -51,7 +39,8 @@ class RealApiService implements ApiService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     }
-    throw Exception('Failed to verify Aadhaar');
+    final errorMsg = jsonDecode(response.body)['detail'] ?? 'Failed to verify Aadhaar';
+    throw Exception(errorMsg);
   }
 
   @override
@@ -67,12 +56,42 @@ class RealApiService implements ApiService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     }
-    throw Exception('Failed to verify PAN');
+    final errorMsg = jsonDecode(response.body)['detail'] ?? 'Failed to verify PAN';
+    throw Exception(errorMsg);
   }
 
   @override
-  Future<Map<String, dynamic>> verifyAccount(String accountNo, String ifsc) {
-    throw UnimplementedError();
+  Future<Map<String, dynamic>> verifyAccount(String accountNo, String ifsc) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/bank/account/verify'),
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': 'gigcredit-demo-api-key-2026',
+      },
+      body: jsonEncode({'account_number': accountNo, 'ifsc': ifsc}),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    final errorMsg = jsonDecode(response.body)['detail'] ?? 'Failed to verify Account';
+    throw Exception(errorMsg);
+  }
+
+  @override
+  Future<Map<String, dynamic>> verifyIfsc(String ifsc) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/bank/ifsc/verify'),
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': 'gigcredit-demo-api-key-2026',
+      },
+      body: jsonEncode({'ifsc': ifsc}),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    final errorMsg = jsonDecode(response.body)['detail'] ?? 'Failed to verify IFSC';
+    throw Exception(errorMsg);
   }
 
   @override
@@ -123,7 +142,7 @@ class RealApiService implements ApiService {
   @override
   Future<Map<String, dynamic>> generateReportScore(Map<String, dynamic> verifiedProfileData) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/report/generate'), // Note: baseUrl is /api, so this becomes /api/report/generate
+      Uri.parse('$baseUrl/api/report/generate'), // report routes have /api prefix in python
       headers: {
         'Content-Type': 'application/json',
         'X-API-Key': 'gigcredit-demo-api-key-2026',
@@ -141,10 +160,6 @@ class RealApiService implements ApiService {
     throw UnimplementedError();
   }
 
-  @override
-  Future<Map<String, dynamic>> verifyIfsc(String ifsc) {
-    throw UnimplementedError();
-  }
 
   @override
   Future<Map<String, dynamic>> checkLoans(String accountNumber) {
