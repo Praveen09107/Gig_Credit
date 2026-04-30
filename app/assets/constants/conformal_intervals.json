@@ -1,0 +1,32 @@
+{
+  "P1": {
+    "platform_worker": 0.015883266125300773,
+    "street_vendor": 0.016447733800785888,
+    "skilled_tradesperson": 0.011831933812635257,
+    "freelancer": 0.015410922767968486
+  },
+  "P2": {
+    "platform_worker": 0.015819778296506853,
+    "street_vendor": 0.014309538432568618,
+    "skilled_tradesperson": 0.015265962207741115,
+    "freelancer": 0.015189504779371157
+  },
+  "P3": {
+    "platform_worker": 0.041084408932229435,
+    "street_vendor": 0.03746408885620794,
+    "skilled_tradesperson": 0.038796791092887604,
+    "freelancer": 0.03724181418632923
+  },
+  "P4": {
+    "platform_worker": 0.013172639382662683,
+    "street_vendor": 0.012516330098676972,
+    "skilled_tradesperson": 0.01456465153463803,
+    "freelancer": 0.01574928485709076
+  },
+  "P6": {
+    "platform_worker": 0.04566714160835003,
+    "street_vendor": 0.041014849627610206,
+    "skilled_tradesperson": 0.042649810721018526,
+    "freelancer": 0.038417469631240216
+  }
+}

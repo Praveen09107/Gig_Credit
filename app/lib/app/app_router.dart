@@ -230,7 +230,7 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.loans,
           name: 'loans',
-          builder: (ctx, state) => const LoansScreen(),
+          builder: (ctx, state) => const LoanApplicationScreen(),
           routes: [
             GoRoute(
               path: 'detail/:offerId',

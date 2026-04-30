@@ -11,10 +11,9 @@ class ConfidenceEngine {
     for (String pillar in mlPillars) {
       double confidence = 0.50; // Default to LOW
       
-      // Navigate conformal intervals json based on workType and pillar
-      // JSON structure from Dev A: {"platform_worker": {"P1": {"half_width": 0.05, ...}, ...}, ...}
-      if (conformalIntervalsJson.containsKey(workType) && conformalIntervalsJson[workType].containsKey(pillar)) {
-        double halfWidth = (conformalIntervalsJson[workType][pillar]['half_width'] as num).toDouble();
+      // JSON structure: {"P1": {"platform_worker": 0.015, ...}, ...}
+      if (conformalIntervalsJson.containsKey(pillar) && conformalIntervalsJson[pillar].containsKey(workType)) {
+        double halfWidth = (conformalIntervalsJson[pillar][workType] as num).toDouble();
         double intervalWidth = 2 * halfWidth;
 
         if (intervalWidth <= 0.12) {

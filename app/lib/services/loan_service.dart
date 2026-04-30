@@ -7,7 +7,7 @@ import '../models/loan_decision_model.dart';
 class LoanService {
   final String baseUrl;
 
-  LoanService({this.baseUrl = 'https://api.gigcredit.example.com'});
+  LoanService({this.baseUrl = 'https://gig-credit.onrender.com/api'});
 
   Future<List<LoanProductModel>> getProducts(String workType, int score) async {
     try {

@@ -1,0 +1,226 @@
+[
+  {
+    "audit_id": "GC-LOAN-20260429235014",
+    "loan_id": "LB15FF31E",
+    "created_at": "2026-04-29T23:50:14.608525Z",
+    "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "identity_snapshot": {
+      "aadhaar_verified": true,
+      "pan_verified": true
+    },
+    "score_snapshot": {
+      "final_score": 613,
+      "feature_snapshot": {
+        "P2": 0.8,
+        "P4": 0.6,
+        "income_stability_cv": 0.2
+      }
+    },
+    "loan_request": {
+      "product_type": "emergency_advance",
+      "amount": 64000.0,
+      "tenure": 3,
+      "kfs_acknowledged": true
+    },
+    "decision": {
+      "decision": "rejected",
+      "rejection_bucket": "HARD_RULE",
+      "reason": "Your income relative to existing and proposed loan payments does not meet the minimum Debt Service Coverage Ratio of 1.4. Your DSCR: 1.04.",
+      "remediation": null,
+      "counter_offer": {
+        "type": "reduce_amount",
+        "max_amount": 46330,
+        "message": "Based on your income, you can comfortably borrow up to \u20b946,330."
+      },
+      "hard_rules": [
+        {
+          "passed": true,
+          "rule_code": "HR-1",
+          "rule_name": "KYC Verification",
+          "rejection_type": null,
+          "aan_code": null,
+          "reason": null,
+          "remediation": null,
+          "counter_offer": null
+        },
+        {
+          "passed": true,
+          "rule_code": "HR-2",
+          "rule_name": "Age Gate",
+          "rejection_type": null,
+          "aan_code": null,
+          "reason": null,
+          "remediation": null,
+          "counter_offer": null
+        },
+        {
+          "passed": true,
+          "rule_code": "HR-3",
+          "rule_name": "Bank Statement Minimum",
+          "rejection_type": null,
+          "aan_code": null,
+          "reason": null,
+          "remediation": null,
+          "counter_offer": null
+        },
+        {
+          "passed": false,
+          "rule_code": "HR-4",
+          "rule_name": "DSCR Gate",
+          "rejection_type": "REGULATORY",
+          "aan_code": "HR-DSCR-004",
+          "reason": "Your income relative to existing and proposed loan payments does not meet the minimum Debt Service Coverage Ratio of 1.4. Your DSCR: 1.04.",
+          "remediation": null,
+          "counter_offer": {
+            "type": "reduce_amount",
+            "max_amount": 46330,
+            "message": "Based on your income, you can comfortably borrow up to \u20b946,330."
+          }
+        },
+        {
+          "passed": true,
+          "rule_code": "HR-5",
+          "rule_name": "Minimum Score",
+          "rejection_type": null,
+          "aan_code": null,
+          "reason": null,
+          "remediation": null,
+          "counter_offer": null
+        },
+        {
+          "passed": true,
+          "rule_code": "HR-6",
+          "rule_name": "KFS Acknowledgement",
+          "rejection_type": null,
+          "aan_code": null,
+          "reason": null,
+          "remediation": null,
+          "counter_offer": null
+        },
+        {
+          "passed": true,
+          "rule_code": "HR-7",
+          "rule_name": "Mobile Verification",
+          "rejection_type": null,
+          "aan_code": null,
+          "reason": null,
+          "remediation": null,
+          "counter_offer": null
+        }
+      ]
+    },
+    "record_hash": "d79619eec2c14346021065cf95c1b9008c857706b41a00ec6acef896a56729cb"
+  },
+  {
+    "audit_id": "GC-LOAN-20260430001559",
+    "loan_id": "L95DA9AC0",
+    "created_at": "2026-04-30T00:15:59.254167Z",
+    "prev_hash": "d79619eec2c14346021065cf95c1b9008c857706b41a00ec6acef896a56729cb",
+    "identity_snapshot": {
+      "aadhaar_verified": true,
+      "pan_verified": true
+    },
+    "score_snapshot": {
+      "final_score": 613,
+      "feature_snapshot": {
+        "P2": 0.8,
+        "P4": 0.6,
+        "income_stability_cv": 0.2
+      }
+    },
+    "loan_request": {
+      "product_type": "emergency_advance",
+      "amount": 59500.00000000001,
+      "tenure": 2,
+      "kfs_acknowledged": true
+    },
+    "decision": {
+      "decision": "rejected",
+      "rejection_bucket": "HARD_RULE",
+      "reason": "Your income relative to existing and proposed loan payments does not meet the minimum Debt Service Coverage Ratio of 1.4. Your DSCR: 0.77.",
+      "remediation": null,
+      "counter_offer": {
+        "type": "reduce_amount",
+        "max_amount": 31091,
+        "message": "Based on your income, you can comfortably borrow up to \u20b931,091."
+      },
+      "hard_rules": [
+        {
+          "passed": true,
+          "rule_code": "HR-1",
+          "rule_name": "KYC Verification",
+          "rejection_type": null,
+          "aan_code": null,
+          "reason": null,
+          "remediation": null,
+          "counter_offer": null
+        },
+        {
+          "passed": true,
+          "rule_code": "HR-2",
+          "rule_name": "Age Gate",
+          "rejection_type": null,
+          "aan_code": null,
+          "reason": null,
+          "remediation": null,
+          "counter_offer": null
+        },
+        {
+          "passed": true,
+          "rule_code": "HR-3",
+          "rule_name": "Bank Statement Minimum",
+          "rejection_type": null,
+          "aan_code": null,
+          "reason": null,
+          "remediation": null,
+          "counter_offer": null
+        },
+        {
+          "passed": false,
+          "rule_code": "HR-4",
+          "rule_name": "DSCR Gate",
+          "rejection_type": "REGULATORY",
+          "aan_code": "HR-DSCR-004",
+          "reason": "Your income relative to existing and proposed loan payments does not meet the minimum Debt Service Coverage Ratio of 1.4. Your DSCR: 0.77.",
+          "remediation": null,
+          "counter_offer": {
+            "type": "reduce_amount",
+            "max_amount": 31091,
+            "message": "Based on your income, you can comfortably borrow up to \u20b931,091."
+          }
+        },
+        {
+          "passed": true,
+          "rule_code": "HR-5",
+          "rule_name": "Minimum Score",
+          "rejection_type": null,
+          "aan_code": null,
+          "reason": null,
+          "remediation": null,
+          "counter_offer": null
+        },
+        {
+          "passed": true,
+          "rule_code": "HR-6",
+          "rule_name": "KFS Acknowledgement",
+          "rejection_type": null,
+          "aan_code": null,
+          "reason": null,
+          "remediation": null,
+          "counter_offer": null
+        },
+        {
+          "passed": true,
+          "rule_code": "HR-7",
+          "rule_name": "Mobile Verification",
+          "rejection_type": null,
+          "aan_code": null,
+          "reason": null,
+          "remediation": null,
+          "counter_offer": null
+        }
+      ]
+    },
+    "record_hash": "f6fa34d20800d975f1f293242c4bedef6b5abfe0b9669ba0c44865e1b1d0233b"
+  }
+]

@@ -1,0 +1,20 @@
+{
+  "emergency_micro": {
+    "platform_worker": 0.18029611445194602,
+    "street_vendor": 0.1913149984019077,
+    "skilled_tradesperson": 0.16815370401537627,
+    "freelancer": 0.17745390880621245
+  },
+  "income_bridge": {
+    "platform_worker": 0.37011783024407924,
+    "street_vendor": 0.3567996208432458,
+    "skilled_tradesperson": 0.3908038163227161,
+    "freelancer": 0.43518133532514636
+  },
+  "growth": {
+    "platform_worker": 0.5,
+    "street_vendor": 0.5,
+    "skilled_tradesperson": 0.5,
+    "freelancer": 0.5
+  }
+}

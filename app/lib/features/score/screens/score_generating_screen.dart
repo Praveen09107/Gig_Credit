@@ -15,6 +15,8 @@ import '../../../models/score_report_model.dart';
 import '../../../state/api_service_provider.dart';
 import '../widgets/score_status_message.dart';
 
+import '../../../services/scoring_service.dart';
+
 /// P6-11: Score Generating Screen
 /// Pulsing gradient ring + cycling messages + computes real score in background.
 /// WillPopScope blocks back navigation.
@@ -44,71 +46,92 @@ class _ScoreGeneratingScreenState extends ConsumerState<ScoreGeneratingScreen>
   }
 
   Future<void> _runPipeline() async {
-    // Minimum screen display time for UX: 6×2.5s = 15s messages OR pipeline completes
-    final profile = ref.read(verifiedProfileProvider);
-    
-    // Allow UI to breathe before heavy computation
-    await Future.delayed(const Duration(seconds: 2));
-
-    // 1. Run local scoring & SHAP pipeline
-    var report = ScorePipeline.run(profile);
-
-    // Wait for realistic AI processing feel
-    await Future.delayed(const Duration(seconds: 4));
-
     try {
-      // 2. Prepare payload for LLM explanation (passing SHAP outputs)
-      final payload = {
-        "credit_score": report.finalScore,
-        "grade": report.grade,
-        "risk_level": report.riskBand,
-        "work_type": profile.personalInfo.workType.isNotEmpty ? profile.personalInfo.workType : 'platform_worker',
-        "language": "English",
-        "positive_factors": report.topStrengths.map((e) => {"feature_label": e.featureName, "impact": e.impactStrength}).toList(),
-        "negative_factors": report.topConcerns.map((e) => {"feature_label": e.featureName, "impact": e.impactStrength}).toList(),
-      };
+      final profile = ref.read(verifiedProfileProvider);
+      
+      // 1. Run local scoring & SHAP pipeline
+      var report = await ScoringService().generateScoreLocally(profile);
 
-      // 3. Request LLM generated explanation via the live backend
-      final api = ref.read(apiServiceProvider);
-      final llmResponse = await api.generateReportScore(payload);
+      try {
+        // 2. Prepare payload for LLM explanation (passing SHAP outputs)
+        final payload = {
+          "credit_score": report.finalScore,
+          "grade": report.grade,
+          "risk_level": report.riskBand,
+          "work_type": profile.personalInfo.workType.isNotEmpty ? profile.personalInfo.workType : 'platform_worker',
+          "language": "English",
+          "positive_factors": report.topStrengths.map((e) => {"feature_label": e.featureName, "impact": e.impactStrength}).toList(),
+          "negative_factors": report.topConcerns.map((e) => {"feature_label": e.featureName, "impact": e.impactStrength}).toList(),
+        };
 
-      if (llmResponse['status'] == 'success' || llmResponse['status'] == 'fallback') {
-        // Merge the backend LLM response with our local score report
-        report = ScoreReportModel(
-          finalScore: report.finalScore,
-          grade: report.grade,
-          riskBand: report.riskBand,
-          proofId: report.proofId,
-          generatedAt: report.generatedAt,
-          overallConfidence: report.overallConfidence,
-          pillars: report.pillars,
-          topStrengths: report.topStrengths,
-          topConcerns: report.topConcerns,
-          llmExplanation: llmResponse['explanation'],
-          tailoredSuggestions: List<String>.from(llmResponse['suggestions'] ?? []),
+        // 3. Request LLM generated explanation via the live backend
+        final api = ref.read(apiServiceProvider);
+        final llmResponse = await api.generateReportScore(payload);
+
+        if (llmResponse['status'] == 'success' || llmResponse['status'] == 'fallback') {
+          // Merge the backend LLM response with our local score report
+          report = ScoreReportModel(
+            finalScore: report.finalScore,
+            probability: report.probability, // Fix added
+            workType: report.workType,
+            computeTimeMs: report.computeTimeMs,
+            grade: report.grade,
+            riskBand: report.riskBand,
+            proofId: report.proofId,
+            generatedAt: report.generatedAt,
+            overallConfidence: report.overallConfidence,
+            pillars: report.pillars,
+            pillarContributions: report.pillarContributions,
+            topStrengths: report.topStrengths,
+            topConcerns: report.topConcerns,
+            llmExplanation: llmResponse['explanation'],
+            tailoredSuggestions: List<String>.from(llmResponse['suggestions'] ?? []),
+          );
+        }
+      } catch (e) {
+        print('LLM API Error: $e');
+        // If network fails, we just use the on-device fallback suggestions
+      }
+
+      if (!mounted) return;
+
+      // 4. Delete sensitive PII data post-evaluation for privacy
+      ref.read(verifiedProfileProvider.notifier).reset();
+
+      // Store result in provider
+      ref.read(scoreProvider.notifier).setSuccess(report);
+
+      // Seed personalized loan offers based on the generated score
+      _seedLoanOffers(report.finalScore);
+
+      // Haptic celebration
+      HapticFeedback.heavyImpact();
+
+      // Navigate to report screen
+      context.go(AppRoutes.scoreReport);
+
+    } catch (e, stackTrace) {
+      print('🔥 PIPELINE CRASHED: $e');
+      print(stackTrace);
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Computation Error'),
+            content: Text('The scoring engine encountered an error:\n\n$e'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  context.go(AppRoutes.home);
+                },
+                child: const Text('Go Home'),
+              )
+            ],
+          ),
         );
       }
-    } catch (e) {
-      print('LLM API Error: $e');
-      // If network fails, we just use the on-device fallback suggestions
     }
-
-    if (!mounted) return;
-
-    // 4. Delete sensitive PII data post-evaluation for privacy
-    ref.read(verifiedProfileProvider.notifier).reset();
-
-    // Store result in provider
-    ref.read(scoreProvider.notifier).setSuccess(report);
-
-    // Seed personalized loan offers based on the generated score
-    _seedLoanOffers(report.finalScore);
-
-    // Haptic celebration
-    HapticFeedback.heavyImpact();
-
-    // Navigate to report screen
-    context.go(AppRoutes.scoreReport);
   }
 
   void _seedLoanOffers(int score) {

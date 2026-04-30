@@ -76,3 +76,4 @@ flutter:
     - assets/images/
     - assets/ocr/expected_outputs.json
     - assets/ocr/fallback_contracts.json
+    - assets/constants/

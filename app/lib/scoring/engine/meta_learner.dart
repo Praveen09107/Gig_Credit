@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+import '../models/meta_learner_lr.dart';
 
 class MetaLearner {
   /// Computes the final probability using a logistic regression dot-product.
@@ -12,14 +12,8 @@ class MetaLearner {
     List<double> features,
     Map<String, dynamic> metaJson,
   ) {
-    // Extract coefficients and intercept
-    List<double> coefficients = List<double>.from(
-        (metaJson['coefficients'] as List).map((x) => (x as num).toDouble()));
-    double intercept = (metaJson['intercept'] as num).toDouble();
     List<int> top4Indices = List<int>.from(
         (metaJson['top4_cross_pillar_indices'] as List).map((x) => x as int));
-
-    assert(coefficients.length == 20, "Meta learner requires exactly 20 coefficients");
 
     // Build the 20-element input vector
     List<double> input = List.filled(20, 0.0);
@@ -41,13 +35,7 @@ class MetaLearner {
       input[i + 16] = features[featureIndex];
     }
 
-    // Dot product
-    double z = intercept;
-    for (int i = 0; i < 20; i++) {
-      z += input[i] * coefficients[i];
-    }
-
-    // Sigmoid
-    return 1.0 / (1.0 + math.exp(-z));
+    // Call the m2cgen-exported LR model which contains the true trained weights
+    return MetaLearnerLR.score(input);
   }
 }

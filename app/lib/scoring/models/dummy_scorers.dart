@@ -27,3 +27,5 @@ double scoreP5(List<double> input) {
   for (int i = 0; i < 18; i++) s += input[i] * w[i];
   return s.clamp(0.0, 1.0);
 }
+
+

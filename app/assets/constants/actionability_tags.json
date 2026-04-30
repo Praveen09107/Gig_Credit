@@ -1,0 +1,347 @@
+{
+  "avg_monthly_income_norm": {
+    "actionable": "non_actionable"
+  },
+  "income_stability_cv": {
+    "actionable": "non_actionable"
+  },
+  "income_growth_slope": {
+    "actionable": "non_actionable"
+  },
+  "income_months_active": {
+    "actionable": "non_actionable"
+  },
+  "income_platform_verified_ratio": {
+    "actionable": "behavioural"
+  },
+  "income_seasonality_amplitude": {
+    "actionable": "non_actionable"
+  },
+  "income_source_diversity": {
+    "actionable": "non_actionable"
+  },
+  "income_bank_deposit_match_ratio": {
+    "actionable": "behavioural"
+  },
+  "income_lowest_to_avg_ratio": {
+    "actionable": "behavioural"
+  },
+  "income_last_3_vs_prev_3": {
+    "actionable": "non_actionable"
+  },
+  "income_zero_month_count": {
+    "actionable": "non_actionable"
+  },
+  "income_irregular_spike_count": {
+    "actionable": "non_actionable"
+  },
+  "income_state_percentile_rank": {
+    "actionable": "non_actionable"
+  },
+  "utility_ontime_ratio": {
+    "actionable": "behavioural"
+  },
+  "emi_ontime_ratio": {
+    "actionable": "behavioural"
+  },
+  "bounce_count_norm": {
+    "actionable": "non_actionable"
+  },
+  "late_payment_frequency": {
+    "actionable": "non_actionable"
+  },
+  "payment_regularity_streak": {
+    "actionable": "non_actionable"
+  },
+  "rent_ontime_ratio": {
+    "actionable": "behavioural"
+  },
+  "credit_card_min_payment_rate": {
+    "actionable": "non_actionable"
+  },
+  "p2p_repayment_ratio": {
+    "actionable": "behavioural"
+  },
+  "utility_advance_payment_ratio": {
+    "actionable": "behavioural"
+  },
+  "late_fee_incidence_norm": {
+    "actionable": "non_actionable"
+  },
+  "payment_channel_digital_ratio": {
+    "actionable": "behavioural"
+  },
+  "emi_prepayment_count_norm": {
+    "actionable": "non_actionable"
+  },
+  "missed_payment_recovery_speed": {
+    "actionable": "non_actionable"
+  },
+  "standing_instruction_success_rate": {
+    "actionable": "non_actionable"
+  },
+  "payment_amount_consistency": {
+    "actionable": "non_actionable"
+  },
+  "emi_to_income_ratio": {
+    "actionable": "behavioural"
+  },
+  "debt_count_norm": {
+    "actionable": "non_actionable"
+  },
+  "outstanding_debt_to_income_ratio": {
+    "actionable": "behavioural"
+  },
+  "debt_repayment_progress_ratio": {
+    "actionable": "behavioural"
+  },
+  "mfi_loan_presence": {
+    "actionable": "non_actionable"
+  },
+  "informal_debt_ratio": {
+    "actionable": "behavioural"
+  },
+  "debt_stacking_indicator": {
+    "actionable": "non_actionable"
+  },
+  "debt_service_coverage_ratio": {
+    "actionable": "behavioural"
+  },
+  "debt_consolidation_behavior": {
+    "actionable": "non_actionable"
+  },
+  "avg_month_end_balance_norm": {
+    "actionable": "non_actionable"
+  },
+  "savings_rate": {
+    "actionable": "non_actionable"
+  },
+  "balance_growth_slope": {
+    "actionable": "non_actionable"
+  },
+  "savings_consistency_score": {
+    "actionable": "behavioural"
+  },
+  "emergency_fund_months": {
+    "actionable": "non_actionable"
+  },
+  "recurring_savings_deposit_indicator": {
+    "actionable": "non_actionable"
+  },
+  "balance_volatility_norm": {
+    "actionable": "non_actionable"
+  },
+  "withdrawal_pattern_regularity": {
+    "actionable": "non_actionable"
+  },
+  "savings_to_debt_ratio": {
+    "actionable": "behavioural"
+  },
+  "digital_wallet_balance_norm": {
+    "actionable": "non_actionable"
+  },
+  "surplus_after_obligations_ratio": {
+    "actionable": "behavioural"
+  },
+  "savings_goal_consistency": {
+    "actionable": "non_actionable"
+  },
+  "aadhaar_verified": {
+    "actionable": "immediate"
+  },
+  "pan_verified": {
+    "actionable": "immediate"
+  },
+  "face_match_score": {
+    "actionable": "behavioural"
+  },
+  "address_match_score": {
+    "actionable": "behavioural"
+  },
+  "dob_consistent": {
+    "actionable": "non_actionable"
+  },
+  "name_consistency_score": {
+    "actionable": "behavioural"
+  },
+  "work_proof_present": {
+    "actionable": "non_actionable"
+  },
+  "work_proof_type_score": {
+    "actionable": "behavioural"
+  },
+  "platform_onboarding_verified": {
+    "actionable": "immediate"
+  },
+  "employer_verification_score": {
+    "actionable": "behavioural"
+  },
+  "work_type_income_consistency": {
+    "actionable": "non_actionable"
+  },
+  "gig_experience_months_norm": {
+    "actionable": "non_actionable"
+  },
+  "multi_platform_count_norm": {
+    "actionable": "non_actionable"
+  },
+  "professional_certification": {
+    "actionable": "non_actionable"
+  },
+  "work_continuity_score": {
+    "actionable": "behavioural"
+  },
+  "customer_rating_norm": {
+    "actionable": "non_actionable"
+  },
+  "income_to_worktype_ratio": {
+    "actionable": "behavioural"
+  },
+  "alternate_id_present": {
+    "actionable": "non_actionable"
+  },
+  "health_insurance_active": {
+    "actionable": "non_actionable"
+  },
+  "life_insurance_active": {
+    "actionable": "non_actionable"
+  },
+  "vehicle_insurance_active": {
+    "actionable": "non_actionable"
+  },
+  "crop_insurance_active": {
+    "actionable": "non_actionable"
+  },
+  "accident_coverage_active": {
+    "actionable": "non_actionable"
+  },
+  "pm_sym_enrollment": {
+    "actionable": "non_actionable"
+  },
+  "total_insurance_count_norm": {
+    "actionable": "non_actionable"
+  },
+  "insurance_premium_regularity": {
+    "actionable": "non_actionable"
+  },
+  "medical_expense_ratio": {
+    "actionable": "behavioural"
+  },
+  "financial_shock_recovery": {
+    "actionable": "non_actionable"
+  },
+  "liquid_asset_to_income": {
+    "actionable": "non_actionable"
+  },
+  "eshram_enrolled": {
+    "actionable": "non_actionable"
+  },
+  "mudra_loan_history": {
+    "actionable": "non_actionable"
+  },
+  "pm_svanidhi_enrolled": {
+    "actionable": "non_actionable"
+  },
+  "pm_kisan_enrolled": {
+    "actionable": "non_actionable"
+  },
+  "government_scheme_count_norm": {
+    "actionable": "non_actionable"
+  },
+  "welfare_scheme_active": {
+    "actionable": "non_actionable"
+  },
+  "self_help_group_member": {
+    "actionable": "non_actionable"
+  },
+  "community_lending_record": {
+    "actionable": "non_actionable"
+  },
+  "social_reference_score": {
+    "actionable": "behavioural"
+  },
+  "civic_identity_score": {
+    "actionable": "behavioural"
+  },
+  "itr_filed_this_year": {
+    "actionable": "immediate"
+  },
+  "itr_years_filed_norm": {
+    "actionable": "immediate"
+  },
+  "itr_income_match_ratio": {
+    "actionable": "behavioural"
+  },
+  "gst_registered": {
+    "actionable": "immediate"
+  },
+  "gst_return_regularity": {
+    "actionable": "non_actionable"
+  },
+  "pan_linked_to_bank": {
+    "actionable": "non_actionable"
+  },
+  "tax_liability_settled": {
+    "actionable": "non_actionable"
+  },
+  "income_debt_stress_index": {
+    "actionable": "non_actionable"
+  },
+  "debt_vulnerability_score": {
+    "actionable": "behavioural"
+  },
+  "income_emi_coverage": {
+    "actionable": "non_actionable"
+  },
+  "income_trend_vs_debt_trend": {
+    "actionable": "non_actionable"
+  },
+  "payment_savings_alignment": {
+    "actionable": "non_actionable"
+  },
+  "buffer_payment_composite": {
+    "actionable": "non_actionable"
+  },
+  "digital_savings_discipline": {
+    "actionable": "non_actionable"
+  },
+  "financial_shock_resistance": {
+    "actionable": "non_actionable"
+  },
+  "resilience_debt_mismatch": {
+    "actionable": "non_actionable"
+  },
+  "insurance_income_anchor": {
+    "actionable": "non_actionable"
+  },
+  "consistent_earning_payment_streak": {
+    "actionable": "non_actionable"
+  },
+  "income_payment_trend_alignment": {
+    "actionable": "non_actionable"
+  },
+  "platform_payment_reliability": {
+    "actionable": "non_actionable"
+  },
+  "income_floor_payment_consistency": {
+    "actionable": "non_actionable"
+  },
+  "formal_recognition_income_alignment": {
+    "actionable": "non_actionable"
+  },
+  "tax_income_consistency_ratio": {
+    "actionable": "behavioural"
+  },
+  "scheme_income_combined": {
+    "actionable": "non_actionable"
+  },
+  "seasonal_income_volatility": {
+    "actionable": "non_actionable"
+  },
+  "payment_regularity_entropy": {
+    "actionable": "non_actionable"
+  },
+  "balance_recovery_speed": {
+    "actionable": "non_actionable"
+  }
+}

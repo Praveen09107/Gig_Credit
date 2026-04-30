@@ -1,4 +1,6 @@
-import 'dart:ui';
+import os
+
+dart_code = """import 'dart:ui';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,7 +23,6 @@ const _accentGold = Color(0xFFF4B942);
 const _accentGoldDim = Color(0x15F4B942);
 const _accentRed = Color(0xFFFF4E6A);
 const _accentRedDim = Color(0x15FF4E6A);
-const _accentRedGlow = Color(0x40FF4E6A);
 const _accentPurple = Color(0xFF8B5CF6);
 const _accentPurpleDim = Color(0x158B5CF6);
 const _textPrimary = Color(0xFFF0F4FF);
@@ -38,8 +39,6 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
   int _currentScreen = 1;
   String? _selectedProduct;
   double _loanAmount = 50000;
-  double _sliderMin = 25000;
-  double _sliderMax = 82000;
   int _tenure = 12;
   String? _purpose;
   bool _kfsAcknowledged = false;
@@ -177,14 +176,13 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           decoration: BoxDecoration(color: _bgCard, border: Border.all(color: _borderSubtle), borderRadius: BorderRadius.circular(12)),
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Flexible(child: Text('Your Score: 647 · Grade B', style: TextStyle(fontFamily: 'Inter', color: _accentGreen, fontWeight: FontWeight.bold, fontSize: 13), overflow: TextOverflow.ellipsis)),
-              SizedBox(width: 8),
-              Text('≤ ₹82,000', style: TextStyle(fontFamily: 'Inter', color: _accentTeal, fontWeight: FontWeight.bold, fontSize: 13)),
+              Text('Your Score: 647 · Grade B', style: TextStyle(fontFamily: 'Inter', color: _accentGreen, fontWeight: FontWeight.bold)),
+              Text('Eligible up to ₹82,000', style: TextStyle(fontFamily: 'Inter', color: _accentTeal, fontWeight: FontWeight.bold)),
             ],
           ),
         ),
@@ -202,13 +200,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
           precalc: 'Max eligible: ₹22,000 · pre-calculated from your income',
           btnText: 'SELECT →', btnColor: _accentRed,
           onTap: () {
-            setState(() {
-              _selectedProduct = 'emergency_micro';
-              _sliderMin = 5000;
-              _sliderMax = 25000;
-              _loanAmount = 15000;
-              _currentScreen = 2;
-            });
+            setState(() { _selectedProduct = 'emergency_micro'; _loanAmount = 20000; _currentScreen = 2; });
           }
         ).animate().slideY(begin: 0.1).fadeIn(),
         const SizedBox(height: 16),
@@ -223,13 +215,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
           precalc: 'Max eligible: ₹82,000 · pre-calculated from your income',
           btnText: 'SELECT →', btnColor: _accentTeal,
           onTap: () {
-            setState(() {
-              _selectedProduct = 'income_bridge';
-              _sliderMin = 25000;
-              _sliderMax = 82000;
-              _loanAmount = 50000;
-              _currentScreen = 2;
-            });
+            setState(() { _selectedProduct = 'income_bridge'; _loanAmount = 50000; _currentScreen = 2; });
           }
         ).animate().slideY(begin: 0.1, delay: 100.ms).fadeIn(),
         const SizedBox(height: 16),
@@ -245,45 +231,43 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
 
   Widget _buildProductCard({required String title, required String badge, required Color badgeColor, Color? badgeBg, required Color bg, required Color borderColor, required Color leftBorder, required String amount, required String tenure, required String apr, required String purpose, required String precalc, required String btnText, required Color btnColor, required VoidCallback onTap}) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: bg, border: Border(top: BorderSide(color: borderColor), right: BorderSide(color: borderColor), bottom: BorderSide(color: borderColor), left: BorderSide(color: leftBorder, width: 4)), borderRadius: BorderRadius.circular(16)),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: bg, border: Border.all(color: borderColor), border(left: BorderSide(color: leftBorder, width: 4)), borderRadius: BorderRadius.circular(16)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(child: Text(title, style: const TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.bold, fontSize: 14, color: _textPrimary))),
-              const SizedBox(width: 8),
+              Text(title, style: const TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.bold, fontSize: 16, color: _textPrimary)),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(color: badgeBg ?? badgeColor.withOpacity(0.2), borderRadius: BorderRadius.circular(999)),
-                child: Text(badge, style: TextStyle(color: badgeColor, fontSize: 9, fontWeight: FontWeight.bold)),
+                child: Text(badge, style: TextStyle(color: badgeColor, fontSize: 10, fontWeight: FontWeight.bold)),
               )
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(child: _buildSpecItem('Amount', amount)),
               Expanded(child: _buildSpecItem('Tenure', tenure)),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(child: _buildSpecItem('APR', apr)),
-              Expanded(child: _buildSpecItem('For', purpose, small: true)),
+              Expanded(child: _buildSpecItem('For', purpose)),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: _bgPrimary, borderRadius: BorderRadius.circular(8), border: Border.all(color: _borderSubtle)),
-            child: Text(precalc, style: const TextStyle(color: _textSecondary, fontSize: 11), maxLines: 2, overflow: TextOverflow.ellipsis),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: _bgPrimary, borderRadius: BorderRadius.circular(10), border: Border.all(color: _borderSubtle)),
+            child: Text(precalc, style: const TextStyle(fontFamily: 'JetBrains Mono', color: _textSecondary, fontSize: 11)),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           SizedBox(
             width: double.infinity, height: 44,
             child: ElevatedButton(
@@ -297,13 +281,13 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
     );
   }
 
-  Widget _buildSpecItem(String label, String val, {bool small = false}) {
+  Widget _buildSpecItem(String label, String val) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: _textSecondary, fontSize: 11)),
-        const SizedBox(height: 2),
-        Text(val, style: TextStyle(color: _textPrimary, fontSize: small ? 11 : 12, fontWeight: FontWeight.w500), maxLines: 2, overflow: TextOverflow.ellipsis),
+        Text(label, style: const TextStyle(color: _textSecondary, fontSize: 12)),
+        const SizedBox(height: 4),
+        Text(val, style: const TextStyle(color: _textPrimary, fontSize: 13, fontWeight: FontWeight.w500)),
       ],
     );
   }
@@ -311,19 +295,18 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
   Widget _buildLockedCard() {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: _accentPurpleDim, border: Border(top: BorderSide(color: const Color(0x408B5CF6)), right: BorderSide(color: const Color(0x408B5CF6)), bottom: BorderSide(color: const Color(0x408B5CF6)), left: BorderSide(color: _accentPurple, width: 4)), borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(color: _accentPurpleDim, border: Border.all(color: const Color(0x408B5CF6)), border(left: BorderSide(color: _accentPurple, width: 4)), borderRadius: BorderRadius.circular(16)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Expanded(child: Text('📈  GROWTH LOAN', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.bold, fontSize: 14, color: _textPrimary))),
-              const SizedBox(width: 8),
+              const Text('📈  GROWTH LOAN', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.bold, fontSize: 16, color: _textPrimary)),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(color: _accentPurple, borderRadius: BorderRadius.circular(999)),
-                child: const Text('🔒 LOCKED', style: TextStyle(color: _textPrimary, fontSize: 9, fontWeight: FontWeight.bold)),
+                child: const Text('🔒 LOCKED', style: TextStyle(color: _textPrimary, fontSize: 10, fontWeight: FontWeight.bold)),
               )
             ],
           ),
@@ -361,7 +344,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
       children: [
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: _accentGreenDim, border: Border(top: BorderSide(color: const Color(0x403DD68C)), right: BorderSide(color: const Color(0x403DD68C)), bottom: BorderSide(color: const Color(0x403DD68C)), left: BorderSide(color: _accentGreen, width: 4)), borderRadius: BorderRadius.circular(14)),
+          decoration: BoxDecoration(color: _accentGreenDim, border: Border.all(color: const Color(0x403DD68C)), border(left: const BorderSide(color: _accentGreen, width: 4)), borderRadius: BorderRadius.circular(14)),
           child: const Row(
             children: [
               Text('💡', style: TextStyle(fontSize: 18)),
@@ -388,18 +371,18 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
         SliderTheme(
           data: SliderThemeData(trackHeight: 6, thumbColor: _accentTeal, activeTrackColor: _accentTeal, inactiveTrackColor: const Color(0xFF1E2535)),
           child: Slider(
-            value: _loanAmount.clamp(_sliderMin, _sliderMax),
-            min: _sliderMin,
-            max: _sliderMax,
-            divisions: ((_sliderMax - _sliderMin) / 1000).round(),
+            value: _loanAmount,
+            min: 25000,
+            max: 82000,
+            divisions: 57,
             onChanged: (v) => setState(() => _loanAmount = v),
           ),
         ),
-        Row(
+        const Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('₹${NumberFormat('#,##0').format(_sliderMin)}', style: const TextStyle(color: _textSecondary, fontSize: 12)),
-            Text('₹${NumberFormat('#,##0').format(_sliderMax)}', style: const TextStyle(color: _textSecondary, fontSize: 12)),
+            Text('₹25K', style: TextStyle(color: _textSecondary, fontSize: 12)),
+            Text('₹82K', style: TextStyle(color: _textSecondary, fontSize: 12)),
           ],
         ),
         const SizedBox(height: 32),
@@ -495,7 +478,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
       children: [
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: _accentGoldDim, border: Border(top: BorderSide(color: const Color(0x40F4B942)), right: BorderSide(color: const Color(0x40F4B942)), bottom: BorderSide(color: const Color(0x40F4B942)), left: BorderSide(color: _accentGold, width: 4)), borderRadius: BorderRadius.circular(14)),
+          decoration: BoxDecoration(color: _accentGoldDim, border: Border.all(color: const Color(0x40F4B942)), border(left: const BorderSide(color: _accentGold, width: 4)), borderRadius: BorderRadius.circular(14)),
           child: const Text('⚖️  LEGAL DISCLOSURE — Read carefully before agreeing', style: TextStyle(color: _accentGold, fontSize: 14, fontWeight: FontWeight.w600)),
         ).animate().fadeIn(),
         const SizedBox(height: 24),
@@ -519,7 +502,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
         const SizedBox(height: 24),
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: _accentTealDim, border: Border(top: BorderSide(color: const Color(0x4000D4B4)), right: BorderSide(color: const Color(0x4000D4B4)), bottom: BorderSide(color: const Color(0x4000D4B4)), left: BorderSide(color: _accentTeal, width: 4)), borderRadius: BorderRadius.circular(14)),
+          decoration: BoxDecoration(color: _accentTealDim, border: Border.all(color: const Color(0x4000D4B4)), border(left: const BorderSide(color: _accentTeal, width: 4)), borderRadius: BorderRadius.circular(14)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -584,7 +567,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
       key: const ValueKey(4),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        LinearProgressIndicator(valueColor: const AlwaysStoppedAnimation(_accentTeal), backgroundColor: const Color(0xFF1E2535), minHeight: 6, borderRadius: BorderRadius.circular(999)).animate().custom(duration: 6500.ms, builder: (ctx, val, child) => LinearProgressIndicator(value: val, valueColor: const AlwaysStoppedAnimation(_accentTeal), backgroundColor: const Color(0xFF1E2535), minHeight: 6, borderRadius: BorderRadius.circular(999))),
+        LinearProgressIndicator(valueColor: const AlwaysStoppedColor(_accentTeal), backgroundColor: const Color(0xFF1E2535), minHeight: 6, borderRadius: BorderRadius.circular(999)).animate().custom(duration: 6500.ms, builder: (ctx, val, child) => LinearProgressIndicator(value: val, valueColor: const AlwaysStoppedColor(_accentTeal), backgroundColor: const Color(0xFF1E2535), minHeight: 6, borderRadius: BorderRadius.circular(999))),
         const SizedBox(height: 24),
         Container(
           padding: const EdgeInsets.all(20),
@@ -646,10 +629,10 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
         children: [
           Container(width: 32, height: 32, decoration: const BoxDecoration(color: _accentGreenDim, shape: BoxShape.circle), child: const Icon(Icons.check, color: _accentGreen, size: 16)),
           const SizedBox(width: 12),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(title, style: const TextStyle(color: _textPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
             Text(sub, style: const TextStyle(color: _textSecondary, fontSize: 12)),
-          ]))
+          ])
         ],
       ).animate().fadeIn(delay: delayMs.ms).slideX(begin: -0.1),
     );
@@ -751,7 +734,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(color: _accentRedDim, borderRadius: BorderRadius.circular(16), border: Border(top: BorderSide(color: const Color(0x40FF4E6A)), right: BorderSide(color: const Color(0x40FF4E6A)), bottom: BorderSide(color: const Color(0x40FF4E6A)), left: const BorderSide(color: _accentRed, width: 4))),
+          decoration: BoxDecoration(color: _accentRedDim, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0x40FF4E6A)), border(left: const BorderSide(color: _accentRed, width: 4))),
           child: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -766,7 +749,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: _accentGreenDim, borderRadius: BorderRadius.circular(14), border: Border(top: BorderSide(color: const Color(0x403DD68C)), right: BorderSide(color: const Color(0x403DD68C)), bottom: BorderSide(color: const Color(0x403DD68C)), left: const BorderSide(color: _accentGreen, width: 4))),
+          decoration: BoxDecoration(color: _accentGreenDim, borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0x403DD68C)), border(left: const BorderSide(color: _accentGreen, width: 4))),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -862,3 +845,7 @@ extension BorderSideExt on BoxDecoration {
     ));
   }
 }
+"""
+
+with open(r"C:\Users\PRAVEEN\Desktop\rotatech hackathon\Gig_Credit\app\lib\features\loans\screens\loan_application_v2.dart", "w", encoding="utf-8") as f:
+    f.write(dart_code)

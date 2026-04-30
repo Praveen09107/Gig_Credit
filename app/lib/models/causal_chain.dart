@@ -47,18 +47,20 @@ class CausalRule {
 
   factory CausalRule.fromJson(Map<String, dynamic> json) {
     return CausalRule(
-      ruleId: json['rule_id'] as String,
-      name: json['name'] as String,
-      triggers: (json['triggers'] as List)
-          .map((t) => CausalTrigger.fromJson(t as Map<String, dynamic>))
-          .toList(),
-      triggerLogic: json['trigger_logic'] as String,
-      rootCause: json['root_cause'] as String,
-      causalChain: json['causal_chain'] as String,
-      applicantMessage: json['applicant_message'] as String,
+      ruleId: json['rule_id'] as String? ?? 'mock_rule_id',
+      name: json['name'] as String? ?? json['rule'] as String? ?? 'Mock Rule',
+      triggers: json.containsKey('triggers')
+          ? (json['triggers'] as List)
+              .map((t) => CausalTrigger.fromJson(t as Map<String, dynamic>))
+              .toList()
+          : [],
+      triggerLogic: json['trigger_logic'] as String? ?? 'AND',
+      rootCause: json['root_cause'] as String? ?? 'Unknown Root Cause',
+      causalChain: json['causal_chain'] as String? ?? json['suggestion'] as String? ?? 'No chain provided',
+      applicantMessage: json['applicant_message'] as String? ?? 'No message provided',
       actionable: json['actionable'] as bool? ?? false,
-      actionText: json['action_text'] as String? ?? '',
-      pillarAffected: json['pillar_affected'] as String? ?? '',
+      actionText: json['action_text'] as String? ?? json['suggestion'] as String? ?? '',
+      pillarAffected: json['pillar_affected'] as String? ?? 'Unknown',
       workTypes: List<String>.from(json['work_types'] as List? ?? []),
     );
   }

@@ -67,10 +67,13 @@ class PrimaryButton extends StatelessWidget {
                         icon!,
                         const SizedBox(width: 8),
                       ],
-                      Text(
-                        label,
-                        style: AppTypography.button.copyWith(
-                          color: effectiveDisabled ? AppColors.textDisabled : Colors.white,
+                      Flexible(
+                        child: Text(
+                          label,
+                          textAlign: TextAlign.center,
+                          style: AppTypography.button.copyWith(
+                            color: effectiveDisabled ? AppColors.textDisabled : Colors.white,
+                          ),
                         ),
                       ),
                     ],

@@ -1,0 +1,72 @@
+{
+  "income_bridge": {
+    "display_name": "Income Bridge Loan",
+    "description": "Short-term cash flow support for lean income months",
+    "min_score": 480,
+    "amount_range": [5000, 50000],
+    "tenure_options": [7, 14, 21, 30],
+    "apr_by_score_band": { "480-539": "24%", "540-599": "21%", "600-639": "18%", "640+": "16%" },
+    "max_lti_ratio": 3.0,
+    "dscr_threshold": 1.40,
+    "emi_ratio_cap": 0.50,
+    "processing_fee_pct": 2.0,
+    "processing_fee_min": 100,
+    "eligible_work_types": ["platform_worker", "vendor", "tradesperson", "freelancer"]
+  },
+  "emergency_advance": {
+    "display_name": "Emergency Cash Advance",
+    "description": "Instant funds for medical, equipment or urgent needs",
+    "min_score": 520,
+    "amount_range": [10000, 100000],
+    "tenure_options": [1, 2, 3],
+    "apr_by_score_band": { "520-599": "22%", "600-639": "19%", "640-719": "16%", "720+": "14%" },
+    "max_lti_ratio": 4.0,
+    "dscr_threshold": 1.40,
+    "emi_ratio_cap": 0.50,
+    "processing_fee_pct": 2.5,
+    "processing_fee_min": 250,
+    "eligible_work_types": ["platform_worker", "vendor", "tradesperson", "freelancer"]
+  },
+  "tool_equipment_loan": {
+    "display_name": "Tools & Equipment Loan",
+    "description": "Buy tools, equipment or vehicle for your gig work",
+    "min_score": 560,
+    "amount_range": [15000, 200000],
+    "tenure_options": [3, 6, 9, 12],
+    "apr_by_score_band": { "560-639": "18%", "640-719": "16%", "720-799": "14%", "800+": "12%" },
+    "max_lti_ratio": 5.0,
+    "dscr_threshold": 1.35,
+    "emi_ratio_cap": 0.45,
+    "processing_fee_pct": 2.0,
+    "processing_fee_min": 300,
+    "eligible_work_types": ["tradesperson", "platform_worker", "freelancer"]
+  },
+  "working_capital": {
+    "display_name": "Working Capital Loan",
+    "description": "Fund inventory, materials or business operations",
+    "min_score": 600,
+    "amount_range": [25000, 500000],
+    "tenure_options": [3, 6, 9, 12, 18],
+    "apr_by_score_band": { "600-639": "18%", "640-719": "16%", "720-799": "14%", "800+": "12%" },
+    "max_lti_ratio": 6.0,
+    "dscr_threshold": 1.35,
+    "emi_ratio_cap": 0.40,
+    "processing_fee_pct": 1.75,
+    "processing_fee_min": 500,
+    "eligible_work_types": ["vendor", "tradesperson", "freelancer"]
+  },
+  "micro_enterprise": {
+    "display_name": "Micro Enterprise Loan",
+    "description": "Scale your gig business to the next level",
+    "min_score": 640,
+    "amount_range": [50000, 1000000],
+    "tenure_options": [6, 12, 18, 24, 36],
+    "apr_by_score_band": { "640-719": "16%", "720-799": "14%", "800+": "12%" },
+    "max_lti_ratio": 8.0,
+    "dscr_threshold": 1.30,
+    "emi_ratio_cap": 0.35,
+    "processing_fee_pct": 1.50,
+    "processing_fee_min": 750,
+    "eligible_work_types": ["vendor", "tradesperson", "freelancer"]
+  }
+}

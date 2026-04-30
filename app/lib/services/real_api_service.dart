@@ -4,7 +4,7 @@ import 'api_service.dart';
 
 class RealApiService implements ApiService {
   final String baseUrl;
-  RealApiService({this.baseUrl = 'http://10.0.2.2:8000/api'});
+  RealApiService({this.baseUrl = 'https://gig-credit.onrender.com/api'});
   @override
   Future<Map<String, dynamic>> sendOtp(String mobile, {bool isSignup = false}) async {
     // MOCK AUTHENTICATION AS REQUESTED
@@ -142,13 +142,13 @@ class RealApiService implements ApiService {
   @override
   Future<Map<String, dynamic>> generateReportScore(Map<String, dynamic> verifiedProfileData) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/api/report/generate'), // report routes have /api prefix in python
+      Uri.parse('$baseUrl/report/generate'),
       headers: {
         'Content-Type': 'application/json',
         'X-API-Key': 'gigcredit-demo-api-key-2026',
       },
       body: jsonEncode(verifiedProfileData),
-    );
+    ).timeout(const Duration(seconds: 60));
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     }

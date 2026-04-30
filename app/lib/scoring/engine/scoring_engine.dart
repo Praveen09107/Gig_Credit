@@ -1,4 +1,12 @@
-import '../models/dummy_scorers.dart';
+// Real m2cgen-exported models from Dev A's ML pipeline
+import '../models/p1_scorer.dart' as p1;
+import '../models/p2_scorer.dart' as p2;
+import '../models/p3_scorer.dart' as p3;
+import '../models/p4_scorer.dart' as p4;
+import '../models/p6_scorer.dart' as p6;
+import '../models/scorecard_p5.dart';
+import '../models/scorecard_p7.dart';
+import '../models/scorecard_p8.dart';
 
 class ScoringEngine {
   /// Sklearn-compatible isotonic interpolation.
@@ -26,20 +34,16 @@ class ScoringEngine {
   static Map<String, double> scorePillars(List<double> f) {
     Map<String, double> scores = {};
 
-    // Base + cross-pillar routing
-    scores['P1'] = scoreP1([...f.sublist(0, 13), f[95], f[96], f[97], f[98]]);
-    scores['P2'] = scoreP2([...f.sublist(13, 28), f[105], f[106], f[107], f[108]]);
-    scores['P3'] = scoreP3([...f.sublist(28, 37), f[95], f[96], f[97], f[98]]);
-    scores['P4'] = scoreP4([...f.sublist(37, 49), f[99], f[100], f[101], f[102]]);
-    scores['P5'] = scoreP5(f.sublist(49, 67));
-    scores['P6'] = scoreP6([...f.sublist(67, 78), f[102], f[103], f[104]]);
-    scores['P7'] = scoreP7(f.sublist(78, 88));
-    scores['P8'] = scoreP8(f.sublist(88, 95));
-
-    // KYC Gate on P5 (redundant here since scorecard_p5 does it, but enforced per spec)
-    if (f[49] < 0.5 || f[50] < 0.5) {
-      scores['P5'] = 0.0;
-    }
+    // Real m2cgen models: P1/P2/P3/P4/P6 use exported score() functions
+    // P5/P7/P8 use hand-written scorecard classes
+    scores['P1'] = p1.score([...f.sublist(0, 13), f[95], f[96], f[97], f[98]]);
+    scores['P2'] = p2.score([...f.sublist(13, 28), f[105], f[106], f[107], f[108]]);
+    scores['P3'] = p3.score([...f.sublist(28, 37), f[95], f[96], f[97], f[98]]);
+    scores['P4'] = p4.score([...f.sublist(37, 49), f[99], f[100], f[101], f[102]]);
+    scores['P5'] = P5Scorecard.score(f.sublist(49, 67));
+    scores['P6'] = p6.score([...f.sublist(67, 78), f[102], f[103], f[104]]);
+    scores['P7'] = P7Scorecard.score(f.sublist(78, 88));
+    scores['P8'] = P8Scorecard.score(f.sublist(88, 95));
 
     // Clamp all to [0, 1]
     scores.forEach((key, value) {
@@ -57,8 +61,8 @@ class ScoringEngine {
       if (['P1', 'P2', 'P3', 'P4', 'P6'].contains(pillar)) {
         if (calibrationKnotsJson.containsKey(pillar)) {
           var knotData = calibrationKnotsJson[pillar];
-          List<double> xKnots = List<double>.from(knotData['x_knots'].map((x) => (x as num).toDouble()));
-          List<double> yKnots = List<double>.from(knotData['y_knots'].map((y) => (y as num).toDouble()));
+          List<double> xKnots = List<double>.from(knotData['x'].map((x) => (x as num).toDouble()));
+          List<double> yKnots = List<double>.from(knotData['y'].map((y) => (y as num).toDouble()));
           calibrated[pillar] = isotonicInterpolate(score, xKnots, yKnots).clamp(0.0, 1.0);
         } else {
           calibrated[pillar] = score; // Fallback

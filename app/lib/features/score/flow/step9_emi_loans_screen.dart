@@ -85,7 +85,6 @@ class _Step9EmiLoansScreenState extends ConsumerState<Step9EmiLoansScreen> {
     }
 
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1));
 
     ref.read(verifiedProfileProvider.notifier).updateStep9(const EmiLoansInfo(isVerified: true));
     ref.read(stepStatusProvider.notifier).setStatus(9, StepStatus.verified);

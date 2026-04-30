@@ -139,8 +139,8 @@ class ScorePipeline {
       double weight = (weightsJson[code] as num?)?.toDouble() ?? 1.0;
 
       double halfWidth = 0.0;
-      if (conformalIntervalsJson.containsKey(workType) && conformalIntervalsJson[workType].containsKey(code)) {
-        halfWidth = (conformalIntervalsJson[workType][code]['half_width'] as num).toDouble();
+      if (conformalIntervalsJson.containsKey(code) && conformalIntervalsJson[code].containsKey(workType)) {
+        halfWidth = (conformalIntervalsJson[code][workType] as num).toDouble();
       }
       
       // Calculate maxScore via weight? Let's just use 100 for now or derive from weight * something.
