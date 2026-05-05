@@ -47,6 +47,8 @@ class AuthController extends StateNotifier<bool> {
         state = false;
         return true;
       }
+      state = false;
+      ref.read(authProvider.notifier).setError('Unexpected response from server');
       return false;
     } catch (e) {
       state = false;
