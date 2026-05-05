@@ -36,13 +36,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _handleLogin() async {
     final mobile = _mobileController.text;
-    final success = await ref.read(authControllerProvider.notifier).sendOtp(mobile);
+    final responseStr = await ref.read(authControllerProvider.notifier).sendOtp(mobile);
     
-    if (success && mounted) {
+    // Check if it's a 6-digit OTP (success)
+    if (responseStr != null && RegExp(r'^\d{6}$').hasMatch(responseStr) && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Demo OTP: $responseStr', style: const TextStyle(fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.green.shade800,
+          duration: const Duration(seconds: 10),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       context.push('${AppRoutes.otp}?mobile=$mobile&isSignup=false');
     } else {
       setState(() {
-        _errorMsg = 'Failed to send OTP. Please try again.';
+        _errorMsg = responseStr ?? 'Failed to send OTP. Please try again.';
       });
     }
   }

@@ -9,17 +9,18 @@ class AuthController extends StateNotifier<bool> {
 
   AuthController(this.ref) : super(false); // state = isLoading
 
-  Future<bool> sendOtp(String mobile, {bool isSignup = false}) async {
+  Future<String?> sendOtp(String mobile, {bool isSignup = false, String? name}) async {
     state = true;
     try {
       final api = ref.read(apiServiceProvider);
-      await api.sendOtp(mobile, isSignup: isSignup);
+      final response = await api.sendOtp(mobile, isSignup: isSignup, name: name);
       state = false;
-      return true;
+      return response['otp'];
     } catch (e) {
       state = false;
-      ref.read(authProvider.notifier).setError(e.toString());
-      return false;
+      final errorMsg = e.toString().replaceAll('Exception: ', '');
+      ref.read(authProvider.notifier).setError(errorMsg);
+      return null;
     }
   }
 
@@ -49,7 +50,7 @@ class AuthController extends StateNotifier<bool> {
       return false;
     } catch (e) {
       state = false;
-      ref.read(authProvider.notifier).setError('Invalid OTP or connection error');
+      ref.read(authProvider.notifier).setError(e.toString().replaceAll('Exception: ', ''));
       return false;
     }
   }

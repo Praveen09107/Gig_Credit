@@ -31,6 +31,7 @@ import '../features/report/screens/certificate_screen.dart';
 import '../features/loans/screens/loans_screen.dart';
 import '../features/loans/screens/loan_detail_screen.dart';
 import '../features/loans/screens/loan_application_screen.dart';
+import '../features/loans/screens/xai_report_screen.dart';
 import '../features/applications/screens/applications_screen.dart';
 import '../features/applications/screens/application_detail_screen.dart';
 import '../features/profile/screens/profile_screen.dart';
@@ -61,6 +62,7 @@ class AppRoutes {
   static const String buyCredits = '/app/profile/buy-credits';
   static const String reportHistory = '/app/profile/reports';
   static const String loanApply = '/app/loans/apply';
+  static const String loanDecisionReport = '/app/loans/apply/report';
 
   // Step flow — dynamic
   static String scoreStep(int step) => '/app/score/flow/$step';
@@ -243,6 +245,16 @@ class AppRouter {
               path: 'apply',
               name: 'loanApply',
               builder: (ctx, state) => const LoanApplicationScreen(),
+              routes: [
+                GoRoute(
+                  path: 'report',
+                  name: 'loanDecisionReport',
+                  builder: (ctx, state) => XaiReportScreen(
+                    decisionData: state.extra as Map<String, dynamic>? ?? {},
+                    onBack: () => ctx.pop(),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

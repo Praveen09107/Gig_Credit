@@ -10,6 +10,7 @@ import '../../../../state/verified_profile_provider.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/emi_loans_info.dart';
 import '../../../../app/app_router.dart';
+import '../../../../demo/demo_profile_manager.dart';
 
 class Step9EmiLoansScreen extends ConsumerStatefulWidget {
   const Step9EmiLoansScreen({super.key});
@@ -51,6 +52,23 @@ class _Step9EmiLoansScreenState extends ConsumerState<Step9EmiLoansScreen> {
     super.dispose();
   }
 
+  /// Demo autofill — populates EMI info from demo profile
+  void _fillFromDemoProfile() {
+    final emiInfo = DemoProfileManager().profile.emiLoansInfo;
+    if (emiInfo.loans.isNotEmpty) {
+      setState(() {
+        _hasActiveLoans = true;
+        _loanEntries.clear();
+        for (final loan in emiInfo.loans) {
+          final entry = _LoanEntry();
+          entry.lenderCtrl.text = loan.loanType; // using loanType as lender/type
+          entry.emiCtrl.text = loan.monthlyEmi.toStringAsFixed(0);
+          _loanEntries.add(entry);
+        }
+      });
+    }
+  }
+
   void _addLoan() {
     if (_loanEntries.length >= 5) return;
     setState(() => _loanEntries.add(_LoanEntry()));
@@ -86,7 +104,24 @@ class _Step9EmiLoansScreenState extends ConsumerState<Step9EmiLoansScreen> {
 
     setState(() => _isLoading = true);
 
-    ref.read(verifiedProfileProvider.notifier).updateStep9(const EmiLoansInfo(isVerified: true));
+    List<EmiEntry> extractedLoans = [];
+    if (_hasActiveLoans) {
+      for (final entry in _loanEntries) {
+        final amount = double.tryParse(entry.emiCtrl.text) ?? 0.0;
+        if (amount > 0) {
+          extractedLoans.add(EmiEntry(
+            loanType: entry.lenderCtrl.text,
+            monthlyEmi: amount,
+            regularPayment: true,
+          ));
+        }
+      }
+    }
+
+    ref.read(verifiedProfileProvider.notifier).updateStep9(EmiLoansInfo(
+      isVerified: true,
+      loans: extractedLoans,
+    ));
     ref.read(stepStatusProvider.notifier).setStatus(9, StepStatus.verified);
 
     if (mounted) {
@@ -106,7 +141,10 @@ class _Step9EmiLoansScreenState extends ConsumerState<Step9EmiLoansScreen> {
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('EMI & Loans', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          GestureDetector(
+            onDoubleTap: _fillFromDemoProfile,
+            child: const Text('EMI & Loans', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          ),
           const SizedBox(height: 4),
           Text('Declare active loan and EMI obligations.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
           const SizedBox(height: 20),

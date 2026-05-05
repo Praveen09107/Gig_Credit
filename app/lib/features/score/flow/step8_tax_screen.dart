@@ -14,6 +14,7 @@ import '../../../../state/ocr_service_provider.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/tax_info.dart';
 import '../../../../app/app_router.dart';
+import '../../../../demo/demo_profile_manager.dart';
 
 class Step8TaxScreen extends ConsumerStatefulWidget {
   const Step8TaxScreen({super.key});
@@ -48,6 +49,28 @@ class _Step8TaxScreenState extends ConsumerState<Step8TaxScreen> {
     super.dispose();
   }
 
+  /// Demo autofill — populates tax info from demo profile
+  void _fillFromDemoProfile() {
+    final tax = DemoProfileManager().profile.taxInfo;
+    setState(() {
+      if (tax.itrFiled) {
+        _hasItr = true;
+        _itrPanCtrl.text = 'ABCDE1234F';
+        _itrNameCtrl.text = DemoProfileManager().profile.personalInfo.fullName;
+        _itrIncomeCtrl.text = tax.declaredAnnualIncome.toStringAsFixed(0);
+        _assessmentYear = '${tax.assessmentYear}-${(tax.assessmentYear + 1).toString().substring(2)}';
+        _itrUploaded = true;
+      }
+      if (tax.gstRegistered) {
+        _hasGst = true;
+        _gstinCtrl.text = '33ABCDE1234F1Z5';
+        _gstLegalNameCtrl.text = DemoProfileManager().profile.personalInfo.fullName;
+        _gstTurnoverCtrl.text = (tax.declaredAnnualIncome * 1.5).toStringAsFixed(0);
+        _gstUploaded = true;
+      }
+    });
+  }
+
   Future<void> _submit() async {
     final statusMap = ref.read(stepStatusProvider);
     if (statusMap[8] == StepStatus.verified) {
@@ -58,7 +81,18 @@ class _Step8TaxScreenState extends ConsumerState<Step8TaxScreen> {
     setState(() => _isLoading = true);
     try {
       await Future.delayed(const Duration(seconds: 1));
-      ref.read(verifiedProfileProvider.notifier).updateStep8(const TaxInfo(isVerified: true));
+      
+      final declaredIncome = double.tryParse(_itrIncomeCtrl.text) ?? 0.0;
+      final yearInt = int.tryParse(_assessmentYear.split('-')[0]) ?? 2024;
+      
+      ref.read(verifiedProfileProvider.notifier).updateStep8(TaxInfo(
+        isVerified: true,
+        itrFiled: _hasItr,
+        assessmentYear: yearInt,
+        declaredAnnualIncome: declaredIncome,
+        gstRegistered: _hasGst,
+        taxPaid: 0.0, // Usually extracted from OCR
+      ));
       ref.read(stepStatusProvider.notifier).setStatus(8, StepStatus.verified);
       if (mounted) {
         setState(() => _isLoading = false);
@@ -90,7 +124,10 @@ class _Step8TaxScreenState extends ConsumerState<Step8TaxScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Tax Records', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              GestureDetector(
+                onDoubleTap: _fillFromDemoProfile,
+                child: const Text('Tax Records', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              ),
               if (isVerified) const VerificationBadge(),
             ],
           ),

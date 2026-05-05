@@ -4,46 +4,42 @@ import 'package:http/http.dart' as http;
 import '../models/score_report_model.dart';
 import '../models/verified_profile/verified_profile.dart';
 import '../scoring/score_pipeline.dart';
-class ScoringService {
-  final String baseUrl;
+import '../core/config/app_config.dart';
+import 'temp_storage_manager.dart';
 
-  ScoringService({this.baseUrl = 'https://gig-credit.onrender.com/api'});
+class ScoringService {
+  final String baseUrl = AppConfig.baseUrl;
+
+  Map<String, String> get _headers => {
+    'Content-Type': 'application/json',
+    'X-API-Key': AppConfig.apiKey,
+  };
 
   Future<void> storeScore(ScoreReportModel report) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/score/store'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(report.toJson()),
-      );
+    final response = await http.post(
+      Uri.parse('$baseUrl/score/store'),
+      headers: _headers,
+      body: jsonEncode(report.toJson()),
+    ).timeout(const Duration(seconds: 10));
 
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        throw Exception('Failed to store score');
-      }
-    } catch (e) {
-      // Offline fallback: store locally or ignore
-      print('Offline mode: Score saved locally. Error: $e');
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Failed to store score securely on backend.');
     }
   }
 
   Future<Map<String, dynamic>> getExplanation(String proofId) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/explain/full'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'proof_id': proofId}),
-      );
+    final response = await http.post(
+      Uri.parse('$baseUrl/explain/full'),
+      headers: _headers,
+      body: jsonEncode({'proof_id': proofId}),
+    ).timeout(const Duration(seconds: 10));
 
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        throw Exception('Failed to fetch server explanation');
-      }
-    } catch (e) {
-      print('Offline mode: Could not fetch server explanation. Error: $e');
-      return {};
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
     }
+    throw Exception('Failed to fetch explanation from server.');
   }
+  
   Future<ScoreReportModel> generateScoreLocally(VerifiedProfile profile) async {
     // Load all required JSON constants from assets
     final calibrationKnots = jsonDecode(await rootBundle.loadString('assets/constants/calibration_knots.json'));
@@ -57,7 +53,7 @@ class ScoringService {
 
     final workType = profile.personalInfo.workType.isNotEmpty ? profile.personalInfo.workType : 'platform_worker';
 
-    return ScorePipeline.execute(
+    final report = ScorePipeline.execute(
       profile: profile,
       workType: workType,
       calibrationKnotsJson: calibrationKnots,
@@ -69,5 +65,12 @@ class ScoringService {
       actionabilityJson: actionabilityJson,
       causalChainsJsonList: causalChainsJsonList,
     );
+
+    // MANDATORY: Clean up all temp files after scoring is complete.
+    // No raw documents should remain on device after score generation.
+    final deleted = await TempStorageManager().cleanupAll();
+    print('[GigCredit] Post-scoring cleanup: $deleted temp files deleted');
+
+    return report;
   }
 }

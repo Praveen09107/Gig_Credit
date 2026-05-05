@@ -14,6 +14,7 @@ import '../../../../state/ocr_service_provider.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/insurance_info.dart';
 import '../../../../app/app_router.dart';
+import '../../../../demo/demo_profile_manager.dart';
 
 class Step7InsuranceScreen extends ConsumerStatefulWidget {
   const Step7InsuranceScreen({super.key});
@@ -49,6 +50,31 @@ class _Step7InsuranceScreenState extends ConsumerState<Step7InsuranceScreen> {
     super.dispose();
   }
 
+  /// Demo autofill — populates insurance info from demo profile
+  void _fillFromDemoProfile() {
+    final ins = DemoProfileManager().profile.insuranceInfo;
+    setState(() {
+      if (ins.hasHealthInsurance) {
+        _hasHealth = true;
+        _healthPolicyCtrl.text = 'HLT-892347';
+        _healthHolderCtrl.text = DemoProfileManager().profile.personalInfo.fullName;
+        _healthUploaded = true;
+      }
+      if (ins.hasLifeInsurance) {
+        _hasLife = true;
+        _lifePolicyCtrl.text = 'LIC-902341';
+        _lifeHolderCtrl.text = DemoProfileManager().profile.personalInfo.fullName;
+        _lifeUploaded = true;
+      }
+      if (ins.hasVehicleInsurance) {
+        _hasVehicle = true;
+        _vehiclePolicyCtrl.text = 'VEH-456712';
+        _vehicleHolderCtrl.text = DemoProfileManager().profile.personalInfo.fullName;
+        _vehicleUploaded = true;
+      }
+    });
+  }
+
   Future<void> _submit() async {
     final statusMap = ref.read(stepStatusProvider);
     if (statusMap[7] == StepStatus.verified) {
@@ -59,7 +85,13 @@ class _Step7InsuranceScreenState extends ConsumerState<Step7InsuranceScreen> {
     setState(() => _isLoading = true);
     try {
       await Future.delayed(const Duration(seconds: 1));
-      ref.read(verifiedProfileProvider.notifier).updateStep7(const InsuranceInfo(isVerified: true));
+      
+      ref.read(verifiedProfileProvider.notifier).updateStep7(InsuranceInfo(
+        isVerified: true,
+        hasHealthInsurance: _hasHealth,
+        hasVehicleInsurance: _hasVehicle,
+        hasLifeInsurance: _hasLife,
+      ));
       ref.read(stepStatusProvider.notifier).setStatus(7, StepStatus.verified);
       if (mounted) {
         setState(() => _isLoading = false);
@@ -91,7 +123,10 @@ class _Step7InsuranceScreenState extends ConsumerState<Step7InsuranceScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Insurance', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              GestureDetector(
+                onDoubleTap: _fillFromDemoProfile,
+                child: const Text('Insurance', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              ),
               if (isVerified) const VerificationBadge(),
             ],
           ),

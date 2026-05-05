@@ -16,6 +16,19 @@ class PersonalInfo {
   final bool vehicleOwnership;
   final double? secondaryIncome;    // optional
 
+  /// Computed age from dateOfBirth (DD/MM/YYYY). Returns 0 if unparseable.
+  int get age {
+    try {
+      final parts = dateOfBirth.split('/');
+      if (parts.length != 3) return 0;
+      final dob = DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+      final now = DateTime.now();
+      int a = now.year - dob.year;
+      if (now.month < dob.month || (now.month == dob.month && now.day < dob.day)) a--;
+      return a.clamp(0, 120);
+    } catch (_) { return 0; }
+  }
+
   const PersonalInfo({
     this.isVerified = false,
     this.fullName = '',

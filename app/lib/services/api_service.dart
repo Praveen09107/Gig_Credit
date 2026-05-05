@@ -1,6 +1,6 @@
 abstract class ApiService {
   // Auth
-  Future<Map<String, dynamic>> sendOtp(String mobile, {bool isSignup = false});
+  Future<Map<String, dynamic>> sendOtp(String mobile, {bool isSignup = false, String? name});
   Future<Map<String, dynamic>> verifyOtp(String mobile, String otp);
   
   // Verification (13 Endpoints matching planning doc)

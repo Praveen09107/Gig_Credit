@@ -13,6 +13,7 @@ import '../../../../state/api_service_provider.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/bank_info.dart';
 import '../../../../app/app_router.dart';
+import '../../../../demo/demo_profile_manager.dart';
 
 class Step3BankScreen extends ConsumerStatefulWidget {
   const Step3BankScreen({super.key});
@@ -43,6 +44,10 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
   bool _secPdfUploaded = false;
   
   bool _isLoading = false;
+
+  List<double> _monthlyCredits = [];
+  List<double> _monthlyDebits = [];
+  List<dynamic> _transactions = [];
 
   bool _ifscVerified = false;
   bool _isIfscVerifying = false;
@@ -85,13 +90,18 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
     super.dispose();
   }
 
-  void _generateMockData() {
-    _bankNameCtrl.text = 'HDFC Bank';
-    _holderNameCtrl.text = 'Praveen';
-    _branchCtrl.text = 'Main Branch';
-    _accCtrl.text = '098765432123';
-    _ifscCtrl.text = 'HDFC0001234';
-    setState(() {});
+  /// Demo autofill — populates bank fields from the same demo profile
+  void _fillFromDemoProfile() {
+    final b = DemoProfileManager().profile.bankInfo;
+    _bankNameCtrl.text = b.bankName.isNotEmpty ? b.bankName : 'Axis Bank';
+    _holderNameCtrl.text = b.accountHolderName;
+    _ifscCtrl.text = b.ifscCode.isNotEmpty ? b.ifscCode : 'UTIB0000345';
+    _accCtrl.text = b.accountNumber;
+    _monthlyCredits = List<double>.from(b.monthlyCredits);
+    _monthlyDebits = List<double>.from(b.monthlyDebits);
+    setState(() {
+      _pdfUploaded = true;
+    });
   }
 
   void _showIncompletePopup() {
@@ -139,7 +149,16 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
       // Final processing simulation
       await Future.delayed(const Duration(seconds: 2));
 
-      ref.read(verifiedProfileProvider.notifier).updateStep3(const BankInfo(isVerified: true));
+      ref.read(verifiedProfileProvider.notifier).updateStep3(BankInfo(
+        isVerified: true,
+        accountNumber: _accCtrl.text,
+        ifscCode: _ifscCtrl.text,
+        bankName: _bankNameCtrl.text,
+        accountHolderName: _holderNameCtrl.text,
+        monthlyCredits: _monthlyCredits,
+        monthlyDebits: _monthlyDebits,
+        transactions: _transactions.map((e) => BankTransaction.fromJson(e)).toList(),
+      ));
       ref.read(stepStatusProvider.notifier).setStatus(3, StepStatus.verified);
       
       if (mounted) {
@@ -255,7 +274,7 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
           const SizedBox(height: 24),
 
           GestureDetector(
-            onDoubleTap: _generateMockData,
+            onDoubleTap: _fillFromDemoProfile,
             child: AppTextField(
               label: 'Bank Name *',
               controller: _bankNameCtrl,
@@ -312,24 +331,64 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
           ),
           const SizedBox(height: 24),
 
+          // ── Upload section: locked until IFSC + Account verified ──────────
+          if (!_ifscVerified || !_accVerified)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1E1E),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFF2C2C2E)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.lock_outline, color: Color(0xFF888888), size: 22),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Bank Statement Upload',
+                            style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF888888))),
+                        const SizedBox(height: 4),
+                        Text(
+                          !_ifscVerified
+                              ? 'Verify IFSC code first to unlock upload'
+                              : 'Verify Account Number to unlock upload',
+                          style: const TextStyle(fontSize: 12, color: Color(0xFF555555)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
             DocumentUploadCard(
               title: 'Bank Statement (Primary Bank) *',
-              subtitle: 'Upload PDF format for auto-extraction',
+              subtitle: 'PDF only — statement must match your verified account',
               docType: 'bank_statement',
               ocrService: ocrService,
               onExtracted: (data) {
-                final rawText = data['raw_text']?.toString().toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '') ?? '';
-                final expectedAcc = _accCtrl.text.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
-                
-                if (expectedAcc.isNotEmpty && !rawText.contains(expectedAcc)) {
-                  print('⚠️ WARNING: Bank Statement account number mismatch. Proceeding for demo.');
-                  // We bypass the strict check for the demo to avoid blocking users
-                  // throw Exception('Verification Failed: Bank Statement does not match the entered Account Number!');
-                }
-                
-                setState(() => _pdfUploaded = true);
+                setState(() {
+                  _pdfUploaded = true;
+                  if (data != null) {
+                    if (data['monthly_credits'] != null) {
+                      _monthlyCredits = (data['monthly_credits'] as List).map((e) => (e as num).toDouble()).toList();
+                    }
+                    if (data['monthly_debits'] != null) {
+                      _monthlyDebits = (data['monthly_debits'] as List).map((e) => (e as num).toDouble()).toList();
+                    }
+                    if (data['transactions'] != null) {
+                      _transactions = data['transactions'] as List;
+                    }
+                  }
+                });
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Bank Statement Verified successfully!'), backgroundColor: Colors.green),
+                  const SnackBar(
+                    content: Text('Bank Statement verified successfully!'),
+                    backgroundColor: Colors.green,
+                  ),
                 );
               },
             ),

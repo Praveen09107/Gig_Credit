@@ -40,13 +40,23 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   Future<void> _handleSignup() async {
     final mobile = _mobileController.text;
-    final success = await ref.read(authControllerProvider.notifier).sendOtp(mobile, isSignup: true);
+    final name = _nameController.text;
+    final responseStr = await ref.read(authControllerProvider.notifier).sendOtp(mobile, isSignup: true, name: name);
     
-    if (success && mounted) {
+    // Check if it's a 6-digit OTP (success)
+    if (responseStr != null && RegExp(r'^\d{6}$').hasMatch(responseStr) && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Demo OTP: $responseStr', style: const TextStyle(fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.green.shade800,
+          duration: const Duration(seconds: 10),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       context.push('${AppRoutes.otp}?mobile=$mobile&isSignup=true');
     } else {
       setState(() {
-        _errorMsg = 'Registration failed. Number might be in use.';
+        _errorMsg = responseStr ?? 'Registration failed. Number might be in use.';
       });
     }
   }

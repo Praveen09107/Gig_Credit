@@ -15,6 +15,7 @@ import '../../../../state/ocr_results_provider.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/work_info.dart';
 import '../../../../app/app_router.dart';
+import '../../../../demo/demo_profile_manager.dart';
 
 class Step5WorkScreen extends ConsumerStatefulWidget {
   const Step5WorkScreen({super.key});
@@ -54,7 +55,8 @@ class _Step5WorkScreenState extends ConsumerState<Step5WorkScreen> {
     return profile.personalInfo.workType;
   }
 
-  void _generateMockData() {
+  /// Demo autofill — marks work proof uploads as complete from demo profile
+  void _fillFromDemoProfile() {
     _platformIdCtrl.text = 'TN09AB1234';
     _svanidhiIdCtrl.text = 'SVN12345678';
     _skillCertIdCtrl.text = 'NSDC-2023-457892';
@@ -135,7 +137,10 @@ class _Step5WorkScreenState extends ConsumerState<Step5WorkScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Work Proof', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              GestureDetector(
+                onDoubleTap: _fillFromDemoProfile,
+                child: const Text('Work Proof', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              ),
               if (isVerified) const VerificationBadge(),
             ],
           ),
@@ -146,10 +151,7 @@ class _Step5WorkScreenState extends ConsumerState<Step5WorkScreen> {
           ),
           const SizedBox(height: 20),
 
-          GestureDetector(
-            onDoubleTap: _generateMockData,
-            child: Container(color: Colors.transparent, height: 10, width: double.infinity),
-          ),
+
 
           if (workType == 'platform_worker') _buildPlatformWorker(ocrService),
           if (workType == 'vendor') _buildVendor(ocrService),

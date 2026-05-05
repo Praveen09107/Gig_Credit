@@ -11,6 +11,7 @@ import '../../../../state/verified_profile_provider.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/personal_info.dart';
 import '../../../../app/app_router.dart';
+import '../../../../demo/demo_profile_manager.dart';
 
 /// COMP_24 Step 1 — Basic Profile (12 mandatory + 1 optional)
 class Step1PersonalScreen extends ConsumerStatefulWidget {
@@ -83,20 +84,24 @@ class _Step1PersonalScreenState extends ConsumerState<Step1PersonalScreen> {
     'freelancer': 'Freelancer (Tech/Design/Writing)',
   };
 
-  void _generateMockData() {
-    _nameCtrl.text = 'Ravi Kumar';
-    _dobCtrl.text = '15/06/1995';
-    _mobileCtrl.text = '9876543210';
-    _currentAddrCtrl.text = '23, 4th Cross Street, Anna Nagar, Chennai';
-    _permAddrCtrl.text = '23, 4th Cross Street, Anna Nagar, Chennai';
-    _incomeCtrl.text = '25000';
-    _secondaryIncomeCtrl.text = '5000';
+  /// Demo autofill — uses DemoProfileManager singleton for consistency across steps
+  void _fillFromDemoProfile() {
+    final p = DemoProfileManager().profile.personalInfo;
+    _nameCtrl.text = p.fullName;
+    _dobCtrl.text = p.dateOfBirth;
+    _mobileCtrl.text = p.mobileNumber.isNotEmpty ? p.mobileNumber : '9876543210';
+    _currentAddrCtrl.text = p.currentAddress.isNotEmpty ? p.currentAddress : '23, 4th Cross Street, Anna Nagar, Chennai';
+    _permAddrCtrl.text = p.permanentAddress.isNotEmpty ? p.permanentAddress : _currentAddrCtrl.text;
+    _incomeCtrl.text = p.selfDeclaredIncome.toStringAsFixed(0);
+    if (p.secondaryIncome != null && p.secondaryIncome! > 0) {
+      _secondaryIncomeCtrl.text = p.secondaryIncome!.toStringAsFixed(0);
+    }
     setState(() {
-      _selectedState = 'Tamil Nadu';
-      _selectedWorkType = 'platform_worker';
-      _yearsInProfession = 4;
-      _dependents = 2;
-      _vehicleOwnership = true;
+      _selectedState = p.stateOfResidence.isNotEmpty ? p.stateOfResidence : 'Tamil Nadu';
+      _selectedWorkType = p.workType;
+      _yearsInProfession = p.yearsInProfession;
+      _dependents = p.dependents;
+      _vehicleOwnership = p.vehicleOwnership;
       _sameAddress = true;
     });
   }
@@ -215,7 +220,7 @@ class _Step1PersonalScreenState extends ConsumerState<Step1PersonalScreen> {
 
             // ── 1. Full Name ──
             GestureDetector(
-              onDoubleTap: _generateMockData,
+              onDoubleTap: _fillFromDemoProfile,
               child: AppTextField(
                 label: 'Full Name (as on Aadhaar)',
                 controller: _nameCtrl,

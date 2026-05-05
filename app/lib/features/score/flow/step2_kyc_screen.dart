@@ -408,24 +408,31 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
             ),
           const SizedBox(height: 16),
 
-          // Aadhaar Front Upload
-          DocumentUploadCard(
-            title: 'Aadhaar Card — Front Side',
-            subtitle: 'Photo showing name, DOB, Aadhaar number',
-            docType: 'aadhaar_front',
-            ocrService: ocrService,
-            onExtracted: _onAadhaarFrontExtracted,
-          ),
-          const SizedBox(height: 12),
-
-          // Aadhaar Back Upload
-          DocumentUploadCard(
-            title: 'Aadhaar Card — Back Side',
-            subtitle: 'Photo showing full address, PIN code',
-            docType: 'aadhaar_back',
-            ocrService: ocrService,
-            isRequired: false,
-            onExtracted: _onAadhaarBackExtracted,
+          Opacity(
+            opacity: _aadhaarVerified ? 1.0 : 0.5,
+            child: IgnorePointer(
+              ignoring: !_aadhaarVerified,
+              child: Column(
+                children: [
+                  DocumentUploadCard(
+                    title: 'Aadhaar Card — Front Side',
+                    subtitle: 'Photo showing name, DOB, Aadhaar number',
+                    docType: 'aadhaar_front',
+                    ocrService: ocrService,
+                    onExtracted: _onAadhaarFrontExtracted,
+                  ),
+                  const SizedBox(height: 12),
+                  DocumentUploadCard(
+                    title: 'Aadhaar Card — Back Side',
+                    subtitle: 'Photo showing full address, PIN code',
+                    docType: 'aadhaar_back',
+                    ocrService: ocrService,
+                    isRequired: false,
+                    onExtracted: _onAadhaarBackExtracted,
+                  ),
+                ],
+              ),
+            ),
           ),
 
           const SizedBox(height: 28),
@@ -464,13 +471,18 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
             ),
           const SizedBox(height: 16),
 
-          // PAN Card Photo Upload
-          DocumentUploadCard(
-            title: 'PAN Card Photo',
-            subtitle: 'Photo showing PAN number, name, DOB',
-            docType: 'pan',
-            ocrService: ocrService,
-            onExtracted: _onPanExtracted,
+          Opacity(
+            opacity: _panVerified ? 1.0 : 0.5,
+            child: IgnorePointer(
+              ignoring: !_panVerified,
+              child: DocumentUploadCard(
+                title: 'PAN Card Photo',
+                subtitle: 'Photo showing PAN number, name, DOB',
+                docType: 'pan',
+                ocrService: ocrService,
+                onExtracted: _onPanExtracted,
+              ),
+            ),
           ),
 
           const SizedBox(height: 28),

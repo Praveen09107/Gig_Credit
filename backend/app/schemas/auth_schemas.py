@@ -1,14 +1,17 @@
 from pydantic import BaseModel, Field
+from typing import Optional, Dict
 
 
 class OtpSendRequest(BaseModel):
     mobile: str = Field(..., examples=["9876543210"])
+    isSignup: Optional[bool] = False
+    name: Optional[str] = None
 
 
 class OtpSendResponse(BaseModel):
     status: str
-    expires_in_seconds: int
-    otp: str
+    message: str
+    otp: Optional[str] = None
 
 
 class OtpVerifyRequest(BaseModel):
@@ -18,4 +21,5 @@ class OtpVerifyRequest(BaseModel):
 
 class OtpVerifyResponse(BaseModel):
     status: str
-    mobile_verified: bool
+    token: Optional[str] = None
+    user: Optional[Dict] = None

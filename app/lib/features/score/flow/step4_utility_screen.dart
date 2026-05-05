@@ -13,6 +13,7 @@ import '../../../../state/ocr_service_provider.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/utility_info.dart';
 import '../../../../app/app_router.dart';
+import '../../../../demo/demo_profile_manager.dart';
 
 class Step4UtilityScreen extends ConsumerStatefulWidget {
   const Step4UtilityScreen({super.key});
@@ -87,6 +88,22 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
     super.dispose();
   }
 
+  /// Demo autofill — populates utility bill toggles and amounts from demo profile
+  void _fillFromDemoProfile() {
+    final bills = DemoProfileManager().profile.utilityInfo.bills;
+    for (final bill in bills) {
+      switch (bill.billType) {
+        case 'electricity': _hasElectricity = true; _elecAmountCtrl.text = bill.amount.toStringAsFixed(0); break;
+        case 'water': _hasWater = true; _waterAmountCtrl.text = bill.amount.toStringAsFixed(0); break;
+        case 'gas': _hasGas = true; _gasAmountCtrl.text = bill.amount.toStringAsFixed(0); break;
+        case 'mobile': _hasMobile = true; _mobileAmountCtrl.text = bill.amount.toStringAsFixed(0); break;
+        case 'internet': case 'wifi': _hasInternet = true; _internetAmountCtrl.text = bill.amount.toStringAsFixed(0); break;
+        case 'rent': _hasRent = true; _rentAmountCtrl.text = bill.amount.toStringAsFixed(0); break;
+      }
+    }
+    setState(() {});
+  }
+
   Future<void> _submit() async {
     final statusMap = ref.read(stepStatusProvider);
     if (statusMap[4] == StepStatus.verified) {
@@ -97,7 +114,32 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
     setState(() => _isLoading = true);
     await Future.delayed(const Duration(seconds: 1));
 
-    ref.read(verifiedProfileProvider.notifier).updateStep4(const UtilityInfo(isVerified: true));
+    List<UtilityBillEntry> extractedBills = [];
+
+    void addBill(bool hasBill, String type, TextEditingController amtCtrl) {
+      if (hasBill) {
+        final amt = double.tryParse(amtCtrl.text) ?? 0.0;
+        if (amt > 0) {
+          extractedBills.add(UtilityBillEntry(
+            billType: type,
+            amount: amt,
+            verified: true,
+          ));
+        }
+      }
+    }
+
+    addBill(_hasElectricity, 'electricity', _elecAmountCtrl);
+    addBill(_hasWater, 'water', _waterAmountCtrl);
+    addBill(_hasGas, 'gas', _gasAmountCtrl);
+    addBill(_hasMobile, 'mobile', _mobileAmountCtrl);
+    addBill(_hasInternet, 'internet', _internetAmountCtrl);
+    addBill(_hasRent, 'rent', _rentAmountCtrl);
+
+    ref.read(verifiedProfileProvider.notifier).updateStep4(UtilityInfo(
+      isVerified: true,
+      bills: extractedBills,
+    ));
     ref.read(stepStatusProvider.notifier).setStatus(4, StepStatus.verified);
 
     if (mounted) {
@@ -122,7 +164,10 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Utility Bills', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              GestureDetector(
+                onDoubleTap: _fillFromDemoProfile,
+                child: const Text('Utility Bills', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              ),
               if (isVerified) const VerificationBadge(),
             ],
           ),
@@ -143,18 +188,39 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
               const SizedBox(height: 12),
               AppTextField(label: 'Amount Paid (₹) *', controller: _elecAmountCtrl, keyboardType: TextInputType.number),
               const SizedBox(height: 12),
-              ...List.generate(_elecUploadCount, (index) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: DocumentUploadCard(
-                  title: 'Electricity Bill ${index + 1} *', 
-                  subtitle: 'Consecutive last 6 months bills from current date', 
-                  docType: 'utility_electricity', 
-                  ocrService: ocrService, 
-                  onExtracted: (_) {
-                    if (_elecUploadCount < 6) setState(() => _elecUploadCount++);
-                  }
-                ),
-              )),
+              ListenableBuilder(
+                listenable: Listenable.merge([_elecConsumerCtrl, _elecNameCtrl, _elecAmountCtrl]),
+                builder: (context, _) {
+                  final isReady = _elecConsumerCtrl.text.isNotEmpty && _elecNameCtrl.text.isNotEmpty && _elecAmountCtrl.text.isNotEmpty;
+                  return Opacity(
+                    opacity: isReady ? 1.0 : 0.5,
+                    child: IgnorePointer(
+                      ignoring: !isReady,
+                      child: Column(
+                        children: [
+                          if (!isReady)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Text('Fill all details above to enable document upload', style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold)),
+                            ),
+                          ...List.generate(_elecUploadCount, (index) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: DocumentUploadCard(
+                              title: 'Electricity Bill ${index + 1} *', 
+                              subtitle: 'Consecutive last 6 months bills from current date', 
+                              docType: 'utility_electricity', 
+                              ocrService: ocrService, 
+                              onExtracted: (_) {
+                                if (_elecUploadCount < 6) setState(() => _elecUploadCount++);
+                              }
+                            ),
+                          )),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
 
@@ -171,18 +237,39 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
               const SizedBox(height: 12),
               AppTextField(label: 'Amount Paid (₹) *', controller: _waterAmountCtrl, keyboardType: TextInputType.number),
               const SizedBox(height: 12),
-              ...List.generate(_waterUploadCount, (index) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: DocumentUploadCard(
-                  title: 'WiFi Bill ${index + 1} *', 
-                  subtitle: 'Consecutive last 6 months bills from current date', 
-                  docType: 'utility_wifi', 
-                  ocrService: ocrService, 
-                  onExtracted: (_) {
-                    if (_waterUploadCount < 6) setState(() => _waterUploadCount++);
-                  }
-                ),
-              )),
+              ListenableBuilder(
+                listenable: Listenable.merge([_waterConsumerCtrl, _waterNameCtrl, _waterAmountCtrl]),
+                builder: (context, _) {
+                  final isReady = _waterConsumerCtrl.text.isNotEmpty && _waterNameCtrl.text.isNotEmpty && _waterAmountCtrl.text.isNotEmpty;
+                  return Opacity(
+                    opacity: isReady ? 1.0 : 0.5,
+                    child: IgnorePointer(
+                      ignoring: !isReady,
+                      child: Column(
+                        children: [
+                          if (!isReady)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Text('Fill all details above to enable document upload', style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold)),
+                            ),
+                          ...List.generate(_waterUploadCount, (index) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: DocumentUploadCard(
+                              title: 'WiFi Bill ${index + 1} *', 
+                              subtitle: 'Consecutive last 6 months bills from current date', 
+                              docType: 'utility_wifi', 
+                              ocrService: ocrService, 
+                              onExtracted: (_) {
+                                if (_waterUploadCount < 6) setState(() => _waterUploadCount++);
+                              }
+                            ),
+                          )),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
 
@@ -199,18 +286,39 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
               const SizedBox(height: 12),
               AppTextField(label: 'Amount Paid (₹) *', controller: _gasAmountCtrl, keyboardType: TextInputType.number),
               const SizedBox(height: 12),
-              ...List.generate(_gasUploadCount, (index) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: DocumentUploadCard(
-                  title: 'Gas Bill ${index + 1} *', 
-                  subtitle: 'Consecutive last 6 months bills from current date', 
-                  docType: 'utility_gas', 
-                  ocrService: ocrService, 
-                  onExtracted: (_) {
-                    if (_gasUploadCount < 6) setState(() => _gasUploadCount++);
-                  }
-                ),
-              )),
+              ListenableBuilder(
+                listenable: Listenable.merge([_gasConsumerCtrl, _gasNameCtrl, _gasAmountCtrl]),
+                builder: (context, _) {
+                  final isReady = _gasConsumerCtrl.text.isNotEmpty && _gasNameCtrl.text.isNotEmpty && _gasAmountCtrl.text.isNotEmpty;
+                  return Opacity(
+                    opacity: isReady ? 1.0 : 0.5,
+                    child: IgnorePointer(
+                      ignoring: !isReady,
+                      child: Column(
+                        children: [
+                          if (!isReady)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Text('Fill all details above to enable document upload', style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold)),
+                            ),
+                          ...List.generate(_gasUploadCount, (index) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: DocumentUploadCard(
+                              title: 'Gas Bill ${index + 1} *', 
+                              subtitle: 'Consecutive last 6 months bills from current date', 
+                              docType: 'utility_gas', 
+                              ocrService: ocrService, 
+                              onExtracted: (_) {
+                                if (_gasUploadCount < 6) setState(() => _gasUploadCount++);
+                              }
+                            ),
+                          )),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
 
@@ -229,18 +337,39 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
               const SizedBox(height: 12),
               AppTextField(label: 'Amount Paid (₹) *', controller: _mobileAmountCtrl, keyboardType: TextInputType.number),
               const SizedBox(height: 12),
-              ...List.generate(_mobileUploadCount, (index) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: DocumentUploadCard(
-                  title: 'Mobile Bill ${index + 1} *', 
-                  subtitle: 'Consecutive last 6 months bills from current date', 
-                  docType: 'utility_mobile', 
-                  ocrService: ocrService, 
-                  onExtracted: (_) {
-                    if (_mobileUploadCount < 6) setState(() => _mobileUploadCount++);
-                  }
-                ),
-              )),
+              ListenableBuilder(
+                listenable: Listenable.merge([_mobileMobileCtrl, _mobileAccountCtrl, _mobileNameCtrl, _mobileAmountCtrl]),
+                builder: (context, _) {
+                  final isReady = _mobileMobileCtrl.text.isNotEmpty && _mobileAccountCtrl.text.isNotEmpty && _mobileNameCtrl.text.isNotEmpty && _mobileAmountCtrl.text.isNotEmpty;
+                  return Opacity(
+                    opacity: isReady ? 1.0 : 0.5,
+                    child: IgnorePointer(
+                      ignoring: !isReady,
+                      child: Column(
+                        children: [
+                          if (!isReady)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Text('Fill all details above to enable document upload', style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold)),
+                            ),
+                          ...List.generate(_mobileUploadCount, (index) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: DocumentUploadCard(
+                              title: 'Mobile Bill ${index + 1} *', 
+                              subtitle: 'Consecutive last 6 months bills from current date', 
+                              docType: 'utility_mobile', 
+                              ocrService: ocrService, 
+                              onExtracted: (_) {
+                                if (_mobileUploadCount < 6) setState(() => _mobileUploadCount++);
+                              }
+                            ),
+                          )),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
 
@@ -257,18 +386,39 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
               const SizedBox(height: 12),
               AppTextField(label: 'Amount Paid (₹) *', controller: _internetAmountCtrl, keyboardType: TextInputType.number),
               const SizedBox(height: 12),
-              ...List.generate(_internetUploadCount, (index) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: DocumentUploadCard(
-                  title: 'Internet Bill ${index + 1} *', 
-                  subtitle: 'Consecutive last 6 months bills from current date', 
-                  docType: 'utility_internet', 
-                  ocrService: ocrService, 
-                  onExtracted: (_) {
-                    if (_internetUploadCount < 6) setState(() => _internetUploadCount++);
-                  }
-                ),
-              )),
+              ListenableBuilder(
+                listenable: Listenable.merge([_internetAccountCtrl, _internetNameCtrl, _internetAmountCtrl]),
+                builder: (context, _) {
+                  final isReady = _internetAccountCtrl.text.isNotEmpty && _internetNameCtrl.text.isNotEmpty && _internetAmountCtrl.text.isNotEmpty;
+                  return Opacity(
+                    opacity: isReady ? 1.0 : 0.5,
+                    child: IgnorePointer(
+                      ignoring: !isReady,
+                      child: Column(
+                        children: [
+                          if (!isReady)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Text('Fill all details above to enable document upload', style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold)),
+                            ),
+                          ...List.generate(_internetUploadCount, (index) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: DocumentUploadCard(
+                              title: 'Internet Bill ${index + 1} *', 
+                              subtitle: 'Consecutive last 6 months bills from current date', 
+                              docType: 'utility_internet', 
+                              ocrService: ocrService, 
+                              onExtracted: (_) {
+                                if (_internetUploadCount < 6) setState(() => _internetUploadCount++);
+                              }
+                            ),
+                          )),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
 
@@ -287,18 +437,39 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
               const SizedBox(height: 12),
               AppTextField(label: 'Monthly Rent (₹) *', controller: _rentAmountCtrl, keyboardType: TextInputType.number),
               const SizedBox(height: 12),
-              ...List.generate(_rentUploadCount, (index) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: DocumentUploadCard(
-                  title: 'Rent Document ${index + 1} *', 
-                  subtitle: 'Consecutive last 6 months bills from current date', 
-                  docType: 'utility_rent', 
-                  ocrService: ocrService, 
-                  onExtracted: (_) {
-                    if (_rentUploadCount < 6) setState(() => _rentUploadCount++);
-                  }
-                ),
-              )),
+              ListenableBuilder(
+                listenable: Listenable.merge([_rentTenantCtrl, _rentLandlordCtrl, _rentAddressCtrl, _rentAmountCtrl]),
+                builder: (context, _) {
+                  final isReady = _rentTenantCtrl.text.isNotEmpty && _rentLandlordCtrl.text.isNotEmpty && _rentAddressCtrl.text.isNotEmpty && _rentAmountCtrl.text.isNotEmpty;
+                  return Opacity(
+                    opacity: isReady ? 1.0 : 0.5,
+                    child: IgnorePointer(
+                      ignoring: !isReady,
+                      child: Column(
+                        children: [
+                          if (!isReady)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Text('Fill all details above to enable document upload', style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold)),
+                            ),
+                          ...List.generate(_rentUploadCount, (index) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: DocumentUploadCard(
+                              title: 'Rent Document ${index + 1} *', 
+                              subtitle: 'Consecutive last 6 months bills from current date', 
+                              docType: 'utility_rent', 
+                              ocrService: ocrService, 
+                              onExtracted: (_) {
+                                if (_rentUploadCount < 6) setState(() => _rentUploadCount++);
+                              }
+                            ),
+                          )),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ],

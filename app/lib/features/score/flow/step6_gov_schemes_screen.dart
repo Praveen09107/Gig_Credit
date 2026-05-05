@@ -15,6 +15,7 @@ import '../../../../state/api_service_provider.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/gov_schemes_info.dart';
 import '../../../../app/app_router.dart';
+import '../../../../demo/demo_profile_manager.dart';
 
 class Step6GovSchemesScreen extends ConsumerStatefulWidget {
   const Step6GovSchemesScreen({super.key});
@@ -65,6 +66,23 @@ class _Step6GovSchemesScreenState extends ConsumerState<Step6GovSchemesScreen> {
     super.dispose();
   }
 
+  /// Demo autofill — populates gov schemes from demo profile
+  void _fillFromDemoProfile() {
+    final s = DemoProfileManager().profile.govSchemesInfo;
+    setState(() {
+      if (s.hasEshram) {
+        _hasEshram = true;
+        _eshramUanCtrl.text = '123456789012';
+        _eshramUploaded = true;
+      }
+      if (s.hasPmScheme) {
+        _hasSvanidhi = true;
+        _svanidhiIdCtrl.text = 'SVN12345678';
+        _svanidhiUploaded = true;
+      }
+    });
+  }
+
   Future<void> _submit() async {
     final statusMap = ref.read(stepStatusProvider);
     if (statusMap[6] == StepStatus.verified) {
@@ -76,7 +94,13 @@ class _Step6GovSchemesScreenState extends ConsumerState<Step6GovSchemesScreen> {
     
     try {
       await Future.delayed(const Duration(seconds: 1));
-      ref.read(verifiedProfileProvider.notifier).updateStep6(const GovSchemesInfo(isVerified: true));
+      
+      ref.read(verifiedProfileProvider.notifier).updateStep6(GovSchemesInfo(
+        isVerified: true,
+        hasEshram: _hasEshram,
+        hasPmScheme: _hasSvanidhi || _hasPmsym || _hasPmjjby || _hasMudra,
+        // _hasUdyam or _hasPpf could be mapped if fields existed, ignoring for now
+      ));
       ref.read(stepStatusProvider.notifier).setStatus(6, StepStatus.verified);
       
       if (mounted) {
@@ -109,7 +133,10 @@ class _Step6GovSchemesScreenState extends ConsumerState<Step6GovSchemesScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Gov Schemes', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              GestureDetector(
+                onDoubleTap: _fillFromDemoProfile,
+                child: const Text('Gov Schemes', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              ),
               if (isVerified) const VerificationBadge(),
             ],
           ),

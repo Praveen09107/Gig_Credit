@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import '../../../app/app_router.dart';
+import '../../../services/loan_api_service.dart';
+import '../../../state/score_provider.dart';
 
 // Constants from Prompt
 const _bgPrimary = Color(0xFF0D0F14);
@@ -59,6 +61,30 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
   double get _monthlyIncome => 18000;
   
   bool get _isApproved => _loanAmount <= 55000;
+  
+  Future<void> _submitToBackend() async {
+    final session = ref.read(scoreProvider);
+    if (session.reportData == null) return;
+
+    final application = {
+      "loan_amount": _loanAmount,
+      "tenure_months": _tenure,
+      "product_id": _selectedProduct,
+      "purpose": _purpose,
+      "kfs_acknowledged": _kfsAcknowledged,
+      "aadhaar_verified": true,
+      "pan_verified": true,
+    };
+
+    try {
+      final result = await ref.read(loanApiServiceProvider).applyLoan(application, session.reportData!.toJson());
+      print('Decision from backend: ${result["decision"]}');
+      // For the demo, we keep the UI deterministic based on _isApproved, 
+      // but the backend now has a record of the decision in the audit trail.
+    } catch (e) {
+      print('Error submitting to backend: $e');
+    }
+  }
   
   @override
   Widget build(BuildContext context) {
@@ -633,7 +659,10 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
               Text('Sending to AI decision engine...', style: TextStyle(color: _textPrimary)),
             ],
           ),
-        ).animate().fadeIn(delay: 6500.ms).callback(delay: 8000.ms, duration: 1.ms, callback: (_) => setState(() => _currentScreen = 5)),
+        ).animate().fadeIn(delay: 6500.ms).callback(delay: 8000.ms, duration: 1.ms, callback: (_) {
+          _submitToBackend(); // Background sync for audit trail
+          setState(() => _currentScreen = 5);
+        }),
         const SizedBox(height: 40),
       ],
     );
@@ -788,7 +817,13 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
         ).animate().fadeIn(delay: 300.ms),
         const SizedBox(height: 32),
         GestureDetector(
-          onTap: () => setState(() => _currentScreen = 7),
+          onTap: () => context.push(AppRoutes.loanDecisionReport, extra: {
+            "loan_amount": _loanAmount,
+            "tenure": _tenure,
+            "product_id": _selectedProduct,
+            "is_approved": _isApproved,
+            "score": 647, // Current mock score
+          }),
           child: const Text('VIEW FULL DECISION REPORT →', style: TextStyle(color: _accentTeal, decoration: TextDecoration.underline, fontWeight: FontWeight.bold, fontSize: 14)),
         )
       ],
@@ -833,12 +868,26 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(color: _bgPrimary, border: Border.all(color: _borderSubtle), borderRadius: BorderRadius.circular(16)),
-          child: const Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('OFFICIAL DECISION REPORT', style: TextStyle(color: _textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
-              SizedBox(height: 8),
-              Text('Audit ID: AT-2026-0430-RK7821-a9f3\nDecision Type: AFFORDABILITY', style: TextStyle(color: _textSecondary, fontFamily: 'JetBrains Mono', fontSize: 11, height: 1.5)),
+              const Text('OFFICIAL DECISION REPORT', style: TextStyle(color: _textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              const Text('Audit ID: AT-2026-0430-RK7821-a9f3\nDecision Type: AFFORDABILITY', style: TextStyle(color: _textSecondary, fontFamily: 'JetBrains Mono', fontSize: 11, height: 1.5)),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(side: const BorderSide(color: _accentTeal), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                  onPressed: () => context.push(AppRoutes.loanDecisionReport, extra: {
+                    "loan_amount": _loanAmount,
+                    "tenure": _tenure,
+                    "product_id": _selectedProduct,
+                    "is_approved": _isApproved,
+                  }),
+                  child: const Text('OPEN INTERACTIVE XAI REPORT', style: TextStyle(color: _accentTeal, fontSize: 12, fontWeight: FontWeight.bold)),
+                ),
+              ),
             ],
           ),
         ),
