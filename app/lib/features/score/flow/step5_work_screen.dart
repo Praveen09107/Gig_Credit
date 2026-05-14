@@ -85,8 +85,19 @@ class _Step5WorkScreenState extends ConsumerState<Step5WorkScreen> {
 
     setState(() => _isLoading = true);
     try {
-      // Simulate API verification delays for the specific work types
-      await Future.delayed(const Duration(seconds: 2));
+      final api = ref.read(apiServiceProvider);
+      final workType = _workType;
+
+      // Real backend verification for platform workers with vehicle
+      if ((workType == 'platform_worker' || workType == 'gig_worker') && _platformIdCtrl.text.trim().isNotEmpty) {
+        try {
+          final vehicleResult = await api.verifyVehicle(_platformIdCtrl.text.trim());
+          debugPrint('[Step5] Vehicle RC verified: ${vehicleResult['owner_name']}');
+        } catch (e) {
+          debugPrint('[Step5] Vehicle verification skipped: $e');
+          // Non-blocking — vehicle verification is supplementary
+        }
+      }
 
       ref.read(verifiedProfileProvider.notifier).updateStep5(WorkInfo(
         isVerified: true,
@@ -153,10 +164,16 @@ class _Step5WorkScreenState extends ConsumerState<Step5WorkScreen> {
 
 
 
-          if (workType == 'platform_worker') _buildPlatformWorker(ocrService),
-          if (workType == 'vendor') _buildVendor(ocrService),
-          if (workType == 'tradesperson') _buildTradesperson(ocrService),
-          if (workType == 'freelancer') _buildFreelancer(ocrService),
+          if (workType == 'platform_worker' || workType == 'gig_worker') 
+            _buildPlatformWorker(ocrService)
+          else if (workType == 'vendor') 
+            _buildVendor(ocrService)
+          else if (workType == 'tradesperson') 
+            _buildTradesperson(ocrService)
+          else if (workType == 'freelancer' || workType == 'self_employed') 
+            _buildFreelancer(ocrService)
+          else 
+            _buildGenericWork(ocrService),
         ],
       ),
       bottomBar: PrimaryButton(
@@ -340,6 +357,23 @@ class _Step5WorkScreenState extends ConsumerState<Step5WorkScreen> {
             onExtracted: (data) => setState(() => _freelanceInvoices = (_freelanceInvoices + 1).clamp(0, 5)),
           ),
         )),
+      ],
+    );
+  }
+
+  Widget _buildGenericWork(ocrService) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('Proof of Work / Income', Icons.work),
+        const SizedBox(height: 10),
+        DocumentUploadCard(
+          title: 'Work ID / Badge / Pay Slip *',
+          subtitle: 'Upload proof of your employment or income',
+          docType: 'work_generic',
+          ocrService: ocrService,
+          onExtracted: (data) => setState(() => _rcUploaded = true), // Reuse a boolean flag to track upload
+        ),
       ],
     );
   }

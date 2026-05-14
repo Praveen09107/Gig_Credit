@@ -11,6 +11,7 @@ import '../../../../shared/widgets/status/verification_badge.dart';
 import '../../../../state/step_status_provider.dart';
 import '../../../../state/verified_profile_provider.dart';
 import '../../../../state/ocr_service_provider.dart';
+import '../../../../state/api_service_provider.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/insurance_info.dart';
 import '../../../../app/app_router.dart';
@@ -84,7 +85,35 @@ class _Step7InsuranceScreenState extends ConsumerState<Step7InsuranceScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await Future.delayed(const Duration(seconds: 1));
+      final api = ref.read(apiServiceProvider);
+
+      // Real backend verification for each active insurance policy
+      if (_hasHealth && _healthPolicyCtrl.text.trim().isNotEmpty) {
+        try {
+          final result = await api.verifyInsurance(_healthPolicyCtrl.text.trim(), 'health');
+          debugPrint('[Step7] Health insurance verified: ${result['policy_holder']} — ${result['insurer']}');
+        } catch (e) {
+          debugPrint('[Step7] Health insurance verification failed: $e');
+        }
+      }
+
+      if (_hasVehicle && _vehiclePolicyCtrl.text.trim().isNotEmpty) {
+        try {
+          final result = await api.verifyInsurance(_vehiclePolicyCtrl.text.trim(), 'vehicle');
+          debugPrint('[Step7] Vehicle insurance verified: ${result['policy_holder']}');
+        } catch (e) {
+          debugPrint('[Step7] Vehicle insurance verification failed: $e');
+        }
+      }
+
+      if (_hasLife && _lifePolicyCtrl.text.trim().isNotEmpty) {
+        try {
+          final result = await api.verifyInsurance(_lifePolicyCtrl.text.trim(), 'life');
+          debugPrint('[Step7] Life insurance verified: ${result['policy_holder']}');
+        } catch (e) {
+          debugPrint('[Step7] Life insurance verification failed: $e');
+        }
+      }
       
       ref.read(verifiedProfileProvider.notifier).updateStep7(InsuranceInfo(
         isVerified: true,

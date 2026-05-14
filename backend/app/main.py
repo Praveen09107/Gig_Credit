@@ -12,6 +12,7 @@ from app.api import (
     scoring_router,
     loan_router,
     explainability_router,
+    utility_verification,
 )
 from app.db.connection import close_db, connect_db
 from app.utils.error_handlers import register_error_handlers
@@ -53,3 +54,5 @@ app.include_router(report_routes.router, prefix="/api", tags=["report"])
 app.include_router(scoring_router.router, prefix="/score", tags=["scoring"])
 app.include_router(loan_router.router, prefix="/loan", tags=["loan"])
 app.include_router(explainability_router.router, prefix="/explain", tags=["explainability"])
+app.include_router(utility_verification.router, prefix="/utility", tags=["utility"])
+app.include_router(utility_verification.router, prefix="/gov", tags=["gov-extra"])

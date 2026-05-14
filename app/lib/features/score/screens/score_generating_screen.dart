@@ -13,13 +13,13 @@ import '../../../scoring/score_pipeline.dart';
 import '../../../app/app_router.dart';
 import '../../../models/score_report_model.dart';
 import '../../../state/api_service_provider.dart';
+import '../../../services/loan_api_service.dart';
 import '../widgets/score_status_message.dart';
 
 import '../../../services/scoring_service.dart';
 
-/// P6-11: Score Generating Screen
-/// Pulsing gradient ring + cycling messages + computes real score in background.
-/// WillPopScope blocks back navigation.
+/// GigCredit Score Generating Screen
+/// Green gradient pulsing ring + cycling messages + computes real score in background.
 class ScoreGeneratingScreen extends ConsumerStatefulWidget {
   const ScoreGeneratingScreen({super.key});
 
@@ -54,14 +54,22 @@ class _ScoreGeneratingScreenState extends ConsumerState<ScoreGeneratingScreen>
 
       try {
         // 2. Prepare payload for LLM explanation (passing SHAP outputs)
+        // Build pillar_scores map from the scored pillars
+        final pillarScores = <String, double>{};
+        for (final p in report.pillars) {
+          pillarScores[p.code] = p.calibratedScore;
+        }
+        
         final payload = {
           "credit_score": report.finalScore,
           "grade": report.grade,
           "risk_level": report.riskBand,
           "work_type": profile.personalInfo.workType.isNotEmpty ? profile.personalInfo.workType : 'platform_worker',
           "language": "English",
-          "positive_factors": report.topStrengths.map((e) => {"feature_label": e.featureName, "impact": e.impactStrength}).toList(),
-          "negative_factors": report.topConcerns.map((e) => {"feature_label": e.featureName, "impact": e.impactStrength}).toList(),
+          "pillar_scores": pillarScores,
+          "confidence_level": report.overallConfidence > 0.8 ? "high" : (report.overallConfidence > 0.5 ? "medium" : "low"),
+          "positive_factors": report.topStrengths.map((e) => {"feature_label": e.featureName, "pillar": e.pillarLabel.isNotEmpty ? e.pillarLabel : "P1", "impact": e.impactStrength}).toList(),
+          "negative_factors": report.topConcerns.map((e) => {"feature_label": e.featureName, "pillar": e.pillarLabel.isNotEmpty ? e.pillarLabel : "P1", "impact": e.impactStrength}).toList(),
         };
 
         // 3. Request LLM generated explanation via the live backend
@@ -72,7 +80,7 @@ class _ScoreGeneratingScreenState extends ConsumerState<ScoreGeneratingScreen>
           // Merge the backend LLM response with our local score report
           report = ScoreReportModel(
             finalScore: report.finalScore,
-            probability: report.probability, // Fix added
+            probability: report.probability,
             workType: report.workType,
             computeTimeMs: report.computeTimeMs,
             grade: report.grade,
@@ -102,7 +110,7 @@ class _ScoreGeneratingScreenState extends ConsumerState<ScoreGeneratingScreen>
       ref.read(scoreProvider.notifier).setSuccess(report);
 
       // Seed personalized loan offers based on the generated score
-      _seedLoanOffers(report.finalScore);
+      await _seedLoanOffers(report.finalScore);
 
       // Haptic celebration
       HapticFeedback.heavyImpact();
@@ -117,15 +125,22 @@ class _ScoreGeneratingScreenState extends ConsumerState<ScoreGeneratingScreen>
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Computation Error'),
-            content: Text('The scoring engine encountered an error:\n\n$e'),
+            backgroundColor: AppColors.bgCard,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text('Computation Error',
+                style: AppTypography.headlineMedium),
+            content: Text(
+              'The scoring engine encountered an error:\n\n$e',
+              style: AppTypography.bodyMedium,
+            ),
             actions: [
               TextButton(
                 onPressed: () {
                   Navigator.pop(ctx);
                   context.go(AppRoutes.home);
                 },
-                child: const Text('Go Home'),
+                child: Text('Go Home',
+                    style: TextStyle(color: AppColors.greenPrimary, fontWeight: FontWeight.w600)),
               )
             ],
           ),
@@ -134,47 +149,33 @@ class _ScoreGeneratingScreenState extends ConsumerState<ScoreGeneratingScreen>
     }
   }
 
-  void _seedLoanOffers(int score) {
-    final offers = <LoanOfferModel>[];
-    
-    if (score >= 600) {
-      offers.add(LoanOfferModel(
-        id: 'offer_1',
-        lenderName: 'HDFC Bank',
-        lenderLogoUrl: '',
-        amount: score >= 720 ? 75000 : 50000,
-        interestRate: score >= 720 ? 12.5 : 16.0,
-        tenureMonths: 12,
-        estimatedEmi: score >= 720 ? 6656 : 4529,
-        highlights: ['Pre-approved', 'Instant disbursal', 'No collateral'],
-      ));
+  Future<void> _seedLoanOffers(int score) async {
+    try {
+      // Real backend call to fetch eligible loan products
+      final loanApi = ref.read(loanApiServiceProvider);
+      final result = await loanApi.getProducts(score);
+      final products = result['eligible_products'] as List? ?? [];
+
+      final offers = <LoanOfferModel>[];
+      for (final p in products) {
+        offers.add(LoanOfferModel(
+          id: p['id'] ?? 'offer_${offers.length}',
+          lenderName: p['name'] ?? 'GigCredit Partner',
+          lenderLogoUrl: '',
+          amount: (p['max_amount'] as num?)?.toDouble() ?? 0,
+          interestRate: 18.0, // Will be refined in KFS
+          tenureMonths: (p['tenures'] as List?)?.isNotEmpty == true ? (p['tenures'] as List).first as int : 6,
+          estimatedEmi: 0, // Calculated in KFS step
+          highlights: [p['description'] ?? 'Pre-approved'],
+        ));
+      }
+
+      ref.read(loanProvider.notifier).setOffers(offers);
+      debugPrint('[ScoreGen] Loaded ${offers.length} real loan products from backend');
+    } catch (e) {
+      debugPrint('[ScoreGen] Failed to fetch loan products: $e');
+      // No fallback — if backend fails, loan list stays empty
     }
-    if (score >= 560) {
-      offers.add(LoanOfferModel(
-        id: 'offer_2',
-        lenderName: 'TVS Credit',
-        lenderLogoUrl: '',
-        amount: 40000,
-        interestRate: 18.0,
-        tenureMonths: 6,
-        estimatedEmi: 7023,
-        highlights: ['Two-wheeler finance', 'Flexible tenure'],
-      ));
-    }
-    if (score >= 480) {
-      offers.add(LoanOfferModel(
-        id: 'offer_3',
-        lenderName: 'Bajaj Finserv',
-        lenderLogoUrl: '',
-        amount: 25000,
-        interestRate: 20.0,
-        tenureMonths: 3,
-        estimatedEmi: 8710,
-        highlights: ['Emergency cash', 'Quick approval'],
-      ));
-    }
-    
-    ref.read(loanProvider.notifier).setOffers(offers);
   }
 
   @override
@@ -188,84 +189,137 @@ class _ScoreGeneratingScreenState extends ConsumerState<ScoreGeneratingScreen>
     return PopScope(
       canPop: false, // Block back navigation during generation
       child: Scaffold(
-        backgroundColor: AppColors.surface,
-        body: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Pulsing gradient ring
-                  AnimatedBuilder(
-                    animation: _pulseController,
-                    builder: (context, child) {
-                      final scale = 0.9 + _pulseController.value * 0.15;
-                      final opacity = 0.5 + _pulseController.value * 0.5;
-                      return Transform.scale(
-                        scale: scale,
-                        child: Container(
-                          width: 160,
-                          height: 160,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: RadialGradient(
-                              colors: [
-                                AppColors.accent.withValues(alpha: opacity * 0.3),
-                                AppColors.accentLight.withValues(alpha: opacity * 0.1),
-                                Colors.transparent,
-                              ],
-                            ),
-                            border: Border.all(
-                              color: AppColors.accent.withValues(alpha: opacity),
-                              width: 2,
-                            ),
-                          ),
-                          child: const Center(
-                            child: Icon(
-                              Icons.psychology_rounded,
-                              size: 64,
-                              color: AppColors.accentLight,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 48),
-                  
-                  Text(
-                    'Generating Your Score',
-                    style: AppTypography.displaySmall,
-                    textAlign: TextAlign.center,
-                  ).animate().fadeIn(duration: 800.ms),
-                  
-                  const SizedBox(height: 16),
-                  const ScoreStatusMessage(),
-                  
-                  const SizedBox(height: 40),
-                  
-                  // Progress row with 3 dots
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(3, (i) {
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: AppColors.accent,
-                          shape: BoxShape.circle,
-                        ),
-                      ).animate(delay: Duration(milliseconds: i * 200))
-                          .fade(begin: 0.2, end: 1.0, duration: 600.ms)
-                          .then()
-                          .fade(begin: 1.0, end: 0.2, duration: 600.ms);
-                    }),
-                  ),
-                ],
-              ),
+        body: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment(-0.5, -0.6),
+              end: Alignment(0.5, 0.8),
+              colors: [
+                AppColors.greenPrimary,
+                AppColors.greenMid,
+                AppColors.greenBright,
+              ],
+              stops: [0.0, 0.55, 1.0],
             ),
+          ),
+          child: Stack(
+            children: [
+              // Decorative circles
+              Positioned(
+                top: -60,
+                right: -40,
+                child: Container(
+                  width: 180,
+                  height: 180,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.06),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: -30,
+                left: -50,
+                child: Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.04),
+                  ),
+                ),
+              ),
+
+              SafeArea(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Pulsing gradient ring
+                        AnimatedBuilder(
+                          animation: _pulseController,
+                          builder: (context, child) {
+                            final scale = 0.92 + _pulseController.value * 0.12;
+                            final opacity = 0.4 + _pulseController.value * 0.6;
+                            return Transform.scale(
+                              scale: scale,
+                              child: Container(
+                                width: 140,
+                                height: 140,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      Colors.white.withValues(alpha: opacity * 0.20),
+                                      Colors.white.withValues(alpha: opacity * 0.06),
+                                      Colors.transparent,
+                                    ],
+                                  ),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: opacity),
+                                    width: 2.5,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Container(
+                                    width: 72,
+                                    height: 72,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white.withValues(alpha: 0.15),
+                                    ),
+                                    child: const Icon(
+                                      Icons.psychology_rounded,
+                                      size: 40,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 40),
+                        
+                        Text(
+                          'Generating Your Score',
+                          style: AppTypography.heroHeading.copyWith(fontSize: 26),
+                          textAlign: TextAlign.center,
+                        ).animate().fadeIn(duration: 600.ms),
+                        
+                        const SizedBox(height: 14),
+                        const ScoreStatusMessage(),
+                        
+                        const SizedBox(height: 36),
+                        
+                        // Progress dots
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(3, (i) {
+                            return Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: AppColors.greenMint,
+                                shape: BoxShape.circle,
+                              ),
+                            ).animate(delay: Duration(milliseconds: i * 200))
+                                .fade(begin: 0.2, end: 1.0, duration: 600.ms)
+                                .then()
+                                .fade(begin: 1.0, end: 0.2, duration: 600.ms);
+                          }),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

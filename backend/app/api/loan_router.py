@@ -66,63 +66,84 @@ async def generate_kfs(req: Dict[str, Any]):
 
 @router.post("/apply")
 async def apply_loan(req: Dict[str, Any]):
-    application = req.get("application", {})
-    score_report = req.get("score_report", {})
-    product_id = application.get("product_id", "emergency_advance")
-    loan_id = f"L{uuid.uuid4().hex[:8].upper()}"
-    
-    decision_payload = {}
+    try:
+        application = req.get("application", {})
+        score_report = req.get("score_report", {})
+        product_id = application.get("product_id", "emergency_advance")
+        loan_id = f"L{uuid.uuid4().hex[:8].upper()}"
+        
+        decision_payload = {}
 
-    hr_outcome = hard_rules_engine.evaluate(application, score_report, product_id)
-    if not hr_outcome.all_passed:
-        failure = hr_outcome.first_failure
+        # Safe vars() conversion that handles non-serializable fields
+        def safe_vars(obj):
+            d = vars(obj)
+            result = {}
+            for k, v in d.items():
+                if v is None or isinstance(v, (str, int, float, bool, list, dict)):
+                    result[k] = v
+                else:
+                    result[k] = str(v)
+            return result
+
+        hr_outcome = hard_rules_engine.evaluate(application, score_report, product_id)
+        if not hr_outcome.all_passed:
+            failure = hr_outcome.first_failure
+            decision_payload = {
+                "decision": "rejected",
+                "rejection_bucket": "HARD_RULE",
+                "reason": failure.reason,
+                "remediation": failure.remediation,
+                "counter_offer": failure.counter_offer,
+                "hard_rules": [safe_vars(r) for r in hr_outcome.results]
+            }
+            audit_trail_service.append_record(loan_id, decision_payload, score_report, application)
+            return decision_payload
+            
+        aff_result = affordability_engine.compute(application, score_report, product_id)
+        if not aff_result.passed:
+            decision_payload = {
+                "decision": "rejected",
+                "rejection_bucket": "AFFORDABILITY",
+                "reason": aff_result.rejection_reason,
+                "counter_offer": aff_result.counter_offer,
+                "affordability_metrics": safe_vars(aff_result)
+            }
+            audit_trail_service.append_record(loan_id, decision_payload, score_report, application)
+            return decision_payload
+            
+        repayment_prob = 0.85
+        if repayment_prob < 0.65:
+            decision_payload = {
+                "decision": "rejected",
+                "rejection_bucket": "MODEL_SCORED",
+                "reason": "Our AI model predicts a higher risk of repayment difficulties based on your financial behaviour."
+            }
+            audit_trail_service.append_record(loan_id, decision_payload, score_report, application)
+            return decision_payload
+            
         decision_payload = {
-            "decision": "rejected",
-            "rejection_bucket": "HARD_RULE",
-            "reason": failure.reason,
-            "remediation": failure.remediation,
-            "counter_offer": failure.counter_offer,
-            "hard_rules": [vars(r) for r in hr_outcome.results]
+            "decision": "approved",
+            "loan_id": loan_id,
+            "details": {
+                "approved_amount": application.get("loan_amount", application.get("amount")),
+                "emi": aff_result.proposed_emi,
+                "apr": aff_result.adjusted_apr,
+                "tenure": application.get("tenure_months", application.get("tenure"))
+            }
         }
         audit_trail_service.append_record(loan_id, decision_payload, score_report, application)
         return decision_payload
-        
-    aff_result = affordability_engine.compute(application, score_report, product_id)
-    if not aff_result.passed:
-        decision_payload = {
-            "decision": "rejected",
-            "rejection_bucket": "AFFORDABILITY",
-            "reason": aff_result.rejection_reason,
-            "counter_offer": aff_result.counter_offer,
-            "affordability_metrics": vars(aff_result)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {
+            "decision": "error",
+            "reason": f"Loan processing error: {str(e)}",
+            "loan_id": f"L{uuid.uuid4().hex[:8].upper()}"
         }
-        audit_trail_service.append_record(loan_id, decision_payload, score_report, application)
-        return decision_payload
-        
-    repayment_prob = 0.85
-    if repayment_prob < 0.65:
-        decision_payload = {
-            "decision": "rejected",
-            "rejection_bucket": "MODEL_SCORED",
-            "reason": "Our AI model predicts a higher risk of repayment difficulties based on your financial behaviour."
-        }
-        audit_trail_service.append_record(loan_id, decision_payload, score_report, application)
-        return decision_payload
-        
-    decision_payload = {
-        "decision": "approved",
-        "loan_id": loan_id,
-        "details": {
-            "approved_amount": application.get("loan_amount"),
-            "emi": aff_result.proposed_emi,
-            "apr": aff_result.adjusted_apr,
-            "tenure": application.get("tenure_months")
-        }
-    }
-    audit_trail_service.append_record(loan_id, decision_payload, score_report, application)
-    return decision_payload
 
 @router.get("/decision/{loan_id}")
 async def get_decision(loan_id: str):
     return {"loan_id": loan_id, "status": "approved"}
+
 

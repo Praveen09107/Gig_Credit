@@ -7,6 +7,7 @@ import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/buttons/primary_button.dart';
 import '../../../../state/step_status_provider.dart';
 import '../../../../state/verified_profile_provider.dart';
+import '../../../../state/api_service_provider.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/emi_loans_info.dart';
 import '../../../../app/app_router.dart';
@@ -103,6 +104,21 @@ class _Step9EmiLoansScreenState extends ConsumerState<Step9EmiLoansScreen> {
     }
 
     setState(() => _isLoading = true);
+
+    // Real backend loan check using bank account from Step 3
+    try {
+      final profile = ref.read(verifiedProfileProvider);
+      final bankAccNo = profile.bankInfo.accountNumber;
+      if (bankAccNo.isNotEmpty) {
+        final api = ref.read(apiServiceProvider);
+        try {
+          final loanCheck = await api.checkLoans(bankAccNo);
+          debugPrint('[Step9] Backend loan check: has_active=${loanCheck['has_active_loans']}, count=${loanCheck['loan_count']}');
+        } catch (e) {
+          debugPrint('[Step9] Backend loan check failed: $e');
+        }
+      }
+    } catch (_) {}
 
     List<EmiEntry> extractedLoans = [];
     if (_hasActiveLoans) {

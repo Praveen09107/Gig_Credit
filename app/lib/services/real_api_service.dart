@@ -146,7 +146,7 @@ class RealApiService implements ApiService {
     final response = await http.post(
       Uri.parse('$baseUrl/gov/eshram/verify'),
       headers: _headers,
-      body: jsonEncode({'eshram': eshramNumber}),
+      body: jsonEncode({'uan': eshramNumber}),
     );
     if (response.statusCode == 200) return jsonDecode(response.body);
     throw Exception('eShram verification failed.');
@@ -212,7 +212,7 @@ class RealApiService implements ApiService {
   @override
   Future<Map<String, dynamic>> getLlmExplanation(Map<String, dynamic> limitsData) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/explain/llm'),
+      Uri.parse('$baseUrl/explain/full'),
       headers: _headers,
       body: jsonEncode(limitsData),
     );
@@ -223,7 +223,7 @@ class RealApiService implements ApiService {
   @override
   Future<Map<String, dynamic>> checkLoans(String accountNumber) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/bank/loans/check'),
+      Uri.parse('$baseUrl/bank/loan/check'),
       headers: _headers,
       body: jsonEncode({'account_number': accountNumber}),
     );
@@ -234,7 +234,7 @@ class RealApiService implements ApiService {
   @override
   Future<Map<String, dynamic>> verifyVehicle(String vehicleNumber) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/transport/vehicle/verify'),
+      Uri.parse('$baseUrl/gov/vehicle/rc/verify'),
       headers: _headers,
       body: jsonEncode({'vehicle_number': vehicleNumber}),
     );
@@ -245,9 +245,9 @@ class RealApiService implements ApiService {
   @override
   Future<Map<String, dynamic>> verifyInsurance(String policyNumber, String type) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/insurance/verify'),
+      Uri.parse('$baseUrl/gov/insurance/policy/verify'),
       headers: _headers,
-      body: jsonEncode({'policy_number': policyNumber, 'type': type}),
+      body: jsonEncode({'policy_number': policyNumber, 'policy_type': type}),
     );
     if (response.statusCode == 200) return jsonDecode(response.body);
     throw Exception('Insurance verification failed.');
@@ -258,7 +258,7 @@ class RealApiService implements ApiService {
     final response = await http.post(
       Uri.parse('$baseUrl/gov/pmsym/verify'),
       headers: _headers,
-      body: jsonEncode({'pmsym_uan': pmsymUan}),
+      body: jsonEncode({'uan': pmsymUan}),
     );
     if (response.statusCode == 200) return jsonDecode(response.body);
     throw Exception('PMSYM verification failed.');
@@ -267,7 +267,7 @@ class RealApiService implements ApiService {
   @override
   Future<Map<String, dynamic>> verifyItr(String pan, String assessmentYear) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/tax/itr/verify'),
+      Uri.parse('$baseUrl/gov/income-tax/itr/verify'),
       headers: _headers,
       body: jsonEncode({'pan': pan, 'assessment_year': assessmentYear}),
     );

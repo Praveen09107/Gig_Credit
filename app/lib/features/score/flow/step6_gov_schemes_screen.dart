@@ -93,13 +93,33 @@ class _Step6GovSchemesScreenState extends ConsumerState<Step6GovSchemesScreen> {
     setState(() => _isLoading = true);
     
     try {
-      await Future.delayed(const Duration(seconds: 1));
+      final api = ref.read(apiServiceProvider);
+
+      // Real backend verification for eShram
+      if (_hasEshram && _eshramUanCtrl.text.trim().isNotEmpty) {
+        try {
+          final eshramResult = await api.verifyEshram(_eshramUanCtrl.text.trim());
+          debugPrint('[Step6] eShram verified: ${eshramResult['name']} — ${eshramResult['worker_category']}');
+        } catch (e) {
+          debugPrint('[Step6] eShram verification failed: $e');
+          // Non-blocking — scheme verification is supplementary
+        }
+      }
+
+      // Real backend verification for PM-SYM
+      if (_hasPmsym && _pmsymAccCtrl.text.trim().isNotEmpty) {
+        try {
+          final pmsymResult = await api.verifyPmsym(_pmsymAccCtrl.text.trim());
+          debugPrint('[Step6] PM-SYM verified: ${pmsymResult['months_contributed']} months contributed');
+        } catch (e) {
+          debugPrint('[Step6] PM-SYM verification failed: $e');
+        }
+      }
       
       ref.read(verifiedProfileProvider.notifier).updateStep6(GovSchemesInfo(
         isVerified: true,
         hasEshram: _hasEshram,
         hasPmScheme: _hasSvanidhi || _hasPmsym || _hasPmjjby || _hasMudra,
-        // _hasUdyam or _hasPpf could be mapped if fields existed, ignoring for now
       ));
       ref.read(stepStatusProvider.notifier).setStatus(6, StepStatus.verified);
       

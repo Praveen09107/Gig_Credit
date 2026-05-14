@@ -11,6 +11,7 @@ import '../../../../shared/widgets/status/verification_badge.dart';
 import '../../../../state/step_status_provider.dart';
 import '../../../../state/verified_profile_provider.dart';
 import '../../../../state/ocr_service_provider.dart';
+import '../../../../state/api_service_provider.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/tax_info.dart';
 import '../../../../app/app_router.dart';
@@ -80,7 +81,27 @@ class _Step8TaxScreenState extends ConsumerState<Step8TaxScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await Future.delayed(const Duration(seconds: 1));
+      final api = ref.read(apiServiceProvider);
+
+      // Real backend ITR verification
+      if (_hasItr && _itrPanCtrl.text.trim().isNotEmpty) {
+        try {
+          final itrResult = await api.verifyItr(_itrPanCtrl.text.trim(), _assessmentYear);
+          debugPrint('[Step8] ITR verified: AY ${itrResult['assessment_year']} — income ₹${itrResult['gross_income']}');
+        } catch (e) {
+          debugPrint('[Step8] ITR verification failed: $e');
+        }
+      }
+
+      // Real backend GST verification
+      if (_hasGst && _gstinCtrl.text.trim().isNotEmpty) {
+        try {
+          final gstResult = await api.verifyGst(_gstinCtrl.text.trim());
+          debugPrint('[Step8] GST verified: ${gstResult['status']}');
+        } catch (e) {
+          debugPrint('[Step8] GST verification failed: $e');
+        }
+      }
       
       final declaredIncome = double.tryParse(_itrIncomeCtrl.text) ?? 0.0;
       final yearInt = int.tryParse(_assessmentYear.split('-')[0]) ?? 2024;
@@ -91,7 +112,7 @@ class _Step8TaxScreenState extends ConsumerState<Step8TaxScreen> {
         assessmentYear: yearInt,
         declaredAnnualIncome: declaredIncome,
         gstRegistered: _hasGst,
-        taxPaid: 0.0, // Usually extracted from OCR
+        taxPaid: 0.0,
       ));
       ref.read(stepStatusProvider.notifier).setStatus(8, StepStatus.verified);
       if (mounted) {

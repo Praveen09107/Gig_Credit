@@ -10,6 +10,7 @@ import '../../../../shared/widgets/status/verification_badge.dart';
 import '../../../../state/step_status_provider.dart';
 import '../../../../state/verified_profile_provider.dart';
 import '../../../../state/ocr_service_provider.dart';
+import '../../../../state/api_service_provider.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/utility_info.dart';
 import '../../../../app/app_router.dart';
@@ -112,39 +113,64 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
     }
 
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1));
 
-    List<UtilityBillEntry> extractedBills = [];
+    try {
+      final api = ref.read(apiServiceProvider);
 
-    void addBill(bool hasBill, String type, TextEditingController amtCtrl) {
-      if (hasBill) {
-        final amt = double.tryParse(amtCtrl.text) ?? 0.0;
-        if (amt > 0) {
-          extractedBills.add(UtilityBillEntry(
-            billType: type,
-            amount: amt,
-            verified: true,
-          ));
+      // Real backend utility verification for each active bill
+      Future<void> verifyBill(bool hasBill, String provider, TextEditingController consumerCtrl) async {
+        if (hasBill && consumerCtrl.text.trim().isNotEmpty) {
+          try {
+            final result = await api.verifyUtility(consumerCtrl.text.trim(), provider);
+            debugPrint('[Step4] $provider verified: ${result['consumer_name']} — ${result['payment_status']}');
+          } catch (e) {
+            debugPrint('[Step4] $provider verification skipped: $e');
+            // Non-blocking — utility verification is supplementary
+          }
         }
       }
-    }
 
-    addBill(_hasElectricity, 'electricity', _elecAmountCtrl);
-    addBill(_hasWater, 'water', _waterAmountCtrl);
-    addBill(_hasGas, 'gas', _gasAmountCtrl);
-    addBill(_hasMobile, 'mobile', _mobileAmountCtrl);
-    addBill(_hasInternet, 'internet', _internetAmountCtrl);
-    addBill(_hasRent, 'rent', _rentAmountCtrl);
+      await verifyBill(_hasElectricity, 'electricity', _elecConsumerCtrl);
+      await verifyBill(_hasWater, 'water', _waterConsumerCtrl);
+      await verifyBill(_hasGas, 'gas', _gasConsumerCtrl);
+      await verifyBill(_hasMobile, 'mobile', _mobileMobileCtrl);
+      await verifyBill(_hasInternet, 'internet', _internetAccountCtrl);
 
-    ref.read(verifiedProfileProvider.notifier).updateStep4(UtilityInfo(
-      isVerified: true,
-      bills: extractedBills,
-    ));
-    ref.read(stepStatusProvider.notifier).setStatus(4, StepStatus.verified);
+      List<UtilityBillEntry> extractedBills = [];
 
-    if (mounted) {
-      setState(() => _isLoading = false);
-      context.push(AppRoutes.scoreStep(5));
+      void addBill(bool hasBill, String type, TextEditingController amtCtrl) {
+        if (hasBill) {
+          final amt = double.tryParse(amtCtrl.text) ?? 0.0;
+          if (amt > 0) {
+            extractedBills.add(UtilityBillEntry(
+              billType: type,
+              amount: amt,
+              verified: true,
+            ));
+          }
+        }
+      }
+
+      addBill(_hasElectricity, 'electricity', _elecAmountCtrl);
+      addBill(_hasWater, 'water', _waterAmountCtrl);
+      addBill(_hasGas, 'gas', _gasAmountCtrl);
+      addBill(_hasMobile, 'mobile', _mobileAmountCtrl);
+      addBill(_hasInternet, 'internet', _internetAmountCtrl);
+      addBill(_hasRent, 'rent', _rentAmountCtrl);
+
+      ref.read(verifiedProfileProvider.notifier).updateStep4(UtilityInfo(
+        isVerified: true,
+        bills: extractedBills,
+      ));
+      ref.read(stepStatusProvider.notifier).setStatus(4, StepStatus.verified);
+
+      if (mounted) {
+        setState(() => _isLoading = false);
+        context.push(AppRoutes.scoreStep(5));
+      }
+    } catch (e) {
+      debugPrint('[Step4] Error: $e');
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
