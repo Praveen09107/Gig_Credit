@@ -123,8 +123,8 @@ class AffordabilityEngine:
 
     def _get_base_apr(self, score: int, product: dict) -> float:
         bands = product.get("apr_by_score_band", {})
-        for band, rate in sorted(bands.items(), key=lambda x: -int(x[0].split("-")[0])):
-            lo = int(band.split("-")[0])
+        for band, rate in sorted(bands.items(), key=lambda x: -int(x[0].split("-")[0].rstrip("+"))):
+            lo = int(band.split("-")[0].rstrip("+"))
             if score >= lo:
                 return float(rate.rstrip("%"))
         return float(list(bands.values())[-1].rstrip("%"))

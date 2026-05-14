@@ -41,7 +41,7 @@ async def generate_kfs(req: Dict[str, Any]):
     score = int(req.get("score", 600))
     apr = 18.0
     for band, rate in product["apr_by_score_band"].items():
-        lo = int(band.split("-")[0])
+        lo = int(band.split("-")[0].rstrip("+"))
         if score >= lo:
             apr = float(rate.rstrip("%"))
             break
