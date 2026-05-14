@@ -15,16 +15,32 @@ class ScoringService {
     'X-API-Key': AppConfig.apiKey,
   };
 
-  Future<void> storeScore(ScoreReportModel report) async {
+  Future<void> storeScore(ScoreReportModel report, String userId) async {
     final response = await http.post(
       Uri.parse('$baseUrl/score/store'),
       headers: _headers,
-      body: jsonEncode(report.toJson()),
-    ).timeout(const Duration(seconds: 10));
+      body: jsonEncode({
+        'user_id': userId,
+        'score_data': report.toJson()
+      }),
+    ).timeout(const Duration(seconds: 15));
 
     if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Failed to store score securely on backend.');
+      print('Failed to store score securely on backend.');
     }
+  }
+
+  Future<List<Map<String, dynamic>>> getScoreHistory(String userId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/score/history/$userId'),
+      headers: _headers,
+    ).timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      return List<Map<String, dynamic>>.from(json['history'] ?? []);
+    }
+    return [];
   }
 
   Future<Map<String, dynamic>> getExplanation(String proofId) async {

@@ -1,0 +1,679 @@
+████████████████████████████████████████████████████████████████████████████████
+██                                                                            ██
+██   GIGCREDIT — SIGN IN & SIGN UP SCREENS  MOBILE APP FRONTEND PROMPT      ██
+██   Same theme · Same layout system · Same component patterns              ██
+██   OTP-based auth · Toast notifications · Mirror layout between screens   ██
+██                                                                            ██
+████████████████████████████████████████████████████████████████████████████████
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1 — SHARED LAYOUT RULES (applies to BOTH screens)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Both Sign In and Sign Up share the exact same visual skeleton.
+Only content (fields, links, headings) differs between them.
+
+┌──────────────────────────────────────────────────────┐
+│  STATUS BAR (system)                   safe-area-top │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 1  —  TOP BRAND BAND            auto height   │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 2  —  FORM CARD                 auto height   │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 3  —  SWITCH PAGE LINK          auto height   │
+├──────────────────────────────────────────────────────┤
+│  TOAST LAYER  (fixed, above everything)              │
+│              safe-area-bottom padding                │
+└──────────────────────────────────────────────────────┘
+
+bg-screen      :  linear-gradient(180deg, #1A6B3C 0%, #2D8653 40%, #F0F4F8 100%)
+screen-padding :  0  (band is full width, form card has own padding)
+Entire screen  :  single scrollable column
+                  KeyboardAvoidingView wraps everything (mobile)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2 — BLOCK 1: TOP BRAND BAND
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: AuthBrandBand
+Background   :  transparent (inherits screen gradient top green)
+padding      :  60px 24px 48px
+overflow     :  hidden
+
+Decorations (absolute, non-interactive):
+  Circle 1  :  220px  rgba(255,255,255,0.06)  top:-60px right:-60px
+  Circle 2  :  140px  rgba(255,255,255,0.04)  bottom:20px left:-40px
+
+Content (column, align-center):
+
+  1. APP ICON:
+     Size         :  72 × 72px  rounded square  radius 20px
+     bg           :  rgba(255,255,255,0.18)
+     border       :  2px solid rgba(255,255,255,0.30)
+     Inside       :  "G"  Inter Black  36px  #FFFFFF  centred
+     box-shadow   :  0 8px 24px rgba(0,0,0,0.20)
+
+     On mount     :  scale 0→1.08→1.0  spring  stiffness 280 damping 18  delay 0ms
+
+  2. APP NAME:
+     "GigCredit"
+     Font         :  Inter Black  28px  #FFFFFF  centred
+     letter-spacing: -0.5px
+     text-shadow  :  0 2px 8px rgba(0,0,0,0.20)
+     margin-top   :  14px
+
+     On mount     :  opacity 0→1  translateY(10px→0)  400ms ease  delay 100ms
+
+  3. SCREEN TAGLINE:
+     Sign Up screen :  "Create your account"
+     Sign In screen :  "Welcome back"
+
+     Font         :  Inter Regular  15px  rgba(255,255,255,0.78)  centred
+     margin-top   :  6px
+
+     On mount     :  opacity 0→1  translateY(8px→0)  400ms ease  delay 180ms
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3 — BLOCK 2: FORM CARD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: AuthFormCard
+margin        :  0 20px
+bg            :  #FFFFFF
+radius        :  24px
+padding       :  28px 24px 32px
+box-shadow    :  0 -4px 40px rgba(0,0,0,0.12)  0 8px 32px rgba(26,107,60,0.10)
+overflow      :  visible
+
+On mount      :  opacity 0→1  translateY(32px→0)  500ms  ease[0.22,1,0.36,1]  delay 200ms
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4 — SIGN UP SCREEN: FORM CARD CONTENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Route: /signup
+
+── CARD HEADING ROW ─────────────────────────────────────────────────────────
+
+  "Sign Up"
+  Font       :  Inter Bold  22px  #0D1F15
+  margin-bottom: 4px
+
+  Subtext:
+  "Enter your details to get started"
+  Font       :  Inter Regular  13px  #8FA89B
+  margin-bottom: 24px
+
+── INPUT 1: FULL NAME ───────────────────────────────────────────────────────
+
+  COMPONENT: AuthInputField
+  Label        :  "Full Name"
+  Font label   :  Inter SemiBold  13px  #4A6B57  margin-bottom 6px
+
+  Input field:
+    height     :  56px
+    radius     :  14px
+    bg         :  #F0F4F8
+    border     :  1.5px solid #E2EDE7
+    padding    :  0 16px 0 48px  (left padding for icon)
+    font       :  Inter Regular  15px  #0D1F15
+    placeholder:  "Enter your full name"  colour #8FA89B
+    keyboard   :  text, auto-capitalise words
+
+  Left icon (inside field):
+    👤  18px  #8FA89B  absolute left 14px centred vertical
+
+  Focus state:
+    border     :  1.5px solid #1A6B3C
+    bg         :  #FFFFFF
+    box-shadow :  0 0 0 3px rgba(60,192,104,0.14)
+    Left icon  :  colour changes to #1A6B3C  200ms ease
+    transition :  200ms ease
+
+  Error state:
+    border     :  1.5px solid #D32F2F
+    bg         :  #FFF5F5
+    box-shadow :  0 0 0 3px rgba(211,47,47,0.10)
+
+  Valid state (on blur, value non-empty):
+    Right side :  ✓ circle  20×20px  bg #1A6B3C  text #FFFFFF  10px
+                  appears with scale 0→1  spring  200ms
+
+  Validation:
+    Minimum 2 characters
+    Letters only (no numbers)
+    On fail   → trigger TOAST_INVALID_NAME
+
+── INPUT 2: MOBILE NUMBER ───────────────────────────────────────────────────
+
+  COMPONENT: AuthInputField
+  Label        :  "Mobile Number"
+  margin-top   :  16px
+
+  Input field:  (same shape as above)
+    Left zone (inside field):
+      Country code pill: "+91"
+        bg: #E2EDE7  radius: 8px  padding: 4px 8px
+        font: Inter SemiBold 13px #4A6B57
+        position: absolute left 10px  centred vertical
+    padding-left: 56px
+    placeholder :  "10-digit mobile number"
+    keyboard    :  numeric  maxLength 10
+
+  Focus / Error / Valid states: same as above
+
+  Validation:
+    Exactly 10 digits
+    Starts with 6, 7, 8, or 9
+    On fail   → trigger TOAST_INVALID_MOBILE
+
+── SEND OTP BUTTON ──────────────────────────────────────────────────────────
+
+  Shown AFTER name + mobile both valid (both fields pass validation)
+
+  COMPONENT: SendOtpButton
+  width        :  100%
+  height       :  54px
+  radius       :  14px
+  bg           :  linear-gradient(135deg, #1A6B3C 0%, #3CC068 100%)
+  box-shadow   :  0 4px 16px rgba(60,192,104,0.38)
+  text         :  "SEND OTP"
+  font         :  Inter Bold  15px  #FFFFFF  uppercase  letter-spacing 0.5px
+  margin-top   :  24px
+
+  DISABLED state (while fields invalid):
+    bg         :  #D4EDDA
+    box-shadow :  none
+    text       :  #8FA89B
+    not pressable
+
+  On press (enabled):
+    scale 0.97 spring  haptic 10ms
+    Button state switches to LOADING:
+      text hidden
+      Spinner replaces text (circle arc 20px #FFFFFF  spinning 800ms linear)
+    Server call: POST /api/auth/send-otp  { mobile }
+    On SUCCESS  → trigger TOAST_OTP_SENT → show OTP input below
+    On FAIL     → trigger TOAST_ALREADY_EXISTS → revert button to idle
+
+── OTP INPUT (appears after SEND OTP success) ───────────────────────────────
+
+  COMPONENT: OtpInputRow
+  Enters with: opacity 0→1  translateY(12px→0)  400ms spring  after toast
+
+  Label        :  "Enter OTP sent to +91 [mobile]"
+  Font         :  Inter Regular  13px  #4A6B57
+  margin-bottom: 10px
+
+  6-box OTP field:
+    Layout     :  row  gap 10px  justify-center
+
+    Each box:
+      Size     :  48 × 56px
+      radius   :  12px
+      bg       :  #F0F4F8
+      border   :  1.5px solid #E2EDE7
+      font     :  Inter Bold  20px  #0D1F15  centred
+      keyboard :  numeric  one digit per box
+      Auto-advance: fills next box automatically on digit entry
+      Auto-back : deletes current, moves to previous on backspace
+
+    Focused box:
+      border   :  1.5px solid #1A6B3C
+      bg       :  #FFFFFF
+      box-shadow: 0 0 0 3px rgba(60,192,104,0.14)
+
+    Error state (all 6 boxes simultaneously):
+      border   :  1.5px solid #D32F2F
+      bg       :  #FFF5F5
+      Shake animation: translateX -6px→6px→-4px→4px→0  400ms ease
+      → trigger TOAST_INVALID_OTP
+
+    Success state (correct OTP):
+      border   :  1.5px solid #1A6B3C  all boxes
+      bg       :  rgba(212,237,218,0.30)
+
+  RESEND OTP row (below boxes):
+    Shown after 30-second countdown
+
+    Countdown active:
+      "Resend OTP in 0:30"  Inter Regular 12px  #8FA89B  centred
+      Count down from 30 to 0
+
+    Countdown expired:
+      "Resend OTP"  Inter SemiBold 12px  #1A6B3C  centred  underline dashed
+      On press: resend → restart 30s countdown → toast TOAST_OTP_SENT
+
+── VERIFY & CREATE ACCOUNT BUTTON ───────────────────────────────────────────
+
+  Appears below OTP row after all 6 digits filled
+
+  COMPONENT: VerifyButton
+  width        :  100%
+  height       :  56px
+  radius       :  16px
+  bg           :  linear-gradient(135deg, #1A6B3C 0%, #3CC068 100%)
+  box-shadow   :  0 6px 20px rgba(60,192,104,0.42)
+  layout       :  row  align-center  justify-center  gap 10px
+  text         :  "CREATE ACCOUNT  →"
+  font         :  Inter Bold  15px  #FFFFFF  uppercase  letter-spacing 0.5px
+  margin-top   :  20px
+
+  Pulse glow (idle):
+    box-shadow oscillates 0 6px 20px → 0 6px 32px rgba(60,192,104,0.60)
+    2s ease-in-out infinite alternate
+
+  On press:
+    scale 0.97 spring  haptic 10ms
+    Loading spinner state
+    Server call: POST /api/auth/signup  { name, mobile, otp }
+    On SUCCESS:
+      Toast TOAST_ACCOUNT_CREATED
+      Navigate to /apply/step-1 after 1200ms
+    On FAIL (wrong OTP)  → TOAST_INVALID_OTP  +  OTP boxes shake
+    On FAIL (already exists) → TOAST_ALREADY_EXISTS
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5 — SIGN IN SCREEN: FORM CARD CONTENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Route: /signin
+Same AuthFormCard shape, same brand band — only contents differ.
+
+── CARD HEADING ROW ─────────────────────────────────────────────────────────
+
+  "Sign In"
+  Font       :  Inter Bold  22px  #0D1F15
+
+  Subtext:
+  "Enter your mobile number to continue"
+  Font       :  Inter Regular  13px  #8FA89B
+  margin-bottom: 24px
+
+── INPUT 1: MOBILE NUMBER ───────────────────────────────────────────────────
+
+  Same AuthInputField spec as Sign Up mobile field
+  Label      :  "Mobile Number"
+  Validation : same rules — on fail → TOAST_INVALID_MOBILE
+
+── FORGOT PASSWORD LINK ─────────────────────────────────────────────────────
+
+  Shown below mobile field
+
+  "Forgot Password?"
+  Font         :  Inter Medium  13px  #1A6B3C
+  text-align   :  right
+  margin-top   :  8px
+  underline    :  dashed
+
+  On press:
+    scale 0.96 spring
+    Navigate to /forgot-password
+    (Simple screen: enter mobile → receive reset OTP → set new PIN)
+
+── SEND OTP BUTTON ──────────────────────────────────────────────────────────
+
+  Same spec as Sign Up SEND OTP button
+  Server call: POST /api/auth/send-otp  { mobile }
+  On SUCCESS  → TOAST_OTP_SENT → show OTP input
+  On FAIL (no account) → TOAST_NO_ACCOUNT_FOUND → button resets
+
+── OTP INPUT ────────────────────────────────────────────────────────────────
+
+  Identical spec to Sign Up OTP input row
+  Same 6-box, same auto-advance, same resend countdown
+
+── SIGN IN BUTTON ────────────────────────────────────────────────────────────
+
+  Same VerifyButton shape
+  text         :  "SIGN IN  →"
+  On press:
+    Loading spinner
+    Server call: POST /api/auth/signin  { mobile, otp }
+    On SUCCESS → TOAST_SIGNIN_SUCCESS → navigate to /report after 1200ms
+    On FAIL (wrong OTP) → TOAST_INVALID_OTP + shake boxes
+    On FAIL (no account) → TOAST_NO_ACCOUNT_FOUND
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 6 — BLOCK 3: SWITCH PAGE LINK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Sits below the form card on both screens.
+
+SIGN UP screen:
+  "Already have an account?  Sign In"
+  Layout  :  row  justify-center  gap 4px  margin-top 20px
+
+  "Already have an account?"
+  Font    :  Inter Regular  14px  #4A6B57
+
+  "Sign In"
+  Font    :  Inter SemiBold  14px  #1A6B3C
+  underline: 2px solid #1A6B3C offset 2px
+
+  On press "Sign In":
+    scale 0.96 spring
+    Transition: cross-fade 300ms → /signin
+    (NOT a push — feels like switching tabs)
+
+SIGN IN screen:
+  "Don't have an account?  Sign Up"
+  Same layout, same fonts
+  "Sign Up" → navigates to /signup
+  Same cross-fade transition
+
+Both links:
+  On mount: opacity 0→1  translateY(8px→0)  400ms  delay 500ms
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 7 — TOAST NOTIFICATION SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: AuthToast
+Position     :  fixed  top: safe-area-top + 12px
+               centred horizontally  width calc(100% - 40px)
+z-index      :  300  (above everything including keyboard)
+
+Shape:
+  radius     :  14px
+  padding    :  14px 16px
+  border-left:  4px solid [type.colour]
+  border     :  1px solid [type.colour at 30% opacity]
+  bg         :  #FFFFFF
+  box-shadow :  0 8px 24px rgba(0,0,0,0.14)
+  layout     :  row  align-center  gap 12px
+
+Left icon zone:
+  36 × 36px  circle
+  bg         :  [type.iconBg]
+  Inside     :  [type.emoji]  18px  centred
+
+Text column (flex 1):
+  Title      :  [toast.title]   Inter SemiBold  14px  #0D1F15
+  Subtitle   :  [toast.subtitle] Inter Regular  12px  #4A6B57  (optional)
+  gap        :  2px
+
+Right dismiss:
+  ✕  16px  #8FA89B  tap target 32×32px
+  On press   :  dismiss early (exit anim)
+
+ENTER ANIMATION:
+  translateY(-24px → 0)  opacity 0→1
+  400ms  cubic-bezier(0.34,1.56,0.64,1)
+
+AUTO DISMISS:
+  After 3000ms → exit animation begins
+
+EXIT ANIMATION:
+  translateY(0 → -20px)  opacity 1→0
+  350ms  ease-in
+  After 350ms: unmount
+
+Swipe-up gesture:
+  User swipes toast upward → dismisses early (same exit anim)
+
+Only 1 toast shown at a time.
+New toast cancels previous immediately then enters fresh.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 8 — ALL TOASTS: COMPLETE DEFINITIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Each toast definition:
+  id, type, emoji, colour, iconBg, title, subtitle, trigger
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SUCCESS TOASTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TOAST_OTP_SENT:
+  type      :  success
+  emoji     :  📱
+  colour    :  #1A6B3C
+  iconBg    :  #D4EDDA
+  title     :  "OTP Sent!"
+  subtitle  :  "Check your SMS — valid for 5 minutes."
+  trigger   :  Send OTP button success response
+
+TOAST_ACCOUNT_CREATED:
+  type      :  success
+  emoji     :  🎉
+  colour    :  #1A6B3C
+  iconBg    :  #D4EDDA
+  title     :  "Account Created!"
+  subtitle  :  "Welcome to GigCredit. Setting up your profile..."
+  trigger   :  Sign up verify success
+
+TOAST_SIGNIN_SUCCESS:
+  type      :  success
+  emoji     :  ✅
+  colour    :  #1A6B3C
+  iconBg    :  #D4EDDA
+  title     :  "Signed In!"
+  subtitle  :  "Welcome back. Loading your report..."
+  trigger   :  Sign in verify success
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ERROR TOASTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TOAST_INVALID_OTP:
+  type      :  error
+  emoji     :  ❌
+  colour    :  #D32F2F
+  iconBg    :  #FFEBEE
+  title     :  "Invalid OTP"
+  subtitle  :  "The code you entered is incorrect. Please try again."
+  trigger   :  Wrong OTP submitted on either screen
+  Extra     :  OTP boxes shake animation simultaneously
+
+TOAST_OTP_EXPIRED:
+  type      :  error
+  emoji     :  ⏱️
+  colour    :  #D32F2F
+  iconBg    :  #FFEBEE
+  title     :  "OTP Expired"
+  subtitle  :  "Your OTP has expired. Tap Resend to get a new one."
+  trigger   :  Submit attempt after 5-minute OTP window
+
+TOAST_ALREADY_EXISTS:
+  type      :  error
+  emoji     :  👤
+  colour    :  #D32F2F
+  iconBg    :  #FFEBEE
+  title     :  "Account Already Exists"
+  subtitle  :  "This number is registered. Please sign in instead."
+  trigger   :  Sign up submit — mobile already in database
+  Extra     :  "Sign In" text link appears in subtitle
+               On press → navigate /signin
+
+TOAST_NO_ACCOUNT_FOUND:
+  type      :  error
+  emoji     :  🔍
+  colour    :  #D32F2F
+  iconBg    :  #FFEBEE
+  title     :  "No Account Found"
+  subtitle  :  "This number isn't registered yet. Sign up first."
+  trigger   :  Sign in submit — mobile not in database
+  Extra     :  "Sign Up" text link appears in subtitle
+               On press → navigate /signup
+
+TOAST_INVALID_MOBILE:
+  type      :  error
+  emoji     :  📵
+  colour    :  #D32F2F
+  iconBg    :  #FFEBEE
+  title     :  "Invalid Mobile Number"
+  subtitle  :  "Enter a valid 10-digit Indian mobile number."
+  trigger   :  Mobile field blur with invalid format
+
+TOAST_INVALID_NAME:
+  type      :  error
+  emoji     :  ✏️
+  colour    :  #D32F2F
+  iconBg    :  #FFEBEE
+  title     :  "Invalid Name"
+  subtitle  :  "Name must be at least 2 characters, letters only."
+  trigger   :  Name field blur with invalid input
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WARNING TOASTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TOAST_TOO_MANY_ATTEMPTS:
+  type      :  warning
+  emoji     :  ⚠️
+  colour    :  #E65100
+  iconBg    :  #FFF3E0
+  title     :  "Too Many Attempts"
+  subtitle  :  "Please wait 10 minutes before trying again."
+  trigger   :  3+ wrong OTP attempts within session
+  Extra     :  Send OTP and Verify buttons disabled for 10 minutes
+               Countdown timer shown inside button: "Try again in 9:43"
+
+TOAST_RESEND_LIMIT:
+  type      :  warning
+  emoji     :  🔁
+  colour    :  #E65100
+  iconBg    :  #FFF3E0
+  title     :  "Resend Limit Reached"
+  subtitle  :  "You can request a maximum of 3 OTPs per hour."
+  trigger   :  User presses Resend more than 3 times
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+INFO TOASTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TOAST_SERVER_ERROR:
+  type      :  info
+  emoji     :  🌐
+  colour    :  #0277BD
+  iconBg    :  #BBDEFB
+  title     :  "Server Error"
+  subtitle  :  "Something went wrong. Please try again in a moment."
+  trigger   :  Any API call returns 500 / network failure
+
+TOAST_NO_INTERNET:
+  type      :  info
+  emoji     :  📶
+  colour    :  #0277BD
+  iconBg    :  #BBDEFB
+  title     :  "No Internet Connection"
+  subtitle  :  "Check your connection and try again."
+  trigger   :  Network offline detected before any API call
+
+TOAST_SESSION_EXPIRED:
+  type      :  info
+  emoji     :  🔒
+  colour    :  #0277BD
+  iconBg    :  #BBDEFB
+  title     :  "Session Expired"
+  subtitle  :  "Please sign in again to continue."
+  trigger   :  Auth token expired, auto-redirected to /signin
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 9 — INLINE FIELD ERROR (secondary to toast)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In addition to toast, show small inline error text below the field.
+Both appear together — toast at top, inline below the field.
+
+Inline error:
+  Layout  :  row  align-center  gap 4px  margin-top 6px
+  Icon    :  ⚠ 12px  #D32F2F
+  Text    :  short message  Inter Regular  12px  #D32F2F
+
+Enter     :  opacity 0→1  translateY(-4px→0)  250ms ease
+Exit      :  opacity 1→0  200ms ease (on field focus / correction)
+
+Examples:
+  Name field    → "Enter at least 2 letters"
+  Mobile field  → "Enter a valid 10-digit number"
+  OTP boxes     → "Incorrect code — check your SMS"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 10 — FULL ANIMATION MASTER LIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Screen enter (navigate to /signup or /signin):
+  Slide-up: opacity 0→1  translateY(24px→0)  400ms ease
+
+Brand band content: stagger on mount (0ms, 100ms, 180ms)
+
+Form card: opacity 0→1  translateY(32px→0)  500ms  delay 200ms
+
+Switch link: opacity 0→1  translateY(8px→0)  400ms  delay 500ms
+
+Input focus:
+  Border + bg + icon colour  200ms ease
+  Box-shadow glow in  200ms
+
+Input blur (valid):
+  ✓ badge scales in  spring  200ms
+
+Input blur (invalid):
+  Field shakes: translateX -4px→4px→-3px→3px→0  350ms
+  Inline error slides in
+  Toast fires from top
+
+OTP box auto-advance:
+  Next box gets focus  instant (no animation — speed is UX)
+
+OTP error shake:
+  All 6 boxes: translateX -6px→6px→-4px→4px→0  400ms ease  simultaneously
+  Border turns red  200ms
+
+Send OTP → Loading:
+  Text fades out  150ms
+  Spinner fades in  150ms  then spins
+
+Loading → success:
+  Spinner fades  150ms
+  OTP row slides in below  400ms spring
+
+Toast enter:
+  translateY(-24px→0)  opacity 0→1  400ms  cubic-bezier(0.34,1.56,0.64,1)
+
+Toast auto-dismiss:
+  After 3000ms: translateY(0→-20px)  opacity 1→0  350ms ease-in
+
+Toast swipe-up dismiss:
+  Follow finger → if velocity high enough → exit anim
+
+Screen switch (signup ↔ signin):
+  Cross-fade  300ms ease  (not push/pop — lateral switch feel)
+
+Reduce motion:
+  All translateY/scale skipped
+  Transitions instant
+  OTP shake: border turns red only (no movement)
+  Toast: appears/disappears instantly (no slide)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 11 — ROUTING TABLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  TRIGGER                              ROUTE / ACTION
+  ──────────────────────────────────────────────────────────────────────
+  Sign Up — CREATE ACCOUNT success   →  /apply/step-1  (replace stack)
+  Sign In — SIGN IN success          →  /report        (replace stack)
+  Sign Up — "Sign In" switch link    →  /signin        (cross-fade)
+  Sign In — "Sign Up" switch link    →  /signup        (cross-fade)
+  Sign In — "Forgot Password?"       →  /forgot-password
+  TOAST_ALREADY_EXISTS subtitle link →  /signin
+  TOAST_NO_ACCOUNT_FOUND subtitle link→ /signup
+  ──────────────────────────────────────────────────────────────────────
+
+  Replace stack on success:
+    User cannot press back and return to signin/signup after logging in.
+    Stack is replaced — /report or /step-1 becomes the new root.

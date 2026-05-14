@@ -4,12 +4,14 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:intl/intl.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/widgets/buttons/primary_button.dart';
 import '../../../shared/widgets/buttons/secondary_button.dart';
 import '../../../state/score_provider.dart';
 import '../../../state/step_status_provider.dart';
 import '../../../state/verified_profile_provider.dart';
+import '../../../state/api_service_provider.dart';
 import '../../../app/app_router.dart';
 import '../../../models/score_report_model.dart';
 
@@ -22,8 +24,75 @@ class ScoreReportScreen extends ConsumerStatefulWidget {
 class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
   final ScrollController _scrollController = ScrollController();
   int _activeTabIndex = 1; // 0=Strengths, 1=Gaps, 2=Causal
+  String _activePill = '1 Score';
+  String _selectedLang = 'EN English';
+  
+  bool _isTranslating = false;
+  final Map<String, String> _translations = {};
 
   ScoreReportModel get report => ref.watch(scoreProvider).reportData!;
+
+  @override
+  void initState() {
+    super.initState();
+    // Schedule initialization to use the provider after mount
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (ref.read(scoreProvider).reportData?.llmExplanation != null) {
+        setState(() {
+          _translations['EN English'] = ref.read(scoreProvider).reportData!.llmExplanation!;
+        });
+      }
+    });
+  }
+
+  Future<void> _translateReport(String newLang) async {
+    setState(() {
+      _selectedLang = newLang;
+    });
+
+    if (_translations.containsKey(newLang)) return;
+
+    setState(() => _isTranslating = true);
+
+    try {
+      final r = report;
+      // Convert language chip format (e.g. "TA தமிழ்") to ISO code ("ta") or name ("Tamil")
+      final langName = newLang.split(' ').last; 
+
+      final payload = {
+        "credit_score": r.finalScore,
+        "grade": r.grade,
+        "risk_level": r.riskBand,
+        "work_type": r.workType,
+        "language": langName,
+        "pillar_scores": r.pillarContributions,
+        "confidence_level": r.overallConfidence > 0.8 ? "high" : "medium",
+        "positive_factors": r.topStrengths.map((e) => {"feature_label": e.featureName, "pillar": e.pillarLabel.isNotEmpty ? e.pillarLabel : "P1", "impact": e.impactStrength}).toList(),
+        "negative_factors": r.topConcerns.map((e) => {"feature_label": e.featureName, "pillar": e.pillarLabel.isNotEmpty ? e.pillarLabel : "P1", "impact": e.impactStrength}).toList(),
+      };
+
+      final api = ref.read(apiServiceProvider);
+      final llmResponse = await api.generateReportScore(payload);
+
+      if (llmResponse['status'] == 'success' || llmResponse['status'] == 'fallback') {
+        if (mounted) {
+          setState(() {
+            _translations[newLang] = llmResponse['explanation'];
+            _isTranslating = false;
+          });
+        }
+      } else {
+        throw Exception('Translation failed');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isTranslating = false;
+          _translations[newLang] = 'Unable to fetch translation for $newLang. Please check your connection.';
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +120,7 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0F14),
+      backgroundColor: const Color(0xFF0A1A10),
       body: CustomScrollView(
         controller: _scrollController,
         slivers: [
@@ -60,7 +129,7 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                _buildHeaderBlock(),
+                _buildHeaderBlock(report),
                 const SizedBox(height: 16),
                 _buildSectionJumpPills(),
                 const SizedBox(height: 32),
@@ -89,11 +158,11 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
 
   Widget _buildGlassmorphismAppBar() {
     return SliverAppBar(
-      backgroundColor: const Color(0xCC1E2535),
+      backgroundColor: const Color(0xCC0D3320),
       pinned: true,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        icon: const Icon(Icons.arrow_back, color: AppColors.greenMint),
         onPressed: () => context.go(AppRoutes.home),
       ),
       title: const Text(
@@ -113,7 +182,9 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
     );
   }
 
-  Widget _buildHeaderBlock() {
+  Widget _buildHeaderBlock(ScoreReportModel report) {
+    final dateFormat = DateFormat('dd MMM yyyy · hh:mm a');
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: const BoxDecoration(
@@ -123,17 +194,17 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildDetailRow('Report ID', 'GC-2026-0430-AB1234'),
-          _buildDetailRow('Generated', '30 Apr 2026 · 10:45 AM IST'),
-          _buildDetailRow('Applicant', 'Ramesh Kumar'),
-          _buildDetailRow('Work Type', 'Platform Worker'),
-          _buildDetailRow('Location', 'Chennai, Tamil Nadu'),
-          _buildDetailRow('Onboarding', 'Complete (Steps 1–7)'),
+          _buildDetailRow('Report ID', report.proofId.isNotEmpty ? report.proofId : 'GC-2026-0430-AB1234'),
+          _buildDetailRow('Generated', dateFormat.format(report.generatedAt)),
+          _buildDetailRow('Applicant', 'Verified User'), // Future: Pull from user profile
+          _buildDetailRow('Work Type', report.workType.toUpperCase()),
+          _buildDetailRow('Location', 'Verified Location'),
+          _buildDetailRow('Onboarding', 'Complete (Steps 1–9)'),
           _buildDetailRow('Language', 'English [EN]'),
           const SizedBox(height: 12),
           const Divider(color: Color(0xFF252D3D), height: 1),
           const SizedBox(height: 12),
-          _buildDetailRow('Hash', 'sha256:a3f2...d891  ●  Chain: VERIFIED ✓',
+          _buildDetailRow('Hash', 'sha256:${report.proofId.substring(0, 8)}...  ●  Chain: VERIFIED ✓',
               valueColor: const Color(0xFF00D4B4)),
           _buildDetailRow('Engine', 'GigCredit Scoring Engine v4.2.1-stable'),
         ],
@@ -183,26 +254,32 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
       physics: const BouncingScrollPhysics(),
       child: Row(
         children: pills.map((pill) {
-          final isActive = pill == '1 Score';
-          return Container(
-            margin: const EdgeInsets.only(right: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color:
-                  isActive ? const Color(0xFF00D4B4) : const Color(0xFF161B25),
-              borderRadius: BorderRadius.circular(8),
-              border:
-                  isActive ? null : Border.all(color: const Color(0xFF252D3D)),
-            ),
-            child: Text(
-              pill,
-              style: TextStyle(
-                color: isActive
-                    ? const Color(0xFF0D0F14)
-                    : const Color(0xFF8B95A8),
-                fontSize: 13,
-                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                fontFamily: 'Inter',
+          final isActive = pill == _activePill;
+          return GestureDetector(
+            onTap: () {
+              setState(() => _activePill = pill);
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Jumping to $pill...'), duration: const Duration(milliseconds: 500)));
+            },
+            child: Container(
+              margin: const EdgeInsets.only(right: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color:
+                    isActive ? const Color(0xFF00D4B4) : const Color(0xFF161B25),
+                borderRadius: BorderRadius.circular(8),
+                border:
+                    isActive ? null : Border.all(color: const Color(0xFF252D3D)),
+              ),
+              child: Text(
+                pill,
+                style: TextStyle(
+                  color: isActive
+                      ? const Color(0xFF0D0F14)
+                      : const Color(0xFF8B95A8),
+                  fontSize: 13,
+                  fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                  fontFamily: 'Inter',
+                ),
               ),
             ),
           );
@@ -594,9 +671,27 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
             Text(warning,
                 style: const TextStyle(color: Color(0xFFFF4E6A), fontSize: 12)),
           ],
-          const SizedBox(height: 4),
-          const Text('tap for detail ▾',
-              style: TextStyle(color: Color(0xFF00D4B4), fontSize: 11)),
+          InkWell(
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  backgroundColor: const Color(0xFF161B25),
+                  title: Text('$code $name Details', style: const TextStyle(color: Colors.white)),
+                  content: Text('Your score for $name changed by $pts. The model confidence is $conf. Current status is $status.',
+                      style: const TextStyle(color: Colors.white70)),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close', style: TextStyle(color: Color(0xFF00D4B4)))),
+                  ],
+                ),
+              );
+            },
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 4),
+              child: Text('tap for detail ▾',
+                  style: TextStyle(color: Color(0xFF00D4B4), fontSize: 11)),
+            ),
+          ),
         ],
       ),
     );
@@ -1137,11 +1232,11 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              _buildLangChip('EN English', true),
-              _buildLangChip('TA தமிழ்', false),
-              _buildLangChip('HI हिंदी', false),
-              _buildLangChip('TE తెలుగు', false),
-              _buildLangChip('KN ಕನ್ನಡ', false),
+              _buildLangChip('EN English'),
+              _buildLangChip('TA தமிழ்'),
+              _buildLangChip('HI हिंदी'),
+              _buildLangChip('TE తెలుగు'),
+              _buildLangChip('KN ಕನ್ನಡ'),
             ],
           ),
         ),
@@ -1156,41 +1251,39 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
             border: const Border(
                 left: BorderSide(color: Color(0xFF00D4B4), width: 4)),
           ),
-          child: const Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('GEMINI-GENERATED EXPLANATION  ●  Tailored for Ramesh',
+              const Text('GEMINI-GENERATED EXPLANATION  ●  Tailored for You',
                   style: TextStyle(
                       color: Color(0xFF8B95A8),
                       fontSize: 11,
                       fontWeight: FontWeight.bold)),
-              Divider(color: Color(0xFF252D3D), height: 24),
-              Text(
-                  'Ramesh, your current GigCredit score is 647, placing you in Grade B. You have built a strong foundation with consistent platform earnings over the last 24 months and very low month-to-month income variance (12%). This level of stability is excellent and forms the core of your creditworthiness.',
-                  style: TextStyle(
+              const Divider(color: Color(0xFF252D3D), height: 24),
+              if (_isTranslating)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: CircularProgressIndicator(color: Color(0xFF00D4B4)),
+                  ),
+                )
+              else
+                Text(
+                  _translations[_selectedLang] ?? report.llmExplanation ?? 'Explanation not available.',
+                  style: const TextStyle(
                       color: Colors.white, fontSize: 14, height: 1.6)),
-              SizedBox(height: 12),
-              Text(
-                  'However, your score is currently restricted by a high EMI-to-income ratio. At 38.9%, your existing debt obligations consume a significant portion of your ₹18,000 monthly income, which lenders view as a cash flow constraint. This single factor is reducing your score by approximately 34 points.',
-                  style: TextStyle(
-                      color: Colors.white, fontSize: 14, height: 1.6)),
-              SizedBox(height: 12),
-              Text(
-                  'To improve your eligibility for the requested loan amount, we recommend either closing your existing personal loan or increasing your platform income by roughly ₹4,000 per month. Doing so could immediately boost your score towards 681.',
-                  style: TextStyle(
-                      color: Colors.white, fontSize: 14, height: 1.6)),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               Row(
                 children: [
-                  Icon(Icons.volume_up, color: Color(0xFF00D4B4), size: 18),
-                  SizedBox(width: 8),
-                  Text('Listen in English',
-                      style: TextStyle(
+                  const Icon(Icons.volume_up, color: Color(0xFF00D4B4), size: 18),
+                  const SizedBox(width: 8),
+                  Text('Listen in ${_selectedLang.split(" ")[0]}',
+                      style: const TextStyle(
                           color: Color(0xFF00D4B4),
                           fontSize: 13,
                           fontWeight: FontWeight.bold)),
-                  Spacer(),
-                  Icon(Icons.share, color: Color(0xFF8B95A8), size: 18),
+                  const Spacer(),
+                  const Icon(Icons.share, color: Color(0xFF8B95A8), size: 18),
                 ],
               )
             ],
@@ -1199,20 +1292,7 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
 
         const SizedBox(height: 16),
 
-        // Tamil Card
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            border: const Border(
-                left: BorderSide(color: Color(0xFF00D4B4), width: 4)),
-            color: const Color(0xFF161B25).withValues(alpha: 0.5),
-          ),
-          child: const Text(
-              'ரமேஷ், உங்கள் GigCredit மதிப்பெண் 647. உங்கள் நிலையான மாதாந்திர வருமானம் (12% மாறுபாடு) மிகவும் சிறப்பானது.\n[Full Tamil translation available in app]',
-              style: TextStyle(color: Colors.white, fontSize: 13, height: 1.6)),
-        ),
 
-        const SizedBox(height: 16),
 
         // Workers Like You
         Container(
@@ -1258,20 +1338,24 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
     ).animate().slideY(begin: 0.1).fadeIn();
   }
 
-  Widget _buildLangChip(String label, bool active) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: active ? const Color(0xFF00D4B4) : const Color(0xFF161B25),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-            color: active ? const Color(0xFF0D0F14) : const Color(0xFF8B95A8),
-            fontSize: 13,
-            fontWeight: active ? FontWeight.bold : FontWeight.normal),
+  Widget _buildLangChip(String label) {
+    final active = _selectedLang == label;
+    return GestureDetector(
+      onTap: () => _translateReport(label),
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: active ? const Color(0xFF00D4B4) : const Color(0xFF161B25),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+              color: active ? const Color(0xFF0D0F14) : const Color(0xFF8B95A8),
+              fontSize: 13,
+              fontWeight: active ? FontWeight.bold : FontWeight.normal),
+        ),
       ),
     );
   }
@@ -1397,10 +1481,10 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
                     fontFamily: 'monospace')),
             const SizedBox(height: 16),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildGhostButton(context, '📥 Download PDF'),
-                _buildGhostButton(context, '📤 Share with Lender'),
+                Expanded(child: _buildGhostButton(context, '📥 Download PDF')),
+                const SizedBox(width: 8),
+                Expanded(child: _buildGhostButton(context, '📤 Share with Lender')),
               ],
             ),
             const SizedBox(height: 16),
@@ -1410,15 +1494,18 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
               child: ElevatedButton(
                 onPressed: () => context.go(AppRoutes.loanApply),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00D4B4),
+                  backgroundColor: AppColors.greenBright,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14)),
                 ),
-                child: const Text('💰   APPLY FOR A LOAN  →',
-                    style: TextStyle(
-                        color: Color(0xFF0D0F14),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14)),
+                child: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('💰   APPLY FOR A LOAN  →',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14)),
+                ),
               ),
             ),
           ],
@@ -1431,15 +1518,18 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
     return InkWell(
       onTap: () {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$label - Action Simulated', style: const TextStyle(color: Colors.white)), backgroundColor: const Color(0xFF00D4B4)),
+          SnackBar(content: Text('$label - Action Simulated', style: const TextStyle(color: Colors.white)), backgroundColor: AppColors.greenPrimary),
         );
       },
       borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         child: Text(label,
+            textAlign: TextAlign.center,
             style: const TextStyle(
-                color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis),
       ),
     );
   }

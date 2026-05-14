@@ -1,0 +1,492 @@
+████████████████████████████████████████████████████████████████████████████████
+██                                                                            ██
+██   GIGCREDIT — GUIDELINES PAGE  MOBILE APP FRONTEND PROMPT                ██
+██   UI/UX STRUCTURE ONLY — inputs mapped from existing implementation      ██
+██   Same theme · Same layout system · Same component patterns              ██
+██                                                                            ██
+████████████████████████████████████████████████████████████████████████████████
+
+IMPORTANT READ BEFORE IMPLEMENTING:
+  - DO NOT hardcode any input names, fields, or steps
+  - Pull all inputs directly from the already-implemented steps state
+  - For each input: if type = text/number/select → render TYPE A row
+  - For each input: if type = upload/file/image → render TYPE B droplet
+  - Maintain the exact order inputs appear in the application flow
+  - Official links and YouTube links are EMPTY STRINGS "" for now
+    Fill them during development — do not block rendering on them
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1 — FULL SCREEN LAYOUT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┌──────────────────────────────────────────────────────┐
+│  STATUS BAR (system)                   safe-area-top │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 1  —  STICKY HEADER BAR         56px fixed    │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 2  —  HERO BAND                 auto height   │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 3  —  STEP PROGRESS TRACKER    52px sticky    │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 4  —  STEP GUIDANCE CARDS      auto height    │
+│              One card per application step           │
+│              Inputs inside in existing order         │
+├──────────────────────────────────────────────────────┤
+│              safe-area-bottom padding                │
+└──────────────────────────────────────────────────────┘
+
+bg-screen      :  #F0F4F8
+screen-padding :  20px horizontal
+gap-blocks     :  16px
+Full screen    :  single scrollable column
+BLOCK 1 + 3    :  sticky stacked — header top:0 / tracker top:56px
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2 — BLOCK 1: STICKY HEADER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: AppTopBar  (reused from all screens)
+position     :  sticky  top-0  z-index 50
+height       :  56px
+background   :  #FFFFFF
+box-shadow   :  0 2px 12px rgba(0,0,0,0.06)
+padding      :  0 20px
+
+┌──────────────────────────────────────────────────────┐
+│  [ ← Back ]         "How to Apply"       [  empty  ] │
+└──────────────────────────────────────────────────────┘
+
+LEFT:
+  ChevronLeft  24px  #1A6B3C
+  tap target   :  44 × 44px
+  On press     :  navigate back
+
+CENTRE:
+  "How to Apply"
+  Inter SemiBold  17px  #0D1F15
+
+RIGHT: empty
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3 — BLOCK 2: HERO BAND
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: GuidelinesHeroBand
+Background   :  linear-gradient(160deg, #1A6B3C 0%, #2D8653 55%, #3CC068 100%)
+padding      :  28px 20px 36px
+overflow     :  hidden
+
+Decorations (absolute, non-interactive):
+  Circle 1  :  200px  rgba(255,255,255,0.07)  top:-50px right:-50px
+  Circle 2  :  130px  rgba(255,255,255,0.04)  bottom:0 left:-30px
+
+Content column:
+
+  1. EYEBROW CHIP:
+     "📋  Step-by-Step Input Guide"
+     bg: rgba(255,255,255,0.18)
+     border: 1px solid rgba(255,255,255,0.28)
+     radius: 999px  padding: 5px 14px
+     font: Inter SemiBold  12px  #FFFFFF
+     On mount: opacity 0→1  translateX(-12px→0)  450ms ease
+
+  2. HEADING:
+     "What You'll
+      Need to Apply"
+     Font: Inter Black  28px  #FFFFFF  line-height 1.2
+     "Need" → colour #A8F0C6
+     On mount: opacity 0→1  translateY(16px→0)  500ms  delay 80ms
+
+  3. DESCRIPTION:
+     "This guide explains every input we ask for —
+      what it is, why we need it, and exactly how
+      to get it before you begin."
+     Font: Inter Regular  13px  rgba(255,255,255,0.80)
+     line-height 1.65  margin-top 10px
+     On mount: opacity 0→1  translateY(12px→0)  500ms  delay 160ms
+
+  4. STATS ROW:
+     Number of steps pulled from existing steps state (dynamic)
+
+     ┌─────────────────┬──────────────┬──────────────────┐
+     │  [N] Steps      │  10 min read │   100% Free      │
+     │  (dynamic)      │              │   Guidance       │
+     └─────────────────┴──────────────┴──────────────────┘
+
+     Each block: flex 1  centred column
+     Number: Inter Black 20px #FFFFFF
+     Label:  Inter Regular 11px rgba(255,255,255,0.65)
+     Vertical dividers: 1px rgba(255,255,255,0.25) height 36px
+     On mount: stagger 80ms per block  delay 300ms
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4 — BLOCK 3: STEP PROGRESS TRACKER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: StepProgressTracker
+position       :  sticky  top: 56px  z-index 40
+height         :  52px
+background     :  rgba(240,244,248,0.92)
+backdrop-filter:  blur(12px)
+border-bottom  :  1px solid #E2EDE7
+padding        :  0 20px
+
+Layout: horizontal scroll row  gap 6px  no wrap  hide scrollbar
+
+PILLS: one pill per application step — pulled dynamically from steps state
+  Label format: "Step [N] · [step.name]"
+
+Each pill:
+  height     :  34px
+  padding    :  0 14px
+  radius     :  999px
+  font       :  Inter SemiBold  12px
+
+  Default:
+    bg       :  #FFFFFF
+    border   :  1px solid #E2EDE7
+    text     :  #4A6B57
+
+  Active (IntersectionObserver — step card visible in viewport):
+    bg       :  #1A6B3C
+    text     :  #FFFFFF
+    shadow   :  0 3px 10px rgba(26,107,60,0.28)
+    transition: 200ms ease
+
+  Completed (step card scrolled past):
+    bg       :  #D4EDDA
+    border   :  1px solid rgba(60,192,104,0.30)
+    text     :  #1A6B3C
+    prefix   :  "✓ " before label
+
+  On press:
+    smooth scroll to that step card  offset 120px
+    scale 0.95→1.0 spring
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5 — BLOCK 4: STEP GUIDANCE CARD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: StepGuidanceCard
+One card rendered per application step.
+Cards stack vertically  gap 16px  padding 0 20px.
+All cards FULLY VISIBLE by default — not accordion collapsed.
+Inputs inside each card follow the exact order from implementation.
+
+CARD ACCENT COLOURS (one per step, cycle if more than 4 steps):
+  Step 1  :  accent #1A6B3C  light #3CC068  glow rgba(26,107,60,0.20)
+  Step 2  :  accent #2D8653  light #3CC068  glow rgba(45,134,83,0.20)
+  Step 3  :  accent #0277BD  light #039BE5  glow rgba(2,119,189,0.18)
+  Step 4  :  accent #6A1B9A  light #9C27B0  glow rgba(106,27,154,0.18)
+  Step 5+ :  repeat from Step 1 accent
+
+── CARD SHAPE ───────────────────────────────────────────────────────────────
+
+  bg           :  #FFFFFF
+  radius       :  20px
+  border       :  1px solid #E2EDE7
+  border-top   :  4px solid [step.accentColour]
+  box-shadow   :  0 4px 20px rgba(26,107,60,0.08)
+  overflow     :  hidden
+  padding      :  20px
+
+  On mount: opacity 0→1  translateY(24px→0)
+  Stagger: 60ms × stepIndex  duration 500ms  ease[0.22,1,0.36,1]
+
+── CARD HEADER ──────────────────────────────────────────────────────────────
+
+  Layout: row  align-center  gap 14px
+
+  Step badge circle:
+    44 × 44px  circle
+    bg: linear-gradient(135deg, [step.accentColour], [step.accentLight])
+    Text: "0N"  Inter Black  18px  #FFFFFF
+    shadow: 0 4px 12px [step.glow]
+
+  Title column (flex 1):
+    Top    :  "STEP N"  Inter SemiBold  11px  #8FA89B  uppercase  letter-spacing 1px
+    Bottom :  [step.name from implementation]  Inter Bold  17px  #0D1F15
+
+  Input count chip:
+    "[N] inputs"  — N = total inputs in this step (dynamic count)
+    bg: #D4EDDA  border: 1px solid rgba(60,192,104,0.25)
+    radius: 999px  padding: 4px 10px
+    font: Inter Medium  11px  #1A6B3C
+
+  Divider below header:
+    1px solid #E2EDE7  margin: 16px -20px  (full card width bleed)
+
+── INPUT ROWS (rendered in existing implementation order) ────────────────────
+
+  Loop through step.inputs — render TYPE A or TYPE B based on input.type:
+
+  if input.type === "text" || "number" || "select" || "date" || "radio"
+    → render TYPE A ROW
+
+  if input.type === "upload" || "file" || "image" || "document"
+    → render TYPE B DROPLET
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TYPE A — TEXT FIELD ROW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Informational display only. No tap. No expand.
+Shows: input name + one-line description.
+
+Layout: row  align-center  gap 12px
+padding: 14px 0
+border-bottom: 1px solid #F0F4F8
+Last input in step: no border-bottom
+
+LEFT — Icon zone:
+  40 × 40px  circle
+  bg: #F0F4F8  border: 1px solid #E2EDE7
+  Inside: [input.icon]  18px  #4A6B57
+
+MIDDLE — Text column (flex 1):
+  Name        :  [input.label]  Inter SemiBold  14px  #0D1F15
+  Description :  [input.guideDescription]  Inter Regular  12px  #8FA89B
+                 line-height 1.5  margin-top 2px
+
+  guideDescription is a SHORT one-liner added to each input's
+  metadata during development. Example:
+    Aadhaar Number → "12-digit ID issued by UIDAI"
+    Mobile Number  → "Must be linked to your Aadhaar"
+  Keep it under 60 characters. Plain language. No jargon.
+
+RIGHT — Type badge:
+  "Text"  or  "Number"  or  "Select"  based on input.type
+  bg: #F0F4F8  border: 1px solid #E2EDE7
+  radius: 999px  padding: 3px 10px
+  font: Inter Medium  10px  #8FA89B  uppercase
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TYPE B — UPLOAD INPUT DROPLET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Expandable droplet. Default state: collapsed.
+Multiple droplets can be open simultaneously.
+
+── COLLAPSED STATE ──────────────────────────────────────────────────────────
+
+Layout: row  align-center  gap 12px
+padding: 14px 0
+border-bottom: 1px dashed #E2EDE7
+
+LEFT — Icon zone:
+  40 × 40px  rounded square  radius 12px
+  bg: linear-gradient(135deg, #D4EDDA, #A8F0C6)
+  Inside: [input.icon]  18px  #1A6B3C
+  shadow: 0 3px 8px rgba(26,107,60,0.14)
+
+MIDDLE — Text column (flex 1):
+  Name        :  [input.label]  Inter SemiBold  14px  #0D1F15
+  Description :  [input.guideDescription]  Inter Regular  12px  #8FA89B
+                 line-height 1.5  margin-top 2px
+
+RIGHT — Row  gap 6px  align-center:
+  Upload badge:
+    "Upload"
+    bg: rgba(60,192,104,0.12)
+    border: 1px solid rgba(60,192,104,0.28)
+    radius: 999px  padding: 3px 10px
+    font: Inter Medium  10px  #1A6B3C  uppercase
+  ChevronDown  16px  #8FA89B
+    Rotates 180° on expand  300ms ease
+
+On tap entire row:
+  haptic 8ms
+  border-bottom switches to solid green-bright  150ms
+  Chevron rotates 180°
+  Droplet content expands below  350ms ease[0.34,1.56,0.64,1]
+
+── EXPANDED DROPLET CONTENT ─────────────────────────────────────────────────
+
+Top separator: 1px solid #E2EDE7  margin-bottom 14px
+
+D1 — WHAT IS THIS:
+  Label: "WHAT IS THIS?"
+  Font: Inter SemiBold  11px  #8FA89B  uppercase  letter-spacing 1px
+
+  Body: [input.whatIsThis]  — SHORT paragraph, 2–3 lines max
+  Font: Inter Regular  13px  #4A6B57  line-height 1.65
+  On expand: opacity 0→1  translateY(6px→0)  250ms  delay 60ms
+
+D2 — HOW TO GET IT:
+  Label: "HOW TO GET IT"
+  Font: Inter SemiBold  11px  #8FA89B  uppercase  letter-spacing 1px
+  margin-top: 14px
+
+  Vertical step list rendered from [input.howToGet[]] array
+  (Array added to each upload input's metadata during development)
+
+  Each step row  (row  align-flex-start  gap 10px):
+    Number circle:
+      22 × 22px  bg: #1A6B3C  text: Inter Bold  10px  #FFFFFF
+      Dashed connector line below (except last step):
+        1px dashed rgba(26,107,60,0.25)  height fills gap
+
+    Step text:
+      flex 1  Inter Regular  13px  #0D1F15  line-height 1.5
+
+  On expand: stagger  opacity 0→1  translateX(-8px→0)
+             40ms per step  delay 120ms
+
+D3 — RESOURCE LINKS:
+  Label: "HELPFUL LINKS"
+  Font: Inter SemiBold  11px  #8FA89B  uppercase  letter-spacing 1px
+  margin-top: 14px
+
+  Row  gap 10px:
+
+  OFFICIAL SITE BUTTON:
+    flex 1  height 42px  radius 12px
+    bg: #F0F4F8  border: 1px solid #E2EDE7
+    row  align-center  justify-center  gap 6px
+    Icon: 🌐  14px
+    Text: "Official Site"  Inter SemiBold  12px  #0D1F15
+
+    On press:
+      scale 0.96 spring  haptic 8ms
+      if input.officialLink !== ""
+        → open in in-app WebView overlay
+      else
+        → show inline toast "Link coming soon"  info type
+
+  YOUTUBE BUTTON:
+    flex 1  height 42px  radius 12px
+    bg: #FFF0F0  border: 1px solid rgba(255,0,0,0.15)
+    row  align-center  justify-center  gap 6px
+    Icon: ▶️  14px
+    Text: "Watch Guide"  Inter SemiBold  12px  #D32F2F
+
+    On press:
+      scale 0.96 spring  haptic 8ms
+      if input.youtubeLink !== ""
+        → open in in-app WebView (YouTube embed)
+      else
+        → show inline toast "Video coming soon"  info type
+
+  Both link values stored on each input object:
+    input.officialLink  :  ""   ← dev fills later
+    input.youtubeLink   :  ""   ← dev fills later
+
+D4 — PRO TIP (optional):
+  Rendered only if input.tip exists and is non-empty
+
+  Full-width block
+  bg: rgba(255,193,7,0.08)
+  border: 1px solid rgba(255,193,7,0.25)
+  radius: 12px  padding: 10px 14px  margin-top: 12px
+  row  gap 8px:
+    💡  16px
+    [input.tip]  Inter Regular  12px  #795548  line-height 1.5
+
+Collapse: tap row header again
+  Reverse  250ms ease-in  chevron rotates back
+
+Bottom padding inside expanded droplet: 4px
+Row border-bottom: 1px dashed #E2EDE7
+Last input in step: no border-bottom
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 6 — INPUT METADATA FIELDS TO ADD DURING DEVELOPMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Add these fields to each input object in your existing input schema.
+The Guidelines page reads them — the application form does NOT use them.
+
+FOR ALL INPUTS (text + upload):
+  input.guideDescription  :  string   short 1-line description (≤ 60 chars)
+  input.icon              :  string   emoji or icon name
+
+FOR UPLOAD INPUTS ONLY:
+  input.whatIsThis        :  string   2–3 line explanation paragraph
+  input.howToGet          :  string[] array of step strings (3–5 items)
+  input.officialLink      :  string   ""  ← fill later
+  input.youtubeLink       :  string   ""  ← fill later
+  input.tip               :  string   ""  ← optional pro tip, fill later
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 7 — WEBVIEW OVERLAY SPEC (for all links)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Same WebView used in Schemes page — reuse existing component.
+
+Full screen  z-index 100
+Header bar (56px):
+  Left   :  "← Back to GigCredit"  Inter Medium 14px  #1A6B3C
+             On press: close WebView, return to Guidelines screen
+  Centre :  URL (read-only, truncated)  Inter Regular 12px  #8FA89B
+  Right  :  "↗" open-in-browser icon → opens system browser
+
+Enter: slide-up from bottom  400ms spring
+Exit:  slide-down  300ms ease-in
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 8 — ANIMATION MASTER LIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Screen enter:
+  opacity 0→1  translateY(24px→0)  400ms ease
+
+Hero band:
+  Gradient slow shift  8s ease-in-out infinite alternate
+
+Step tracker pills:
+  Active: bg transition 200ms  scale spring on press
+  Completed: bg + prefix ✓ update as user scrolls
+
+Step cards on mount:
+  Stagger 60ms × stepIndex  opacity 0→1  translateY(24px→0)  500ms
+
+Type A rows on mount:
+  Stagger 40ms × inputIndex within card  opacity 0→1  delay after card enters
+
+Type B droplet expand:
+  height auto  350ms  ease[0.34,1.56,0.64,1]
+  Content stagger (80ms each):
+    whatIsThis → howToGet steps → resource buttons → tip
+  Chevron rotates 180°  300ms ease
+
+Type B droplet collapse:
+  Reverse  250ms ease-in
+
+Resource button press:
+  scale 0.96 spring  haptic 8ms
+  If link empty: toast slides up from bottom  "Link coming soon"  3s dismiss
+
+All button presses:
+  scale spring  stiffness 400  damping 22
+
+Reduce motion:
+  All translateY/translateX/scale skipped
+  Droplet: instant open/close (no height animation)
+  Values update immediately
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 9 — ROUTING TABLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  TRIGGER                            ACTION
+  ──────────────────────────────────────────────────────────────────
+  Header ← Back                   →  navigate back (pop screen)
+  Step tracker pill press          →  smooth scroll to step card
+  Type B droplet press             →  expand / collapse inline
+  "Official Site" button           →  open input.officialLink in WebView
+                                      if empty → toast "Link coming soon"
+  "Watch Guide" button             →  open input.youtubeLink in WebView
+                                      if empty → toast "Video coming soon"
+  WebView "← Back to GigCredit"   →  close WebView, return to Guidelines
+  WebView "↗" open-in-browser     →  open system browser
+  ──────────────────────────────────────────────────────────────────

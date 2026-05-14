@@ -1,0 +1,621 @@
+████████████████████████████████████████████████████████████████████████████████
+██                                                                            ██
+██   GIGCREDIT — HOME SCREEN  MOBILE APP FRONTEND PROMPT                    ██
+██   Framework: Flutter / React Native / Next.js PWA (mobile-first)         ██
+██   Theme: Light green-dominant, white cards, soft grey bg                 ██
+██   Reference: Fintech app images attached                                  ██
+██                                                                            ██
+████████████████████████████████████████████████████████████████████████████████
+
+Read every section before writing a single line of code.
+This is a MOBILE SCREEN. No sidebars. No desktop grid. Single column only.
+Max width: 390px (iPhone 14 base). Safe area insets applied top and bottom.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1 — THEME TOKENS (from reference fintech app images)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COLOURS:
+  bg-screen         :  #F0F4F8          soft grey-white app background
+  bg-card           :  #FFFFFF          all card surfaces
+  bg-header         :  #FFFFFF          top bar background
+  bg-hero-band      :  linear-gradient(160deg, #1A6B3C 0%, #2D8653 60%,
+                        #3CC068 100%)   ← hero gradient band (like ref image)
+
+  green-primary     :  #1A6B3C          brand deep green
+  green-mid         :  #2D8653          hover / active
+  green-bright      :  #3CC068          CTA buttons, active chips
+  green-muted       :  #D4EDDA          chip backgrounds, badges
+  green-glow        :  rgba(60,192,104,0.22)
+
+  text-primary      :  #0D1F15          all headings
+  text-secondary    :  #4A6B57          body text, labels
+  text-muted        :  #8FA89B          captions, timestamps
+  text-on-green     :  #FFFFFF          text on any green surface
+
+  border-card       :  #E2EDE7          card borders
+  shadow-card       :  0 4px 20px rgba(26,107,60,0.08)
+  shadow-card-hover :  0 8px 28px rgba(26,107,60,0.16)
+  shadow-button     :  0 4px 16px rgba(60,192,104,0.40)
+
+  popup-backdrop    :  rgba(13,31,21,0.60)
+  popup-bg          :  #FFFFFF
+  popup-radius      :  24px
+
+SPACING:
+  screen-padding-h  :  20px
+  gap-between-blocks:  20px
+  card-padding      :  20px
+  card-radius       :  20px
+  button-height     :  56px
+  button-radius     :  16px
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2 — FULL SCREEN LAYOUT (top to bottom, single column)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┌──────────────────────────────────────────────────────┐
+│  STATUS BAR  (system)                  safe-area-top │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 1  —  TOP HEADER BAR            56px fixed    │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 2  —  HERO DESCRIPTION BAND     auto height   │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 3  —  FLOATING IMAGE CAROUSEL   220px height  │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 4  —  GET STARTED BUTTON        80px section  │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 5  —  BOTTOM ACTIONS STRIP      64px row      │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 6  —  FOOTER                    auto height   │
+│  safe-area-bottom padding applied                    │
+└──────────────────────────────────────────────────────┘
+
+Scroll behaviour:
+  Entire screen is ONE scrollable column
+  BLOCK 1 (header) is sticky — stays fixed on scroll
+  Everything else scrolls normally
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3 — BLOCK 1: TOP HEADER BAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: AppTopBar
+position     :  sticky  top-0  z-index 50
+height       :  56px
+background   :  #FFFFFF
+box-shadow   :  0 2px 12px rgba(0,0,0,0.06)
+padding      :  0 20px
+
+Layout row (left → right):
+
+┌──────────────────────────────────────────────────────┐
+│  [Brand]          [Nav Links Row]        [Profile]   │
+│  LEFT                CENTRE                RIGHT     │
+└──────────────────────────────────────────────────────┘
+
+── LEFT: Brand Name ─────────────────────────────────────────────────────────
+
+  COMPONENT: BrandName
+  Layout    :  row, align-center, gap 8px
+
+  App icon:
+    Size      :  32 × 32px
+    Shape     :  rounded square  radius 10px
+    Background: linear-gradient(135deg, #1A6B3C, #3CC068)
+    Inside    :  "G"  Inter Black 18px  white centred
+    box-shadow: 0 3px 10px rgba(26,107,60,0.35)
+
+  Name text:
+    "GigCredit"
+    Font      :  Inter Black  20px  #0D1F15
+    letter-spacing: -0.4px
+    text-shadow: 0 2px 6px rgba(26,107,60,0.12)
+
+── CENTRE: Nav Link Pills (horizontal compact row) ──────────────────────────
+
+  COMPONENT: NavPills
+  Layout    :  row  gap 4px  align-center
+
+  3 compact pill buttons: "About"  "Schemes"  "Contact"
+
+  Each pill default:
+    height       :  30px
+    padding      :  0 12px
+    radius       :  999px
+    background   :  transparent
+    border       :  1px solid #E2EDE7
+    font         :  Inter Medium  12px  text-secondary
+    tap target   :  44px height (invisible zone)
+
+  Each pill on press:
+    scale spring 0.95
+    background   :  green-muted
+    border-color :  green-bright
+    text         :  green-primary
+
+  Routing on press:
+    "About"    →  navigate('/about')
+    "Schemes"  →  navigate('/schemes')
+    "Contact"  →  navigate('/contact')
+
+── RIGHT: Profile Icon ──────────────────────────────────────────────────────
+
+  COMPONENT: ProfileIconButton
+  Size      :  40 × 40px  circle
+  Background: green-muted
+  Border    :  2px solid green-primary
+
+  Inside:
+    If logged in   →  user avatar image (object-cover, circle crop)
+    If not logged in → person SVG icon 22px green-primary
+
+  Tap animation:
+    scale 0.92 spring  stiffness 400  damping 20
+
+  On press:
+    Logged in    →  navigate('/profile')
+    Not logged in → navigate('/login')
+
+  Active ring:
+    On focus: 0 0 0 3px rgba(60,192,104,0.25) outer ring
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4 — BLOCK 2: HERO DESCRIPTION BAND
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: HeroBand
+Background   :  linear-gradient(160deg, #1A6B3C 0%, #2D8653 55%, #3CC068 100%)
+padding      :  32px 20px 40px
+width        :  100%
+overflow     :  hidden  (for background circle shapes)
+
+Background decoration (non-interactive):
+  Circle 1  :  240px, rgba(255,255,255,0.06), position absolute top:-60px right:-60px
+  Circle 2  :  160px, rgba(255,255,255,0.04), position absolute bottom:0 left:-40px
+  Both circles just visual depth — no interaction
+
+Content layout (column, align items flex-start):
+
+  1. EYEBROW CHIP:
+     COMPONENT: EyebrowChip
+     Background   :  rgba(255,255,255,0.18)
+     Border       :  1px solid rgba(255,255,255,0.30)
+     Radius       :  999px
+     Padding      :  5px 14px
+     Text         :  "🏆  India's Credit Platform for Gig Workers"
+     Font         :  Inter SemiBold  12px  #FFFFFF
+
+     On mount animation:
+       opacity 0→1  translateX(-16px→0)  500ms ease  delay 0ms
+
+  2. MAIN HEADING:
+     "Build Credit.
+      Unlock Better Loans."
+     Font    :  Inter Black  30px  #FFFFFF  line-height 1.2
+     margin-top: 12px
+
+     "Better Loans" word:
+       color: #A8F0C6  (bright mint highlight within heading)
+
+     On mount: opacity 0→1  translateY(16px→0)  500ms ease  delay 100ms
+
+  3. BODY DESCRIPTION:
+     "GigCredit uses your real income signals — bank statements,
+      UPI history, and gig platform data — to give platform
+      workers fair, fast access to credit."
+     Font    :  Inter Regular  14px  rgba(255,255,255,0.82)
+     line-height: 1.65
+     margin-top: 10px
+
+     On mount: opacity 0→1  translateY(16px→0)  500ms ease  delay 200ms
+
+  4. STATS ROW (below description):
+     Layout    :  row  gap 0  margin-top 20px
+     3 stat blocks separated by vertical dividers:
+
+     ┌──────────────┬────────────────┬─────────────────┐
+     │  15M+        │   ₹82K Avg     │   Grade B+      │
+     │  Gig Workers │   Loan Amount  │   Avg Score     │
+     └──────────────┴────────────────┴─────────────────┘
+
+     Each stat block:
+       flex: 1  centred column
+       Number : Inter Black 20px #FFFFFF
+       Label  : Inter Regular 11px rgba(255,255,255,0.65)
+
+     Vertical divider:
+       width 1px  height 36px  background rgba(255,255,255,0.25)
+
+     On mount: opacity 0→1  translateY(12px→0)  stagger 80ms per block  delay 350ms
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5 — BLOCK 3: FLOATING IMAGE CAROUSEL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: FloatingImageCarousel
+Height       :  220px
+Background   :  bg-screen
+padding      :  0 0 0 20px  (left padding only — cards overflow right edge)
+overflow     :  visible (cards can peek past screen edge)
+margin-top   :  -24px  (overlaps hero band bottom by 24px for layered effect)
+
+Layout:
+  Horizontal scroll row  (ScrollView horizontal, no scrollbar visible)
+  gap between cards: 14px
+
+  4 IMAGE CARDS (one per image you provide)
+
+  Each ImageCard:
+    width        :  180px
+    height       :  200px
+    radius       :  20px
+    overflow     :  hidden
+    box-shadow   :  0 8px 28px rgba(26,107,60,0.14)
+    background   :  #FFFFFF
+
+    Image inside:
+      width: 100%  height: 160px  object-fit: cover  object-position: center top
+
+    Caption below image (inside card):
+      padding     :  10px 12px
+      height      :  40px  (fixed, 1 line)
+      Text        :  card label (short)  Inter SemiBold 12px  text-primary
+
+    On mount animation:
+      Each card: opacity 0→1  translateY(20px→0)
+      Stagger: 80ms × card index
+
+AUTO-SCROLL ANIMATION (infinite left→right loop):
+  Cards auto-scroll continuously from left to right
+  Speed      :  slow drift — full loop every 6 seconds
+  Direction  :  left → right → seamless loop (duplicate cards array x2)
+  Pause on touch: when user touches any card, auto-scroll pauses
+  Resume: when touch lifts, auto-scroll resumes after 1 second
+
+HOVER / PRESS EFFECT on each card:
+  On press (touch start):
+    scale      :  1.04  spring stiffness 350  damping 18
+    box-shadow :  0 12px 36px rgba(26,107,60,0.22)
+    card top-border: 3px solid green-bright appears
+    transition :  200ms
+
+  On press release:
+    scale returns to 1.0  spring
+
+  Card content DOES NOT navigate — cards are decorative showcases only
+  (Can be set to navigate to /schemes if product cards in future)
+
+SECTION LABEL above carousel:
+  "Trusted by gig workers across India"
+  Font: Inter SemiBold 13px  text-muted
+  margin: 20px 20px 10px (top right bottom left)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 6 — BLOCK 4: GET STARTED BUTTON + POPUP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: GetStartedSection
+padding      :  24px 20px
+background   :  bg-screen
+
+── PRIMARY BUTTON: "GET STARTED" ────────────────────────────────────────────
+
+  COMPONENT: GetStartedButton
+  width        :  100%
+  height       :  56px
+  radius       :  16px
+  background   :  linear-gradient(135deg, #1A6B3C 0%, #3CC068 100%)
+  box-shadow   :  0 4px 20px rgba(60,192,104,0.40)
+  text         :  "🚀  GET STARTED"
+  font         :  Inter Bold  16px  #FFFFFF  uppercase  letter-spacing 0.5px
+
+  Idle state animation:
+    Subtle pulse glow: box-shadow oscillates between
+      0 4px 20px rgba(60,192,104,0.40) → 0 4px 32px rgba(60,192,104,0.60)
+    Duration: 2s  ease-in-out  infinite  alternate
+    This draws user attention to the main CTA
+
+  On press:
+    scale      :  0.97  spring  stiffness 400  damping 22
+    haptic     :  10ms light vibration
+    After 150ms: OPENS GetStartedPopup (modal overlay)
+
+── POPUP: GetStartedPopup ────────────────────────────────────────────────────
+
+  COMPONENT: GetStartedPopup
+  Trigger    :  "GET STARTED" button press
+
+  BACKDROP:
+    Full screen overlay  rgba(13,31,21,0.60)
+    z-index    :  200
+    On press backdrop:  dismisses popup (same as Cancel)
+    Enter anim :  opacity 0→0.60  300ms ease
+
+  POPUP SHEET:
+    Position   :  bottom sheet (slides up from bottom)
+    background :  #FFFFFF
+    radius     :  24px top-left  24px top-right  0 bottom
+    padding    :  28px 24px 40px
+    max-height :  65vh
+    z-index    :  201
+
+    Enter animation:
+      translateY(100% → 0)  400ms  cubic-bezier(0.34, 1.56, 0.64, 1)
+    Exit animation:
+      translateY(0 → 100%)  300ms  ease-in
+
+  DRAG HANDLE:
+    width 40px  height 4px  radius 999px
+    background #E2EDE7  centred  margin-bottom 20px
+
+  POPUP CONTENT (column, top to bottom):
+
+    1. STATUS ICON:
+       Size   :  64 × 64px circle  centred
+       Background: green-muted  (rgba(212,237,218,1))
+       Inside :  🚀 emoji  36px centred
+       box-shadow: 0 4px 16px rgba(60,192,104,0.20)
+       On popup open: scale 0→1  bounce spring  delay 100ms
+
+    2. HEADING:
+       "Ready to Start Your
+        Credit Journey?"
+       Font   :  Inter Bold  22px  text-primary  centred  line-height 1.25
+       margin-top: 16px
+       On mount: opacity 0→1  translateY(10px→0)  400ms  delay 150ms
+
+    3. BODY TEXT:
+       "We'll check your eligibility in minutes using
+        your income data — no CIBIL required."
+       Font   :  Inter Regular  14px  text-secondary  centred  line-height 1.6
+       margin-top: 10px
+       max-width: 280px  margin-horizontal auto
+       On mount: opacity 0→1  delay 200ms
+
+    4. FEATURE CHIPS ROW:
+       Layout  :  row  gap 8px  wrap  justify-center
+       margin-top: 16px
+
+       3 chips:
+         "⚡ Fast Approval"
+         "🔒 Secure"
+         "📄 No CIBIL"
+
+       Each chip:
+         background: green-muted
+         border    : 1px solid rgba(60,192,104,0.30)
+         radius    : 999px
+         padding   : 6px 14px
+         font      : Inter Medium 12px  green-primary
+
+       On mount: stagger opacity 0→1  60ms each  delay 300ms
+
+    5. CONTINUE BUTTON:
+       width      :  100%
+       height     :  52px
+       radius     :  14px
+       background :  linear-gradient(135deg, #1A6B3C, #3CC068)
+       box-shadow :  0 4px 16px rgba(60,192,104,0.40)
+       text       :  "CONTINUE  →"
+       font       :  Inter Bold  15px  #FFFFFF  uppercase  letter-spacing 0.5px
+       margin-top :  24px
+
+       On press:
+         scale 0.97 spring
+         haptic 10ms
+         popup dismisses (exit animation)
+         NAVIGATE TO  /apply  (steps/application flow)
+
+    6. GUIDELINES BUTTON (below Continue):
+       width      :  100%
+       height     :  48px
+       radius     :  14px
+       background :  transparent
+       border     :  1px solid #E2EDE7
+       text       :  "📋  View Guidelines"
+       font       :  Inter Medium  14px  text-secondary
+       margin-top :  10px
+
+       On press:
+         popup dismisses first (300ms exit anim)
+         NAVIGATE TO  /guidelines
+         (SAME route as Guidelines button in BLOCK 5)
+
+    7. DISMISS HINT:
+       "Tap outside to close"
+       Font  :  Inter Regular  12px  text-muted  centred
+       margin-top: 12px
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 7 — BLOCK 5: BOTTOM ACTIONS STRIP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: BottomActionsStrip
+Background   :  #FFFFFF
+border-top   :  1px solid #E2EDE7
+padding      :  16px 20px
+margin-top   :  8px
+
+Layout       :  row  gap 12px  (2 equal-width buttons side by side)
+
+BUTTON 1 — HISTORY:
+  COMPONENT: HistoryButton
+  flex         :  1
+  height       :  52px
+  radius       :  14px
+  background   :  #F0F4F8
+  border       :  1px solid #E2EDE7
+  layout       :  row  gap 8px  align-center  justify-center
+
+  Icon         :  🕐  20px
+  Text         :  "History"
+  Font         :  Inter SemiBold  14px  text-primary
+
+  On press:
+    scale 0.96 spring
+    background flash: green-muted 150ms → back to #F0F4F8
+    NAVIGATE TO  /history
+
+  On press animation:
+    icon rotates 30° and back  300ms
+
+BUTTON 2 — GUIDELINES:
+  COMPONENT: GuidelinesButton
+  flex         :  1
+  height       :  52px
+  radius       :  14px
+  background   :  green-muted
+  border       :  1px solid rgba(60,192,104,0.30)
+  layout       :  row  gap 8px  align-center  justify-center
+
+  Icon         :  📋  20px
+  Text         :  "Guidelines"
+  Font         :  Inter SemiBold  14px  green-primary
+
+  On press:
+    scale 0.96 spring
+    haptic 8ms
+    NAVIGATE TO  /guidelines
+    ← SAME ROUTE as popup Guidelines button
+
+  Active state (if on /guidelines):
+    background: green-primary
+    text: #FFFFFF
+    icon tint: #FFFFFF
+
+SECTION LABEL above strip:
+  "Quick Access"
+  Font: Inter Medium 12px  text-muted  uppercase  letter-spacing 0.8px
+  padding: 0 20px  margin-bottom 8px  margin-top 20px
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 8 — BLOCK 6: FOOTER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: AppFooter
+Background   :  #1A6B3C  (dark green — matches reference images)
+padding      :  24px 20px  +  safe-area-bottom
+
+Content (column, centred):
+
+  1. BRAND ROW:
+     Layout    :  row  align-center  justify-center  gap 8px
+
+     Mini icon:
+       28 × 28px  rounded square  radius 8px
+       background: rgba(255,255,255,0.15)
+       Inside: "G"  Inter Black 14px #FFFFFF
+
+     Name:
+       "GigCredit"  Inter Bold 16px  #FFFFFF
+
+  2. TAGLINE:
+     "Empowering India's Gig Economy"
+     Inter Regular 13px  rgba(255,255,255,0.65)  centred
+     margin-top: 6px
+
+  3. DIVIDER:
+     1px  rgba(255,255,255,0.15)  margin: 16px 0
+
+  4. LINKS ROW:
+     Layout: row  justify-center  gap 20px
+     3 text links:
+       "Privacy Policy"  →  /privacy
+       "Terms"           →  /terms
+       "Support"         →  /support
+     Font: Inter Regular 12px  rgba(255,255,255,0.65)
+     On press: navigate to route
+
+  5. COPYRIGHT LINE:
+     "© 2026 GigCredit. All rights reserved."
+     Font: Inter Regular 12px  rgba(255,255,255,0.45)  centred
+     margin-top: 10px
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 9 — ANIMATION MASTER LIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Screen enter (on first load / navigate):
+  All blocks: staggered fade-in + translateY(20px → 0)
+  Block stagger: 100ms × block index
+  Each block: 500ms  ease[0.22, 1, 0.36, 1]
+
+Header:
+  On scroll > 40px: background blur effect activates  300ms ease
+
+Hero band:
+  Background gradient: slow motion shift  8s linear infinite alternate
+    keyframe 0%: #1A6B3C → #3CC068
+    keyframe 100%: #1B5E3B → #2D8653
+    subtle, not distracting
+
+Carousel:
+  Continuous drift left→right  6s linear infinite
+  Touch pause / resume
+  Card press: scale spring
+
+GetStarted button:
+  Pulse glow animation: 2s ease-in-out infinite
+
+Popup:
+  Backdrop: fade-in 300ms
+  Sheet: spring slide-up 400ms
+  Content items: stagger fade-in 60ms each
+  On dismiss: slide-down 300ms + backdrop fade-out
+
+Bottom strip buttons:
+  Press: scale 0.96 + background flash 150ms
+
+Footer:
+  Static — no animation
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 10 — COMPLETE ROUTING TABLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  TRIGGER                          ROUTE
+  ───────────────────────────────────────────────────────────────
+  Header: "About" pill             →  /about
+  Header: "Schemes" pill           →  /schemes
+  Header: "Contact" pill           →  /contact
+  Header: Profile icon (logged in) →  /profile
+  Header: Profile icon (guest)     →  /login
+  ───────────────────────────────────────────────────────────────
+  "GET STARTED" button             →  OPENS GetStartedPopup
+  Popup: "CONTINUE →"              →  /apply  (loan application flow)
+  Popup: "View Guidelines"         →  /guidelines
+  Popup: backdrop tap              →  dismisses popup (no nav)
+  ───────────────────────────────────────────────────────────────
+  Bottom strip: "History"          →  /history
+  Bottom strip: "Guidelines"       →  /guidelines  (same as popup)
+  ───────────────────────────────────────────────────────────────
+  Footer: "Privacy Policy"         →  /privacy
+  Footer: "Terms"                  →  /terms
+  Footer: "Support"                →  /support
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 11 — ACCESSIBILITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  All tap targets             :  minimum 44 × 44px
+  All text on green           :  minimum contrast 4.5:1
+  All buttons                 :  accessibilityLabel set
+  Popup                       :  focus trapped inside while open
+  Carousel                    :  accessibilityRole="scrollbar"
+  Image cards                 :  accessibilityLabel = image description
+  Reduce motion               :  if device has reduce-motion:
+                                  skip all translateY/scale animations
+                                  popup appears instantly (no spring)
+                                  carousel scroll speed halved
+  Screen reader               :  all interactive elements announced

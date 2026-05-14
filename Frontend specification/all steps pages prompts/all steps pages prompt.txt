@@ -1,0 +1,642 @@
+████████████████████████████████████████████████████████████████████████████████
+██                                                                            ██
+██   GIGCREDIT — ALL APPLICATION STEPS PAGES  FRONTEND PROMPT               ██
+██   Steps 1–4 · UX flow · Validation · Notifications · Back guard popup    ██
+██   Real processing · Final report handoff · Zero congestion layout        ██
+██                                                                            ██
+████████████████████████████████████████████████████████████████████████████████
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1 — SHARED LAYOUT (all 9 steps)
+
+so u need to implement froenten fro all 9 steps if some where mention in 4 steps dont consider 9 steps is real implenet in all 9 steps
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┌──────────────────────────────────────────────────────┐
+│  STATUS BAR                            safe-area-top │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 1  —  STICKY STEP HEADER        64px fixed    │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 2  —  STEP PROGRESS BAR        10px sticky    │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 3  —  STEP HERO BAND           auto height    │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 4  —  INPUT FORM CARD          auto height    │
+│              Inputs in correct order                 │
+│              No congestion — one section at a time   │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 5  —  CONTINUE BUTTON BAR      80px fixed     │
+│              safe-area-bottom padding                │
+└──────────────────────────────────────────────────────┘
+
+bg-screen      :  #F0F4F8
+screen-padding :  20px horizontal
+Scroll         :  BLOCK 3 + 4 scroll freely
+BLOCK 1 + 2    :  sticky top-0  z-index 50
+BLOCK 5        :  fixed bottom-0  z-index 50
+KeyboardAvoidingView wraps BLOCK 3–5
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2 — BLOCK 1: STICKY STEP HEADER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: StepHeader
+height       :  64px
+bg           :  #FFFFFF
+box-shadow   :  0 2px 12px rgba(0,0,0,0.06)
+padding      :  0 20px
+
+Layout row  align-center:
+
+┌─────────────────────────────────────────────────────┐
+│ [← Back]   "Step N · [Step Name]"   [Step N of 4]  │
+└─────────────────────────────────────────────────────┘
+
+LEFT — BackButton:
+  ChevronLeft  24px  #1A6B3C  tap target 44×44px
+  On press  :  TRIGGER BACK GUARD POPUP (Section 10)
+  NEVER navigate directly — always popup first
+
+CENTRE — Step label:
+  "Step 1 · Personal Info"  (dynamic per step)
+  Inter SemiBold  16px  #0D1F15
+
+RIGHT — Step counter chip:
+  "1 of 4"
+  bg: #D4EDDA  radius 999px  padding 4px 12px
+  Inter SemiBold  12px  #1A6B3C
+  Updates per step
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3 — BLOCK 2: STEP PROGRESS BAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: StepProgressBar
+position     :  sticky  below header  top: 64px
+height       :  6px
+bg-track     :  #E2EDE7  full width
+
+Fill bar:
+  bg         :  linear-gradient(90deg, #1A6B3C, #3CC068)
+  height     :  6px
+  width      :  25% / 50% / 75% / 100%  (per step 1/2/3/4)
+  transition :  width 600ms  ease[0.34,1.56,0.64,1]
+  box-shadow :  0 0 6px rgba(60,192,104,0.50)
+
+On step advance:
+  Bar fills to new width  600ms spring
+  Glow intensifies during transition  then normalises
+
+Moving dot indicator (on top of fill bar right edge):
+  8×8px circle  bg #FFFFFF  border 2px #1A6B3C
+  position: right edge of fill bar
+  Bounces: translateY -2px→0  400ms ease  when bar fills
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4 — BLOCK 3: STEP HERO BAND
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: StepHeroBand
+Background   :  linear-gradient(160deg, #1A6B3C, #2D8653, #3CC068)
+padding      :  24px 20px 32px
+overflow     :  hidden
+
+Decorations: same circles as other screens (non-interactive)
+
+Content column:
+
+  1. STEP ICON + NUMBER ROW:
+     Row  align-center  gap 12px
+
+     Step number badge:
+       44×44px  circle
+       bg: rgba(255,255,255,0.20)
+       border: 1.5px solid rgba(255,255,255,0.35)
+       Text: "0N"  Inter Black  18px  #FFFFFF
+       On mount: scale 0→1.1→1.0  spring  delay 0ms
+
+     Step name:
+       Inter Black  22px  #FFFFFF
+       On mount: opacity 0→1  translateX(-10px→0)  400ms  delay 80ms
+
+  2. DESCRIPTION:
+     One line  Inter Regular  13px  rgba(255,255,255,0.78)
+     margin-top 6px
+     On mount: opacity 0→1  delay 180ms
+
+  3. FIELD COUNT CHIPS ROW:
+     Row  gap 8px  margin-top 14px
+
+     Two chips:
+       "📝 [N] Text fields"
+       "📎 [N] Uploads"
+       Count is dynamic from step's input list
+
+     Each chip:
+       bg: rgba(255,255,255,0.15)  border: 1px solid rgba(255,255,255,0.25)
+       radius 999px  padding 5px 12px
+       Inter SemiBold  11px  #FFFFFF
+       On mount: stagger  opacity 0→1  scale 0.8→1.0  delay 240ms+40ms each
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5 — BLOCK 4: INPUT FORM CARD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: StepFormCard
+margin       :  16px 20px 100px  (100px bottom clears fixed continue button)
+bg           :  #FFFFFF
+radius       :  20px
+border       :  1px solid #E2EDE7
+border-top   :  4px solid [step.accentColour]
+box-shadow   :  0 4px 20px rgba(26,107,60,0.08)
+padding      :  24px 20px
+overflow     :  visible
+
+On mount     :  opacity 0→1  translateY(24px→0)  500ms  ease[0.22,1,0.36,1]
+
+── INPUT GROUPING RULE ──────────────────────────────────────────────────────
+
+  Inputs are grouped into logical mini-sections within the card.
+  Each group has a subtle section header (label only — no card within card).
+
+  Section header:
+    Text: e.g. "Identity"  "Income"  "Bank Details"
+    Inter SemiBold  11px  #8FA89B  uppercase  letter-spacing 1px
+    padding-bottom 10px  border-bottom 1px solid #F0F4F8
+
+  Gap between groups: 24px
+  Gap between inputs within group: 16px
+
+── TEXT INPUT FIELD SPEC ────────────────────────────────────────────────────
+
+COMPONENT: StepInputField
+height       :  56px
+radius       :  14px
+bg           :  #F0F4F8
+border       :  1.5px solid #E2EDE7
+padding      :  0 16px 0 48px (left icon space)
+font         :  Inter Regular  15px  #0D1F15
+placeholder  :  Inter Regular  15px  #8FA89B
+
+Label above field:
+  Inter SemiBold  13px  #4A6B57  margin-bottom 6px
+
+Left icon:  absolute  left 14px  centred vertical  18px  #8FA89B
+
+States:
+  Focus:
+    border: 1.5px solid #1A6B3C
+    bg: #FFFFFF
+    box-shadow: 0 0 0 3px rgba(60,192,104,0.14)
+    icon: colour #1A6B3C
+    transition: 200ms ease
+
+  Valid (blur, value passes):
+    Right side: ✓ badge  20×20px circle  bg #1A6B3C  ✓ #FFFFFF  10px
+    Appears: scale 0→1  spring  200ms
+
+  Error (blur, value fails or submit attempt):
+    border: 1.5px solid #D32F2F
+    bg: #FFF5F5
+    box-shadow: 0 0 0 3px rgba(211,47,47,0.10)
+    Shake: translateX -5px→5px→-4px→4px→0  350ms ease
+    Inline error appears below (System 1 from Notification spec)
+
+  Disabled (field locked after step verified):
+    bg: #F8FBF9
+    border: 1px solid #E2EDE7
+    text: #4A6B57
+    opacity: 0.70
+    Right: 🔒 16px  #8FA89B  (shows field is locked)
+
+── SELECT / DROPDOWN FIELD ──────────────────────────────────────────────────
+
+Same shape as text input.
+On press: bottom sheet selector slides up (not native picker).
+Selected value shows in field  ✓ badge appears.
+Right icon: ChevronDown  16px  #8FA89B  rotates 180° on open.
+
+── UPLOAD INPUT FIELD ───────────────────────────────────────────────────────
+
+COMPONENT: UploadInputField
+Label above: same as text field
+
+Upload zone:
+  height: 88px  radius: 14px  border: 1.5px dashed #B2D4BF
+  bg: rgba(212,237,218,0.20)
+  layout: column  align-center  justify-center  gap 8px
+  cursor: pointer
+
+  Icon zone: 36×36px circle  bg #D4EDDA  border 1px #B2D4BF
+  Inside: ⬆ 18px  #1A6B3C
+
+  Primary text: "Tap to upload"  Inter SemiBold  13px  #1A6B3C
+  Secondary text: "JPG, PNG or PDF · Max 5MB"  Inter Regular  11px  #8FA89B
+
+  On press:
+    scale 0.98 spring  haptic 8ms
+    Opens native file picker  (image + PDF options)
+
+  UPLOADING STATE (file selected → uploading):
+    dashed border → solid border  #1A6B3C
+    bg: rgba(212,237,218,0.30)
+    Icon zone replaced with LOADER 1C (scan line) spinning
+    Text: "Uploading..."  Inter Regular  13px  #1A6B3C
+    Progress bar inside zone (bottom):
+      1px  bg #1A6B3C  width 0%→100%  real upload progress  linear
+
+  PROCESSING STATE (upload done → OCR running):
+    Text: "Reading document..."
+    Loader: LOADER 1C still active
+
+  SUCCESS STATE (OCR done, doc verified):
+    Border: solid 1.5px #1A6B3C
+    bg: rgba(212,237,218,0.25)
+    Layout: row  gap 12px  padding 0 16px
+
+    Left: document icon zone  40×40px  bg #D4EDDA  radius 10px
+          📄 inside  18px  #1A6B3C
+
+    Centre column:
+      File name  Inter SemiBold  13px  #0D1F15  truncated
+      "Verified ✓"  Inter Regular  12px  #1A6B3C  margin-top 2px
+
+    Right: ✕ button  16px  #8FA89B  (remove and re-upload)
+           tap target 36×36px
+
+    Success appears with: scale 0.96→1.0  spring  300ms
+
+  ERROR STATE (upload failed / unreadable):
+    Border: dashed 1.5px #D32F2F
+    bg: #FFF5F5
+    Text: "Couldn't read this — try again"  #D32F2F
+    Shake: whole zone  350ms
+    Toast fires: context-specific (DOC_UNREADABLE etc.)
+    Zone resets to empty upload state after 2s
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 6 — BLOCK 5: CONTINUE BUTTON BAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: ContinueButtonBar
+position     :  fixed  bottom-0  left-0  right-0  z-index 50
+height       :  80px + safe-area-bottom
+bg           :  rgba(255,255,255,0.95)
+backdrop-filter: blur(12px)
+border-top   :  1px solid #E2EDE7
+padding      :  12px 20px  + safe-area-bottom
+
+CONTINUE BUTTON:
+  width      :  100%
+  height     :  56px
+  radius     :  16px
+  bg         :  linear-gradient(135deg, #1A6B3C, #3CC068)
+  box-shadow :  0 4px 16px rgba(60,192,104,0.38)
+  layout     :  row  align-center  justify-center  gap 10px
+
+  ENABLED state:
+    Text: "Continue  →"  Inter Bold  16px  #FFFFFF  letter-spacing 0.3px
+    Pulse glow: shadow oscillates  1.8s infinite
+
+  DISABLED state (any required field empty/invalid):
+    bg: #D4EDDA
+    text: #8FA89B
+    box-shadow: none
+    Not pressable
+    Lock icon left of text: 🔒  14px  #8FA89B
+
+  LOADING state (on press, verifying):
+    Text hidden  → LOADER 1A (coin pulse)  #FFFFFF
+
+  SUCCESS state (verified):
+    Text hidden  → ✓ draws  then navigates
+
+  On press (enabled):
+    scale 0.97 spring  haptic 12ms
+    → STEP CONTINUE FLOW (Section 8)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 7 — STEP CONTENT (Steps 1–4)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+All inputs pulled from existing implementation.
+Order is exact as implemented.
+Structure below defines grouping + accent colours only.
+
+STEP 1 — Personal Information
+  accent      :  #1A6B3C  light #3CC068
+  description :  "Tell us who you are"
+  Groups:
+    GROUP "Identity"   :  Full Name · Date of Birth · Gender
+    GROUP "Contact"    :  Mobile Number · Email Address
+    GROUP "Aadhaar"    :  Aadhaar Number (text) · Aadhaar Card (upload)
+
+STEP 2 — Income & Employment
+  accent      :  #2D8653  light #3CC068
+  description :  "Tell us how you earn"
+  Groups:
+    GROUP "Work"       :  Employment Type · Monthly Income
+    GROUP "PAN"        :  PAN Number (text) · PAN Card (upload)
+    GROUP "Bank"       :  Bank Account Number · Bank Statement (upload)
+
+STEP 3 — Documents & Verification
+  accent      :  #0277BD  light #039BE5
+  description :  "Verify where you live and how you work"
+  Groups:
+    GROUP "Address"    :  Current Address (text) · Address Proof (upload)
+    GROUP "Gig Work"   :  Platform Name · Earnings Screenshot (upload)
+    GROUP "Payments"   :  UPI Transaction ID (text) · UPI Statement (upload)
+
+STEP 4 — Credit & Financial History
+  accent      :  #6A1B9A  light #9C27B0
+  description :  "Show us your financial habits"
+  Groups:
+    GROUP "Loans"      :  Existing EMI Amount
+    GROUP "Bills"      :  Utility Bill Amount (text) · Utility Bill (upload)
+    GROUP "Insurance"  :  Policy Number (text) · Policy Document (upload)
+                          (optional group — show "Optional" chip in header)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 8 — STEP CONTINUE FLOW (on Continue button press)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This exact flow runs every time user presses Continue on any step.
+
+PHASE 1 — CLIENT VALIDATION (instant, before any API call):
+  Check all required fields for emptiness / format
+  If ANY field fails:
+    → All invalid fields shake simultaneously
+    → Inline errors appear below each invalid field
+    → Toast: STEP_INPUT_INVALID
+    → Scroll to first invalid field smoothly  offset 120px
+    → Continue button resets to enabled state
+    → STOP — do not proceed to Phase 2
+
+PHASE 2 — SERVER VALIDATION (API call):
+  Continue button → LOADING state (LOADER 1A)
+  Toast: STEP_VERIFYING (processing type — stays until replaced)
+  Background: full card dims slightly  overlay rgba(255,255,255,0.40)
+  All inputs: disabled state (no editing during verification)
+
+  API: POST /api/steps/[stepNumber]/verify  { all step fields }
+
+  On API SUCCESS:
+    → Phase 3
+
+  On API ERROR:
+    Map HTTP status to toast (from Notification spec Section 4)
+    All inputs: re-enable
+    Continue button: reset to enabled
+    STOP
+
+PHASE 3 — SUCCESS TRANSITION:
+
+  Step 1–3 (not final step):
+    Toast: STEPN_COMPLETE (success)
+    Continue button: ✓ success state  600ms
+    Progress bar fills to next step  600ms spring
+    Step number increments in header chip
+    Screen transition: LOADER 3A (bike rider full screen)
+    New step screen slides in
+    New step inputs stagger in  60ms per field
+
+  Step 4 (final step):
+    → FINAL STEP FLOW (Section 9)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 9 — FINAL STEP PROCESSING FLOW (Step 4 Continue)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This is REAL processing — no mock timers.
+Every stage waits for actual response before advancing.
+
+STAGE 1 — DATA SUBMISSION:
+  Loader: LOADER 3B (document flying into vault)  full screen
+  Label: "Submitting your application..."
+  API: POST /api/application/submit  { all 4 steps data }
+  Wait for real API response.
+  On success → Stage 2
+  On fail → dismiss loader + toast DATA_SAVE_FAILED + return to Step 4
+
+STAGE 2 — ON-DEVICE AI SCORING:
+  Loader: LOADER 3C (brain pulse with graph)  full screen
+  Label: "Our AI is reading your financial story..."
+
+  Sub-labels cycle (each appears when that stage actually starts):
+    "Analysing income patterns..."
+      ← waits for real income processing result
+    "Checking spending behaviour..."
+      ← waits for real spending analysis result
+    "Evaluating financial resilience..."
+      ← waits for real resilience scoring result
+    "Calculating your GigCredit score..."
+      ← waits for final score computation
+
+  Each sub-label:
+    Inter Regular  13px  rgba(255,255,255,0.70)  centred
+    Enter: opacity 0→1  translateY(6px→0)  300ms ease
+    Exit:  opacity 1→0  200ms  then next label enters
+
+  Score counter in LOADER 3C:
+    Blurred while computing
+    On final score received: de-blur + number ticks up to real score value
+    Tick: count from 0 to score  duration proportional to value  max 1.2s
+
+  On scoring complete → Stage 3
+
+STAGE 3 — REPORT GENERATION:
+  Loader stays (brain pulse  continues)
+  Label: "Preparing your report..."
+  API: POST /api/report/generate
+  Wait for real response.
+  On success → Stage 4
+
+STAGE 4 — TRANSITION TO REPORT:
+  LOADER 3C exits: score de-blurs fully + scale pulse + glow burst
+  Overlay: rgba(60,192,104,0.15) full screen flash  200ms
+  Toast: AI_SCORE_DONE  (success)
+  Navigate to /report   slide-up  400ms spring
+  Report page content fades in with score already populated
+
+  If any stage fails mid-flow:
+    Dismiss full screen loader
+    Toast: relevant error from Notification spec
+    Return user to Step 4 (data already saved — they don't re-enter)
+    "Resume" button on Step 4 restarts from failed stage only
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 10 — BACK GUARD POPUP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Fires every time user taps ← Back from ANY step screen.
+Also fires on Android hardware back button.
+
+COMPONENT: BackGuardSheet
+Type         :  bottom sheet modal (same as GetStartedPopup)
+
+Backdrop:
+  bg: rgba(13,31,21,0.65)  blur 4px
+  Enter: opacity 0→0.65  300ms
+
+Sheet:
+  bg: #FFFFFF  radius 28px 28px 0 0
+  padding: 28px 24px 40px + safe-area-bottom
+  Enter: translateY(100%→0)  420ms  cubic-bezier(0.34,1.56,0.64,1)
+
+CONTENT:
+
+  1. WARNING ICON:
+     56×56px  circle
+     bg: linear-gradient(135deg, #FFF3E0, #FFE0B2)
+     border: 1.5px solid rgba(230,81,0,0.25)
+     Inside: ⚠️  28px  centred
+     On appear: scale 0→1.1→1.0  spring  delay 80ms
+     Gentle pulse: scale 1.0→1.04→1.0  1.5s infinite  after appear
+
+  2. HEADING:
+     "Going back?"
+     Inter Bold  20px  #0D1F15  centred  margin-top 16px
+     On appear: opacity 0→1  translateY(10px→0)  350ms  delay 150ms
+
+  3. SUBTEXT:
+     "Your progress on this step is saved.
+      You can come back and continue later."
+     Inter Regular  14px  #4A6B57  centred  line-height 1.65  max-width 260px
+     On appear: opacity 0→1  delay 220ms
+
+  4. PROGRESS CONTEXT STRIP:
+     Shows what will be preserved vs lost
+     Row  gap 8px  margin-top 20px  justify-center
+
+     "✅ Steps 1–[N-1] saved"  green chip
+     "📝 Step [N] in progress"  orange chip
+
+     Same chip style as hero band chips
+     On appear: stagger  opacity 0→1  scale 0.8→1.0  delay 280ms
+
+  5. BUTTON ROW:
+     margin-top 28px  row  gap 12px
+
+     STAY BUTTON (primary):
+       flex 1  height 54px  radius 14px
+       bg: linear-gradient(135deg, #1A6B3C, #3CC068)
+       box-shadow: 0 4px 16px rgba(60,192,104,0.35)
+       Text: "Keep Going"  Inter Bold  15px  #FFFFFF
+       On press:
+         scale 0.97 spring  haptic 8ms
+         Sheet + backdrop exit  300ms
+         Return to step (no navigation)
+
+     GO BACK BUTTON (secondary):
+       flex 1  height 54px  radius 14px
+       bg: #FFFFFF  border: 1.5px solid #E2EDE7
+       Text: "Go Back"  Inter SemiBold  15px  #4A6B57
+       On press:
+         scale 0.97 spring
+         Sheet exits  300ms
+         Navigate back to previous step or Home
+
+  Default focus: "Keep Going" button (reduces accidental back)
+
+  Drag-to-dismiss: same as GetStartedPopup
+  Tap backdrop: same as pressing "Keep Going" (stay — safer default)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 11 — PER-STEP TOAST MAP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+All toast IDs reference the Global Notification spec.
+Listed here only to confirm mapping — no new toasts defined.
+
+  EVENT                                    TOAST ID
+  ────────────────────────────────────────────────────────────────────
+  Any field empty on submit attempt      →  INLINE only (no toast)
+  Any field wrong format on submit       →  INLINE only (no toast)
+  Continue pressed (valid fields)        →  STEP_VERIFYING (processing)
+  Aadhaar number ≠ Aadhaar card          →  AADHAAR_MISMATCH
+  PAN number ≠ PAN card                  →  PAN_MISMATCH
+  Backend rejects any input              →  STEP_INPUT_INVALID
+  Upload selected → uploading            →  DOC_UPLOADING (processing)
+  Upload OCR completes OK                →  DOC_VERIFIED (success)
+  Upload unreadable                      →  DOC_UNREADABLE (error)
+  Upload wrong document                  →  DOC_WRONG_TYPE (error)
+  Upload too large                       →  DOC_TOO_LARGE (error)
+  Upload wrong format                    →  DOC_UNSUPPORTED_FORMAT (error)
+  OCR partial read                       →  DOC_PARTIAL (warning)
+  Step 1 verified + advancing            →  STEP1_COMPLETE (success)
+  Step 2 verified + advancing            →  STEP2_COMPLETE (success)
+  Step 3 verified + advancing            →  STEP3_COMPLETE (success)
+  Step 4 submit + all stages done        →  AI_SCORE_DONE (success)
+  Final submit API fail                  →  DATA_SAVE_FAILED (error)
+  AI scoring fail                        →  AI_SCORE_FAILED (error)
+  Bank parse fail                        →  BANK_PARSE_FAILED (error)
+  Any network fail                       →  NO_INTERNET / SERVER_ERROR
+  ────────────────────────────────────────────────────────────────────
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 12 — ANIMATION MASTER LIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Screen enter (any step):
+  opacity 0→1  translateY(16px→0)  400ms ease
+
+Hero band content: stagger 0/80/180ms on mount
+
+Form card: opacity 0→1  translateY(24px→0)  500ms  delay 200ms
+
+Input fields stagger within card:
+  opacity 0→1  translateY(12px→0)
+  40ms × fieldIndex  delay 300ms
+
+Input focus: 200ms ease  (border + bg + icon + glow)
+
+Input valid tick: scale 0→1  spring  200ms
+
+Input error shake: translateX -5px→5px→-4px→4px→0  350ms
+
+Upload zone press: scale 0.98 spring
+
+Upload success: scale 0.96→1.0 spring 300ms
+
+All inputs disable during verification: opacity 0.70  200ms ease
+
+Progress bar advance: width transition  600ms  ease[0.34,1.56,0.64,1]
+Moving dot: translateY -2px→0  400ms
+
+Continue button enable/disable: bg + shadow transition  200ms ease
+
+Continue button loading: text opacity 0→0  loader fades in  150ms
+
+Continue button success: loader fades  ✓ draws  spring  300ms
+
+Step transition (3A bike): full screen  enter + exit overlapping
+
+Back guard popup: translateY 100%→0  420ms spring
+
+Back guard buttons: scale 0.97 spring on press
+
+Final processing sub-labels: opacity 0→1 / 1→0  300ms/200ms  real-time
+
+Score counter tick: count 0→value  linear  max 1.2s  on real score received
+
+Score de-blur: filter blur(4px→0)  400ms ease
+
+Report transition: slide-up  400ms spring
+
+Reduce motion:
+  All translateY/scale/spring skipped
+  Transitions: opacity only
+  Score: appears at final value instantly (no tick)
+  Progress bar: instant width change  no dot
+  Upload states: instant switch  no scale

@@ -1,0 +1,844 @@
+████████████████████████████████████████████████████████████████████████████████
+██                                                                            ██
+██   GIGCREDIT — END-TO-END CONNECTIVITY MASTER PROMPT                      ██
+██   Frontend ↔ Backend ↔ On-Device · Full endpoint audit · Dynamic only    ██
+██   Real processing states · Zero static values · Error-first approach     ██
+██                                                                            ██
+████████████████████████████████████████████████████████████████████████████████
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 0 — HOW TO USE THIS DOCUMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This document is the single source of truth for:
+  1. Every endpoint that exists (backend + on-device)
+  2. Exactly what the frontend calls and when
+  3. The exact request/response contract for every call
+  4. Real-time processing state events the frontend must listen to
+  5. Validation checklist for every connection
+
+READ THIS FIRST before writing any frontend component.
+For every button/action implemented:
+  Step 1 → Find the endpoint in Section 2 or 3
+  Step 2 → Wire frontend to that exact path, method, body, headers
+  Step 3 → Implement every response case (success + all error codes)
+  Step 4 → Test with the test payload in Section 5
+  Step 5 → Confirm real data flows and displays — NO static fallbacks
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1 — ARCHITECTURE LAYERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  LAYER A — BACKEND (FastAPI)
+    Responsibility:
+      · OTP auth (Firebase)
+      · Document verification (Aadhaar/PAN/Bank via third-party API)
+      · OCR text extraction (PaddleOCR server-side fallback)
+      · Step data storage (PostgreSQL)
+      · LLM report verbalization (Groq API → English text from SHAP output)
+      · Loan pipeline (L-1 to L-8)
+      · Audit logs (tamper-proof, RBI-compliant)
+
+  LAYER B — ON-DEVICE (TensorFlow Lite + TreeSHAP)
+    Responsibility:
+      · Feature engineering from OCR-extracted data
+      · 7-pillar credit score calculation (TFLite model)
+      · TreeSHAP explainability computation
+      · Privacy — raw data never leaves device
+      · Emit real-time processing stage events to frontend
+
+  LAYER C — FRONTEND (Next.js / Kotlin)
+    Responsibility:
+      · Render real data from Layer A and Layer B responses only
+      · Display real-time processing stage events from Layer B
+      · Send SHAP output to Layer A for LLM verbalization
+      · NEVER hardcode any score, name, amount, or result
+      · NEVER show static placeholder content as real data
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2 — COMPLETE BACKEND ENDPOINT REGISTRY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+BASE URL:  https://api.gigcredit.in  (or localhost:8000 for dev)
+AUTH:      All protected routes require header:
+             Authorization: Bearer {firebase_id_token}
+CONTENT:   application/json  unless noted as multipart/form-data
+
+══════════════════════════════════════════════════════════════════════════════
+GROUP 1 — AUTH
+══════════════════════════════════════════════════════════════════════════════
+
+POST /auth/send-otp
+  Purpose   :  Send OTP to mobile via Firebase
+  Auth      :  None
+  Body      :  { "mobile": "9XXXXXXXXX" }
+  Response 200:
+    { "status": "sent", "expires_in": 300, "session_id": "abc123" }
+  Response 409: { "error": "ACCOUNT_EXISTS" }
+  Response 429: { "error": "TOO_MANY_ATTEMPTS", "retry_after": 600 }
+  Response 500: { "error": "OTP_SEND_FAILED" }
+  Frontend uses: Sign Up / Sign In — Send OTP button
+  Toast map: 200→OTP_SENT, 409→ACCOUNT_EXISTS, 429→TOO_MANY_ATTEMPTS,
+             500→OTP_SEND_FAILED
+
+──────────────────────────────────────────────────────────────────────────────
+
+POST /auth/signup
+  Purpose   :  Verify OTP + create account
+  Auth      :  None
+  Body      :  { "mobile": "9XXXXXXXXX", "name": "Ravi Kumar",
+                 "otp": "123456", "session_id": "abc123" }
+  Response 200:
+    { "token": "eyJ...", "user_id": "u_123",
+      "name": "Ravi Kumar", "mobile": "9XXXXXXXXX",
+      "completed_steps": 0, "created_at": "2026-05-13T14:00:00Z" }
+  Response 400: { "error": "OTP_INCORRECT" }
+  Response 400: { "error": "OTP_EXPIRED" }
+  Response 409: { "error": "ACCOUNT_EXISTS" }
+  Response 429: { "error": "TOO_MANY_ATTEMPTS", "retry_after": 600 }
+  Frontend uses: Sign Up — Verify & Create Account button
+  Frontend stores: token, user_id, name, mobile, completed_steps
+                   All to localStorage / secure storage
+  Toast map: 200→ACCOUNT_CREATED, 400.OTP_INCORRECT→OTP_INCORRECT,
+             400.OTP_EXPIRED→OTP_EXPIRED, 409→ACCOUNT_EXISTS
+
+──────────────────────────────────────────────────────────────────────────────
+
+POST /auth/signin
+  Purpose   :  Verify OTP + return existing user
+  Auth      :  None
+  Body      :  { "mobile": "9XXXXXXXXX", "otp": "123456",
+                 "session_id": "abc123" }
+  Response 200:
+    { "token": "eyJ...", "user_id": "u_123",
+      "name": "Ravi Kumar", "mobile": "9XXXXXXXXX",
+      "completed_steps": 3,
+      "score": null | 742,
+      "score_band": null | "good",
+      "loan_status": null | "approved" | "disbursed" }
+  Response 400: { "error": "OTP_INCORRECT" }
+  Response 400: { "error": "OTP_EXPIRED" }
+  Response 404: { "error": "ACCOUNT_NOT_FOUND" }
+  Frontend uses: Sign In — Sign In button
+  Frontend routes based on completed_steps (see routing spec)
+  Toast map: 200→SIGNIN_SUCCESS, 400→OTP_INCORRECT,
+             404→ACCOUNT_NOT_FOUND
+
+──────────────────────────────────────────────────────────────────────────────
+
+POST /auth/refresh-token
+  Purpose   :  Refresh expired Firebase token
+  Auth      :  None (uses refresh_token)
+  Body      :  { "refresh_token": "..." }
+  Response 200: { "token": "eyJ...", "expires_in": 3600 }
+  Response 401: { "error": "REFRESH_INVALID" }
+  Frontend uses: Auto-called when any API returns 401
+
+══════════════════════════════════════════════════════════════════════════════
+GROUP 2 — USER STATE
+══════════════════════════════════════════════════════════════════════════════
+
+GET /user/me
+  Purpose   :  Fetch current user state (on app focus / screen entry)
+  Auth      :  Required
+  Body      :  None
+  Response 200:
+    { "user_id": "u_123", "name": "Ravi Kumar",
+      "mobile": "9XXXXXXXXX", "completed_steps": 3,
+      "score": null | 742, "score_band": null | "good" | "fair" | "poor",
+      "max_loan_eligible": null | 50000,
+      "loan_status": null | "applied" | "approved" | "disbursed",
+      "application_ref": null | "GC20260513001" }
+  Response 401: { "error": "SESSION_EXPIRED" }
+  Frontend uses: Splash (after token check), Home screen, Report screen
+  Frontend rule: ALL home/report dynamic values come from this response only
+
+──────────────────────────────────────────────────────────────────────────────
+
+PATCH /user/profile
+  Purpose   :  Update profile details
+  Auth      :  Required
+  Body      :  { "name": "..." }  (only mutable fields)
+  Response 200: { "name": "...", "updated_at": "..." }
+  Response 400: { "error": "VALIDATION_FAILED", "fields": {...} }
+  Frontend uses: Profile screen edit
+  Toast map: 200→PROFILE_UPDATED, 400→STEP_INPUT_INVALID
+
+══════════════════════════════════════════════════════════════════════════════
+GROUP 3 — APPLICATION STEPS
+══════════════════════════════════════════════════════════════════════════════
+
+POST /steps/1/submit
+  Purpose   :  Submit + verify Step 1 Personal Info
+  Auth      :  Required
+  Content   :  multipart/form-data
+  Fields    :
+    full_name         : string
+    date_of_birth     : string  YYYY-MM-DD
+    gender            : string  male|female|other
+    mobile            : string  (already known, but confirmed)
+    email             : string  optional
+    aadhaar_number    : string  12 digits
+    aadhaar_file      : file    JPG/PNG/PDF
+  Response 200:
+    { "step": 1, "status": "verified",
+      "aadhaar_match": true,
+      "extracted": { "name": "...", "dob": "...", "address": "..." },
+      "completed_steps": 1 }
+  Response 400:
+    { "error": "AADHAAR_MISMATCH",
+      "fields": { "aadhaar_number": "Number does not match document" } }
+  Response 400:
+    { "error": "VALIDATION_FAILED",
+      "fields": { "field_name": "reason", ... } }
+  Response 409: { "error": "MOBILE_ALREADY_LINKED" }
+  Frontend uses: Step 1 Continue button
+  Processing states emitted: see Section 3 (on-device events NOT here —
+    Aadhaar OCR is server-side for this step)
+  Toast map: 200→STEP1_COMPLETE, 400.AADHAAR_MISMATCH→AADHAAR_MISMATCH,
+             400.VALIDATION_FAILED→STEP_INPUT_INVALID,
+             409→MOBILE_ALREADY_LINKED
+
+──────────────────────────────────────────────────────────────────────────────
+
+POST /steps/2/submit
+  Purpose   :  Submit + verify Step 2 Income & Employment
+  Auth      :  Required
+  Content   :  multipart/form-data
+  Fields    :
+    employment_type   : string  gig|freelance|daily_wage|small_business
+    monthly_income    : number  INR
+    pan_number        : string  ABCDE1234F format
+    pan_file          : file
+    bank_account      : string
+    bank_statement    : file    PDF preferred
+  Response 200:
+    { "step": 2, "status": "verified",
+      "pan_match": true,
+      "bank_parse_status": "success",
+      "extracted_income": 18500.00,
+      "income_regularity": 0.82,
+      "completed_steps": 2 }
+  Response 400:
+    { "error": "PAN_MISMATCH",
+      "fields": { "pan_number": "..." } }
+  Response 400:
+    { "error": "BANK_PARSE_FAILED",
+      "message": "Could not extract transactions from statement" }
+  Response 400:
+    { "error": "VALIDATION_FAILED", "fields": { ... } }
+  Frontend uses: Step 2 Continue button
+  Toast map: 200→STEP2_COMPLETE, 400.PAN_MISMATCH→PAN_MISMATCH,
+             400.BANK_PARSE_FAILED→BANK_PARSE_FAILED,
+             400.VALIDATION_FAILED→STEP_INPUT_INVALID
+
+──────────────────────────────────────────────────────────────────────────────
+
+POST /steps/3/submit
+  Purpose   :  Submit Step 3 Documents & Gig Verification
+  Auth      :  Required
+  Content   :  multipart/form-data
+  Fields    :
+    current_address   : string
+    address_proof     : file
+    platform_name     : string  swiggy|zomato|urban_company|ola|uber|other
+    earnings_screenshot: file
+    upi_transaction_id : string  optional
+    upi_statement     : file    optional
+  Response 200:
+    { "step": 3, "status": "verified",
+      "gig_income_verified": true,
+      "upi_parse_status": "success" | "skipped",
+      "extracted_upi_volume": 12400.00 | null,
+      "completed_steps": 3 }
+  Response 400: { "error": "DOC_UNREADABLE", "field": "address_proof" }
+  Response 400: { "error": "VALIDATION_FAILED", "fields": { ... } }
+  Frontend uses: Step 3 Continue button
+  Toast map: 200→STEP3_COMPLETE, 400.DOC_UNREADABLE→DOC_UNREADABLE,
+             400.VALIDATION_FAILED→STEP_INPUT_INVALID
+
+──────────────────────────────────────────────────────────────────────────────
+
+POST /steps/4/submit
+  Purpose   :  Submit Step 4 Credit & Financial History
+               After this → triggers on-device scoring (Section 3)
+  Auth      :  Required
+  Content   :  multipart/form-data
+  Fields    :
+    existing_emi      : number  INR (0 if none)
+    utility_bill_amount: number INR
+    utility_bill      : file
+    policy_number     : string  optional
+    policy_document   : file    optional
+  Response 200:
+    { "step": 4, "status": "verified",
+      "bill_parse_status": "success",
+      "bill_regularity": 0.90,
+      "completed_steps": 4,
+      "feature_package": {
+        "income_regularity": 0.82,
+        "spending_ratio": 0.41,
+        "bill_consistency": 0.90,
+        "gig_tenure_months": 14,
+        "upi_volume_monthly": 12400,
+        "existing_emi_ratio": 0.12,
+        "bank_avg_balance": 6800,
+        "asset_indicators": 0,
+        "insurance_active": false,
+        "platform_rating": 4.2,
+        ... (all 88 features)
+      }
+    }
+  CRITICAL: frontend receives feature_package and passes it
+            DIRECTLY to on-device scoring engine (Section 3)
+            Backend does NOT compute the score.
+  Response 400: { "error": "VALIDATION_FAILED", "fields": { ... } }
+  Frontend uses: Step 4 Continue button
+  Toast map: 200→STEP4_COMPLETE (do not show yet — trigger scoring first)
+
+──────────────────────────────────────────────────────────────────────────────
+
+GET /steps/{step_number}/saved
+  Purpose   :  Restore saved step data (on screen mount for interrupted sessions)
+  Auth      :  Required
+  Params    :  step_number = 1|2|3|4
+  Response 200:
+    { "step": N, "saved_fields": { "field_name": "value", ... },
+      "saved_files": [ { "field": "aadhaar_file",
+                         "filename": "aadhaar.jpg",
+                         "preview_url": "https://..." } ] }
+  Response 404: { "status": "no_saved_data" }
+  Frontend uses: Each step screen on mount — pre-populate fields
+  Rule: If 200 → populate all fields silently (no toast)
+        If 404 → show empty form (no toast)
+
+══════════════════════════════════════════════════════════════════════════════
+GROUP 4 — REPORT & LLM VERBALIZATION
+══════════════════════════════════════════════════════════════════════════════
+
+POST /report/generate
+  Purpose   :  Send SHAP output to backend → Groq LLM verbalizes it
+               Returns English text explanation + improvement suggestions
+  Auth      :  Required
+  Body      :
+    {
+      "user_id": "u_123",
+      "score": 742,
+      "score_band": "good",
+      "pillar_scores": {
+        "P1_income_regularity": 78,
+        "P2_spending_discipline": 65,
+        "P3_asset_ownership": 40,
+        "P4_bill_payments": 88,
+        "P5_gig_platform_history": 72,
+        "P6_financial_resilience": 55,
+        "P7_social_accountability": 60
+      },
+      "shap_values": {
+        "top_positive": [
+          { "feature": "bill_consistency", "impact": +12.4,
+            "pillar": "P4" },
+          ...
+        ],
+        "top_negative": [
+          { "feature": "existing_emi_ratio", "impact": -8.2,
+            "pillar": "P6" },
+          ...
+        ]
+      },
+      "language": "en" | "ta" | "hi"
+    }
+  Response 200:
+    {
+      "report_id": "r_456",
+      "score_summary": "Your GigCredit score of 742 reflects...",
+      "pillar_explanations": {
+        "P1_income_regularity": "Your income has been consistent...",
+        ...
+      },
+      "positive_factors": [
+        "Your utility bills are paid on time in 9 out of 10 months.",
+        ...
+      ],
+      "negative_factors": [
+        "Your existing EMI takes up 12% of monthly income...",
+        ...
+      ],
+      "improvement_suggestions": [
+        "Reduce your existing EMI load to improve P6 score.",
+        ...
+      ],
+      "max_loan_eligible": 48000,
+      "generated_at": "2026-05-13T14:30:00Z"
+    }
+  Response 503: { "error": "LLM_UNAVAILABLE" }
+  Response 500: { "error": "SERVER_ERROR" }
+  Frontend uses: After on-device scoring completes (see Section 3 Stage 3)
+  Frontend rule: EVERY field in report screen comes from this response.
+                 No hardcoded explanations. No template strings with static text.
+  Toast map: 503/500 → AI_SCORE_FAILED
+
+──────────────────────────────────────────────────────────────────────────────
+
+GET /report/latest
+  Purpose   :  Fetch latest generated report (on /report screen mount)
+  Auth      :  Required
+  Response 200:  (same shape as POST /report/generate response 200)
+  Response 404:  { "status": "no_report" }
+  Frontend uses: /report screen on mount if score already exists
+  Rule: If 200 → populate report screen instantly (no re-scoring)
+        If 404 → this should not happen if routing is correct
+                 (user can only reach /report if completed_steps=4)
+
+══════════════════════════════════════════════════════════════════════════════
+GROUP 5 — LOAN PIPELINE
+══════════════════════════════════════════════════════════════════════════════
+
+POST /loan/eligibility
+  Purpose   :  Check loan eligibility based on score + requested amount
+  Auth      :  Required
+  Body      :
+    { "amount": 25000, "tenure_months": 12,
+      "purpose": "business" }
+  Response 200:
+    { "eligible": true,
+      "approved_amount": 25000,
+      "interest_rate": 18.5,
+      "monthly_emi": 2307,
+      "total_payable": 27684,
+      "lender_name": "Sampann Finance Pvt Ltd",
+      "lender_licence": "RBI/NBFC/123456" }
+  Response 200 (adjusted):
+    { "eligible": true,
+      "approved_amount": 18000,  ← adjusted down
+      "adjustment_reason": "DSCR_LIMIT",
+      "interest_rate": 18.5, ... }
+  Response 200 (ineligible):
+    { "eligible": false,
+      "reason": "LOW_SCORE" | "INCOME_INSUFFICIENT" | "HIGH_EMI_LOAD",
+      "min_score_required": 600,
+      "current_score": 520 }
+  Frontend uses: /loan/application Continue button
+  Toast map: 200.eligible.adjusted→AFFORDABILITY_FAIL,
+             200.ineligible→ELIGIBILITY_FAIL,
+             200.eligible.full→ELIGIBILITY_PASS
+
+──────────────────────────────────────────────────────────────────────────────
+
+POST /loan/acknowledge-kfs
+  Purpose   :  Record KFS acknowledgement
+  Auth      :  Required
+  Body      :  { "report_id": "r_456", "lender_name": "..." }
+  Response 200:
+    { "acknowledged": true, "timestamp": "2026-05-13T14:35:00Z",
+      "kfs_ref": "KFS_789" }
+  Frontend uses: /loan/kfs Continue button (after checkbox tick)
+  Toast map: 200→KFS_ACKNOWLEDGED
+
+──────────────────────────────────────────────────────────────────────────────
+
+POST /loan/confirm
+  Purpose   :  Confirm loan terms before signing
+  Auth      :  Required
+  Body      :  { "kfs_ref": "KFS_789", "approved_amount": 25000,
+                 "tenure_months": 12 }
+  Response 200:
+    { "confirmed": true, "sign_ref": "SIGN_001",
+      "lender_account": "HDFC-XXXX-4532" }
+  Response 400: { "error": "KFS_NOT_ACKNOWLEDGED" }
+  Frontend uses: /loan/review Confirm & Sign button
+
+──────────────────────────────────────────────────────────────────────────────
+
+POST /loan/submit
+  Purpose   :  Submit final loan application with e-signature
+  Auth      :  Required
+  Content   :  multipart/form-data
+  Fields    :
+    sign_ref          : string
+    signature_image   : file   PNG (canvas export)
+  Response 200:
+    { "loan_status": "approved",
+      "application_ref": "GC20260513001",
+      "amount": 25000,
+      "disburse_eta": "2026-05-15",
+      "lender_name": "Sampann Finance Pvt Ltd" }
+  Response 400: { "error": "SIGNATURE_INVALID" }
+  Response 503: { "error": "LENDER_UNAVAILABLE" }
+  Frontend uses: /loan/sign Submit Application button
+  Toast map: 200→LOAN_APPROVED, 400→SERVER_ERROR, 503→SERVER_ERROR
+
+──────────────────────────────────────────────────────────────────────────────
+
+GET /loan/status
+  Purpose   :  Fetch current loan status (on /loan/status screen mount)
+  Auth      :  Required
+  Response 200:
+    { "loan_status": "applied"|"approved"|"disbursed",
+      "application_ref": "GC20260513001",
+      "amount": 25000,
+      "tenure_months": 12,
+      "monthly_emi": 2307,
+      "lender_name": "...",
+      "submitted_at": "...",
+      "approved_at": "..." | null,
+      "disbursed_at": "..." | null,
+      "disburse_eta": "2026-05-15" | null }
+  Frontend uses: /loan/status screen mount
+
+──────────────────────────────────────────────────────────────────────────────
+
+POST /loan/cancel
+  Purpose   :  Cancel loan within cooling-off period (24 hours)
+  Auth      :  Required
+  Body      :  { "application_ref": "GC20260513001",
+                 "reason": "changed_mind" }
+  Response 200: { "cancelled": true, "refund_status": "not_applicable" }
+  Response 400: { "error": "COOLING_OFF_EXPIRED" }
+  Frontend uses: /loan/status Cancel button (shown within 24h of approval)
+  Toast map: 200→LOAN_CANCELLED
+
+══════════════════════════════════════════════════════════════════════════════
+GROUP 6 — CONTENT (Schemes + Guidelines)
+══════════════════════════════════════════════════════════════════════════════
+
+GET /schemes?category={category}&page={page}&limit={limit}
+  Purpose   :  Fetch government schemes list
+  Auth      :  Required
+  Params    :  category: all|business|health|education|housing  default all
+               page: int default 1  limit: int default 20
+  Response 200:
+    { "schemes": [
+        { "id": "s_001", "name": "PM Mudra Yojana",
+          "category": "business", "type": "loan",
+          "description": "...", "max_amount": 1000000,
+          "eligibility": "Gig workers and small businesses",
+          "apply_url": "https://..." ,
+          "accent_colour": "#1A6B3C" },
+        ...
+      ],
+      "total": 45, "page": 1, "limit": 20 }
+  Frontend uses: /schemes screen  (real scheme data — no hardcoded list)
+
+──────────────────────────────────────────────────────────────────────────────
+
+GET /guidelines
+  Purpose   :  Fetch application guidelines / steps explanation
+  Auth      :  Required
+  Response 200:
+    { "guidelines": [
+        { "step": 1, "title": "Personal Information",
+          "description": "...", "documents_needed": ["Aadhaar"],
+          "tips": ["...", "..."] },
+        ...
+      ] }
+  Frontend uses: /guidelines screen
+
+══════════════════════════════════════════════════════════════════════════════
+GROUP 7 — AUDIT (internal / admin only — not user-facing)
+══════════════════════════════════════════════════════════════════════════════
+
+GET /admin/audit?customer_id={id}
+POST /admin/audit/log
+  (Admin panel only — no frontend components for users)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3 — ON-DEVICE PROCESSING ENDPOINTS (event-based, not HTTP)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+On-device processing is NOT HTTP.
+It communicates with the frontend via a JavaScript event bus
+(React context / Kotlin coroutine flow / Flutter stream).
+
+Frontend subscribes to these events and updates UI in real-time.
+These are REAL timing stages — frontend shows each stage
+as it actually starts — not fake sequential timers.
+
+══════════════════════════════════════════════════════════════════════════════
+ON-DEVICE ENGINE: ScoringEngine
+  Input    :  feature_package (received from POST /steps/4/submit)
+  Output   :  score, pillar_scores, shap_values
+  Emits    :  ProcessingEvent stream
+══════════════════════════════════════════════════════════════════════════════
+
+EVENT STREAM: ProcessingEvent
+
+  Event 1:
+    type    :  "FEATURE_ENGINEERING_START"
+    payload :  { "feature_count": 88 }
+    UI      :  Sub-label: "Engineering 88 features from your data..."
+               Graph bars in LOADER 3C start animating
+
+  Event 2:
+    type    :  "FEATURE_ENGINEERING_COMPLETE"
+    payload :  { "duration_ms": actual_ms,
+                 "valid_features": 82, "imputed_features": 6 }
+    UI      :  Sub-label updates: "82 features ready · 6 estimated"
+               First 2 graph bars fill to real value
+
+  Event 3:
+    type    :  "PILLAR_SCORING_START"
+    payload :  { "pillar": "P1_income_regularity" }
+    UI      :  Sub-label: "Scoring Income Regularity..."
+               P1 bar in LOADER 3C fills live
+
+  Event 4 (repeats for each pillar P1–P7):
+    type    :  "PILLAR_SCORE_READY"
+    payload :  { "pillar": "P1_income_regularity",
+                 "score": 78,
+                 "duration_ms": actual_ms }
+    UI      :  That pillar's bar fills to real value instantly
+               Score counter ticks up by that pillar's contribution
+
+  Event 8:
+    type    :  "ALL_PILLARS_COMPLETE"
+    payload :  { "pillar_scores": { P1: 78, P2: 65, ... P7: 60 },
+                 "total_duration_ms": actual_ms }
+    UI      :  All bars full
+
+  Event 9:
+    type    :  "AGGREGATION_START"
+    payload :  {}
+    UI      :  Sub-label: "Calculating your final GigCredit score..."
+
+  Event 10:
+    type    :  "SCORE_READY"
+    payload :  { "score": 742, "score_band": "good",
+                 "duration_ms": actual_ms }
+    UI      :  Score counter ticks up to 742
+               Blur resolves on counter
+               Ring draws to 742/850
+
+  Event 11:
+    type    :  "SHAP_COMPUTATION_START"
+    payload :  {}
+    UI      :  Sub-label: "Computing score explanations..."
+
+  Event 12:
+    type    :  "SHAP_COMPLETE"
+    payload :  {
+                 "shap_values": {
+                   "top_positive": [...],
+                   "top_negative": [...]
+                 },
+                 "duration_ms": actual_ms
+               }
+    UI      :  Sub-label: "Preparing your report..."
+               Triggers POST /report/generate (Section 2, Group 4)
+
+  Event 13:
+    type    :  "SCORING_ERROR"
+    payload :  { "stage": "PILLAR_SCORING" | "AGGREGATION" | "SHAP",
+                 "error_code": "MODEL_LOAD_FAIL" | "INFERENCE_FAIL"
+                              | "INSUFFICIENT_FEATURES" }
+    UI      :  Dismiss loader + Toast: AI_SCORE_FAILED
+               Return user to Step 4 (data saved — no re-entry)
+
+═════════════════════════════════════════════════════════════════════════════
+ON-DEVICE ENGINE: OCREngine
+  Input    :  image/file buffer (from upload fields in Steps 1–4)
+  Output   :  extracted text + field map
+  Emits    :  OCREvent stream
+═════════════════════════════════════════════════════════════════════════════
+
+  OCR_QUEUED     :  { "document_type": "bank_statement" }
+                    UI: Upload zone → "Queued for reading..."
+
+  OCR_READING    :  { "page": 1, "total_pages": 3 }
+                    UI: LOADER 1C (scan line) + "Reading page 1 of 3..."
+
+  OCR_PAGE_DONE  :  { "page": 2, "confidence": 0.91 }
+                    UI: Progress inside upload zone updates (page/total)
+
+  OCR_COMPLETE   :  { "fields": { "account_no": "...",
+                                  "avg_balance": 6800,
+                                  "transactions": [...] },
+                      "confidence": 0.94,
+                      "duration_ms": actual_ms }
+                    UI: Upload zone → SUCCESS STATE
+                        Extracted fields display below zone
+
+  OCR_LOW_CONFIDENCE: { "confidence": 0.62 }
+                    UI: Toast DOC_PARTIAL
+                        User can proceed but warned
+
+  OCR_FAILED     :  { "reason": "BLUR" | "WRONG_DOC" | "UNSUPPORTED" }
+                    UI: Upload zone → ERROR STATE
+                        Toast based on reason map:
+                          BLUR → DOC_UNREADABLE
+                          WRONG_DOC → DOC_WRONG_TYPE
+                          UNSUPPORTED → DOC_UNSUPPORTED_FORMAT
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4 — FRONTEND → ENDPOINT WIRE MAP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Every frontend action maps to exactly one endpoint or event.
+No action maps to zero. No action maps to two.
+
+  SCREEN           ACTION                     ENDPOINT / EVENT
+  ──────────────────────────────────────────────────────────────────────
+  Splash           token check                localStorage + GET /user/me
+  Signup           Send OTP press             POST /auth/send-otp
+  Signup           Verify & Create press      POST /auth/signup
+  Signin           Send OTP press             POST /auth/send-otp
+  Signin           Sign In press              POST /auth/signin
+  Home             mount                      GET /user/me
+  Home             GET STARTED press          (no API — opens popup)
+  Home             Schemes strip              GET /schemes?limit=3
+  Step 1           mount                      GET /steps/1/saved
+  Step 1           Aadhaar upload             OCR_EVENT stream
+  Step 1           Continue press             POST /steps/1/submit
+  Step 2           mount                      GET /steps/2/saved
+  Step 2           Bank statement upload      OCR_EVENT stream
+  Step 2           PAN upload                 OCR_EVENT stream
+  Step 2           Continue press             POST /steps/2/submit
+  Step 3           mount                      GET /steps/3/saved
+  Step 3           Address proof upload       OCR_EVENT stream
+  Step 3           Earnings screenshot upload OCR_EVENT stream
+  Step 3           Continue press             POST /steps/3/submit
+  Step 4           mount                      GET /steps/4/saved
+  Step 4           Utility bill upload        OCR_EVENT stream
+  Step 4           Continue press             POST /steps/4/submit
+                                               → on success: ScoringEngine
+                                                 receives feature_package
+  Processing       ScoringEngine events       ProcessingEvent stream
+                   (real-time stage display)
+  Processing       SHAP_COMPLETE event        POST /report/generate
+  Report           mount                      GET /report/latest
+  Loan App         mount                      GET /user/me (for max_eligible)
+  Loan App         Continue press             POST /loan/eligibility
+  Loan KFS         Continue press             POST /loan/acknowledge-kfs
+  Loan Review      Confirm press              POST /loan/confirm
+  Loan Sign        Submit press               POST /loan/submit
+  Loan Status      mount                      GET /loan/status
+  Loan Status      Cancel press               POST /loan/cancel
+  Schemes          mount + scroll             GET /schemes (paginated)
+  Guidelines       mount                      GET /guidelines
+  Profile          mount                      GET /user/me
+  Profile          Save press                 PATCH /user/profile
+  Any screen       401 response               POST /auth/refresh-token
+  Any screen       network fail               (no endpoint — local detect)
+  ──────────────────────────────────────────────────────────────────────
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5 — TEST PAYLOADS (use for every new component)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STANDARD TEST USER:
+  mobile  :  9876543210
+  otp     :  123456  (dev mode bypass)
+  name    :  Ravi Kumar
+  token   :  use real Firebase token from dev project
+
+TEST — POST /steps/4/submit success response (to trigger scoring):
+  {
+    "step": 4, "status": "verified",
+    "bill_parse_status": "success",
+    "bill_regularity": 0.90,
+    "completed_steps": 4,
+    "feature_package": {
+      "income_regularity": 0.82, "spending_ratio": 0.41,
+      "bill_consistency": 0.90, "gig_tenure_months": 14,
+      "upi_volume_monthly": 12400, "existing_emi_ratio": 0.12,
+      "bank_avg_balance": 6800, "asset_indicators": 0,
+      "insurance_active": false, "platform_rating": 4.2,
+      ... (remaining 78 features from feature engineering spec)
+    }
+  }
+
+TEST — ProcessingEvent sequence (simulate in dev):
+  Emit events with 200–800ms real delay between each:
+  FEATURE_ENGINEERING_START → FEATURE_ENGINEERING_COMPLETE →
+  PILLAR_SCORING_START(P1) → PILLAR_SCORE_READY(P1:78) →
+  PILLAR_SCORING_START(P2) → PILLAR_SCORE_READY(P2:65) →
+  ... through P7 →
+  ALL_PILLARS_COMPLETE →
+  AGGREGATION_START → SCORE_READY(742) →
+  SHAP_COMPUTATION_START → SHAP_COMPLETE
+
+TEST — POST /report/generate success response:
+  {
+    "report_id": "r_456",
+    "score": 742,
+    "score_band": "good",
+    "score_summary": "Your GigCredit score of 742 ...",
+    "pillar_explanations": { "P1_income_regularity": "...", ... },
+    "positive_factors": ["...", "..."],
+    "negative_factors": ["...", "..."],
+    "improvement_suggestions": ["...", "..."],
+    "max_loan_eligible": 48000,
+    "generated_at": "2026-05-13T14:30:00Z"
+  }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 6 — IMPLEMENTATION CHECKLIST (run for every component)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Before marking any frontend component as done:
+
+  ✅ Identified the exact endpoint from Section 2 or event from Section 3
+  ✅ Request method, path, headers, body match this spec exactly
+  ✅ Every response code handled (success + all listed errors)
+  ✅ Toast fires for every backend error using correct toast ID
+  ✅ Inline error fires for every client-side validation failure
+  ✅ Loading state (correct loader from Spinner spec) shown during call
+  ✅ Loading state dismissed on both success AND error
+  ✅ Response data bound to UI — no static values anywhere
+  ✅ On 401 → token refresh triggered automatically
+  ✅ On network fail → NO_INTERNET toast
+  ✅ Tested with test payload from Section 5
+  ✅ Confirmed real data displays in UI (not test labels, not "undefined")
+  ✅ Backend: endpoint exists, returns documented shape, tested with Postman
+  ✅ On-device: event emits at correct real stage, not setTimeout mock
+  ✅ Processing screen: each sub-label appears only when its event fires
+  ✅ Report screen: all text from POST /report/generate only — no templates
+  ✅ Loan amounts, EMI: all from API — no frontend calculations
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 7 — MISMATCH PREVENTION RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+These are the exact failure modes this spec prevents.
+
+  RULE 1 — NO ORPHAN ENDPOINTS:
+    If backend has an endpoint that no frontend calls → FLAG IT.
+    If frontend calls an endpoint that backend doesn't have → FLAG IT.
+    Section 4 wire map is the authority. Anything not in it doesn't exist.
+
+  RULE 2 — NO FAKE CONNECTIVITY:
+    Never remove a backend endpoint to make counts match.
+    Never add a frontend call to a non-existent endpoint.
+    If there's a mismatch → STOP and ask the developer.
+
+  RULE 3 — RESPONSE SHAPE CONTRACTS:
+    Frontend must consume ONLY the fields documented in Section 2.
+    Backend must return ONLY the fields documented in Section 2.
+    If a field is added or removed → update this spec first.
+
+  RULE 4 — NO FALLBACK STATIC DATA:
+    If GET /user/me fails → show error state, not fake user data.
+    If GET /report/latest fails → show error state, not fake score.
+    If GET /schemes fails → show empty state with retry, not hardcoded schemes.
+
+  RULE 5 — REAL PROCESSING EVENTS ONLY:
+    ProcessingEvent sub-labels appear ONLY when the real event fires.
+    No setTimeout(() => showNextLabel, 2000).
+    No faking feature engineering stages with timers.
+    If the model runs fast → sub-labels flash fast. That is correct.
+
+  RULE 6 — MISMATCH DETECTION PROTOCOL:
+    If during implementation a frontend field has no matching backend field:
+      → Do not invent a value.
+      → Do not use a related field as a substitute.
+      → STOP. Document the gap. Ask.
+
+    If a backend endpoint returns a field not consumed by any frontend:
+      → Keep it (may be needed later) but document it here.
+      → Do not remove it to "clean up".
+
+  RULE 7 — 50 TEST PROFILES EXCEPTION:
+    The 50+ user profiles should be implemented as it like the current implention 

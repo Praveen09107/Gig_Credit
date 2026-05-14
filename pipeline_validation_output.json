@@ -1,0 +1,26 @@
+{
+  "status": "WARNING",
+  "internal_valid": true,
+  "cross_valid": true,
+  "global_valid": true,
+  "transaction_verified": false,
+  "confidence_score": 0.5753,
+  "consistency_score": 0.75,
+  "avg_monthly_income": 3624.83,
+  "total_utility_bills": 1477.0,
+  "tx_summary": {
+    "verified": 3,
+    "total": 6
+  },
+  "mismatches": [
+    "dob_mismatch: aadhaar=18/11/2015 pan=09/01/2007"
+  ],
+  "critical_issues": [],
+  "warnings": [
+    "eb_bill_TANGEDCO_amount_not_extracted",
+    "gas_bill_INDANE_amount_not_extracted",
+    "mobile_bill_JIO_amount_not_extracted",
+    "dob_mismatch: aadhaar=18/11/2015 pan=09/01/2007"
+  ],
+  "generated_at": "2026-05-02T19:42:54.480954"
+}

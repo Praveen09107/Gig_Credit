@@ -384,7 +384,7 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('$code  $name', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              Expanded(child: Text('$code  $name', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
               Text(pts, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
             ],
           ),
@@ -411,7 +411,18 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
             Text(warning, style: const TextStyle(color: Color(0xFFFF4E6A), fontSize: 12)),
           ],
           const SizedBox(height: 4),
-          const Text('tap for detail ▾', style: TextStyle(color: Color(0xFF00D4B4), fontSize: 11)),
+          InkWell(
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text('Detailed view for $name coming soon.'),
+                backgroundColor: const Color(0xFF00D4B4),
+              ));
+            },
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 4.0),
+              child: Text('tap for detail ▾', style: TextStyle(color: Color(0xFF00D4B4), fontSize: 11)),
+            ),
+          ),
         ],
       ),
     );
@@ -588,8 +599,8 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
               const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Current Score    647  Grade B', style: TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
-                  Text('Potential Score  693  Grade B', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                  Expanded(child: Text('Current Score\n647  Grade B', style: TextStyle(color: Color(0xFF8B95A8), fontSize: 13))),
+                  Expanded(child: Text('Potential Score\n693  Grade B', textAlign: TextAlign.right, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13))),
                 ],
               ),
               const SizedBox(height: 12),

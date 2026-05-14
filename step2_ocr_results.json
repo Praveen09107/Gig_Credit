@@ -1,0 +1,295 @@
+{
+  "pipeline_results": [
+    {
+      "Aadhaar Front [CORRECT]": {
+        "extraction": {
+          "status": "ACCEPTED",
+          "doc_type": "aadhaar_front",
+          "confidence": 0.9000000000000001,
+          "file": "adar front card.jpeg",
+          "ocr_engine": "paddleocr",
+          "quality": {
+            "passed": true,
+            "resolution": "1423x883",
+            "blur_score": 506.86,
+            "brightness": 182.44
+          },
+          "fields": {
+            "aadhaar_number": "749420067990",
+            "name": "Praveen Kumar P",
+            "dob": "18/11/2015",
+            "gender": "Male"
+          },
+          "warnings": [],
+          "lines_extracted": 15
+        },
+        "temp_storage": {
+          "step": "step_2",
+          "doc_type": "aadhaar_front",
+          "verified": true,
+          "timestamp": "2026-05-02T18:30:48.767964",
+          "data": {
+            "aadhaar_number": "749420067990",
+            "name": "Praveen Kumar P",
+            "dob": "18/11/2015",
+            "gender": "Male"
+          },
+          "warnings": []
+        }
+      }
+    },
+    {
+      "Aadhaar BACK in FRONT slot [WRONG]": {
+        "extraction": {
+          "status": "WRONG_DOCUMENT",
+          "doc_type": "aadhaar_back",
+          "confidence": 1.0,
+          "file": "adar card bacck side .jpeg",
+          "ocr_engine": "paddleocr",
+          "quality": {
+            "passed": true,
+            "resolution": "1600x1011",
+            "blur_score": 551.77,
+            "brightness": 184.27
+          },
+          "fields": {},
+          "warnings": [
+            "Uploaded: 'Aadhaar Back (address side)'. Expected: 'Aadhaar Front (photo side)'. Please upload the correct document."
+          ],
+          "lines_extracted": 17
+        },
+        "temp_storage": {
+          "step": "step_2",
+          "doc_type": "aadhaar_back",
+          "verified": false,
+          "timestamp": "2026-05-02T18:30:50.331092",
+          "data": {},
+          "warnings": [
+            "Uploaded: 'Aadhaar Back (address side)'. Expected: 'Aadhaar Front (photo side)'. Please upload the correct document."
+          ]
+        }
+      }
+    },
+    {
+      "eShram in Aadhaar Front slot [WRONG]": {
+        "extraction": {
+          "status": "LOW_QUALITY_IMAGE",
+          "doc_type": "UNKNOWN",
+          "confidence": 0.0,
+          "file": "e sharm.jpeg",
+          "ocr_engine": "paddleocr",
+          "quality": {
+            "passed": false,
+            "reason": "OVEREXPOSED",
+            "brightness": 221.71
+          },
+          "fields": {},
+          "warnings": [
+            "OVEREXPOSED"
+          ],
+          "lines_extracted": 0
+        },
+        "temp_storage": {
+          "step": "step_2",
+          "doc_type": "UNKNOWN",
+          "verified": false,
+          "timestamp": "2026-05-02T18:30:50.343872",
+          "data": {},
+          "warnings": [
+            "OVEREXPOSED"
+          ]
+        }
+      }
+    },
+    {
+      "eShram in PAN slot [WRONG]": {
+        "extraction": {
+          "status": "LOW_QUALITY_IMAGE",
+          "doc_type": "UNKNOWN",
+          "confidence": 0.0,
+          "file": "e sharm.jpeg",
+          "ocr_engine": "paddleocr",
+          "quality": {
+            "passed": false,
+            "reason": "OVEREXPOSED",
+            "brightness": 221.71
+          },
+          "fields": {},
+          "warnings": [
+            "OVEREXPOSED"
+          ],
+          "lines_extracted": 0
+        },
+        "temp_storage": {
+          "step": "step_2",
+          "doc_type": "UNKNOWN",
+          "verified": false,
+          "timestamp": "2026-05-02T18:30:50.355222",
+          "data": {},
+          "warnings": [
+            "OVEREXPOSED"
+          ]
+        }
+      }
+    },
+    {
+      "PAN Card Front [CORRECT]": {
+        "extraction": {
+          "status": "ACCEPTED",
+          "doc_type": "pan",
+          "confidence": 1.0,
+          "file": "pan card front .jpeg",
+          "ocr_engine": "paddleocr",
+          "quality": {
+            "passed": true,
+            "resolution": "1024x1584",
+            "blur_score": 183.28,
+            "brightness": 158.32
+          },
+          "fields": {
+            "pan_number": "IPZPP3254R",
+            "name": "PRAVEEN KUMAR P",
+            "dob": "09/01/2007"
+          },
+          "warnings": [],
+          "lines_extracted": 14
+        },
+        "temp_storage": {
+          "step": "step_2",
+          "doc_type": "pan",
+          "verified": true,
+          "timestamp": "2026-05-02T18:30:51.847261",
+          "data": {
+            "pan_number": "IPZPP3254R",
+            "name": "PRAVEEN KUMAR P",
+            "dob": "09/01/2007"
+          },
+          "warnings": []
+        }
+      }
+    },
+    {
+      "Aadhaar Front in PAN slot [WRONG]": {
+        "extraction": {
+          "status": "WRONG_DOCUMENT",
+          "doc_type": "aadhaar_front",
+          "confidence": 0.9000000000000001,
+          "file": "adar front card.jpeg",
+          "ocr_engine": "paddleocr",
+          "quality": {
+            "passed": true,
+            "resolution": "1423x883",
+            "blur_score": 506.86,
+            "brightness": 182.44
+          },
+          "fields": {},
+          "warnings": [
+            "Uploaded: 'Aadhaar Front (photo side)'. Expected: 'PAN Card'. Please upload the correct document."
+          ],
+          "lines_extracted": 15
+        },
+        "temp_storage": {
+          "step": "step_2",
+          "doc_type": "aadhaar_front",
+          "verified": false,
+          "timestamp": "2026-05-02T18:30:53.707523",
+          "data": {},
+          "warnings": [
+            "Uploaded: 'Aadhaar Front (photo side)'. Expected: 'PAN Card'. Please upload the correct document."
+          ]
+        }
+      }
+    },
+    {
+      "Aadhaar Back [CORRECT]": {
+        "extraction": {
+          "status": "ACCEPTED",
+          "doc_type": "aadhaar_back",
+          "confidence": 1.0,
+          "file": "adar card bacck side .jpeg",
+          "ocr_engine": "paddleocr",
+          "quality": {
+            "passed": true,
+            "resolution": "1600x1011",
+            "blur_score": 551.77,
+            "brightness": 184.27
+          },
+          "fields": {
+            "aadhaar_number": "749420067990",
+            "dob": "08/04/2024",
+            "pin_code": "600057"
+          },
+          "warnings": [],
+          "lines_extracted": 17
+        },
+        "temp_storage": {
+          "step": "step_2",
+          "doc_type": "aadhaar_back",
+          "verified": true,
+          "timestamp": "2026-05-02T18:30:55.221847",
+          "data": {
+            "aadhaar_number": "749420067990",
+            "dob": "08/04/2024",
+            "pin_code": "600057"
+          },
+          "warnings": []
+        }
+      }
+    },
+    {
+      "eShram in Aadhaar Back slot [WRONG]": {
+        "extraction": {
+          "status": "LOW_QUALITY_IMAGE",
+          "doc_type": "UNKNOWN",
+          "confidence": 0.0,
+          "file": "e sharm.jpeg",
+          "ocr_engine": "paddleocr",
+          "quality": {
+            "passed": false,
+            "reason": "OVEREXPOSED",
+            "brightness": 221.71
+          },
+          "fields": {},
+          "warnings": [
+            "OVEREXPOSED"
+          ],
+          "lines_extracted": 0
+        },
+        "temp_storage": {
+          "step": "step_2",
+          "doc_type": "UNKNOWN",
+          "verified": false,
+          "timestamp": "2026-05-02T18:30:55.234589",
+          "data": {},
+          "warnings": [
+            "OVEREXPOSED"
+          ]
+        }
+      }
+    }
+  ],
+  "step2_profile": {
+    "step": "step_2",
+    "completed_at": "2026-05-02T18:30:55.234589",
+    "aadhaar_verified": true,
+    "pan_verified": true,
+    "extracted_data": {
+      "aadhaar_front_aadhaar_front_[correct]": {
+        "aadhaar_number": "749420067990",
+        "name": "Praveen Kumar P",
+        "dob": "18/11/2015",
+        "gender": "Male"
+      },
+      "pan_pan_card_front_[correct]": {
+        "pan_number": "IPZPP3254R",
+        "name": "PRAVEEN KUMAR P",
+        "dob": "09/01/2007"
+      },
+      "aadhaar_back_aadhaar_back_[correct]": {
+        "aadhaar_number": "749420067990",
+        "dob": "08/04/2024",
+        "pin_code": "600057"
+      }
+    }
+  }
+}

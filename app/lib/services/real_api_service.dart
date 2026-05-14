@@ -17,7 +17,7 @@ class RealApiService implements ApiService {
       Uri.parse('$baseUrl/auth/otp/send'),
       headers: _headers,
       body: jsonEncode({'mobile': mobile, 'isSignup': isSignup, 'name': name}),
-    ).timeout(const Duration(seconds: 10));
+    ).timeout(const Duration(seconds: 120));
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
@@ -32,7 +32,7 @@ class RealApiService implements ApiService {
       Uri.parse('$baseUrl/auth/otp/verify'),
       headers: _headers,
       body: jsonEncode({'mobile': mobile, 'otp': otp}),
-    ).timeout(const Duration(seconds: 10));
+    ).timeout(const Duration(seconds: 120));
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
@@ -202,7 +202,7 @@ class RealApiService implements ApiService {
       Uri.parse('$baseUrl/api/report/generate'),
       headers: _headers,
       body: jsonEncode(verifiedProfileData),
-    ).timeout(const Duration(seconds: 60));
+    ).timeout(const Duration(seconds: 120));
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     }

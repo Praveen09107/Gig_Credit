@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../../../app/app_router.dart';
 import '../../../services/loan_api_service.dart';
 import '../../../state/score_provider.dart';
+import '../../../shared/widgets/loaders/coin_pulse_loader.dart';
 
 // Constants from Prompt
 const _bgPrimary = Color(0xFF0D0F14);
@@ -272,7 +273,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
   Widget _buildProductCard({required String title, required String badge, required Color badgeColor, Color? badgeBg, required Color bg, required Color borderColor, required Color leftBorder, required String amount, required String tenure, required String apr, required String purpose, required String precalc, required String btnText, required Color btnColor, required VoidCallback onTap}) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: bg, border: Border(top: BorderSide(color: borderColor), right: BorderSide(color: borderColor), bottom: BorderSide(color: borderColor), left: BorderSide(color: leftBorder, width: 4)), borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(color: bg, border: Border.all(color: borderColor), borderRadius: BorderRadius.circular(16)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -311,11 +312,11 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
           ),
           const SizedBox(height: 12),
           SizedBox(
-            width: double.infinity, height: 44,
+            width: double.infinity, height: 48,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: btnColor, foregroundColor: _bgPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
               onPressed: onTap,
-              child: Text(btnText, style: const TextStyle(fontWeight: FontWeight.bold)),
+              child: FittedBox(fit: BoxFit.scaleDown, child: Text(btnText, style: const TextStyle(fontWeight: FontWeight.bold))),
             )
           )
         ],
@@ -337,7 +338,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
   Widget _buildLockedCard() {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: _accentPurpleDim, border: Border(top: BorderSide(color: const Color(0x408B5CF6)), right: BorderSide(color: const Color(0x408B5CF6)), bottom: BorderSide(color: const Color(0x408B5CF6)), left: BorderSide(color: _accentPurple, width: 4)), borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(color: _accentPurpleDim, border: Border.all(color: const Color(0x408B5CF6)), borderRadius: BorderRadius.circular(16)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -367,11 +368,11 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
           ),
           const SizedBox(height: 16),
           SizedBox(
-            width: double.infinity, height: 44,
+            width: double.infinity, height: 48,
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(side: const BorderSide(color: _accentPurple), foregroundColor: _accentPurple, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
               onPressed: () {},
-              child: const Text('HOW TO UNLOCK →', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: const FittedBox(fit: BoxFit.scaleDown, child: Text('HOW TO UNLOCK →', style: TextStyle(fontWeight: FontWeight.bold))),
             )
           )
         ],
@@ -387,7 +388,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
       children: [
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: _accentGreenDim, border: Border(top: BorderSide(color: const Color(0x403DD68C)), right: BorderSide(color: const Color(0x403DD68C)), bottom: BorderSide(color: const Color(0x403DD68C)), left: BorderSide(color: _accentGreen, width: 4)), borderRadius: BorderRadius.circular(14)),
+          decoration: BoxDecoration(color: _accentGreenDim, border: Border.all(color: const Color(0x403DD68C)), borderRadius: BorderRadius.circular(14)),
           child: const Row(
             children: [
               Text('💡', style: TextStyle(fontSize: 18)),
@@ -521,7 +522,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
       children: [
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: _accentGoldDim, border: Border(top: BorderSide(color: const Color(0x40F4B942)), right: BorderSide(color: const Color(0x40F4B942)), bottom: BorderSide(color: const Color(0x40F4B942)), left: BorderSide(color: _accentGold, width: 4)), borderRadius: BorderRadius.circular(14)),
+          decoration: BoxDecoration(color: _accentGoldDim, border: Border.all(color: const Color(0x40F4B942)), borderRadius: BorderRadius.circular(14)),
           child: const Text('⚖️  LEGAL DISCLOSURE — Read carefully before agreeing', style: TextStyle(color: _accentGold, fontSize: 14, fontWeight: FontWeight.w600)),
         ).animate().fadeIn(),
         const SizedBox(height: 24),
@@ -545,7 +546,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
         const SizedBox(height: 24),
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: _accentTealDim, border: Border(top: BorderSide(color: const Color(0x4000D4B4)), right: BorderSide(color: const Color(0x4000D4B4)), bottom: BorderSide(color: const Color(0x4000D4B4)), left: BorderSide(color: _accentTeal, width: 4)), borderRadius: BorderRadius.circular(14)),
+          decoration: BoxDecoration(color: _accentTealDim, border: Border.all(color: const Color(0x4000D4B4)), borderRadius: BorderRadius.circular(14)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -617,7 +618,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
           decoration: BoxDecoration(color: _bgCard, borderRadius: BorderRadius.circular(16), border: Border.all(color: _borderSubtle)),
           child: const Row(
             children: [
-              SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: _accentTeal)),
+              CoinPulseLoader(color: _accentTeal, size: 6.0),
               SizedBox(width: 16),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -654,7 +655,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
           decoration: BoxDecoration(color: _accentPurpleDim, borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0x408B5CF6))),
           child: const Row(
             children: [
-              SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: _accentPurple)),
+              CoinPulseLoader(color: _accentPurple, size: 6.0),
               SizedBox(width: 12),
               Text('Sending to AI decision engine...', style: TextStyle(color: _textPrimary)),
             ],
@@ -780,7 +781,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(color: _accentRedDim, borderRadius: BorderRadius.circular(16), border: Border(top: BorderSide(color: const Color(0x40FF4E6A)), right: BorderSide(color: const Color(0x40FF4E6A)), bottom: BorderSide(color: const Color(0x40FF4E6A)), left: const BorderSide(color: _accentRed, width: 4))),
+          decoration: BoxDecoration(color: _accentRedDim, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0x40FF4E6A))),
           child: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -795,7 +796,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: _accentGreenDim, borderRadius: BorderRadius.circular(14), border: Border(top: BorderSide(color: const Color(0x403DD68C)), right: BorderSide(color: const Color(0x403DD68C)), bottom: BorderSide(color: const Color(0x403DD68C)), left: const BorderSide(color: _accentGreen, width: 4))),
+          decoration: BoxDecoration(color: _accentGreenDim, borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0x403DD68C))),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

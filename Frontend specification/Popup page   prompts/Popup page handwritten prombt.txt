@@ -1,0 +1,4 @@
+Popup page 
+When user click get started at home page means popup should be appeas it contains ready to start with 2 buttons continue and guidelines button continue means it will redirect to step -1 page or else clkc in guidelines button means guidlines page ok 
+
+Make the popup impressive and better one ok

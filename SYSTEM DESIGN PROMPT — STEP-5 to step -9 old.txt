@@ -1,0 +1,2023 @@
+SYSTEM DESIGN PROMPT — STEP-5 WORK PROOF VERIFICATION
+
+Context
+Step-5 verifies the user’s occupation or gig activity. This step dynamically adapts based on the Work Type selected in Step-1.
+
+Supported work types:
+
+• Platform Driver
+• Street Vendor / Seller
+• Skilled Tradesperson
+• Freelancer (placeholder)
+
+Each work type has different verification APIs, document uploads, and validation processes.
+
+All inputs in this step are optional.
+However, if the user provides any work proof, the system must verify and validate it.
+Invalid inputs are rejected and not used in the system.
+
+Validation architecture used in this step:
+
+API Verification (server simulation)
+Individual Validation (OCR vs API)
+Cross-Internal Validation (within documents of this step)
+Global Validation (comparison with Step-1, Step-2, and Step-3 data)
+
+---
+
+INPUT REQUIREMENT CLASSIFICATION
+
+All Step-5 inputs are optional.
+
+User may skip Step-5 and continue to Step-6.
+
+However:
+
+If a user provides any input in this step, that input must pass verification and validation.
+If validation fails, the input is rejected and ignored.
+
+---
+
+WORK TYPE: PLATFORM DRIVER
+
+User enters vehicle number.
+
+Example
+
+AN01H7125
+
+User clicks Verify.
+
+---
+
+RC VERIFICATION API (SIMULATION)
+
+Endpoint
+
+POST /api/gov/vehicle/rc-check
+
+MongoDB Collection
+
+vehicle_rc_db
+
+Request
+
+{
+"vehicle_number": "AN01H7125"
+}
+
+Example database record
+
+{
+"vehicle_number": "AN01H7125",
+"owner_name": "G LATA",
+"vehicle_type": "Motorcycle",
+"chassis_number": "ME4JF501ED8275772",
+"engine_number": "JF50E80275170",
+"registration_date": "03-07-2013",
+"valid_till": "02-07-2028"
+}
+
+Response
+
+{
+"vehicle_found": true,
+"owner_name": "G LATA",
+"rc_status": "Active",
+"valid_till": "02-07-2028"
+}
+
+Verification Fields
+
+• vehicle_number
+
+---
+
+INSURANCE VERIFICATION API (SIMULATION)
+
+Endpoint
+
+POST /api/gov/vehicle/insurance-check
+
+MongoDB Collection
+
+vehicle_insurance_db
+
+Request
+
+{
+"vehicle_number": "AN01H7125"
+}
+
+Example database record
+
+{
+"vehicle_number": "AN01H7125",
+"policy_number": "SJ413354",
+"insurance_company": "Bharti AXA",
+"policy_start": "01-08-2019",
+"policy_expiry": "31-07-2026"
+}
+
+Response
+
+{
+"insurance_found": true,
+"policy_number": "SJ413354",
+"insurance_status": "Active",
+"expiry": "31-07-2026"
+}
+
+Verification Fields
+
+• vehicle_number
+• policy_number
+
+---
+
+COMBINED API RESULT
+
+System merges both responses.
+
+Example
+
+{
+"vehicle_number": "AN01H7125",
+"rc_status": "Active",
+"insurance_status": "Active",
+"owner_name": "G LATA"
+}
+
+---
+
+DOCUMENT UPLOAD
+
+After API verification succeeds, the following upload options become enabled:
+
+• RC Book Upload
+• Vehicle Insurance Document Upload
+• Platform App Screenshots
+
+---
+
+PLATFORM SCREENSHOTS
+
+User must upload screenshots from their gig platform application.
+
+Example platforms
+
+• Rapido
+• Uber
+• Ola
+• Swiggy
+• Zomato
+• Dunzo
+• Blinkit
+
+Typical screenshots include:
+
+• Profile Screen
+• Earnings Dashboard
+• Order Summary Screen
+• Redeem / Payout Screen
+• ON-DUTY Home Screen
+
+---
+
+OCR EXTRACTION
+
+From RC document
+
+• Registration Number
+• Owner Name
+• Registration Date
+• Registration Validity
+• Chassis Number
+• Engine Number
+
+From Insurance document
+
+• Policy Number
+• Insurance Company
+• Policy Expiry Date
+• Vehicle Number
+
+From Platform Screenshots
+
+• Platform Name
+• Total Rides
+• Total Earnings
+• Daily Earnings
+• KM Travelled
+• Hours Active
+• Bank Deposited
+• Platform Rating
+• Acceptance Rate
+• Total Orders
+• Cash Collected
+• Redeem Amount
+• Payment Date
+• Duty Status
+• Bank Account Number
+
+---
+
+INDIVIDUAL VALIDATION
+
+OCR extracted fields must match API data.
+
+Example comparison
+
+Field | API | OCR
+
+Vehicle Number | AN01H7125 | AN01H7125
+Policy Number | SJ413354 | SJ413354
+
+---
+
+CROSS-INTERNAL VALIDATION
+
+Ensure vehicle number remains consistent across:
+
+• RC document
+• Insurance document
+
+Platform screenshots must also remain internally consistent.
+
+Example
+
+Bank Account Number must remain consistent across payout screenshots.
+
+---
+
+GLOBAL VALIDATION
+
+Compare Step-5 data with previous verified steps.
+
+Vehicle owner name may differ from Step-1 identity because drivers may use family vehicles.
+
+If owner name differs, mark flag:
+
+vehicle_owner_mismatch = true
+
+Vehicle number must remain consistent.
+
+Platform payout verification:
+
+Bank deposited amount from screenshot must match transaction dataset from Step-3.
+
+Example
+
+Screenshot
+
+Bank Deposited: ₹17.42
+Date: 11-01-2019
+
+System searches Step-3 structured bank transactions dataset.
+
+If matching transaction found:
+
+platform_income_verified = true
+
+---
+
+WORK TYPE: STREET VENDOR / SELLER
+
+User may upload the following optional documents:
+
+• PM SVANidhi Approval / Recommendation Letter
+• Bank No-Due Certificate
+• FSSAI Registration Certificate
+
+---
+
+SVANIDHI VERIFICATION API (SIMULATION)
+
+Endpoint
+
+POST /api/gov/svanidhi/verify
+
+MongoDB Collection
+
+svanidhi_db
+
+Request
+
+{
+"application_id": "SVN12345678"
+}
+
+Response
+
+{
+"application_id": "SVN12345678",
+"loan_status": "Disbursed",
+"loan_amount": 10000,
+"bank": "State Bank of India",
+"next_loan_eligible": 20000
+}
+
+Verification Fields
+
+• application_id
+
+---
+
+OCR EXTRACTION — SVANIDHI LETTER
+
+• Certificate / Registration Number
+• Name
+• DOB
+• Gender
+• Category of Vending
+• Nature of Vending
+• Business Location
+• Urban Local Body
+• Photo
+
+---
+
+OCR EXTRACTION — NO DUE CERTIFICATE
+
+• Loan Agreement Number
+• Borrower Name
+• Certificate Date
+• Issuing Bank
+• Loan Status
+
+---
+
+FSSAI REGISTRATION VERIFICATION
+
+FSSAI license uses a 14-digit registration number.
+
+Example
+
+12345678901234
+
+API Endpoint
+
+POST /api/gov/fssai/verify
+
+MongoDB Collection
+
+fssai_db
+
+Verification Field
+
+• license_number
+
+OCR Fields
+
+• Registration Number
+• Business Type
+• Place of Business
+• Validity Period
+
+---
+
+INDIVIDUAL VALIDATION
+
+Field | API | OCR
+
+Application ID | SVN12345678 | SVN12345678
+FSSAI License | 12345678901234 | 12345678901234
+
+---
+
+CROSS-INTERNAL VALIDATION
+
+Ensure consistency between:
+
+• SVANidhi approval letter
+• No-due certificate
+
+Fields checked
+
+• Vendor Name
+• Application ID
+• Loan Reference Number
+
+---
+
+GLOBAL VALIDATION
+
+Compare vendor identity with Step-1 and Step-2 identity.
+
+Example
+
+Vendor Name ↔ Step-1 Name
+DOB ↔ Aadhaar DOB
+
+---
+
+WORK TYPE: SKILLED TRADESPERSON
+
+User may upload:
+
+• Skill India Certificate
+• FSSAI Registration (if business is food related)
+
+---
+
+SKILL CERTIFICATE VERIFICATION API
+
+Endpoint
+
+POST /api/gov/skill/verify
+
+MongoDB Collection
+
+skill_certificate_db
+
+Request
+
+{
+"certificate_id": "NSDC-2023-457892"
+}
+
+Response
+
+{
+"candidate_name": "Ravi Kumar",
+"job_role": "Electrician",
+"nsqf_level": "Level 4",
+"certificate_status": "Valid"
+}
+
+Verification Fields
+
+• certificate_id
+
+---
+
+OCR EXTRACTION
+
+• Candidate Name
+• Certificate ID
+• Job Role
+• NSQF Level
+• Training Institute
+• Duration
+• Grade
+• Enrollment Number
+• Course Period
+• Date of Issue
+• Issuing Body
+
+---
+
+INDIVIDUAL VALIDATION
+
+Field | API | OCR
+
+Candidate Name | Ravi Kumar | Ravi Kumar
+Certificate ID | NSDC-2023-457892 | NSDC-2023-457892
+
+---
+
+CROSS-INTERNAL VALIDATION
+
+Ensure certificate ID remains consistent across certificate sections.
+
+---
+
+GLOBAL VALIDATION
+
+Compare candidate identity with previous steps.
+
+Example
+
+Candidate Name ↔ Step-1 Name
+Father Name ↔ Aadhaar Father Name
+
+---
+
+WORK TYPE: FREELANCER
+
+Freelancer verification module is currently under development.
+
+Freelancer verification = placeholder.
+
+---
+
+TECHNICAL FLOW
+
+User opens Step-5
+↓
+System checks Step-1 work type
+↓
+Load dynamic verification module
+↓
+User enters verification ID (vehicle / application / certificate)
+↓
+Call simulated verification API
+↓
+Store API response temporarily
+↓
+Enable document upload
+↓
+OCR extraction from uploaded documents
+↓
+Individual validation (OCR vs API)
+↓
+Cross-internal validation
+↓
+Global validation with previous steps
+↓
+Update global validation object
+↓
+Step-5 marked verified
+
+---
+
+OUTPUT OF STEP-5
+
+Step-5 Status = Verified
+
+User proceeds to Step-6.
+
+
+
+
+
+
+
+
+
+SYSTEM DESIGN PROMPT — STEP-6 GOVERNMENT SCHEME VERIFICATION
+
+Context
+Step-6 collects optional government scheme registrations and financial security programs associated with the user. These schemes help strengthen the user’s financial credibility and improve scoring signals.
+
+All schemes in this step are optional, but verified participation can improve financial stability indicators.
+
+Supported schemes
+
+• eShram Worker Registration
+• PM-SYM (Pradhan Mantri Shram Yogi Maandhan Pension Scheme)
+• PMJJBY (Pradhan Mantri Jeevan Jyoti Bima Yojana)
+• PMMY (Pradhan Mantri Mudra Yojana Loan)
+• Public Provident Fund (PPF)
+
+Each scheme follows the same validation architecture:
+
+API Verification (when available)
+Document Upload
+OCR Extraction
+Individual Validation
+Cross-Internal Validation
+Global Validation
+
+All inputs in this step are optional.
+If a user provides any scheme document or identifier, the system must validate it.
+Invalid inputs are rejected.
+
+---
+
+SCHEME 1 — ESHRAM REGISTRATION
+
+User enters UAN Number.
+
+Example
+
+123456789012
+
+---
+
+ESHRAM VERIFICATION API (SIMULATION)
+
+Endpoint
+
+POST /gov/eshram/verify
+
+MongoDB Collection
+
+eshram_db
+
+Request
+
+{
+"uan": "123456789012"
+}
+
+Response
+
+{
+"worker_name": "Ravi Kumar",
+"occupation": "Electrician",
+"state": "Tamil Nadu",
+"registration_status": "Active"
+}
+
+Verification Fields
+
+• UAN Number
+
+If verification succeeds, document upload becomes enabled.
+
+---
+
+DOCUMENT UPLOAD
+
+User uploads eShram Card.
+
+---
+
+OCR EXTRACTION (ESHRAM CARD)
+
+OCR extracts the following fields:
+
+• Worker Name
+• Father's Name
+• Date of Birth
+• Gender
+• UAN Number
+• Primary Occupation
+• Aadhaar Reference (masked)
+• Photo
+
+---
+
+INDIVIDUAL VALIDATION
+
+Compare OCR data with API response.
+
+Field | API | OCR
+
+Worker Name | Ravi Kumar | Ravi Kumar
+UAN Number | 123456789012 | 123456789012
+
+---
+
+CROSS-INTERNAL VALIDATION
+
+Ensure the extracted UAN number and worker identity remain consistent across the card.
+
+---
+
+GLOBAL VALIDATION
+
+Compare worker identity with Step-1 and Step-2 identity profile.
+
+Example
+
+Worker Name ↔ Step-1 Name
+DOB ↔ Aadhaar DOB
+
+---
+
+SCHEME 2 — PM-SYM
+(PRADHAN MANTRI SHRAM YOGI MAANDHAN)
+
+User enters pension account number.
+
+---
+
+PM-SYM VERIFICATION API (SIMULATION)
+
+Endpoint
+
+GET /api/pension/status
+
+MongoDB Collection
+
+pmsym_db
+
+Request
+
+{
+"aadhaar_number": "XXXX-XXXX-1234"
+}
+
+or
+
+{
+"pension_account_number": "PM-SYM-829201"
+}
+
+Response
+
+{
+"scheme": "PM-SYM",
+"status": "ACTIVE",
+"monthly_contribution": 100,
+"last_payment_date": "2026-02-10",
+"pension_account_number": "PM-SYM-829201"
+}
+
+Verification Fields
+
+• Pension Account Number
+• Aadhaar Reference
+
+---
+
+DOCUMENT UPLOAD
+
+User uploads PM-SYM Pension Card.
+
+---
+
+OCR EXTRACTION (PM-SYM CARD)
+
+OCR extracts:
+
+• Pension Account Number
+• Name
+• Date of Birth
+• Gender
+• Pension Start Date
+• Monthly Contribution
+• Government Contribution
+
+---
+
+INDIVIDUAL VALIDATION
+
+Compare OCR data with API response.
+
+Field | API | OCR
+
+Pension Account Number | PM-SYM-829201 | PM-SYM-829201
+
+---
+
+CROSS-INTERNAL VALIDATION
+
+Ensure pension account number remains consistent across document sections.
+
+---
+
+GLOBAL VALIDATION
+
+Compare pension account holder name with Step-1 identity.
+
+Example
+
+Name ↔ Step-1 Name
+DOB ↔ Aadhaar DOB
+
+---
+
+SCHEME 3 — PMJJBY
+(PRADHAN MANTRI JEEVAN JYOTI BIMA YOJANA)
+
+This scheme does not use a verification API.
+
+User uploads insurance certificate.
+
+---
+
+OCR EXTRACTION
+
+Extract the following fields:
+
+• Name of Member
+• Master Policy Number
+• Unique Reference Number (URN)
+• Date of Birth
+• Bank Account Number
+• Bank Name
+• Insurance Provider
+• Date of Commencement
+• Cover End Date
+• Sum Assured
+• Premium Amount Paid
+• Renewal Date
+
+---
+
+INDIVIDUAL VALIDATION
+
+Ensure the following fields are readable:
+
+• Policy Number
+• Policy Holder Name
+• Policy Dates
+
+---
+
+BANK TRANSACTION MATCHING
+
+Policy premium payments are verified using Step-3 bank statement transaction dataset.
+
+Matching logic
+
+transaction_date ≈ policy payment date
+transaction_amount ≈ premium amount
+
+---
+
+CROSS-INTERNAL VALIDATION
+
+Verify policy period consistency across certificate.
+
+Example
+
+Start Date → End Date must be valid.
+
+---
+
+GLOBAL VALIDATION
+
+Compare policy holder name and bank account.
+
+Example
+
+Policy Holder Name ↔ Step-1 Name
+Bank Account Number ↔ Step-3 Bank Account
+
+---
+
+SCHEME 4 — PMMY
+(PRADHAN MANTRI MUDRA YOJANA)
+
+User may upload the following documents:
+
+• Mudra Loan Acknowledgement Letter / Recommendation Letter
+• Bank No-Due Certificate (after loan closure)
+
+Both documents are optional.
+
+---
+
+OCR EXTRACTION
+
+Extract fields:
+
+• Applicant Name
+• Loan Amount
+• Loan Account Number
+• Bank Name
+• Loan Approval Date
+• Loan Closure Status
+
+---
+
+INDIVIDUAL VALIDATION
+
+Ensure fields are readable.
+
+Example
+
+Loan Account Number valid
+Applicant Name readable
+
+---
+
+CROSS-INTERNAL VALIDATION
+
+Compare fields across both documents.
+
+Field | Loan Letter | No-Due Certificate
+
+Loan Account Number | Match | Match
+Applicant Name | Match | Match
+
+---
+
+GLOBAL VALIDATION
+
+Compare applicant name with Step-1 identity.
+
+Example
+
+Applicant Name ↔ Step-1 Name
+
+---
+
+SCHEME 5 — PUBLIC PROVIDENT FUND (PPF)
+
+User uploads PPF Passbook.
+
+---
+
+OCR EXTRACTION
+
+Extract fields:
+
+• Account Holder Name
+• PPF Account Number
+• CIF Number
+• Bank Name
+• Branch Name
+• Date of Issue
+• IFSC Code
+• Contribution Records
+
+---
+
+INDIVIDUAL VALIDATION
+
+Verify account holder name and account number readability.
+
+---
+
+GLOBAL VALIDATION
+
+Compare account holder identity.
+
+Example
+
+Account Holder Name ↔ Step-1 Name
+Bank Name ↔ Step-3 Bank Name
+
+---
+
+GLOBAL VALIDATION (STEP-6)
+
+After scheme verification, the system updates the global validation object.
+
+Example
+
+verified_profile.gov_schemes = {
+"eshram": true,
+"pmsym": true,
+"pmjjby": false,
+"pmmy": true,
+"ppf": true
+}
+
+Participation in these schemes increases financial credibility signals.
+
+---
+
+TECHNICAL FLOW
+
+User opens Step-6
+↓
+User selects optional scheme modules
+↓
+Enter scheme identifiers (UAN / pension ID etc.)
+↓
+Call simulated verification APIs
+↓
+Enable document upload
+↓
+OCR extraction from documents
+↓
+Individual validation
+↓
+Cross-internal validation
+↓
+Global validation with previous steps
+↓
+Update global validation object
+↓
+Step-6 marked completed
+
+---
+
+OUTPUT OF STEP-6
+
+Step-6 Status = Completed
+
+User proceeds to Step-7.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SYSTEM DESIGN PROMPT — STEP-7 INSURANCE VERIFICATION
+Context
+Step-7 verifies the user’s insurance coverage. Insurance participation strengthens financial responsibility signals and improves risk assessment.
+Three insurance types are supported:
+• Health Insurance
+• Vehicle Insurance
+• Life Insurance
+All insurance inputs are optional, except Vehicle Insurance, which becomes required if the user selected “Yes” for vehicle ownership in Step-1.
+Validation architecture follows:
+OCR Extraction (on-device)
+API Verification (government simulation)
+Individual Validation (OCR vs API data)
+Cross-Internal Validation (within document fields)
+Global Validation (consistency with previous steps)
+
+HEALTH INSURANCE VERIFICATION
+User uploads Health Insurance Policy Document.
+
+OCR EXTRACTION (HEALTH POLICY)
+When the document is uploaded, OCR extracts:
+Field | Description
+policy_number | Unique insurance policy ID
+policy_holder_name | Name of insured person
+insurance_company | Insurance provider
+policy_start_date | Policy start date
+policy_expiry_date | Policy expiry date
+sum_insured | Maximum coverage
+premium_amount | Premium paid
+Example OCR output
+{
+"policy_number": "P/700002/01/2015/007530",
+"policy_holder_name": "Ashwani Kumar Rai",
+"insurance_company": "Star Health",
+"policy_start_date": "2014-07-03",
+"policy_expiry_date": "2015-07-02",
+"sum_insured": "300000",
+"premium_amount": "6067"
+}
+
+INSURER DETECTION
+The system detects the insurer from the document.
+Example
+Star Health and Allied Insurance
+
+API VERIFICATION (SIMULATION)
+Endpoint
+POST /gov/insurance/health/policy/verify
+Request
+{
+"policy_number": "P/700002/01/2015/007530",
+"insurance_company": "Star Health",
+"policy_holder_name": "Ashwani Kumar Rai"
+}
+Example response
+{
+"policy_number": "P/700002/01/2015/007530",
+"policy_holder_name": "Ashwani Kumar Rai",
+"insurance_company": "Star Health",
+"policy_status": "Expired",
+"policy_expiry_date": "2015-07-02",
+"sum_insured": "300000",
+"verified": true
+}
+Possible policy_status values
+• Active
+• Expired
+• Not Found
+
+INDIVIDUAL VALIDATION (HEALTH)
+Compare OCR vs API fields.
+Field
+API
+OCR
+Policy Number
+Match
+Match
+Policy Holder Name
+Match
+Match
+Insurance Company
+Match
+Match
+
+
+CROSS-INTERNAL VALIDATION (HEALTH)
+Ensure policy number and holder name remain consistent across document sections.
+
+VEHICLE INSURANCE VERIFICATION
+Vehicle insurance is required only if Step-1 indicates the user owns a vehicle.
+This verification occurs in two stages:
+RC Book Verification
+Vehicle Insurance Policy Verification
+
+RC BOOK VERIFICATION
+User uploads RC document.
+
+OCR EXTRACTION (RC BOOK)
+Fields extracted
+vehicle_number
+owner_name
+vehicle_class
+registration_date
+engine_number
+chassis_number
+Example OCR result
+{
+"vehicle_number": "TN09AB1234",
+"owner_name": "Ravi Kumar",
+"vehicle_class": "Motorcycle",
+"registration_date": "2019-03-15",
+"engine_number": "ENG983421",
+"chassis_number": "CHS776543"
+}
+
+RC VERIFICATION API (SIMULATION)
+Endpoint
+POST /gov/vehicle/rc/verify
+Request
+{
+"vehicle_number": "TN09AB1234"
+}
+Response
+{
+"vehicle_number": "TN09AB1234",
+"owner_name": "Ravi Kumar",
+"vehicle_class": "Motorcycle",
+"registration_status": "Active",
+"verified": true
+}
+
+INDIVIDUAL VALIDATION (RC)
+Compare OCR vs API fields.
+Field
+API
+OCR
+Vehicle Number
+Match
+Match
+Owner Name
+Match
+Match
+
+
+VEHICLE INSURANCE POLICY VERIFICATION
+User uploads Vehicle Insurance Policy Document.
+
+OCR EXTRACTION (VEHICLE INSURANCE)
+Fields extracted
+policy_number
+vehicle_number
+owner_name
+insurance_company
+policy_start_date
+policy_expiry_date
+Example OCR output
+{
+"policy_number": "MTR987654321",
+"vehicle_number": "TN09AB1234",
+"owner_name": "Ravi Kumar",
+"insurance_company": "ICICI Lombard",
+"policy_start_date": "2024-04-10",
+"policy_expiry_date": "2025-04-09"
+}
+
+INSURANCE VERIFICATION API (SIMULATION)
+Endpoint
+POST /gov/insurance/vehicle/policy/verify
+Request
+{
+"policy_number": "MTR987654321",
+"vehicle_number": "TN09AB1234"
+}
+Response
+{
+"policy_number": "MTR987654321",
+"vehicle_number": "TN09AB1234",
+"insurance_company": "ICICI Lombard",
+"policy_status": "Active",
+"policy_expiry_date": "2025-04-09",
+"verified": true
+}
+
+INDIVIDUAL VALIDATION (VEHICLE INSURANCE)
+Compare OCR vs API fields.
+Field
+API
+OCR
+Policy Number
+Match
+Match
+Vehicle Number
+Match
+Match
+Insurance Company
+Match
+Match
+
+
+CROSS-INTERNAL VALIDATION (VEHICLE)
+Ensure vehicle number remains consistent across:
+• RC Book
+• Vehicle Insurance Policy
+
+LIFE INSURANCE VERIFICATION
+User uploads Life Insurance Policy Document.
+
+OCR EXTRACTION (LIFE INSURANCE)
+Fields extracted
+policy_number
+policy_holder_name
+insurance_company
+policy_start_date
+policy_expiry_date
+sum_insured
+Example OCR output
+{
+"policy_number": "LIC78392812",
+"policy_holder_name": "Ravi Kumar",
+"insurance_company": "LIC India",
+"policy_start_date": "2022-04-10",
+"policy_expiry_date": "2032-04-09",
+"sum_insured": "500000"
+}
+
+INSURANCE VERIFICATION API (SIMULATION)
+Endpoint
+POST /gov/insurance/life/policy/verify
+Request
+{
+"policy_number": "LIC78392812",
+"policy_holder_name": "Ravi Kumar"
+}
+Response
+{
+"policy_number": "LIC78392812",
+"policy_holder_name": "Ravi Kumar",
+"insurance_company": "LIC India",
+"policy_status": "Active",
+"verified": true
+}
+
+INDIVIDUAL VALIDATION (LIFE INSURANCE)
+Compare OCR vs API fields.
+Field
+API
+OCR
+Policy Number
+Match
+Match
+Policy Holder Name
+Match
+Match
+
+
+CROSS-INTERNAL VALIDATION (LIFE)
+Ensure policy number remains consistent across document sections.
+
+GLOBAL VALIDATION (STEP-7)
+After insurance verification, the system updates the global validation object.
+Example
+verified_profile.insurance = {
+"health_insurance": true,
+"vehicle_insurance": true,
+"life_insurance": false
+}
+Insurance participation strengthens financial stability indicators.
+
+TECHNICAL FLOW
+User opens Step-7
+↓
+System checks vehicle ownership from Step-1
+↓
+If vehicle owned → vehicle insurance required
+↓
+User uploads insurance documents
+↓
+OCR extraction from documents
+↓
+Identify insurer
+↓
+Call simulated insurance verification API
+↓
+Individual validation (OCR vs API)
+↓
+Cross-internal validation
+↓
+Global validation with identity profile
+↓
+Update global validation object
+↓
+Step-7 marked completed
+
+OUTPUT OF STEP-7
+Step-7 Status = Completed
+User proceeds to Step-8.
+
+
+Health Insurance Policy 
+
+
+
+Field
+Value
+Used For
+Proposer's Name
+ASHWANI KUMAR RAI
+Cross-check with Step 1 name
+Policy Number
+P/700002/01/2015/007530
+Insurance API verification
+Date of Inception
+03/07/2014
+Policy start date
+Period of Insurance
+03/07/2014 to 02/07/2015
+Active period check
+Total Premium
+₹6,067
+Bank statement cross-check
+Receipt Date
+02/07/2014
+Payment date
+Basic Floater Sum Insured
+₹3,00,000
+Coverage amount → P6 score
+Scheme Description
+2 Adults + 1 Child
+Family coverage type
+Insurer
+Star Health and Allied Insurance
+Provider identity
+Renewal Year
+NEW
+First year policy
+
+
+Life Insurance Premium Paid Certificate
+
+
+
+
+Field
+Value
+Used For
+Policyholder Name
+Mr Shoeb Ahmed Siraj Ahmed Ansari
+Cross-check with Step 1 name
+Policy Number
+00779114
+Insurance API verification
+Policy Issue Date
+25-FEB-2015
+Policy start date
+Certificate Date
+29-NOV-2015
+Document date
+Payment Mode
+Yearly
+Premium frequency
+Coverage Name
+BSLI Easy Protector
+Policy type
+Sum Assured
+₹5,50,500
+Coverage amount → P6 score
+Modal Premium
+₹50,100.92
+Base premium amount
+Total Premium Received Period
+25-FEB-2015 to 24-FEB-2016
+Active period
+Total Premium Paid
+₹51,198.67
+Bank statement cross-check
+Coverage Status
+Premium Paying (Maturity)
+Policy active confirmation
+
+Vehicle Insurance Policy 
+
+
+
+Field
+Value
+Used For
+Policy Number
+3005/W-2011959/00/000
+Insurance API verification
+Insurer
+ICICI Lombard General Insurance
+Provider identity
+Policy Type
+Four Wheeler Vehicle Package Policy
+Vehicle type classification
+Period of Insurance
+25-Aug-2010 to 24-Aug-2011
+Active period check
+Policy Issued On
+25-Aug-2010
+Issue date
+Cover Note No
+W-2011959
+Cross-reference
+RTO Location
+Tamilnadu-Chennai
+Vehicle registration state
+Vehicle Make
+Honda
+Vehicle identity
+Registration Number
+(partially visible — full number needed)
+Cross-check with RC book
+Chassis Number
+ME4KCO93H98085953
+Cross-check with RC book
+Engine Number
+KCO9E1087405
+Cross-check with RC book
+Manufacturing Year
+2009
+Vehicle age
+Vehicle IDV
+₹46,785
+Asset value → P6
+Total Premium Payable
+₹1,106.00
+Bank statement cross-check
+Bonus Percent
+20%
+No-claim bonus signal
+
+Here all are optional only then mention the validation and verification fields
+
+
+
+
+
+
+SYSTEM DESIGN PROMPT — STEP-8 INCOME TAX RETURN (ITR) VERIFICATION
+
+Context
+Step-8 verifies the user's Income Tax Return (ITR) to establish declared annual income and confirm tax filing behaviour.
+
+ITR is filed with the Income Tax Department of India and is linked to the user’s Permanent Account Number (PAN).
+
+This step helps evaluate:
+
+• Income consistency
+• Financial credibility
+• Government-declared income records
+
+Validation architecture follows:
+
+OCR Extraction (on-device)
+Individual Validation (field format validation)
+Cross-Internal Validation (within ITR fields)
+Cross-Step Validation (with PAN and identity data)
+Server Verification (ITR acknowledgement verification)
+
+All inputs in this step are optional.
+If a user uploads an ITR document, the system must validate it.
+
+---
+
+INPUTS
+
+User may upload:
+
+• ITR Acknowledgement Receipt (PDF or Image)
+
+---
+
+OCR EXTRACTION
+
+When the ITR acknowledgement document is uploaded, OCR extracts the following fields.
+
+Field | Description
+taxpayer_name | Name of taxpayer
+pan_number | Permanent Account Number
+assessment_year | Financial assessment year
+acknowledgement_number | Unique ITR filing acknowledgement number
+date_of_filing | Date when return was filed
+total_income | Total income declared in return
+gross_total_income | Income before deductions
+deductions | Total deductions claimed
+net_taxable_income | Final taxable income
+
+Example OCR Output
+
+{
+"taxpayer_name": "Ravi Kumar",
+"pan_number": "ABCDE1234F",
+"assessment_year": "2024-25",
+"acknowledgement_number": "123456789012345",
+"date_of_filing": "2025-07-18",
+"total_income": "480000"
+}
+
+---
+
+VERIFICATION FIELDS
+
+The following fields are used for backend ITR verification:
+
+• PAN Number
+• Acknowledgement Number
+• Assessment Year
+
+---
+
+INDIVIDUAL VALIDATION (ON DEVICE)
+
+Each extracted field is validated independently.
+
+---
+
+Taxpayer Name
+
+Rules:
+
+• Must contain alphabet characters
+• Must contain minimum two words
+• Allowed characters: alphabets, spaces, dots
+
+Example valid
+
+Ravi Kumar
+R. K. Kumar
+
+---
+
+PAN Number
+
+Rules:
+
+• Must follow PAN format
+
+Validation regex
+
+[A-Z]{5}[0-9]{4}[A-Z]
+
+Example valid
+
+ABCDE1234F
+
+Validation checks
+
+• exactly 10 characters
+• first 5 letters
+• next 4 digits
+• last 1 letter
+
+---
+
+Assessment Year
+
+Rules:
+
+• Must follow financial year format
+
+Example
+
+2024-25
+
+Validation checks
+
+• valid financial year format
+• cannot be future year
+
+Accepted range
+
+Last three assessment years
+
+Example
+
+2022-23
+2023-24
+2024-25
+
+---
+
+Acknowledgement Number
+
+Rules:
+
+• Must be numeric
+• Must contain exactly 15 digits
+
+Example
+
+123456789012345
+
+---
+
+Total Income Declared
+
+Rules:
+
+• Must be numeric
+• Must be greater than zero
+
+Example
+
+480000
+
+---
+
+CROSS-INTERNAL VALIDATION
+
+The system checks internal consistency between extracted ITR fields.
+
+---
+
+Name Consistency
+
+Taxpayer name must remain consistent throughout the document.
+
+Matching rule
+
+Exact match OR fuzzy match ≥ 85%
+
+---
+
+Assessment Year and Filing Date Validation
+
+The filing date must correspond to the assessment year.
+
+Example
+
+Assessment Year = 2024-25
+Filing Date must occur during the valid filing period.
+
+---
+
+CROSS STEP VALIDATION
+
+The system compares ITR information with previously verified profile data.
+
+---
+
+PAN Cross Check
+
+ITR PAN must match:
+
+• PAN verified in Step-2
+
+Example
+
+ITR PAN ↔ PAN from PAN verification step
+
+---
+
+Name Cross Check
+
+ITR taxpayer name must match:
+
+• name verified from PAN in Step-2
+• name provided in Step-1 profile
+
+Matching logic
+
+Exact match OR fuzzy match ≥ 85%
+
+---
+
+INCOME BEHAVIOUR CONSISTENCY CHECK
+
+Declared income is compared with bank transaction behaviour from Step-3.
+
+Example logic
+
+monthly_income_expected = ITR_income / 12
+
+Example
+
+ITR declared income = 480000
+Expected monthly income ≈ 40000
+
+System compares:
+
+• monthly deposits in bank statements
+• platform earnings from Step-5
+• business payments
+
+If deposits >> expected income
+
+System flags potential anomaly.
+
+---
+
+SERVER VERIFICATION (SIMULATED)
+
+After validation, extracted data is sent to backend verification API.
+
+Backend service simulates verification with the Income Tax Department filing system.
+
+Endpoint
+
+POST /gov/income-tax/itr/verify
+
+MongoDB Collection
+
+itr_filings_db
+
+Request
+
+{
+"pan_number": "ABCDE1234F",
+"acknowledgement_number": "123456789012345",
+"assessment_year": "2024-25"
+}
+
+Example response
+
+{
+"itr_found": true,
+"filing_status": "Valid",
+"assessment_year": "2024-25",
+"verified": true
+}
+
+Possible responses
+
+• Valid
+• Not Found
+• Invalid Filing
+
+---
+
+AIS DATA CONSISTENCY (SIMULATED)
+
+Backend performs simulated comparison with Annual Information Statement (AIS) data.
+
+AIS contains financial activity such as:
+
+• interest income
+• investment records
+• high value transactions
+
+This verification layer helps detect inconsistencies between declared income and financial records.
+
+Note: AIS comparison is simulated in the backend for demonstration.
+
+---
+
+GLOBAL VALIDATION (STEP-8)
+
+If all validations pass:
+
+ITR Status = VERIFIED
+
+Global verification object is updated.
+
+Example
+
+verified_profile.itr = {
+
+"pan": "ABCDE1234F",
+"assessment_year": "2024-25",
+"declared_income": 480000,
+"itr_verified": true
+
+}
+
+---
+
+TECHNICAL FLOW
+
+User opens Step-8
+↓
+User uploads ITR acknowledgement
+↓
+OCR extraction from document
+↓
+Individual validation of fields
+↓
+Cross-internal validation
+↓
+Cross-step validation with PAN and identity profile
+↓
+Send verification request to backend
+↓
+Backend simulated verification with income tax records
+↓
+AIS consistency check (simulation)
+↓
+Update global validation object
+↓
+Step-8 marked verified
+
+---
+
+OUTPUT OF STEP-8
+
+Step-8 Status = Verified
+
+User proceeds to Final Credit Scoring and Report Generation stage.
+
+
+SYSTEM DESIGN FIX IMPLEMENTATION PROMPT
+(GIG WORKER FINTECH VERIFICATION PIPELINE)
+Context
+We are building a fintech verification system for gig workers using a hybrid architecture:
+Validation Layer → On-device processing
+Verification Layer → Server APIs (FastAPI simulation)
+The onboarding pipeline contains 8 verification steps.
+This document defines approved logical and technical fixes that must be implemented without changing the overall architecture.
+Steps that remain unchanged must NOT be modified.
+
+STEP-1 — BASIC PROFILE NORMALIZATION (IMPLEMENT FIX)
+Issue
+Names and addresses may appear in different formats across documents.
+Later steps perform cross-step validation using these fields.
+Example problem
+Step-1 name:
+Ravi Kumar
+PAN card name:
+RAVI KUMAR
+Without normalization this may fail equality checks.
+Required Fix
+Before storing Step-1 profile data, perform normalization.
+Normalization rules
+Name
+• convert to uppercase
+• remove extra spaces
+• remove special characters
+Example
+Input
+" Ravi Kumar "
+Normalized
+"RAVI KUMAR"
+Address normalization
+• trim spaces
+• convert to lowercase for comparison
+Technical Implementation
+Create a preprocessing function:
+normalize_identity_fields()
+Example
+normalized_name = normalize(name)
+Store normalized values in global profile object.
+Example global profile
+{
+"name": "RAVI KUMAR",
+"mobile": "9876543210",
+"work_type": "Platform Worker"
+}
+
+STEP-2 — IDENTITY VERIFICATION FORMAT VALIDATION (IMPLEMENT FIX)
+Issue
+Current architecture may call verification APIs before validating input format.
+This wastes API calls and increases attack surface.
+Required Fix
+All identifier inputs must pass format validation before server verification.
+Correct validation order
+User enters identifier
+↓
+Format validation (on-device)
+↓
+API verification
+↓
+Enable document upload
+↓
+OCR extraction
+↓
+Cross validation
+Example
+PAN validation
+Regex rule
+[A-Z]{5}[0-9]{4}[A-Z]
+Example valid
+ABCDE1234F
+Example invalid
+ABC1234
+If regex fails → block API request.
+This rule applies to
+PAN
+Aadhaar
+IFSC
+Vehicle number
+Scheme IDs
+Insurance policy numbers
+ITR acknowledgement number
+
+STEP-3 — BANK STATEMENT PARSER LIMITATION (IMPLEMENT FIX)
+Issue
+Bank statements have different layouts.
+A universal OCR parser may produce incorrect transaction extraction.
+Current decision
+Only support three banks initially.
+Example supported banks
+SBI
+HDFC
+ICICI
+Required Fix
+Implement bank-specific parsing modules.
+Flow
+Upload bank statement
+↓
+OCR detects bank name
+↓
+Load bank-specific parser
+↓
+Extract transactions
+Example logic
+if bank_name == "SBI":
+use SBI_parser()
+if bank_name == "HDFC":
+use HDFC_parser()
+if bank_name == "ICICI":
+use ICICI_parser()
+If bank not supported
+Show message:
+"Currently this bank statement format is not supported."
+This reduces parsing errors during prototype stage.
+
+STEP-4 — UTILITY BILL VERIFICATION (NO CHANGE)
+The current validation architecture remains unchanged.
+Do NOT modify:
+• Bank transaction matching
+• Utility validation rules
+• Cross-internal validation
+This step remains exactly as currently designed.
+
+STEP-5 — WORK PROOF VALIDATION CORRECTION (IMPLEMENT FIX)
+Issue
+Vehicle ownership may belong to family members rather than the driver.
+Example
+Driver: Ravi Kumar
+Vehicle Owner: G Lata (mother)
+Strict name comparison would fail.
+Required Fix
+Do NOT compare vehicle owner name with Step-1 name.
+Primary identifier must be:
+Vehicle Number
+Correct validation rule
+vehicle_number_consistent == TRUE
+Required validations
+Vehicle number consistency across:
+RC book
+Insurance document
+Platform driver screenshot
+Global validation
+Compare vehicle number only.
+Do NOT enforce owner name match.
+
+STEP-6 — GOVERNMENT SCHEME VERIFICATION (NO CHANGE)
+The scheme verification logic remains exactly as defined.
+Do NOT modify
+eShram verification
+PM-SYM validation
+PMJJBY validation
+PMMY validation
+PPF validation
+All scheme rules remain unchanged.
+
+STEP-7 — INSURANCE VERIFICATION (NO CHANGE)
+Insurance verification logic remains exactly as defined.
+Do NOT modify
+Health insurance verification
+Vehicle insurance verification
+Life insurance verification
+Validation architecture stays the same.
+
+STEP-8 — ITR INCOME CONSISTENCY VALIDATION (IMPLEMENT FIX)
+Issue
+Gig workers often have irregular monthly income.
+Strict comparison between bank deposits and ITR income could incorrectly flag valid users.
+Required Fix
+Use tolerance-based validation instead of strict equality.
+Example
+ITR declared income
+480000
+Expected monthly income
+480000 / 12 = 40000
+Allow tolerance range
+±40%
+Validation rule
+lower_bound = expected_income × 0.6
+upper_bound = expected_income × 1.4
+Example
+Valid bank monthly income
+24000 → 56000
+If income outside this range
+System flags anomaly but does NOT reject ITR.
+Instead mark as:
+income_consistency = "medium"
+
+GLOBAL IMPLEMENTATION RULES
+All fixes must preserve the original architecture:
+Validation → on-device
+Verification → server APIs
+Each step must still follow
+Individual validation
+Cross internal validation
+Cross step validation
+Server verification (when applicable)
+The global verification profile must be updated only after all validations succeed.
+Example
+verified_profile.bank_verified = true
+
+
+OCR Reliability Problem
+This is the second biggest technical concern.
+What judges will ask
+“How do you ensure OCR errors don’t corrupt your credit scoring?”
+Because OCR can misread:
+₹30000 → ₹80000
+
+Your architecture currently lacks a confidence control mechanism.
+Fix / Answer
+Add OCR confidence threshold filtering.
+Example rule:
+if ocr_confidence < 0.85:
+    request_document_reupload()
+
+Also add field-level validation:
+Example:
+Bill amount must be numeric
+Bill date must be valid date
+Income cannot be negative
+All fixes which i said must be implement to the above 8 steps 
+
+END OF FIX IMPLEMENTATION SPECIFICATION
+
+
+Full workflow 
+
+
+
+

@@ -1,0 +1,866 @@
+████████████████████████████████████████████████████████████████████████████████
+██                                                                            ██
+██          GIGCREDIT — LOAN APPLICATION INTERFACE PIPELINE FLOW             ██
+██          10 Screens · Full Routing · Every Element · All States           ██
+██                                                                            ██
+████████████████████████████████████████████████████████████████████████████████
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MASTER FLOW MAP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [SCREEN 0]  Credit Report
+       │
+       │  TAP "💰 APPLY FOR A LOAN →"
+       ↓
+  [SCREEN 1]  Select Your Loan
+       │
+       │  TAP "SELECT →" on any product card
+       ↓
+  [SCREEN 2]  Loan Details Form
+       │
+       │  TAP "VIEW LOAN TERMS (KFS) →"
+       ↓
+  [SCREEN 3]  Key Fact Statement (KFS)
+       │
+       │  CHECK BOX + TAP "I AGREE & PROCEED →"
+       ↓
+  [SCREEN 4]  Eligibility Check  ← AUTO-PROGRESSES (no user input)
+       │
+       │  7 Hard Rules + 3 Affordability Checks
+       │
+       ├──── ANY HARD RULE FAILS ──────────────────→ [SCREEN 6B] → [SCREEN 7B]
+       │
+       ├──── ANY AFFORDABILITY FAILS ──────────────→ [SCREEN 6B] → [SCREEN 7B]
+       │
+       │  ALL PASS → auto-navigate
+       ↓
+  [SCREEN 5]  AI Decision Engine  ← AUTO-PROGRESSES (no user input)
+       │
+       ├──── aiScore < threshold ──────────────────→ [SCREEN 6B] → [SCREEN 7B]
+       │
+       │  aiScore ≥ threshold
+       ↓
+  [SCREEN 6A] Loan Approved
+       │
+       │  TAP "✍️ SIGN & ACCEPT LOAN →"
+       ↓
+  [SCREEN 7A] Sign & Disburse
+       │
+       │  DRAW SIGNATURE + CHECK + TAP "CONFIRM & DISBURSE →"
+       ↓
+  [SCREEN 0]  Credit Report  ← BACK TO START (score refreshed)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCREEN 0 — CREDIT REPORT  (route: /report)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ┌─────────────────────────────────────────────┐
+  │  STICKY HEADER                              │
+  │  ≡   GigCredit Report              🔔  ≡   │
+  └─────────────────────────────────────────────┘
+  │
+  ├──[SCORE HERO CARD]─────────────────────────────────────────────────────────
+  │
+  │   ╔══════════════════════════════════╗
+  │   ║  Score Ring (SVG animated)       ║
+  │   ║  270° arc · Grade B · #3DD68C   ║
+  │   ║                                  ║
+  │   ║          ╔═══════╗              ║
+  │   ║          ║  647  ║   ← count-up ║
+  │   ║          ║ Grade ║              ║
+  │   ║          ║   B   ║              ║
+  │   ║          ╚═══════╝              ║
+  │   ║                                  ║
+  │   ║  ──────────────────────────────  ║
+  │   ║  300  E   D   C   B●  A   900   ║
+  │   ║  Conformal range: [631 – 663]   ║
+  │   ╚══════════════════════════════════╝
+  │
+  │   [Chip: ↑ +26 pts from 3 months ago]  [Chip: Top 32% of users]
+  │
+  │   ┌───────────────────────────────────────────────────────────────┐
+  │   │  💡 You qualify for a loan!                                   │
+  │   │  Based on Grade B score, you can get up to ₹82,000            │
+  │   │  Max amount pre-calculated from your verified bank income      │
+  │   └───────────────────────────────────────────────────────────────┘
+  │
+  ├──[PILLAR GRID 2-COL]───────────────────────────────────────────────────────
+  │
+  │   ┌───────────────────┐  ┌───────────────────┐
+  │   │ P1 │ STRONG ✅    │  │ P2 │ STRONG ✅    │
+  │   │    0.71           │  │    0.68           │
+  │   │ Income Stability  │  │ Payment Record    │
+  │   │ ●●●●●            │  │ ●●●●○            │
+  │   └───────────────────┘  └───────────────────┘
+  │   ┌───────────────────┐  ┌───────────────────┐
+  │   │ P3 │ AVERAGE ◐   │  │ P4 │ STRONG ✅    │
+  │   │    0.55           │  │    0.62           │
+  │   │ Existing Loans    │  │ Savings Buffer    │
+  │   │ ●●●○○            │  │ ●●●●○            │
+  │   └───────────────────┘  └───────────────────┘
+  │   ┌───────────────────┐  ┌───────────────────┐
+  │   │ P5 │ VERIFIED ✓  │  │ P6 │ MODERATE ⚠️  │
+  │   │    1.00           │  │    0.40           │
+  │   │ Work Identity     │  │ Safety Net        │
+  │   │ ●●●●●            │  │ ●●●○○            │
+  │   └───────────────────┘  └───────────────────┘
+  │
+  │   Each pillar card TAP → expands inline (SHAP top-3 features)
+  │                         No page navigation — inline expand only
+  │
+  ├──[FLOATING ACTION ROW]─────────────────────────────────────────────────────
+  │
+  │   ┌────────────────┐  ┌─────────────────────────────────────┐
+  │   │  📥 Save PDF   │  │   💰  APPLY FOR A LOAN  →           │
+  │   │  (30% width)   │  │   (70% width) PRIMARY CTA           │
+  │   └────────────────┘  └─────────────────────────────────────┘
+  │
+  │   BUTTON ACTIONS:
+  │   "💰 APPLY FOR A LOAN →"
+  │     → haptic feedback (10ms)
+  │     → NAVIGATE TO SCREEN 1
+  │     → transition: slide-up from 32px below
+  │
+  │   "📥 Save PDF"
+  │     → generate PDF of full report
+  │     → share sheet (Save / Share)
+  │     → toast: "Report saved ✓"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCREEN 1 — SELECT YOUR LOAN  (route: /loan/select)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ← (back to Screen 0)     Select Your Loan
+
+  ┌───────────────────────────────────────────────────────────────────────────┐
+  │  SCORE STRIP                                                              │
+  │  "Your Score: 647 · Grade B"   |   "Eligible up to ₹82,000"             │
+  │  "Showing plans you qualify for"  ← 13px #8B95A8                        │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[PRODUCT CARD 1 — EMERGENCY MICRO LOAN]──────────────────────────────────┐
+  │  border-left: 4px #FF4E6A                                                 │
+  │                                                                           │
+  │  🚨 EMERGENCY MICRO LOAN              [ Score 450+ ✅ ]                  │
+  │                                                                           │
+  │  ₹5,000 – ₹25,000    │   3 – 12 months                                  │
+  │  APR: 24%             │   Bike repair, medical, phone                     │
+  │                                                                           │
+  │  ┌──────────────────────────────────────────────────────────────────┐    │
+  │  │ Max eligible: ₹22,000 · pre-calculated from your income          │    │
+  │  └──────────────────────────────────────────────────────────────────┘    │
+  │                                                                           │
+  │  [  SELECT →  ]  (bg #FF4E6A, h:44px)                                   │
+  │  → stores selectedProduct = 'emergency_micro'                             │
+  │  → card border glows: box-shadow 0 0 20px #FF4E6A40                      │
+  │  → NAVIGATE TO SCREEN 2                                                   │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[PRODUCT CARD 2 — INCOME BRIDGE LOAN ★]──────────────────────────────────┐
+  │  border-left: 4px #00D4B4                   [★ RECOMMENDED] (top-right)  │
+  │                                                                           │
+  │  🌉 INCOME BRIDGE LOAN                                                   │
+  │                                                                           │
+  │  ₹25,000 – ₹1,00,000  │   6 – 24 months                                 │
+  │  APR: 18%              │   Stock purchase, seasonal gap                   │
+  │                                                                           │
+  │  ┌──────────────────────────────────────────────────────────────────┐    │
+  │  │ Max eligible: ₹82,000 · pre-calculated from your income          │    │
+  │  └──────────────────────────────────────────────────────────────────┘    │
+  │                                                                           │
+  │  [  SELECT →  ]  (bg #00D4B4, h:44px)                                   │
+  │  → stores selectedProduct = 'income_bridge'                               │
+  │  → NAVIGATE TO SCREEN 2                                                   │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[PRODUCT CARD 3 — GROWTH LOAN 🔒]────────────────────────────────────────┐
+  │  border-left: 4px #8B5CF6   opacity: 0.8       [🔒 LOCKED] (top-right)  │
+  │                                                                           │
+  │  📈 GROWTH LOAN                                                          │
+  │                                                                           │
+  │  ┌──────────────────────────────────────────────────────────────────┐    │
+  │  │ ⚠️ Your score: 647 · Required: 650 · Gap: 3 pts                  │    │
+  │  └──────────────────────────────────────────────────────────────────┘    │
+  │  ┌──────────────────────────────────────────────────────────────────┐    │
+  │  │ 💡 Upload ITR → estimated +8 pts · unlocks in minutes            │    │
+  │  └──────────────────────────────────────────────────────────────────┘    │
+  │                                                                           │
+  │  [  HOW TO UNLOCK →  ]  (transparent, border #8B5CF6)                   │
+  │  → opens bottom sheet (NOT a page navigation)                            │
+  │  → Sheet shows:                                                          │
+  │      "2 steps to unlock Growth Loan"                                     │
+  │      Step 1: Upload ITR → +8–12 pts [UPLOAD ITR NOW →] (teal)          │
+  │      Step 2: Maintain streak 1 month  [SET REMINDER →] (secondary)      │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ℹ️ Max amounts pre-calculated from your verified bank statement data
+  (footer, 12px #8B95A8, centred)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCREEN 2 — LOAN DETAILS FORM  (route: /loan/details)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ← (back to Screen 1)     Income Bridge Loan
+
+  ┌───────────────────────────────────────────────────────────────────────────┐
+  │  💡 You can borrow up to ₹82,000 based on your income and existing EMIs   │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[AMOUNT INPUT]────────────────────────────────────────────────────────────┐
+  │  Label: "How much do you need?"                                           │
+  │                                                                           │
+  │  ┌──────────────────────────────────────────────────────────────────┐    │
+  │  │  ₹  [ 50,000 ]  ← Inter Black 28px #00D4B4 · numeric keyboard   │    │
+  │  └──────────────────────────────────────────────────────────────────┘    │
+  │                                                                           │
+  │  SLIDER:  ₹25K ←──────────●──────────────────────── ₹82K               │
+  │           (fully synced with input, step ₹1,000)                        │
+  │                                                                           │
+  │  Validation errors (shown below input field):                            │
+  │    < ₹25,000 → "Minimum amount is ₹25,000" (#FF4E6A)                   │
+  │    > ₹82,000 → "Maximum eligible is ₹82,000" (#FF4E6A)                 │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[TENURE SELECTOR]─────────────────────────────────────────────────────────┐
+  │  Label: "Loan Tenure"                                                     │
+  │                                                                           │
+  │  ┌──────────┐  ┌──────────┐  ┌──────────┐                               │
+  │  │   6M     │  │  ★12M   │  │   24M    │                               │
+  │  │ default  │  │ selected │  │         │                               │
+  │  └──────────┘  └──────────┘  └──────────┘                               │
+  │  Selected: bg #00D4B4, text #0D0F14                                      │
+  │  Default:  bg #161B25, text #8B95A8                                      │
+  │  On press: update loanTenure, recalculate live estimate                  │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[PURPOSE DROPDOWN]────────────────────────────────────────────────────────┐
+  │  Label: "Purpose of Loan"                                                 │
+  │                                                                           │
+  │  ┌──────────────────────────────────────────────────────────────────┐    │
+  │  │  [ Select purpose...                                    ▾ ]      │    │
+  │  └──────────────────────────────────────────────────────────────────┘    │
+  │  On press → opens bottom sheet (NOT page navigation):                    │
+  │    • Stock Purchase                                                      │
+  │    • Equipment Purchase                                                  │
+  │    • Medical Emergency                                                   │
+  │    • Vehicle Repair                                                      │
+  │    • Working Capital                                                     │
+  │    • Education                                                           │
+  │    • Other                                                               │
+  │  On select → loanPurpose = selected, sheet closes                        │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[LIVE ESTIMATE CARD — UPDATES IN REAL-TIME]───────────────────────────────┐
+  │  LIVE ESTIMATE                          ← uppercase teal 12px             │
+  │  ─────────────────────────────────────────────────────────────────────   │
+  │  Loan Amount      :  ₹50,000      ← updates as slider moves             │
+  │  Tenure           :  12 months                                           │
+  │  APR              :  18%                                                  │
+  │  Monthly EMI      :  ₹4,584       ← animates (crossfade) on change      │
+  │  Total Repayable  :  ₹55,008      ← animates on change                  │
+  │  Processing Fee   :  ₹0 (waived)  ← #3DD68C                             │
+  │                                                                           │
+  │  PMT Formula runs live on every input change.                            │
+  │  Old value: crossfades out (opacity 0, translateY -8px)                  │
+  │  New value: crossfades in  (opacity 1, translateY 0)  200ms             │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[CTA]─────────────────────────────────────────────────────────────────────┐
+  │                                                                           │
+  │  [  VIEW LOAN TERMS (KFS) →  ]  (primary CTA, h:56px)                  │
+  │                                                                           │
+  │  DISABLED when: amount invalid OR tenure not set OR purpose not set      │
+  │  ENABLED when:  all 3 fields valid                                        │
+  │                                                                           │
+  │  On press:                                                                │
+  │    1. Store { loanAmount, loanTenure, loanPurpose, emi,                  │
+  │               totalRepay, totalInterest } in loanApplication state       │
+  │    2. NAVIGATE TO SCREEN 3                                                │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCREEN 3 — KEY FACT STATEMENT  (route: /loan/kfs)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ← (back to Screen 2)     Key Fact Statement
+
+  ┌───────────────────────────────────────────────────────────────────────────┐
+  │  ⚖️ LEGAL DISCLOSURE — Read carefully before agreeing  (gold accent)     │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[LOAN SUMMARY]────────────────────────────────────────────────────────────┐
+  │  LOAN SUMMARY                                                             │
+  │  ─────────────────────────────────────────────────────────────────────   │
+  │  Product       :  Income Bridge Loan                                     │
+  │  Lender        :  GigCredit NBFC Ltd.                                    │
+  │  Borrower      :  Ramesh Kumar                                           │
+  │  Loan Amount   :  ₹50,000   ← from loanApplication state                │
+  │  Tenure        :  12 months  ← from loanApplication state                │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[COST OF CREDIT]──────────────────────────────────────────────────────────┐
+  │  APR              :  18.00%                                               │
+  │  Monthly EMI      :  ₹4,584  ← #00D4B4 bold                             │
+  │  Processing Fee   :  ₹0   ← #3DD68C                                     │
+  │  Insurance (opt.) :  ₹150/mo                                             │
+  │  Total Payable    :  ₹55,008                                             │
+  │  Total Interest   :  ₹5,008                                              │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[EMI SCHEDULE — FIRST 3 MONTHS]──────────────────────────────────────────┐
+  │  Month  │  Date              │  EMI      │  Cumulative                    │
+  │  ─────────────────────────────────────────────────────────────────────   │
+  │  1      │  01 Jun 2026       │  ₹4,584   │  ₹4,584                      │
+  │  2      │  01 Jul 2026       │  ₹4,584   │  ₹9,168                      │
+  │  3      │  01 Aug 2026       │  ₹4,584   │  ₹13,752                     │
+  │                                                                           │
+  │  [ View All ↓ ]  ← #00D4B4 link                                          │
+  │  On press: expands to full 12-month schedule (scroll list)               │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[PREPAYMENT TERMS]────────────────────────────────────────────────────────┐
+  │  ✅  Prepay anytime — zero penalty                                        │
+  │  ✅  Partial prepayment allowed                                           │
+  │  ✅  No foreclosure charges                                               │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[COOLING-OFF PERIOD CARD]─────────────────────────────────────────────────┐
+  │  border-left: 4px #00D4B4                                                 │
+  │  ⏰ 3-DAY COOLING-OFF PERIOD                                              │
+  │                                                                           │
+  │  "You can cancel this loan until 16 May 2026"   ← today + 3 days        │
+  │  "with zero penalty, zero fee, only principal repayable."                │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[GRIEVANCE]───────────────────────────────────────────────────────────────┐
+  │  Officer   :  Priya Menon                                                 │
+  │  Email     :  grievance@gigcredit.in  ← tappable mailto link            │
+  │  Response  :  Within 24 hours                                            │
+  │  Escalate  :  RBI Ombudsman Portal →  ← tappable (cms.rbi.org.in)      │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[ACKNOWLEDGEMENT CHECKBOX]────────────────────────────────────────────────┐
+  │                                                                           │
+  │  ┌──┐  "I have read and understood all terms in this                     │
+  │  │✓ │   Key Fact Statement"                                              │
+  │  └──┘  Inter Regular 14px #F0F4FF                                        │
+  │                                                                           │
+  │  Unchecked: border 2px #252D3D, bg #1E2535                               │
+  │  Checked:   bg #00D4B4, white checkmark SVG                              │
+  │  On check → kfsAcknowledged = true                                       │
+  │  Side effect → toast: "Terms acknowledged ✓" (#3DD68C)                  │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[CTA]─────────────────────────────────────────────────────────────────────┐
+  │                                                                           │
+  │  [  ✅  I AGREE & PROCEED  →  ]  (primary CTA, h:56px)                  │
+  │                                                                           │
+  │  DISABLED: kfsAcknowledged = false  (bg #252D3D, text #4A5568)          │
+  │  ENABLED:  kfsAcknowledged = true   (glow: 0 0 24px #00D4B450)          │
+  │                                                                           │
+  │  On press:                                                                │
+  │    1. kfsTimestamp = new Date().toISOString()  → stored in state         │
+  │    2. coolingOffExpiry = new Date() + 3 days   → stored in state         │
+  │    3. SERVER CALL BEGINS in background (async):                           │
+  │       POST /api/loan/verify-eligibility                                   │
+  │       { userId, scoreReportId, loanApplicationId }                       │
+  │    4. NAVIGATE TO SCREEN 4 (immediately — server call is parallel)       │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCREEN 4 — ELIGIBILITY CHECK  (route: /loan/checking)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ← (back to Screen 3)     Checking Eligibility
+
+  ╔══ IMPORTANT: THIS SCREEN AUTO-PROGRESSES. NO BUTTON NEEDED. ═════════════╗
+  ║  Timeline is choreographed. Server runs in parallel with animations.    ║
+  ╚═══════════════════════════════════════════════════════════════════════════╝
+
+  TOP: PROGRESS BAR (6px, gradient #00D4B4 → #3DD68C, animates 0→100%)
+
+  ┌──[PROGRESS HEADER CARD]────────────────────────────────────────────────────┐
+  │  🔍 (spinning CSS rotate)                                                 │
+  │  Running Checks                                                           │
+  │  "Secure server · Encrypted · RBI compliant"  ← 12px #8B95A8            │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  STAGE 1 — REGULATORY CHECKS  ← uppercase teal 12px
+
+  Rows reveal one every 500ms. Enter animation: opacity 0→1, translateX -16→0
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │  t=500ms  │ ✅ │ Aadhaar API Verified                                   │
+  │           │    │ "UIDAI confirmed · Face match 94%"                     │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │  t=1000ms │ ✅ │ PAN API Verified                                       │
+  │           │    │ "Income Tax Dept confirmed"                             │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │  t=1500ms │ ✅ │ Age Verified: 28 years                                 │
+  │           │    │ "Eligible range: 18–65"                                │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │  t=2000ms │ ✅ │ Bank Statement: 8 months                               │
+  │           │    │ "Minimum required: 3 months"                           │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │  t=2500ms │ ✅ │ KFS Acknowledged                                       │
+  │           │    │ "Timestamp: 13 May 2026, 2:33 PM IST"  ← from state   │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │  t=3000ms │ ✅ │ Mobile Number Verified                                 │
+  │           │    │ "OTP confirmed at registration"                        │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │  t=3500ms │ ✅ │ Score Meets Product Threshold                          │
+  │           │    │ "Your score 647 ≥ required 550"                        │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+  FAILURE ROUTING (if any row shows ❌):
+    Remaining rows mark ⏸ NOT RUN
+    rejection_bucket = 'HARD_RULE'
+    At t=4000ms → AUTO-NAVIGATE TO SCREEN 6B
+
+  ALL PASS → continue ↓
+
+  STAGE 2 — AFFORDABILITY ENGINE  ← uppercase teal 12px  (appears at t=4000ms)
+
+  ┌──[DSCR CARD]── reveal at t=4400ms ─────────────────────────────────────────┐
+  │  bg #3DD68C15  border #3DD68C40                                           │
+  │  DSCR (Debt Service Coverage)                                             │
+  │  ─────────────────────────────────────────────────────────────────────   │
+  │  Net Income       :  ₹18,000/month                                       │
+  │  Existing EMI     :  ₹3,000/month                                        │
+  │  Proposed EMI     :  ₹4,584/month                                        │
+  │  ─────────────────────────────────────────────────────────────────────   │
+  │  DSCR = 18,000 ÷ 7,584 = 2.37                                           │
+  │  ✅ Required: ≥ 1.25                                                     │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[EMI RATIO CARD]── reveal at t=4800ms ────────────────────────────────────┐
+  │  bg #3DD68C15  (or #F4B94215 if 40–50%, or #FF4E6A15 if > 50%)          │
+  │  POST-LOAN EMI RATIO                                                      │
+  │  ─────────────────────────────────────────────────────────────────────   │
+  │  Total EMI        :  ₹7,584/month                                        │
+  │  Net Income       :  ₹18,000/month                                       │
+  │  Ratio = 7,584 ÷ 18,000 = 42.1%                                         │
+  │  ✅ Required: ≤ 50%                                                      │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[LTI CARD]── reveal at t=5200ms ──────────────────────────────────────────┐
+  │  bg #3DD68C15                                                             │
+  │  LOAN-TO-INCOME RATIO                                                     │
+  │  Loan Amount: ₹50,000  Monthly Income: ₹18,000                           │
+  │  LTI = 50,000 ÷ 18,000 = 2.78×                                          │
+  │  ✅ Required: ≤ 10×                                                      │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  FAILURE ROUTING (if any affordability card shows ❌):
+    rejection_bucket = 'AFFORDABILITY'
+    alternative_offer = pre-computed max affordable amount
+    At t=6500ms → AUTO-NAVIGATE TO SCREEN 6B
+
+  ALL PASS → continue ↓
+
+  ┌──[TRANSITION ROW]── appears at t=6500ms ───────────────────────────────────┐
+  │  bg #8B5CF615  border #8B5CF640                                           │
+  │  [animated spinner]  "Sending to AI decision engine..."                   │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  At t=8000ms → AUTO-NAVIGATE TO SCREEN 5
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCREEN 5 — AI DECISION ENGINE  (route: /loan/ai-decision)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ← (back to Screen 4)     AI Decision Engine
+
+  ╔══ THIS SCREEN ALSO AUTO-PROGRESSES. NO BUTTON NEEDED. ═══════════════════╗
+  ╚══════════════════════════════════════════════════════════════════════════╝
+
+  ┌──[AI HERO CARD]────────────────────────────────────────────────────────────┐
+  │  radial-gradient(circle at 50% 30%, #8B5CF620, #161B25)                  │
+  │                                                                           │
+  │                  🤖  (40px centred)                                      │
+  │                 AI EVALUATING                                            │
+  │         "Analysing 32 signals from your profile..."                      │
+  │                                                                           │
+  │              ●  ●  ●  ← loading dots (#8B5CF6, 8px each)               │
+  │                  (pulsing sequence animation)                            │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  INPUTS TO DECISION MODEL  ← uppercase teal 12px
+
+  ┌──[PILLAR SCORE TABLE]──────────────────────────────────────────────────────┐
+  │  FROM CREDIT SCORE PIPELINE                                               │
+  │  ─────────────────────────────────────────────────────────────────────   │
+  │  P1 Income      0.71   ±0.04   [tight]    ← #3DD68C                     │
+  │  P2 Payment     0.68   ±0.05   [tight]    ← #3DD68C                     │
+  │  P3 Debt        0.55   ±0.08   [moderate] ← #F4B942                     │
+  │  P4 Savings     0.62   ±0.06   [tight]    ← #3DD68C                     │
+  │  P5 KYC         1.00   ±0.00   [certain]  ← #00D4B4                     │
+  │  P6 Resilience  0.40   ±0.09   [moderate] ← #F4B942                     │
+  │  P7 Social      0.58   ±0.07   [tight]    ← #3DD68C                     │
+  │  P8 Tax         0.35   ±0.11   [wide]     ← #FF4E6A                     │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[AFFORDABILITY + SOFT SIGNALS]────────────────────────────────────────────┐
+  │  FROM AFFORDABILITY ENGINE:                                               │
+  │  DSCR 2.37 ✅    EMI Ratio 42.1% ✅    LTI 2.78× ✅                    │
+  │                                                                           │
+  │  SOFT SIGNALS:                                                            │
+  │  Payment streak: 11 months ✅    Savings buffer: 2.1 months             │
+  │  Income growth: +3.2%/month ✅   Insurance active: No ⚠️               │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[REPAYMENT PROBABILITY METER]─────────────────────────────────────────────┐
+  │  Repayment Probability Score                                              │
+  │                                                                           │
+  │  0%  ──────────────────────────│──────────────────  100%                │
+  │               68% threshold    │                                          │
+  │                                                                           │
+  │  [████████████████████████████████░░░░░░░░░░░]                           │
+  │  Bar animates: 0% → 79%  over 1500ms                                    │
+  │                                                                           │
+  │                 0.00 ────→ 0.79  ← JetBrains Mono count-up              │
+  │                                                                           │
+  │  Threshold: 0.68          │ "+0.11 above threshold ✅"  (#3DD68C)       │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ROUTING DECISION (at t=5000ms after bar completes):
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │  aiScore (0.79) ≥ aiThreshold (0.68)                                     │
+  │  → AUTO-NAVIGATE TO SCREEN 6A  (approved)                               │
+  │                                                                           │
+  │  IF aiScore < aiThreshold:                                               │
+  │  → rejection_bucket = 'MODEL_SCORED'                                    │
+  │  → AUTO-NAVIGATE TO SCREEN 6B  (rejected)                               │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCREEN 6A — LOAN APPROVED  (route: /loan/approved)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ← (back — shows cancel option only)     Loan Approved
+
+  ON MOUNT: 🎉 Confetti burst (40 particles, 2000ms, fade last 600ms)
+            Fairness engine starts ASYNC (does not block screen)
+
+  ┌──[APPROVAL HERO CARD]──────────────────────────────────────────────────────┐
+  │  radial-gradient(ellipse at 50% 0%, #3DD68C20, #161B25)                  │
+  │                                                                           │
+  │                🎉 (48px, bouncing animation loop)                        │
+  │                      APPROVED!                                           │
+  │     "Congratulations, Ramesh! Your Income Bridge Loan is approved."      │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[LOAN DETAILS]────────────────────────────────────────────────────────────┐
+  │  Amount Approved  :  ₹50,000          ← bold #F0F4FF                    │
+  │  APR              :  18.00%                                               │
+  │  Monthly EMI      :  ₹4,584           ← bold #00D4B4                    │
+  │  Tenure           :  12 months                                           │
+  │  Total Payable    :  ₹55,008                                             │
+  │  Disbursal To     :  HDFC ••4821      ← JetBrains Mono #8B95A8         │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[WHY YOU WERE APPROVED]───────────────────────────────────────────────────┐
+  │  bg #3DD68C15  border-left 4px #3DD68C                                   │
+  │  WHY YOU WERE APPROVED  ← uppercase teal 12px                            │
+  │                                                                           │
+  │  ✅  Strong 11-month payment streak          (stagger row 1)            │
+  │  ✅  DSCR of 2.37 — well above 1.25          (stagger row 2)            │
+  │  ✅  EMI ratio 42.1% — within 50% limit       (stagger row 3)            │
+  │  ✅  Consistent income growth +3.2%/month     (stagger row 4)            │
+  │  ✅  AI repayment score: 0.79 (threshold 0.68)(stagger row 5)            │
+  │                                                                           │
+  │  Each row: opacity 0→1, translateX -16→0, 60ms stagger                  │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[FAIRNESS CHECK CARD]─────────────────────────────────────────────────────┐
+  │  bg #8B5CF615  border-left 4px #8B5CF6                                   │
+  │  FAIRNESS CHECK  ← uppercase purple 12px                                 │
+  │                                                                           │
+  │  [loading spinner]  ← shows until async fairness result arrives         │
+  │                                                                           │
+  │  → After ~2 seconds, spinner is replaced by:                             │
+  │  ✅  Fairness engine ran (async)                                         │
+  │  ✅  No demographic bias detected                                        │
+  │  ✅  Based solely on financial behaviour signals                         │
+  │  ℹ️   Group: Platform Worker, TN · Approval rate: 72% (avg 68%)        │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[COOLING-OFF CARD]────────────────────────────────────────────────────────┐
+  │  bg #00D4B415  border-left 4px #00D4B4                                   │
+  │  ⏰ 3-DAY COOLING-OFF PERIOD                                              │
+  │  "You can cancel until 16 May 2026, 2:37 PM IST"  ← today + 3 days     │
+  │  "Cancel anytime before this with zero penalty."                         │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[AUDIT ID]────────────────────────────────────────────────────────────────┐
+  │  bg #0D0F14  radius 10px                                                  │
+  │  "Loan ID: GC-LOAN-2026-04398 · Audit: AT-2026-0513-RK7821-a9f3 ·      │
+  │   VERIFIED ✓"  ← JetBrains Mono 11px #8B95A8                           │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[CTA]─────────────────────────────────────────────────────────────────────┐
+  │  [  ✍️  SIGN & ACCEPT LOAN  →  ]                                         │
+  │  gradient: #00D4B4 → #3DD68C  h:56px  primary CTA                       │
+  │  On press → NAVIGATE TO SCREEN 7A                                         │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[SECONDARY — CANCEL WITHIN COOLING-OFF]───────────────────────────────────┐
+  │  [ Cancel within cooling-off period ]  (secondary button)                │
+  │  On press → opens bottom sheet (NOT page navigation):                   │
+  │    "Cancel this loan?"                                                   │
+  │    "You have until 16 May 2026 to cancel with zero penalty"              │
+  │    [  YES, CANCEL LOAN  ]  (bg #FF4E6A)                                  │
+  │    [  NO, KEEP LOAN     ]  (secondary)                                   │
+  │    If YES → cancellation success toast → NAVIGATE TO SCREEN 0            │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCREEN 6B — LOAN DECISION (REJECTION)  (route: /loan/decision)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ← (back)     Loan Decision
+
+  ┌──[REJECTION HEADER]────────────────────────────────────────────────────────┐
+  │  bg #FF4E6A15  border-left 4px #FF4E6A                                   │
+  │  ❌  Application Not Approved                                            │
+  │      "for ₹80,000 Income Bridge Loan"                                   │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[ALTERNATIVE OFFER — ALWAYS SHOWN FOR AFFORDABILITY BUCKET]───────────────┐
+  │  bg #3DD68C15  border-left 4px #3DD68C                                   │
+  │  ✅  BUT — You are immediately eligible for ₹55,000                     │
+  │      "₹5,355/mo EMI · 12 months · 18% APR"                              │
+  │                                                                           │
+  │  [  APPLY FOR ₹55,000 →  ]  (bg #00D4B4, h:48px)                       │
+  │  On press:                                                                │
+  │    1. loanAmount = 55000 → recalculate all metrics                       │
+  │    2. Re-run eligibility (auto-pass — it's pre-verified)                 │
+  │    3. rejection_bucket cleared                                           │
+  │    4. NAVIGATE TO SCREEN 6A  (directly)                                  │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[BUCKET-SPECIFIC CONTENT]─────────────────────────────────────────────────┐
+  │  Rendered based on rejection_bucket value:                                │
+  │                                                                           │
+  │  HARD_RULE bucket:      "RBI legal requirement — cannot be waived"       │
+  │  AFFORDABILITY bucket:  "Cash flow constraint — not creditworthiness"    │
+  │  MODEL_SCORED bucket:   "AI score [X] below threshold [Y]" + SHAP top 3 │
+  │  PRODUCT_MISMATCH:      "You qualify for [lower product] right now"      │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  [ VIEW FULL DECISION REPORT → ]  ← #00D4B4 underlined link
+  On press → NAVIGATE TO SCREEN 7B
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCREEN 7A — SIGN & ACCEPT  (route: /loan/sign)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ← (back to Screen 6A)     Sign & Accept
+
+  ┌──[FINAL LOAN SUMMARY]──────────────────────────────────────────────────────┐
+  │  Loan ID         :  GC-LOAN-2026-04398                                   │
+  │  Amount          :  ₹50,000                                              │
+  │  Tenure          :  12 months                                            │
+  │  Monthly EMI     :  ₹4,584                                               │
+  │  Disbursal To    :  HDFC ••4821                                          │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[E-SIGNATURE ZONE]────────────────────────────────────────────────────────┐
+  │  border: 2px dashed #252D3D  radius: 16px  height: 160px                 │
+  │  bg #0D0F14                                                               │
+  │                                                                           │
+  │              "Sign here with your finger"  ← centred #8B95A8            │
+  │                                                                           │
+  │  HTML5 Canvas:                                                           │
+  │    Touch/mouse drawing in #00D4B4, 2px stroke                            │
+  │    Smooth bezier curves                                                   │
+  │    On lift finger → signatureCaptured = true                             │
+  │                                                                           │
+  │  [ CLEAR ]  ← small link below canvas, resets canvas                    │
+  │              On press → signatureCaptured = false                        │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[DECLARATION CHECKBOX]────────────────────────────────────────────────────┐
+  │  ┌──┐  "I confirm that I have read and accept the loan agreement.         │
+  │  │  │   I authorise GigCredit NBFC to disburse ₹50,000 to HDFC ••4821." │
+  │  └──┘                                                                    │
+  │  On check → declarationChecked = true                                    │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──[CTA]─────────────────────────────────────────────────────────────────────┐
+  │  [  🏦  CONFIRM & DISBURSE  →  ]  h:56px primary CTA                    │
+  │                                                                           │
+  │  DISABLED: signatureCaptured = false OR declarationChecked = false       │
+  │  ENABLED:  both true  (glow: 0 0 32px #00D4B460)                        │
+  │                                                                           │
+  │  On press:                                                                │
+  │    STEP 1: Button shows spinner (2 seconds)                              │
+  │    STEP 2: SERVER CALL:                                                   │
+  │      POST /api/loan/disburse                                              │
+  │      { loanId, signatureImageData (base64), declarationTimestamp,        │
+  │        bankAccountId }                                                    │
+  │      Server:                                                              │
+  │        a. Generate loan agreement PDF (legally binding)                  │
+  │        b. SHA-256 sign the agreement                                     │
+  │        c. Send IMPS/NEFT instruction to NBFC partner API                 │
+  │        d. Store in audit trail                                            │
+  │        e. Return { success: true, eta: '2–4 hours' }                    │
+  │                                                                           │
+  │    STEP 3: SUCCESS ANIMATION SEQUENCE:                                   │
+  │      ↓  Screen flashes #00D4B4 for 150ms                                │
+  │      ↓  Large ✅ scales in: 0 → 1.2 → 1.0                              │
+  │      ↓  "Loan Disbursed!"  Inter Black 32px #F0F4FF                     │
+  │      ↓  "₹50,000 will reach HDFC ••4821 within 2–4 hours"              │
+  │      ↓  Confetti burst (same as Screen 6A)                              │
+  │                                                                           │
+  │    STEP 4: After 3 seconds:                                               │
+  │      → Score refreshes (new loan affects P3 pillar)                      │
+  │      → NAVIGATE TO SCREEN 0  (Credit Report, refreshed)                 │
+  │      → Toast: "₹50,000 loan disbursed ✓"  (#3DD68C)                    │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCREEN 7B — XAI REJECTION REPORT  (route: /loan/report)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ← (back to Screen 6B)     Decision Report
+
+  ┌──[OFFICIAL REPORT HEADER]──────────────────────────────────────────────────┐
+  │  bg #0D0F14  radius 16px                                                  │
+  │  📋  OFFICIAL DECISION REPORT                                            │
+  │  "Audit ID: AT-2026-0513-RK7821-a9f3"     JetBrains Mono 11px           │
+  │  "Date: 13 May 2026, 2:37 PM IST"                                        │
+  │  "RBI-Compliant Adverse Action Notice"                                   │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  [1 DECISION SUMMARY]  ────────────────────── (section header pill, teal left)
+  ❌ Rejected for ₹80,000
+  Decision Type: [🟡 AFFORDABILITY] badge
+  "(Not a creditworthiness issue)"
+  AI Score: 0.61 animated bar · threshold at 0.68
+
+  [2 PRIMARY REJECTION REASON]  ───────────────────────────────────────────────
+  "✅ This is NOT a creditworthiness issue."
+  EMI RATIO VISUALISER:
+    Current burden:   48% ████████████████████░░░░░░░░░░░░░░░░░░░░
+    After ₹80K loan:  79% ████████████████████████████████░░░░░░░░
+    Maximum allowed:  50%  ← dashed threshold line
+
+  [3 ALL FACTORS CHECKED]  ────────────────────────────────────────────────────
+  Stage 1: 7 Hard Rules  ← all ✅
+  Stage 2: Affordability ← DSCR ✅  EMI ❌ (red row)  LTI ✅
+  Stage 3: Decision SHAP ← top 3 negative drivers with values
+
+  [4 FAIRNESS AUDIT]  ─────────────────────────────────────────────────────────
+  bg #8B5CF615  border-left 4px #8B5CF6
+  5-metric table: all ✅ PASS
+  "Your decision was based solely on financial data."
+
+  [5 YOUR 3 APPROVAL PATHS]  ──────────────────────────────────────────────────
+  ┌──[PATH 1 — TODAY]──────────────────────────────────────────────────────┐
+  │  bg #00D4B415  ⚡ Immediate badge                                      │
+  │  "Request ₹55,000 instead → EMI ratio 55% → qualify RIGHT NOW"        │
+  │  [  APPLY FOR ₹55,000 NOW →  ]  (bg #00D4B4, h:48px)                 │
+  │  On press → same as alternative offer CTA → SCREEN 6A                 │
+  └────────────────────────────────────────────────────────────────────────┘
+  ┌──[PATH 2 — 7 DAYS]─────────────────────────────────────────────────────┐
+  │  bg #F4B94215  📄 7 days badge                                         │
+  │  "Upload insurance + ITR → max eligible ₹55K → ₹80K"                 │
+  │  [  UPLOAD DOCUMENTS →  ]  (bg #F4B942, h:48px)                      │
+  │  On press → navigates to DocumentUploadSheet (Screen 0 upload section) │
+  └────────────────────────────────────────────────────────────────────────┘
+  ┌──[PATH 3 — 1–3 MONTHS]─────────────────────────────────────────────────┐
+  │  bg #8B5CF615  💳 1–3 months badge                                     │
+  │  "Close personal loan → EMI burden 48% → 21% → full ₹80K eligible"   │
+  │  No CTA — informational only                                           │
+  └────────────────────────────────────────────────────────────────────────┘
+
+  [6 GRIEVANCE & SUPPORT]  ────────────────────────────────────────────────────
+  Officer: Priya Menon
+  Email: grievance@gigcredit.in  ← tappable mailto
+  Escalate: RBI Ombudsman →  ← tappable link
+  "Audit Trail: AT-2026-0513-RK7821-a9f3 (quote this when contacting us)"
+
+  ┌──[BOTTOM ACTION ROW]───────────────────────────────────────────────────────┐
+  │  ┌───────────────────────────────┐  ┌───────────────────────────────┐   │
+  │  │  📥  Download PDF Report      │  │  🏠  Back to Dashboard         │   │
+  │  │  (secondary, h:48px)          │  │  (secondary, h:48px)           │   │
+  │  │  On press: window.print() /   │  │  On press:                     │   │
+  │  │  browser PDF export            │  │  NAVIGATE TO SCREEN 0          │   │
+  │  └───────────────────────────────┘  └───────────────────────────────┘   │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+COMPLETE ROUTING TABLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  FROM          │ ACTION / TRIGGER                  │ TO
+  ──────────────┼───────────────────────────────────┼──────────────────────
+  Screen 0      │ Tap "💰 APPLY FOR A LOAN →"        │ Screen 1
+  Screen 1      │ Tap "SELECT →" (any product)       │ Screen 2
+  Screen 1      │ Tap "HOW TO UNLOCK →" (locked)     │ Bottom Sheet (no nav)
+  Screen 2      │ Tap "VIEW LOAN TERMS (KFS) →"      │ Screen 3
+  Screen 3      │ Tap "I AGREE & PROCEED →"          │ Screen 4
+  Screen 4      │ Auto: any hard rule fails          │ Screen 6B (HARD_RULE)
+  Screen 4      │ Auto: any affordability fails      │ Screen 6B (AFFORD.)
+  Screen 4      │ Auto: all checks pass (t=8000ms)   │ Screen 5
+  Screen 5      │ Auto: aiScore < threshold          │ Screen 6B (MODEL)
+  Screen 5      │ Auto: aiScore ≥ threshold          │ Screen 6A
+  Screen 6A     │ Tap "✍️ SIGN & ACCEPT LOAN →"      │ Screen 7A
+  Screen 6A     │ Cancel cooling-off → confirm YES   │ Screen 0
+  Screen 6B     │ Tap "APPLY FOR ₹55,000 →"          │ Screen 6A (shortcut)
+  Screen 6B     │ Tap "VIEW FULL DECISION REPORT →"  │ Screen 7B
+  Screen 7A     │ Disburse success + 3s delay        │ Screen 0 (refreshed)
+  Screen 7B     │ Tap "APPLY FOR ₹55,000 NOW →"      │ Screen 6A
+  Screen 7B     │ Tap "UPLOAD DOCUMENTS →"           │ Doc upload sheet
+  Screen 7B     │ Tap "🏠 Back to Dashboard"         │ Screen 0
+  Any screen    │ Tap ← back arrow                  │ Previous screen
+  ──────────────┴───────────────────────────────────┴──────────────────────
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REJECTION BUCKET → SCREEN 7B TEMPLATE ROUTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Bucket           │ Trigger                        │ Section 2 Template
+  ─────────────────┼────────────────────────────────┼──────────────────────
+  🔴 HARD_RULE     │ Any of 7 hard rules fail       │ "Cannot be waived"
+                   │                                │ No alt offer shown
+  🟫 MODEL_SCORED  │ Rules pass, aiScore < thresh   │ SHAP waterfall chart
+                   │                                │ 3 paths = SHAP fixes
+  🟡 AFFORDABILITY │ EMI/DSCR/LTI fails             │ EMI ratio visualiser
+                   │                                │ Alt offer ALWAYS shown
+  🟢 PRODUCT_MISMATCH│ Score < product.minScore     │ Score ladder diagram
+                   │                                │ Pre-approved lower prod
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TOAST SYSTEM — ACROSS ALL SCREENS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Trigger                          │ Type    │ Message
+  ─────────────────────────────────┼─────────┼────────────────────────────
+  KFS checkbox ticked              │ success │ "Terms acknowledged ✓"
+  Screen 6A mounts                 │ success │ "Loan Approved! ₹50,000"
+  Document uploaded                │ success │ "Uploaded ✓ Score updating"
+  Upload fails                     │ error   │ "Could not read document"
+  PDF saved                        │ success │ "Report saved ✓"
+  Disburse success                 │ success │ "₹50,000 loan disbursed ✓"
+  Loan cancelled (cooling-off)     │ info    │ "Loan cancelled. No charges"
+
+  Position:   bottom, 16px margin, above floating action row
+  Duration:   3500ms auto-dismiss
+  Swipe down: dismisses early

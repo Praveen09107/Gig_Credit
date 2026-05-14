@@ -9,6 +9,7 @@ import '../models/verified_profile/gov_schemes_info.dart';
 import '../models/verified_profile/insurance_info.dart';
 import '../models/verified_profile/tax_info.dart';
 import '../models/verified_profile/emi_loans_info.dart';
+import '../demo/demo_profile_manager.dart';
 
 class VerifiedProfileNotifier extends StateNotifier<VerifiedProfile> {
   VerifiedProfileNotifier() : super(VerifiedProfile());
@@ -146,6 +147,7 @@ class VerifiedProfileNotifier extends StateNotifier<VerifiedProfile> {
   /// Reset all data for a new report session
   void reset() {
     state = VerifiedProfile();
+    DemoProfileManager().reset();
   }
 }
 

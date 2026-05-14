@@ -1,0 +1,1286 @@
+████████████████████████████████████████████████████████████████████████████████
+██                                                                            ██
+██      GIGCREDIT — LOAN APPLICATION FLOW  UI/UX STRUCTURE PROMPT           ██
+██      Layout · Structure · Droplets · Popups · Routing                    ██
+██      NO COLOURS — Theme tokens applied separately                        ██
+██                                                                            ██
+████████████████████████████████████████████████████████████████████████████████
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 1 — GLOBAL LAYOUT RULES (apply to ALL screens)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Every screen shares this exact structure:
+
+┌──────────────────────────────────────────────────────────┐
+│  STICKY HEADER                  56px fixed height        │
+│  position: sticky top-0  z-index: 50                     │
+│  backdrop-blur: 20px                                     │
+├──────────────────────────────────────────────────────────┤
+│                                                          │
+│  SCROLLABLE BODY                                         │
+│  flex-direction: column                                  │
+│  gap: 16px between every block                           │
+│  padding: 0 20px 120px (bottom clears floating row)      │
+│                                                          │
+│  [blocks stack here — defined per screen below]          │
+│                                                          │
+├──────────────────────────────────────────────────────────┤
+│  FLOATING ACTION ROW            80px fixed height        │
+│  position: fixed bottom-0                                │
+│  z-index: 40                                             │
+│  includes safe-area inset bottom (mobile)                │
+│  padding: 12px 20px                                      │
+└──────────────────────────────────────────────────────────┘
+
+SPACING SYSTEM (same across all screens):
+  Screen horizontal padding   :  20px
+  Gap between blocks          :  16px
+  Card inner padding          :  20px
+  Gap between rows in card    :  12px
+  Gap between label and value :  6px
+  Section divider             :  1px horizontal rule
+
+CARD TYPES (shapes only, no colour):
+  Standard Card    :  radius 16px  padding 20px  border 1px
+  Hero Card        :  radius 20px  padding 28px  border 1px
+  Highlighted Card :  radius 16px  padding 20px  border 1px
+                      border-left 4px (accent side indicator)
+  Inline Chip      :  radius 999px  padding 4px–12px
+  Compact Card     :  radius 12px  padding 14px  border 1px
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 2 — GLOBAL STICKY HEADER DROPLET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: StickyHeader
+Applies to every screen. Title text changes per screen.
+
+┌──────────────────────────────────────────────────────────┐
+│  [ ← ]      [ Screen Title ]         [ Action Icons ]   │
+│  48×48px    Inter SemiBold 17px       right slot         │
+└──────────────────────────────────────────────────────────┘
+
+LEFT SLOT — BackButton:
+  Icon        :  ChevronLeft  22px
+  Tap target  :  48 × 48px
+  On press    :  navigate to previous screen
+  Exception   :  Screen 0 (Report) shows Menu icon ≡ instead
+                 On press → opens SettingsSheet (bottom sheet)
+
+CENTRE SLOT — ScreenTitle:
+  Screen 0  :  "GigCredit Report"
+  Screen 1  :  "Select Your Loan"
+  Screen 2  :  "[Selected Product Name]"
+  Screen 3  :  "Key Fact Statement"
+  Screen 4  :  "Checking Eligibility"
+  Screen 5  :  "AI Decision Engine"
+  Screen 6A :  "Loan Approved"
+  Screen 6B :  "Loan Decision"
+  Screen 7A :  "Sign & Accept"
+  Screen 7B :  "Decision Report"
+
+RIGHT SLOT (Screen 0 only):
+  Bell icon  → tap: opens NotificationsSheet (bottom sheet 60%)
+  Menu icon  → tap: opens SettingsSheet (bottom sheet 50%)
+    Sheet contains:
+      Theme toggle row   (3 options)
+      Language selector  (5 language pills)
+      Text size toggle   (3 sizes)
+      Share report
+      Download PDF
+      Logout
+
+RIGHT SLOT (Screens 1–7):
+  Empty — no icons
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 3 — GLOBAL FLOATING ACTION ROW DROPLET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: FloatingActionRow
+Fixed to bottom of screen on ALL screens.
+
+┌──────────────────────────────────────────────────────────┐
+│  [ Secondary Button  30% ]  [ Primary CTA Button  70% ]  │
+│  height 48px               height 52px                   │
+└──────────────────────────────────────────────────────────┘
+
+Per-screen content:
+  Screen 0  :  "📥 Save PDF"          │  "💰 APPLY FOR A LOAN →"
+  Screen 1  :  (hidden — product cards have own CTAs)
+  Screen 2  :  "← Change Product"    │  "VIEW LOAN TERMS (KFS) →"
+  Screen 3  :  "← Edit Loan"         │  "✅ I AGREE & PROCEED →"
+  Screen 4  :  (hidden — auto-progresses)
+  Screen 5  :  (hidden — auto-progresses)
+  Screen 6A :  "Cancel Loan"          │  "✍️ SIGN & ACCEPT LOAN →"
+  Screen 6B :  "← Try Different Amount"│ "VIEW DECISION REPORT →"
+  Screen 7A :  "← Back"              │  "🏦 CONFIRM & DISBURSE →"
+  Screen 7B :  "📥 Download PDF"     │  "🏠 Back to Dashboard"
+
+CTA button structure:
+  height        :  52px
+  border-radius :  14px
+  width         :  70% of row
+  font          :  Inter Bold 15px uppercase letter-spacing 0.5px
+
+Secondary button structure:
+  height        :  48px
+  border-radius :  14px
+  width         :  30% of row
+  font          :  Inter Regular 14px
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 4 — GLOBAL BOTTOM SHEET SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: BottomSheet (used everywhere — no new pages)
+
+Structure:
+┌──────────────────────────────────────────────────────────┐
+│                  ─────  drag handle                      │
+│  Sheet Title                                             │
+│  ─────────────────────────────── divider                 │
+│                                                          │
+│  [Sheet Content — varies per use case]                   │
+│                                                          │
+│  [Sheet CTA Button or Close]                             │
+└──────────────────────────────────────────────────────────┘
+
+Layout:
+  border-radius   :  24px top-left, top-right only
+  drag handle     :  40 × 4px pill, centred, margin 12px auto
+  padding         :  0 20px 40px (includes safe area bottom)
+  max-height      :  90vh
+  overflow-y      :  scroll if content exceeds height
+  backdrop        :  rgba(0,0,0,0.6) full screen overlay behind
+  dismiss         :  tap backdrop OR drag down past 40% threshold
+
+Enter animation  :  translateY(100% → 0)  350ms spring
+Exit animation   :  translateY(0 → 100%)  300ms ease-in
+Backdrop         :  opacity(0 → 0.6)  300ms ease
+
+Sheet height map (per use case):
+  Settings        :  50% screen height
+  Notifications   :  60% screen height
+  Purpose select  :  55% screen height
+  KFS schedule    :  70% screen height
+  Growth unlock   :  50% screen height
+  Cancel confirm  :  auto height (content-fit)
+  Document upload :  65% screen height
+  Tooltip         :  auto height
+
+SHEET TYPES used in the flow:
+
+  1. SettingsSheet (Screen 0 menu)
+     ─────────────────────────────
+     Sections stacked vertically:
+       Theme toggle      :  3 segmented buttons (Dark / Light / HC)
+                            On change: apply theme immediately + persist
+       Language selector :  5 pill buttons (EN/Tamil/Hindi/Telugu/Kannada)
+                            On change: re-render all language sections
+       Text size         :  3 segmented buttons (Default / Large / XL)
+       ──divider──
+       Share report      :  row with icon + label, on press: native share
+       Download PDF      :  row with icon + label, on press: generate PDF
+       ──divider──
+       Logout            :  row with icon + label (danger text)
+
+  2. NotificationsSheet (Screen 0 bell)
+     ────────────────────────────────────
+     If no notifications:
+       Centred empty state illustration
+       "No notifications yet"
+     If notifications exist:
+       Scrollable list of notification rows
+       Each row: icon + title + timestamp + unread dot
+
+  3. PurposeSelectSheet (Screen 2 dropdown)
+     ─────────────────────────────────────
+     Title: "Purpose of Loan"
+     7 option rows:
+       Each row: 48px height, label centred, tap selects + closes sheet
+       Selected row: highlighted card style
+     Options:
+       Stock Purchase · Equipment Purchase · Medical Emergency
+       Vehicle Repair · Working Capital · Education · Other
+
+  4. EMIScheduleSheet (Screen 3 "View All")
+     ─────────────────────────────────────
+     Title: "Full EMI Schedule"
+     Scrollable table of all months:
+       Column 1: Month number
+       Column 2: Payment date
+       Column 3: EMI amount
+       Column 4: Cumulative total
+     All values computed from loanApplication state
+     Close button at bottom: "CLOSE ✕"
+
+  5. GrowthUnlockSheet (Screen 1 locked card)
+     ─────────────────────────────────────────
+     Title: "How to Unlock Growth Loan"
+     Subtitle: "2 steps needed"
+
+     Step 1 card (highlighted, info):
+       "Upload ITR Acknowledgement"
+       "Estimated +8–12 points → unlocks immediately"
+       CTA: "UPLOAD ITR NOW →"  (primary CTA, full width)
+       On press: closes sheet, opens DocumentUploadSheet
+
+     Step 2 card (compact):
+       "Maintain payment streak for 1 more month"
+       "Estimated +4 points"
+       CTA: "SET REMINDER →"  (secondary button, full width)
+       On press: opens device calendar to set reminder
+
+  6. CancelLoanSheet (Screen 6A secondary button)
+     ─────────────────────────────────────────────
+     Title: "Cancel this loan?"
+     Body: cooling-off expiry date shown in bold
+     Two buttons stacked:
+       "YES, CANCEL LOAN"   :  danger-cta, full width
+         On confirm → toast "Loan cancelled. No charges." → navigate Screen 0
+       "NO, KEEP MY LOAN"   :  secondary button, full width
+         On press → dismisses sheet, stays on Screen 6A
+
+  7. DocumentUploadSheet (missing doc upload)
+     ─────────────────────────────────────────
+     Title: "Upload [Document Name]"
+     3 large tap-target rows (each 64px height):
+       📷  "Take Photo"        → opens device camera
+       🖼️  "Choose from Gallery" → opens media picker
+       📄  "Choose PDF"        → opens document picker
+     After upload:
+       Progress ring (centred, 60px)
+       On success:
+         ✅ "Verified! Score updating..."
+         Sheet closes after 2 seconds
+         ScoreHeroCard on Screen 0 animates to new score
+       On failure:
+         ❌ "Could not read — try again"
+         Tips shown below (photo quality suggestions)
+         "TRY AGAIN →" button
+
+  8. TooltipSheet (info icons throughout)
+     ─────────────────────────────────────
+     Not a full sheet — inline floating overlay
+     Appears near the tapped ℹ️ icon
+     Width: 260px  radius: 12px  padding: 14px
+     Text: contextual explanation (specified per droplet)
+     Dismiss: tap anywhere outside
+     Arrow pointing to tapped element
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 5 — TOAST NOTIFICATION SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: ToastNotification
+Position: fixed bottom 96px (above floating action row)
+Width: calc(100% - 40px), centred
+
+Structure:
+┌──────────────────────────────────────────────────────────┐
+│  [ Icon ]  Toast message text                            │
+└──────────────────────────────────────────────────────────┘
+
+  border-radius     :  14px
+  padding           :  14px 16px
+  border-left       :  4px (type colour)
+  border            :  1px (type colour at 40% opacity)
+
+Enter  :  translateY(80px → 0)  opacity(0 → 1)  400ms spring
+Exit   :  translateY(0 → 80px)  opacity(1 → 0)  300ms ease-in
+Auto-dismiss  :  3500ms
+Swipe-down    :  dismisses early
+
+Types and triggers:
+  success  icon ✅  :  KFS ticked / doc uploaded / PDF saved / disbursed
+  error    icon ❌  :  doc upload failed / server error
+  warning  icon ⚠️  :  amount out of range / session expiry
+  info     icon ℹ️   :  score updating / processing
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 6 — SCREEN 0: CREDIT REPORT PAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Route: /report
+Header title: "GigCredit Report"
+
+LAYOUT (top to bottom, gap 16px):
+
+  BLOCK 1 — Score Hero Card (Hero Card shape)
+  BLOCK 2 — Section Nav Tabs (sticky below header)
+  BLOCK 3 — Score Scale Bar (Standard Card)
+  BLOCK 4 — Pillar Grid (2-column grid)
+  BLOCK 5 — Helping / Hurting Cards (two stacked Highlighted Cards)
+  BLOCK 6 — Root Cause Card (Highlighted Card, AI type)
+  BLOCK 7 — Improvement Roadmap (stacked step cards)
+  BLOCK 8 — Loan Eligibility Cards (3 stacked cards)
+  BLOCK 9 — Income Chart Card (Standard Card)
+  BLOCK 10 — Fairness Badge Row (Highlighted Card, AI type)
+  BLOCK 11 — Documents Checklist (Standard Card)
+  BLOCK 12 — Language + Plain Text Card (Standard Card)
+
+
+  ── BLOCK 1: SCORE HERO CARD ───────────────────────────────────────────────
+
+  COMPONENT: ScoreHeroCard  (Hero Card shape)
+
+  Inside layout (top to bottom):
+
+    ROW 1 — Report Meta Row:
+      Layout    :  row, space-between, align-center
+      Left      :  "Report · [date]"   caption style
+      Right     :  InlineChip "Valid 90 days"
+
+    ROW 2 — Score Ring:
+      Layout    :  column, centred, margin-top 20px
+
+      SVG Ring Spec:
+        diameter      :  200px
+        stroke-width  :  10px
+        arc span      :  270° (starts 135°, gap at bottom)
+        cap style     :  round both ends
+        inner content :  score number + divider + grade label
+          score number  :  Inter Black 52px letter-spacing -2px
+          divider       :  1px horizontal, 48px wide, centred
+          grade label   :  Inter SemiBold 16px
+
+      Below ring:
+        Conformal interval text  :  JetBrains Mono 12px
+        Info icon ℹ️ beside it
+          On press → TooltipSheet
+          Tooltip: "This range means we are 90% confident your true
+                    score falls here. Upload more documents to narrow it."
+
+    ROW 3 — Trend Chips Row:
+      Layout    :  row, gap 8px, wrap
+      Chip 1    :  "↑ +26 pts from 3 months ago"  InlineChip success type
+      Chip 2    :  "Top 32% of users"              InlineChip info type
+      Each chip on press  :  scale 0.96 spring (informational, no nav)
+
+    ROW 4 — Grade Status Strip:
+      Layout    :  Compact Card
+      Text      :  grade description + eligible products
+
+    ROW 5 — Primary CTA:
+      "💰  APPLY FOR A LOAN  →"
+      Full Primary CTA Button spec
+      On press  :  haptic 10ms → NAVIGATE Screen 1
+                   transition: slide-up from 32px below
+
+    ROW 6 — Secondary Link:
+      "View Full Report  ↓"
+      Text link, underline dashed
+      On press  :  smooth scroll to BLOCK 3 (offset 70px)
+
+
+  ── BLOCK 2: SECTION NAV TABS ──────────────────────────────────────────────
+
+  COMPONENT: SectionNavTabs
+  Layout    :  horizontal scroll row (no wrap), gap 8px
+  Position  :  sticky below header (top: 56px) z-index 40
+               backdrop-blur 12px
+
+  6 Tab Pills:
+    "Score"    → scrolls to BLOCK 1
+    "8 Areas"  → scrolls to BLOCK 4
+    "Strengths"→ scrolls to BLOCK 5
+    "Improve"  → scrolls to BLOCK 7
+    "Loans"    → scrolls to BLOCK 8
+    "Fair?"    → scrolls to BLOCK 10
+
+  Each tab:
+    height      :  36px
+    padding     :  0 16px
+    radius      :  999px
+    font        :  Inter SemiBold 13px
+
+  Active tab auto-updates via IntersectionObserver (threshold 0.5)
+  On tab press:
+    1. Smooth scroll to target (offset 120px)
+    2. Active state transition 200ms
+    3. Haptic pulse 8ms
+
+
+  ── BLOCK 4: PILLAR GRID ───────────────────────────────────────────────────
+
+  COMPONENT: PillarGrid
+  Layout  :  2-column CSS grid, gap 12px
+
+  8 PillarCards, each:
+
+    Shape      :  Compact Card + border-left 4px (status colour)
+    Height     :  min 100px
+    Tappable   :  yes — expands inline on press
+
+    Inside each card (collapsed):
+      Top row  :  pillar code "P1" (bold 12px) + status badge chip (right)
+      Score    :  raw score "7.1/10"  Inter Black 24px
+      Label    :  plain-English name  Inter Medium 13px text-secondary
+      Confidence dots  :  5 circles 8px each (filled = confidence level)
+
+    Inline expand (on tap, no sheet, no page nav):
+      Animation  :  height auto, opacity 0→1, 300ms ease
+      ─ divider ─
+      One insight sentence (plain English)
+      Mini comparison bar  +  "Better than X% of similar workers"
+      Quick fix tip card   (Compact Card, warning/info type)
+        "💡  [action] → estimated +[N] points"
+      Chevron icon rotates 180° when open
+
+    Collapse  :  tap again, reverses animation
+
+  Stagger on mount:
+    Each card: 60ms delay × index
+    Enter: opacity 0→1, translateY 12→0
+
+
+  ── BLOCK 5: HELPING / HURTING ─────────────────────────────────────────────
+
+  COMPONENT: HelpingHurtingSection
+  Two stacked Highlighted Cards (success type + danger type)
+
+  CARD 1 — STRENGTHS (success type):
+    Header row  :  "✅  What's working for you"  bold
+    List        :  6 items
+    Each item:
+      icon zone  :  28px circle, icon centred
+      body text  :  one line, specific number included  15px
+      sub-text   :  comparison benchmark  12px text-secondary
+    "Show 3 more ↓" / "Show less ↑" toggle after 3rd item
+      On press: expand/collapse with 300ms animation
+
+  CARD 2 — GAPS (danger type):
+    Header row  :  "⚠️  What's holding you back"  bold
+    List        :  4 items
+    Each item:
+      icon zone  :  28px circle
+      body text  :  specific number, plain English
+      Fix chip   :  InlineChip info type "Fix → +[N] pts"
+        On press: smooth scroll to that step in Roadmap (BLOCK 7)
+
+
+  ── BLOCK 6: ROOT CAUSE CARD ───────────────────────────────────────────────
+
+  COMPONENT: RootCauseCard  (Highlighted Card, AI type)
+
+  Header row:
+    "🤖" 24px + "The REAL reason behind 3 gaps"  +  subtitle
+
+  Causal chain flow (vertical):
+
+    ┌─────────────────────────────────────┐
+    │  ROOT CAUSE box  (danger type card)  │
+    │  label "ROOT CAUSE"  +  description  │
+    └──────────────────┬──────────────────┘
+                       ↓  (arrow "↓" centred)
+    ┌─────────────────────────────────────┐
+    │  EFFECTS box  (warning type card)   │
+    │  label "3 EFFECTS"                  │
+    │  → Effect 1                         │
+    │  → Effect 2                         │
+    │  → Effect 3                         │
+    └──────────────────┬──────────────────┘
+                       ↓
+    ┌─────────────────────────────────────┐
+    │  SCORE COST  (compact, danger left) │
+    │  "These 3 cost ~34 pts — one fix"  │
+    └──────────────────┬──────────────────┘
+                       ↓
+    ┌─────────────────────────────────────┐
+    │  ROOT FIX box  (success type card)  │
+    │  label "THE FIX"  +  description    │
+    │  projected score after fix          │
+    └─────────────────────────────────────┘
+
+  Systemic flag strip (shown only if systemic = true):
+    "Not your fault — caused by platform seasonality"
+    Compact Card, warning type
+
+
+  ── BLOCK 7: IMPROVEMENT ROADMAP ───────────────────────────────────────────
+
+  COMPONENT: ImprovementRoadmap
+
+  Score Journey Bar (top):
+    Full-width horizontal bar
+    Labels below: "Today (647)" → "After Steps (699)" → "Grade A (733)"
+    Dot animates along bar on mount
+
+  5 StepCards stacked, gap 12px:
+    Each StepCard  :  Highlighted Card
+    Left accent colour by step:
+      Step 1 (TODAY)      :  info type  (easiest, most urgent)
+      Step 2 (7 DAYS)     :  success type
+      Step 3 (30 DAYS)    :  success type
+      Step 4 (60 DAYS)    :  warning type
+      Step 5 (11 MONTHS)  :  AI/purple type
+
+    Inside each card:
+      Header row  :  "STEP [N]" badge (left)  +  timeline chip (right)
+      Step title  :  Inter SemiBold 15px
+      Step detail :  Inter Regular 13px text-secondary
+      Score row   :  "[old] → [new]" bold  +  "+[N] points" chip (right)
+      Action CTA  :  small button (44px height, not full-width)
+        Step 1  :  "UPLOAD NOW →"   → opens DocumentUploadSheet
+        Step 2  :  "HOW TO FILE →"  → external link (incometax.gov.in)
+        Step 3  :  no button  →  "Keep paying on time ✅" text only
+        Step 4  :  "SET SAVINGS GOAL →"  → opens SavingsGoalSheet
+        Step 5  :  "SET REMINDER →"  → opens device calendar
+
+    Completed step state (user has done it):
+      Badge shows "✅ DONE"  instead of "STEP N"
+      Card opacity: 0.7
+      No CTA shown
+
+
+  ── BLOCK 8: LOAN ELIGIBILITY CARDS ────────────────────────────────────────
+
+  3 stacked cards (see Screen 1 for full spec — same cards mirrored here)
+  Each card has its own CTA routing (same as Screen 1 product cards)
+
+
+  ── BLOCK 9: INCOME CHART CARD ─────────────────────────────────────────────
+
+  COMPONENT: IncomeChartCard  (Standard Card)
+
+  Bar chart spec:
+    Type      :  vertical bar chart (not line)
+    Height    :  180px
+    Bars      :  8 bars, evenly spaced, gap 8px
+    Radius    :  6px top corners only
+    Animation :  bars grow 0 → target height, stagger 60ms, spring
+    Axis X    :  month abbreviations below each bar
+    Axis Y    :  3 dashed guide lines (₹10K, ₹15K, ₹20K)
+    Average   :  horizontal dashed line at mean income
+    Trend     :  annotation bottom-right "+22% over 8 months"
+
+    Tooltip (on bar press):
+      Inline floating overlay (not a sheet)
+      Shows: month + exact income amount
+      Width: 120px  radius: 10px  padding: 10px
+      Arrow pointing down to bar
+      Dismiss: tap anywhere else
+
+
+  ── BLOCK 10: FAIRNESS BADGE ROW ───────────────────────────────────────────
+
+  COMPONENT: FairnessBadgeRow  (Highlighted Card, AI type)
+
+  TOP — 5 horizontal scroll badges (InlineChips, success type):
+    ✅  No group bias
+    ✅  Similar people, similar scores
+    ✅  Numbers are accurate
+    ✅  No seasonal bias
+    ✅  Steps are achievable
+    Each badge on press → inline expand (below badge row)
+
+  Inline expand (on badge press):
+    Compact Card, glass style
+    Plain English explanation of that check
+    "Got it ✓" button  → collapses
+
+  Comparison row:
+    Group description + approval rate vs average
+
+  Certificate strip:
+    Compact Card, dark background
+    Fairness Certificate ID in mono font
+
+
+  ── BLOCK 11: DOCUMENTS CHECKLIST ─────────────────────────────────────────
+
+  COMPONENT: DocumentsChecklist  (Standard Card)
+
+  9 document rows, each:
+    Height      :  52px
+    Layout      :  row, align-center, space-between
+    Border-bottom: 1px on all but last
+    Left side   :  status icon circle (verified/missing) + name + source
+    Right side  :
+      Verified  →  "VERIFIED ✓"  InlineChip success
+      Missing   →  "UPLOAD →"    InlineChip info
+        On press: opens DocumentUploadSheet for that document type
+
+
+  ── BLOCK 12: LANGUAGE + PLAIN TEXT ────────────────────────────────────────
+
+  COMPONENT: PlainLanguageSection  (Standard Card)
+
+  Language Toggle Row:
+    5 pill buttons horizontal scroll
+    Active pill = selected language
+    On press: re-render body text below in selected language
+    Auto-loads regional font (Noto Sans) when non-English selected
+
+  Text Card (Standard Card):
+    3 sections with section labels:
+      YOUR STRENGTHS
+      YOUR MAIN GAP
+      YOUR FASTEST PATH
+    Line height: 1.7 for all languages; 2.0 for Tamil/Telugu (script spacing)
+
+  Audio Button (below text):
+    Row with speaker icon + "Listen in [Language]"
+    On press: TTS reads the text aloud
+    While playing: button shows pause icon + pulsing ring animation
+    On press again: stops audio
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 7 — SCREEN 1: SELECT YOUR LOAN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Route: /loan/select
+Header: "Select Your Loan"
+Floating row: HIDDEN on this screen (product cards have own CTAs)
+
+LAYOUT (top to bottom):
+
+  BLOCK 1 — Score Strip  (Compact Card)
+    Layout    :  row, space-between
+    Left      :  "Your Score: 647 · Grade B"
+    Right     :  "Eligible up to ₹82,000"
+    Below     :  "Showing plans you qualify for"  caption
+
+  BLOCK 2 — Product Card 1: Emergency Micro Loan
+    Shape     :  Highlighted Card (danger type)
+    Header row:
+      Left    :  "🚨  EMERGENCY MICRO LOAN"  card title
+      Right   :  "Score 450+ ✅"  status chip success
+    Details grid (2-column):
+      Amount  |  Tenure
+      APR     |  Use case description
+    Pre-calc strip (Compact Card, dark bg):
+      "Max eligible: ₹22,000 · pre-calculated from your income"
+      JetBrains Mono font
+    SELECT BUTTON:
+      height 44px, radius 10px, full-width, danger type CTA
+      On press:
+        selectedProduct = 'emergency_micro' → state
+        Card border glow animation 300ms
+        NAVIGATE Screen 2
+
+  BLOCK 3 — Product Card 2: Income Bridge Loan ★
+    Shape     :  Highlighted Card (info type)
+    RECOMMENDED badge:
+      absolute top-right corner  radius 999px  padding 4px 10px
+      "★ RECOMMENDED"
+    Header    :  "🌉  INCOME BRIDGE LOAN"
+    Details grid: same 2-column structure
+    Pre-calc strip: same Compact Card style
+    SELECT BUTTON:
+      height 44px, radius 10px, full-width, primary CTA type
+      On press:
+        selectedProduct = 'income_bridge' → state
+        NAVIGATE Screen 2
+
+  BLOCK 4 — Product Card 3: Growth Loan 🔒
+    Shape     :  Highlighted Card (AI/purple type)  opacity 0.85
+    LOCKED badge:
+      absolute top-right corner  "🔒 LOCKED"
+    Header    :  "📈  GROWTH LOAN"
+    Gap strip  (Compact Card, danger type):
+      "⚠️  Your score: 647 · Required: 650 · Gap: 3 pts"
+    Unlock hint (Compact Card, success type):
+      "💡 Upload insurance → score 665 → unlocks instantly"
+    HOW TO UNLOCK BUTTON:
+      height 44px, radius 10px, full-width, secondary outline (purple border)
+      On press:
+        OPENS GrowthUnlockSheet  (no page navigation)
+
+  BLOCK 5 — Info Footer
+    "ℹ️ Max amounts pre-calculated from your verified bank statement"
+    caption, centred
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 8 — SCREEN 2: LOAN DETAILS FORM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Route: /loan/details
+Header: "[Selected Product Name]"
+Floating row: "← Change Product"  │  "VIEW LOAN TERMS →"
+
+LAYOUT (top to bottom):
+
+  BLOCK 1 — Eligibility Banner (Highlighted Card, info type)
+    "💡 You can borrow up to ₹82,000 based on your income and EMIs."
+
+  BLOCK 2 — Amount Input Block  (Standard Card)
+    Section label  :  "LOAN AMOUNT"
+    Label text     :  "How much do you need?"  card title
+    Amount field:
+      Prefix "₹"  +  large numeric input  (Inter Black 28px)
+      Numeric keyboard on focus
+      On blur: clamp to [minAmount, maxEligible]
+      Error message below: shown if out of range
+    Slider:
+      Full-width below input
+      Min: product.minAmount  Max: user.maxEligible  Step: ₹1,000
+      Two-way binding with input field
+      Labels: min amount (left) + max eligible (right)  caption
+    Validation rules:
+      Below min  →  error message "Minimum is ₹[min]"
+      Above max  →  error message "Maximum eligible is ₹[max]"
+      Both:  input border switches to error style
+             CTA in floating row disables
+
+  BLOCK 3 — Tenure Selector  (Standard Card)
+    Section label  :  "TENURE"
+    Label text     :  "Loan Tenure"
+    Segmented control  :  3 equal-width buttons in a row
+      [ 6M ]  [ 12M ]  [ 24M ]
+      height 48px  radius 12px each
+      Selected: filled style  Default: outlined style
+      On press: update loanTenure → recalculate live estimate
+
+  BLOCK 4 — Purpose Dropdown  (Standard Card)
+    Section label  :  "PURPOSE"
+    Label text     :  "Purpose of Loan"
+    Dropdown field:
+      height 56px  radius 12px
+      Placeholder: "Select purpose..."  text-secondary
+      Arrow icon right side
+      On press: OPENS PurposeSelectSheet (no page nav)
+      After select: shows selected option, arrow rotates back
+
+  BLOCK 5 — Live Estimate Card  (Compact Card, dark bg)
+    Section label  :  "LIVE ESTIMATE"
+    Rows (label left, value right, bold):
+      Loan Amount      [computed from state]
+      Tenure           [computed from state]
+      APR              [product.apr]%
+      Monthly EMI      [PMT formula result]  ← animates on change
+      Total Repayable  [EMI × tenure]        ← animates on change
+      Processing Fee   ₹0 (waived)
+
+    Animate on change:
+      Old value  :  opacity 1→0, translateY 0→-8px  200ms
+      New value  :  opacity 0→1, translateY 8px→0   200ms
+
+  CTA (floating row):
+    "VIEW LOAN TERMS (KFS) →"
+    DISABLED when: amount invalid OR tenure null OR purpose null
+    ENABLED when: all 3 valid
+    On press:
+      Store { loanAmount, loanTenure, loanPurpose,
+              emi, totalRepay, totalInterest } → state
+      NAVIGATE Screen 3
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 9 — SCREEN 3: KEY FACT STATEMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Route: /loan/kfs
+Header: "Key Fact Statement"
+Floating row: "← Edit Loan"  │  "✅ I AGREE & PROCEED →"
+CTA disabled until kfsAcknowledged = true
+
+LAYOUT (top to bottom):
+
+  BLOCK 1 — Legal Banner  (Highlighted Card, warning type)
+    "⚖️  LEGAL DISCLOSURE — Read carefully before agreeing"
+
+  BLOCK 2 — Loan Summary  (Standard Card)
+    Section label  :  "LOAN SUMMARY"
+    2-column rows: label (text-secondary) | value (text-primary bold)
+      Product / Lender / Borrower / Amount / Tenure
+
+  BLOCK 3 — Cost of Credit  (Standard Card)
+    Section label  :  "COST OF CREDIT"
+    Rows: APR / Monthly EMI / Processing Fee / Insurance / Total / Interest
+    All values from loanApplication state
+
+  BLOCK 4 — EMI Schedule Preview  (Standard Card)
+    Section label  :  "REPAYMENT SCHEDULE"
+    Table showing first 3 months:
+      Columns: Month | Date | EMI | Cumulative
+      Dates computed: first of next month + (i-1) months
+    "View All ↓"  text link below table
+      On press: OPENS EMIScheduleSheet (no page nav)
+
+  BLOCK 5 — Prepayment Terms  (Standard Card)
+    Section label  :  "PREPAYMENT"
+    3 rows with ✅:
+      Prepay anytime — zero penalty
+      Partial prepayment allowed
+      No foreclosure charges
+
+  BLOCK 6 — Cooling-Off Card  (Highlighted Card, info type)
+    "⏰  3-DAY COOLING-OFF PERIOD"
+    Expiry date computed: kfsTimestamp + 3 days formatted
+
+  BLOCK 7 — Grievance Section  (Standard Card)
+    Section label  :  "GRIEVANCE"
+    Rows:
+      Officer name  (text-primary)
+      Email         (text link, tappable → opens mail client)
+      Response time (text-secondary)
+      "RBI Ombudsman Portal →"  (text link, opens cms.rbi.org.in)
+
+  BLOCK 8 — Acknowledgement Checkbox  (Compact Card)
+    Custom checkbox (22px square, radius 6px)
+    Label text beside checkbox
+    On check → kfsAcknowledged = true → CTA enables
+    On uncheck → kfsAcknowledged = false → CTA disables
+
+  CTA (floating row):
+    "✅  I AGREE & PROCEED  →"
+    DISABLED when kfsAcknowledged = false
+    ENABLED with glow animation when kfsAcknowledged = true
+    On press:
+      kfsTimestamp = now()  → state
+      coolingOffExpiry = now + 3 days  → state
+      Toast: "Terms acknowledged ✓"  success
+      SERVER CALL starts async (parallel to navigation)
+      NAVIGATE Screen 4
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 10 — SCREEN 4: ELIGIBILITY CHECK (AUTO-PROGRESSES)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Route: /loan/checking
+Header: "Checking Eligibility"
+Floating row: HIDDEN
+Back button: DISABLED (process is running — no going back)
+
+NO USER INPUT NEEDED. Screen auto-progresses on timer.
+
+LAYOUT (top to bottom):
+
+  TOP — Global Progress Bar (outside cards, full width):
+    height 6px  radius 999px
+    Animates 0% → 100% over total duration (~8 seconds)
+
+  BLOCK 1 — Progress Header Card  (Standard Card)
+    Icon: 🔍 with CSS rotation animation
+    Title: "Running Checks"  card title
+    Subtitle: "Secure server · Encrypted · RBI compliant"  caption
+
+  BLOCK 2 — Stage 1: Regulatory Checks
+    Section label: "STAGE 1 — REGULATORY CHECKS"
+
+    7 Check Rows (revealed sequentially, 500ms apart):
+      Each row enters: opacity 0→1, translateX -16px→0, 300ms ease
+
+      Check Row Structure:
+        Left  :  40×40px circle (icon zone)
+          Pending state  :  spinner arc animation inside
+          Passed state   :  ✅ icon
+          Failed state   :  ❌ icon
+        Right :
+          Primary text   :  check name  Inter SemiBold 14px
+          Secondary text :  verification detail  Inter Regular 12px
+
+      7 rows:
+        t=500ms    Aadhaar API Verified       "UIDAI confirmed · Face match 94%"
+        t=1000ms   PAN API Verified           "Income Tax Dept confirmed"
+        t=1500ms   Age Verified               "Eligible range: 18–65"
+        t=2000ms   Bank Statement             "Minimum required: 3 months"
+        t=2500ms   KFS Acknowledged           "Timestamp: [kfsTimestamp]"
+        t=3000ms   Mobile Verified            "OTP confirmed at registration"
+        t=3500ms   Score Meets Threshold      "Your score [N] ≥ required [N]"
+
+    Failure routing:
+      Any row → ❌  :  remaining rows mark ⏸ NOT RUN
+                       rejection_bucket = 'HARD_RULE'
+                       at t+800ms → NAVIGATE Screen 6B
+
+  BLOCK 3 — Stage 2: Affordability Engine
+    Appears at t=4000ms
+    Section label: "STAGE 2 — AFFORDABILITY ENGINE"
+
+    3 Metric Cards (revealed 400ms apart):
+
+      Card 1 — DSCR  (Highlighted Card, success type if pass, danger if fail)
+        Title: "DSCR (Debt Service Coverage)"
+        Computation block:
+          Net Income       :  ₹[income]
+          Existing EMI     :  ₹[existingEMI]
+          Proposed EMI     :  ₹[computedEMI]
+          ─ divider ─
+          DSCR = [income] ÷ [totalEMI] = [result]
+          Status: "✅ Required ≥ 1.25" or "❌ Fails"
+        Fail: card switches to danger type
+
+      Card 2 — EMI Ratio  (success / warning / danger based on ratio)
+        Title: "Post-Loan EMI Ratio"
+        Total EMI / Net Income / Ratio = [pct]%
+        Status: "✅ Required ≤ 50%" or "❌ Fails"
+
+      Card 3 — LTI  (success type)
+        Title: "Loan-to-Income Ratio"
+        Loan Amount / Monthly Income / LTI = [N]×
+        Status: "✅ Required ≤ 10×"
+
+    Failure routing:
+      Any card → ❌  :  rejection_bucket = 'AFFORDABILITY'
+                        alternative_offer pre-computed → state
+                        at t+800ms → NAVIGATE Screen 6B
+
+  BLOCK 4 — Transition Row  (Highlighted Card, AI type)
+    Appears at t=6500ms
+    Spinner + "Sending to AI decision engine..."
+    After 1500ms → NAVIGATE Screen 5
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 11 — SCREEN 5: AI DECISION ENGINE (AUTO-PROGRESSES)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Route: /loan/ai-decision
+Header: "AI Decision Engine"
+Floating row: HIDDEN
+Back button: DISABLED
+
+NO USER INPUT. Auto-progresses.
+
+LAYOUT (top to bottom):
+
+  BLOCK 1 — AI Hero Card  (Hero Card shape, AI/purple type)
+    Layout    :  centred column, max-width 280px, margin auto
+    Icon      :  🤖  40px centred
+    Title     :  "AI EVALUATING"  section header
+    Subtitle  :  "Analysing 32 signals from your profile..."
+    Loading dots  :  3 circles animating in sequence  8px each
+
+  BLOCK 2 — Model Inputs  (Standard Card)
+    Section label  :  "INPUTS TO DECISION MODEL"
+
+    Sub-section 1 — Pillar Score Table:
+      label  :  "FROM CREDIT SCORE"  caption
+      8 rows: pillar name | score | ±interval | interval label
+      Interval label variants:
+        tight    →  small chip success type
+        moderate →  small chip warning type
+        wide     →  small chip danger type
+        certain  →  small chip info type
+
+    Sub-section 2 — Affordability Row:
+      label  :  "FROM AFFORDABILITY ENGINE"  caption
+      3 chips in a row: DSCR ✅ | EMI Ratio ✅ | LTI ✅
+
+    Sub-section 3 — Soft Signals:
+      label  :  "SOFT SIGNALS"  caption
+      4 rows: Payment streak / Savings buffer / Income growth / Insurance flag
+
+  BLOCK 3 — Repayment Probability Meter  (Standard Card)
+    Label: "Repayment Probability Score"
+    Progress bar:
+      height 12px  radius 999px
+      Animates 0% → (aiScore × 100)% in 1500ms easeOutCubic
+    Score number:
+      JetBrains Mono 24px
+      Count-up animation 0.00 → aiScore in 1500ms
+    Threshold indicator:
+      Vertical dashed line on bar at threshold position
+      Label below: "Threshold: [aiThreshold]"
+    Gap badge:
+      aiScore > threshold  →  "+[gap] above threshold ✅"  success chip
+      aiScore < threshold  →  "[gap] below threshold ❌"  danger chip
+
+  ROUTING (at t=3000ms after bar completes):
+    aiScore ≥ threshold  →  NAVIGATE Screen 6A
+    aiScore < threshold  →  rejection_bucket = 'MODEL_SCORED'
+                             NAVIGATE Screen 6B
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 12 — SCREEN 6A: LOAN APPROVED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Route: /loan/approved
+Header: "Loan Approved"
+Floating row: "Cancel Loan"  │  "✍️ SIGN & ACCEPT LOAN →"
+
+ON MOUNT:
+  Confetti burst (40 particles, 2000ms, fade last 600ms)
+  Fairness engine call starts ASYNC (does not block UI)
+
+LAYOUT (top to bottom):
+
+  BLOCK 1 — Approval Hero Card  (Hero Card, success type)
+    Icon    :  🎉  48px  bouncing animation (loop)
+    Title   :  "APPROVED!"  Inter Black 32px
+    Subtitle:  "Congratulations, [name]! Your [product] is approved."
+
+  BLOCK 2 — Loan Details  (Standard Card)
+    Section label  :  "LOAN DETAILS"
+    Rows: Amount / APR / Monthly EMI / Tenure / Total Payable / Disbursal To
+
+  BLOCK 3 — Why Approved  (Highlighted Card, success type)
+    Section label  :  "WHY YOU WERE APPROVED"
+    5 rows with ✅ icon, stagger animation (60ms each):
+      Payment streak / DSCR / EMI ratio / Income growth / AI score
+
+  BLOCK 4 — Fairness Check  (Highlighted Card, AI type)
+    Shows spinner until async result arrives (~2s)
+    Replaces spinner with:
+      4 rows with ✅ / ℹ️ icons
+      Group approval rate chip at bottom
+
+  BLOCK 5 — Cooling-Off Card  (Highlighted Card, info type)
+    "⏰  3-DAY COOLING-OFF PERIOD"
+    Expiry shown as exact date + time
+
+  BLOCK 6 — Audit ID Strip  (Compact Card, dark bg)
+    Loan ID + Audit ID in JetBrains Mono  +  "VERIFIED ✓"
+
+  CTA (floating row):
+    "✍️  SIGN & ACCEPT LOAN  →"
+    gradient CTA (approval variant)
+    On press → NAVIGATE Screen 7A
+
+  Secondary (floating row):
+    "Cancel Loan"
+    On press → OPENS CancelLoanSheet (no page nav)
+      Sheet shows cooling-off expiry
+      "YES CANCEL" → toast + NAVIGATE Screen 0
+      "NO KEEP" → dismiss sheet
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 13 — SCREEN 6B: LOAN DECISION (REJECTION)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Route: /loan/decision
+Header: "Loan Decision"
+Floating row: "← Try Different Amount"  │  "VIEW DECISION REPORT →"
+
+LAYOUT (top to bottom):
+
+  BLOCK 1 — Rejection Header  (Highlighted Card, danger type)
+    ❌  "Application Not Approved"
+    Product name + requested amount as subtitle
+
+  BLOCK 2 — Alternative Offer  (Highlighted Card, success type)
+    ALWAYS SHOWN for AFFORDABILITY bucket
+    Hidden for HARD_RULE bucket
+    ✅  "BUT — You are immediately eligible for ₹[alt amount]"
+    EMI + tenure as subtitle
+    CTA  :  "APPLY FOR ₹[alt] →"  (success CTA, h:48px)
+      On press:
+        loanAmount = alternativeOffer.amount → state
+        Recompute all metrics
+        NAVIGATE Screen 6A  (skip Screens 1–5 — shortcut)
+
+  BLOCK 3 — Rejection Reason  (Highlighted Card, bucket-specific type)
+    Content driven by rejection_bucket:
+
+    HARD_RULE bucket:
+      "RBI legal requirement — cannot be waived"
+      Which rule failed + what document fixes it
+
+    AFFORDABILITY bucket:
+      Reassurance strip (success type): "Not a creditworthiness issue"
+      EMI Ratio Visualiser:
+        Two horizontal bars stacked:
+          Bar 1: current burden %
+          Bar 2: after-loan burden %
+        Dashed threshold line at 50%
+        "Maximum allowed: 50%" label
+
+    MODEL_SCORED bucket:
+      AI score bar (same component as Screen 5)
+      SHAP top 3 negative drivers list:
+        Each row: driver name + SHAP value chip
+
+    PRODUCT_MISMATCH bucket:
+      Score ladder (same scale bar as Screen 0)
+      Highlighted where user is vs where product starts
+      Pre-approved lower product card below
+
+  Text link at bottom:
+    "VIEW FULL DECISION REPORT →"
+    On press → NAVIGATE Screen 7B
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 14 — SCREEN 7A: SIGN & DISBURSE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Route: /loan/sign
+Header: "Sign & Accept"
+Floating row: "← Back"  │  "🏦 CONFIRM & DISBURSE →"
+CTA disabled until signature drawn AND declaration checked
+
+LAYOUT (top to bottom):
+
+  BLOCK 1 — Final Loan Summary  (Standard Card)
+    Section label  :  "FINAL CONFIRMATION"
+    Rows: Loan ID / Amount / Tenure / EMI / Disbursal Account
+
+  BLOCK 2 — e-Signature Zone  (standalone, no card)
+    Layout:
+      border: 2px dashed  radius: 16px  height: 160px
+      inner label: "Sign here with your finger"  caption centred
+
+    HTML5 Canvas inside:
+      Touch/mouse stroke drawing
+      Smooth bezier curves
+      On lift finger: signatureCaptured = true
+    "CLEAR" text link below:
+      On press: canvas cleared, signatureCaptured = false
+      CTA disables again
+
+  BLOCK 3 — Declaration Checkbox  (Compact Card)
+    Custom checkbox (same spec as Screen 3)
+    Text: authorisation language
+    On check: declarationChecked = true → re-evaluate CTA gate
+
+  CTA (floating row):
+    "🏦  CONFIRM & DISBURSE  →"
+    DISABLED: signatureCaptured = false OR declarationChecked = false
+    ENABLED: both true  +  max glow effect
+    On press:
+      STEP 1: button shows spinner 2 seconds
+      STEP 2: POST /api/loan/disburse (server call)
+      STEP 3: SUCCESS ANIMATION SEQUENCE:
+        FullscreenOverlay appears (z-index 100):
+          Screen flash (150ms)
+          ✅ icon scales in 0 → 1.2 → 1.0
+          "Loan Disbursed!"  Inter Black 32px centred
+          Amount + bank account  body text centred
+          Confetti burst (same as Screen 6A)
+      STEP 4: after 3 seconds:
+        FullscreenOverlay dismisses
+        Score state refreshes (P3 pillar affected)
+        NAVIGATE Screen 0
+        Toast: "₹[amount] loan disbursed ✓"  success
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 15 — SCREEN 7B: XAI REJECTION REPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Route: /loan/report
+Header: "Decision Report"
+Floating row: "📥 Download PDF"  │  "🏠 Back to Dashboard"
+
+LAYOUT (top to bottom):
+
+  BLOCK 1 — Official Report Header  (Compact Card, dark bg)
+    📋 icon + "OFFICIAL DECISION REPORT"  bold
+    Rows in mono font:
+      Audit ID / Date / "RBI-Compliant Adverse Action Notice"
+
+  BLOCK 2 — Section 1: Decision Summary  (Standard Card)
+    Section header pill: "1  DECISION SUMMARY"
+    ❌ + "Rejected for: ₹[amount]"  bold
+    Product name + decision type badge chip
+    "(Not a creditworthiness issue)"  italic caption
+    AI score bar (same component as Screen 5, static)
+
+  BLOCK 3 — Section 2: Primary Rejection Reason  (Standard Card)
+    Section header pill: "2  PRIMARY REJECTION REASON"
+    Bucket badge chip (styled to bucket type)
+    Reassurance strip (success type Highlighted Card)
+    EMI Ratio Visualiser:
+      Two horizontal bars (current + after-loan)
+      Threshold dashed line
+      Computation explanation text below
+
+  BLOCK 4 — Section 3: All Factors Checked  (Standard Card)
+    Section header pill: "3  ALL FACTORS CHECKED"
+    Sub-section: Stage 1 (hard rules) — 7 rows all ✅
+    Sub-section: Stage 2 (affordability) — 3 rows mixed ✅/❌
+    Sub-section: Stage 3 (decision SHAP) — 3 driver rows
+
+  BLOCK 5 — Section 4: Fairness Audit  (Highlighted Card, AI type)
+    Section header pill: "4  FAIRNESS AUDIT"
+    Group info row
+    5-metric table: 2 columns  (metric | PASS/FAIL chip)
+    Temporal check row
+    3 quality rows (specificity / actionability / sentiment)
+    Closing statement paragraph
+
+  BLOCK 6 — Section 5: Approval Paths  (3 stacked Highlighted Cards)
+    Section header pill: "5  YOUR 3 APPROVAL PATHS"
+
+    PATH 1 — TODAY (info type):
+      "⚡ Immediate" badge chip
+      Description + projected outcome
+      CTA: "APPLY FOR ₹[alt] NOW →"  primary CTA h:48px
+        On press → same as Screen 6B alternative offer CTA
+                   NAVIGATE Screen 6A
+
+    PATH 2 — 7 DAYS (warning type):
+      "📄 7 days" badge chip
+      Description
+      CTA: "UPLOAD DOCUMENTS →"  warning CTA h:48px
+        On press → OPENS DocumentUploadSheet
+
+    PATH 3 — 1–3 MONTHS (AI type):
+      "💳 1–3 months" badge chip
+      Description only
+      No CTA — informational
+
+  BLOCK 7 — Section 6: Grievance  (Standard Card)
+    Section header pill: "6  GRIEVANCE & SUPPORT"
+    Same rows as Screen 3 grievance section
+    + Audit ID row (quote when contacting)
+
+  PDF Download (floating row):
+    "📥 Download PDF"
+    On press:
+      Generate PDF of all 6 sections
+      Format: A4, matches current theme
+      Encrypted (password: Aadhaar last 4 digits)
+      QR code linking to audit replay portal
+      Opens native share sheet (Save / Share options)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 16 — ANIMATION SYSTEM (all screens)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Screen transitions:
+  Forward nav   :  slide-left  translateX(0 → -100%) + new screen 100%→0
+  Back nav      :  slide-right (reverse)
+  Screen 0 enter:  fade + translateY(24px → 0)  400ms ease[0.22,1,0.36,1]
+  Sheet open    :  translateY(100% → 0)  350ms spring
+  Sheet close   :  translateY(0 → 100%)  300ms ease-in
+
+On-screen animations:
+  Card stagger  :  each card 60ms delay × index, opacity 0→1, translateY 12→0
+  Button press  :  scale spring stiffness 400 damping 25
+  Progress bars :  width 0→target  800ms ease[0.22,1,0.36,1]
+  Count-up nums :  0→target  1000ms easeOutCubic
+  Score ring    :  arc fill 0→target  1200ms cubic-bezier(0.34,1.56,0.64,1)
+  Check rows    :  stagger 300ms, opacity 0→1, translateX -16px→0
+  Bar chart     :  bars grow 0→target  stagger 60ms  spring
+  Input change  :  old value out 200ms, new value in 200ms  crossfade
+  Haptics       :  8ms light pulse on every primary button press
+  Shimmer       :  loading skeleton sweep 1.5s linear infinite
+
+Loading states (shimmer skeleton shown while data fetches):
+  All card shapes filled with shimmer blocks
+  Heights match the real content they replace
+  Replace with real content when data arrives (fade-in 300ms)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 17 — ACCESSIBILITY (all screens)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Touch targets       :  minimum 48×48px (56px in HC theme)
+  Screen reader       :  every icon button has aria-label
+  Score ring          :  aria-label = "Credit score [N], Grade [G], [label]"
+  Chart bars          :  aria-label = "[Month]: ₹[amount]"
+  Focus ring          :  2px solid, offset 2px (visible on tab)
+  Reduce motion       :  if prefers-reduced-motion: skip all animations,
+                         values still update instantly
+  Font scaling        :  all sizes in rem, respects system font scale
+  Tab order           :  logical top-to-bottom, left-to-right
+  Form labels         :  every input has associated visible label
+  Error messages      :  role="alert" so screen reader announces them
+  Auto-progress screens:  live region announces each check as it appears

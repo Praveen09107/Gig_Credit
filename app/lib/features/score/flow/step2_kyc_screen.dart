@@ -18,6 +18,7 @@ import '../../../../app/app_router.dart';
 import '../../../../scoring/placeholders/demo_face_verifier.dart';
 import '../../../../scoring/validation/cross_step_validator.dart';
 import '../widgets/mismatch_warning_banner.dart';
+import '../../../../shared/widgets/loaders/coin_pulse_loader.dart';
 
 class Step2KycScreen extends ConsumerStatefulWidget {
   const Step2KycScreen({super.key});
@@ -634,7 +635,7 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
                           padding: EdgeInsets.zero,
                         ),
                         child: isVerifying
-                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            ? const CoinPulseLoader(size: 6.0)
                             : const Text('Verify', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                       ),
               ),

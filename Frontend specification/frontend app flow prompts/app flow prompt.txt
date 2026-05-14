@@ -1,0 +1,759 @@
+████████████████████████████████████████████████████████████████████████████████
+██                                                                            ██
+██   GIGCREDIT — COMPLETE APP FLOW & ROUTING MASTER PROMPT                  ██
+██   First visit → Signup → Home → Steps → Score → Loan → Report            ██
+██   Zero UX mismatch · Uniform theme · Clear routing · No dead ends        ██
+██                                                                            ██
+████████████████████████████████████████████████████████████████████████████████
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1 — MASTER APP FLOW (linear read-through)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  APP OPEN                                                           │
+  │  Splash Screen (3D loader)                                         │
+  │  Check auth token in local storage                                 │
+  │         │                                                          │
+  │    ┌────┴────────────────────┐                                     │
+  │    │                         │                                     │
+  │  No token                 Token valid                              │
+  │    │                         │                                     │
+  │    ▼                         ▼                                     │
+  │  /signup               Check user state                            │
+  │                              │                                     │
+  │                   ┌──────────┼──────────────┐                     │
+  │                   │          │               │                     │
+  │               steps=0   steps=1-3       steps=4                   │
+  │               (new)     (in progress)   (complete)                │
+  │                   │          │               │                     │
+  │                   ▼          ▼               ▼                     │
+  │               /home      /apply/step-N   /report                  │
+  └─────────────────────────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2 — COMPLETE ROUTE TABLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ROUTE                    SCREEN NAME               AUTH REQUIRED
+  ──────────────────────────────────────────────────────────────────────
+  /splash                  Splash Screen             No
+  /signup                  Sign Up                   No
+  /signin                  Sign In                   No
+  /home                    Home                      Yes
+  /guidelines              Guidelines                Yes
+  /schemes                 Schemes                   Yes
+  /apply/step-1            Step 1 Personal Info      Yes
+  /apply/step-2            Step 2 Income             Yes
+  /apply/step-3            Step 3 Documents          Yes
+  /apply/step-4            Step 4 Credit History     Yes
+  /processing              Final Processing Screen   Yes
+  /report                  Credit Score Report       Yes
+  /loan/application        Loan Application Form     Yes
+  /loan/kfs                Key Fact Statement        Yes
+  /loan/review             Loan Review Summary       Yes
+  /loan/sign               E-Signature Screen        Yes
+  /loan/status             Loan Status               Yes
+  /profile                 User Profile              Yes
+  ──────────────────────────────────────────────────────────────────────
+
+  Route guard rule:
+    Any /apply, /processing, /report, /loan/* hit without valid token
+    → redirect to /signin immediately (replace stack, no back)
+
+  Step guard rule:
+    /apply/step-N  where N > user.completedSteps + 1
+    → redirect to /apply/step-[completedSteps + 1]
+    (Can't skip steps)
+
+  Completed guard:
+    /apply/step-N  when all 4 steps already complete
+    → redirect to /report
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3 — PHASE 1: SPLASH → AUTH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SCREEN: /splash
+  Loader: 3D (splash screen — existing spec)
+  Duration: real token check time + 2s minimum
+  On complete → route decision (Section 1 tree)
+  Transition: fade out  400ms → next screen fades in
+
+SCREEN: /signup  (first visit — no token)
+  Layout: AuthBrandBand + AuthFormCard (existing spec)
+  Fields: Full Name · Mobile Number
+  Flow:
+    Enter name + mobile → SEND OTP
+    OTP sent → 6-box OTP input appears
+    OTP correct → POST /api/auth/signup
+    On success:
+      Token stored to local storage
+      user.completedSteps = 0  stored
+      Toast: ACCOUNT_CREATED
+      Navigate → /home  (replace stack)
+      Transition: slide-up  400ms spring
+
+SCREEN: /signin  (returning user)
+  Layout: same AuthBrandBand + AuthFormCard
+  Fields: Mobile Number only
+  Flow:
+    Enter mobile → SEND OTP
+    OTP correct → POST /api/auth/signin
+    On success:
+      Token refreshed
+      Check user.completedSteps
+      Navigate based on state (Section 1 tree)
+      Toast: SIGNIN_SUCCESS
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4 — PHASE 2: HOME SCREEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SCREEN: /home
+  This is the landing hub. Everything radiates from here.
+
+── LAYOUT ───────────────────────────────────────────────────────────────────
+
+┌──────────────────────────────────────────────────────┐
+│  STATUS BAR                                          │
+├──────────────────────────────────────────────────────┤
+│  STICKY HEADER  — "GigCredit" logo + profile icon    │
+├──────────────────────────────────────────────────────┤
+│  HERO BAND      — greeting + score status            │
+├──────────────────────────────────────────────────────┤
+│  SCORE STATUS CARD                                   │
+├──────────────────────────────────────────────────────┤
+│  QUICK ACTION CARDS ROW                              │
+├──────────────────────────────────────────────────────┤
+│  SCHEMES PREVIEW STRIP                               │
+├──────────────────────────────────────────────────────┤
+│  BOTTOM NAV BAR                                      │
+└──────────────────────────────────────────────────────┘
+
+── HERO BAND ────────────────────────────────────────────────────────────────
+
+  Same gradient: linear-gradient(160deg, #1A6B3C, #2D8653, #3CC068)
+  padding: 24px 20px 32px
+
+  Row top:
+    "👋 Welcome, [user.name]"  Inter Bold  20px  #FFFFFF
+    Right: notification bell  24px  #FFFFFF  (placeholder tap)
+
+  Status text (dynamic based on completedSteps):
+    steps=0  :  "Start your credit journey today"
+    steps=1-3:  "Step [N] in progress — keep going!"
+    steps=4  :  "Your GigCredit score is ready"
+
+  GET STARTED / CONTINUE BUTTON:
+    steps=0  :  "GET STARTED"  green pill button
+                On press → GetStartedPopup (existing spec)
+    steps=1-3:  "CONTINUE FROM STEP [N]"  green pill
+                On press → /apply/step-[N]  directly (no popup)
+    steps=4  :  "VIEW MY REPORT"  green pill
+                On press → /report
+
+── SCORE STATUS CARD ────────────────────────────────────────────────────────
+
+  bg: #FFFFFF  radius 20px  border 1px #E2EDE7
+  box-shadow: 0 4px 20px rgba(26,107,60,0.08)
+  padding: 20px  margin: 0 20px
+
+  State A — No score yet (steps < 4):
+    Large icon: 🔒  48px  centred
+    Heading: "Score Locked"  Inter Bold  18px  #0D1F15
+    Subtext: "Complete all 4 steps to unlock your GigCredit score"
+    Progress dots row: 4 dots  filled for completed steps  green/grey
+
+    Progress dots:
+      Each: 10×10px circle  gap 8px  centred
+      Completed: bg #1A6B3C  scale 1.1
+      Current:   bg #3CC068  pulse animation
+      Remaining: bg #E2EDE7
+      Connected by 2px line between dots  #E2EDE7/green gradient
+
+  State B — Score available (steps = 4):
+    Loader: 2A (seedling) while score loads from API
+    After load:
+      Score number: Inter Black  48px  #1A6B3C  centred
+      Label: "Your GigCredit Score"  Inter Regular  13px  #8FA89B
+      Score band chip: "Good" / "Fair" / "Poor"
+        bg per band  radius 999px  padding 5px 14px
+      Circular progress ring (SVG):
+        outer ring #E2EDE7  filled #1A6B3C  strokeWidth 6px
+        fills to score/850  clockwise  on mount 1.2s ease
+
+── QUICK ACTION CARDS ROW ───────────────────────────────────────────────────
+
+  Horizontal scroll row  gap 14px  padding 0 20px  hide scrollbar
+
+  3 action cards  each 140×100px:
+
+    Card 1: "📋 Guidelines"
+      On press → /guidelines
+    Card 2: "🏛️ Schemes"
+      On press → /schemes
+    Card 3: "👤 Profile"
+      On press → /profile
+
+  Each card:
+    bg: #FFFFFF  radius 16px  border 1px #E2EDE7
+    shadow: 0 4px 12px rgba(26,107,60,0.06)
+    layout: column  align-center  justify-center  gap 8px
+    Icon zone: 40×40px  circle  bg #D4EDDA
+    Inside: emoji  20px
+    Label: Inter SemiBold  12px  #0D1F15
+
+    On press: scale 0.96 spring  haptic 8ms  → navigate
+
+── SCHEMES PREVIEW STRIP ────────────────────────────────────────────────────
+
+  Section header row:
+    "Government Schemes"  Inter Bold  16px  #0D1F15
+    "See all →"  Inter SemiBold  13px  #1A6B3C  (tappable)
+    On "See all" → /schemes
+
+  Horizontal scroll  gap 12px  padding 0 20px
+
+  3 preview scheme cards (first 3 from schemes list):
+    width: 180px  radius 14px  bg #FFFFFF  border 1px #E2EDE7
+    border-left: 3px solid [scheme.accentColour]
+    padding: 14px
+    emoji  scheme name  type badge
+    On press → /schemes (opens full schemes page)
+
+── BOTTOM NAV BAR ───────────────────────────────────────────────────────────
+
+  COMPONENT: BottomNavBar
+  position: fixed  bottom-0  z-index 50  width 100%
+  height: 64px + safe-area-bottom
+  bg: rgba(255,255,255,0.96)  backdrop-filter blur(12px)
+  border-top: 1px solid #E2EDE7
+
+  4 nav items  equal width:
+    🏠 Home       → /home
+    📋 Apply      → /apply/step-[resumeStep]  or /report if complete
+    🏛️ Schemes    → /schemes
+    👤 Profile    → /profile
+
+  Each item:
+    Icon: 24px  label: Inter SemiBold  10px
+    Default: icon + label  #8FA89B
+    Active: icon + label  #1A6B3C  + 2px green dot below icon
+
+  Active state: determined by current route
+  Transition: colour 200ms ease
+  On press: scale 0.90→1.0 spring  haptic 6ms
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5 — PHASE 3: APPLICATION STEPS FLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Full spec in Steps prompt. Summary flow here for routing clarity.
+
+  /home (GET STARTED pressed)
+    → GetStartedPopup appears
+    → "Continue" pressed  → /apply/step-1
+    → "Guidelines" pressed → /guidelines  (can return to popup path)
+
+  /apply/step-1
+    → fill + verify → STEP1_COMPLETE toast
+    → 3A loader → /apply/step-2
+
+  /apply/step-2
+    → fill + verify → STEP2_COMPLETE toast
+    → 3A loader → /apply/step-3
+
+  /apply/step-3
+    → fill + verify → STEP3_COMPLETE toast
+    → 3A loader → /apply/step-4
+
+  /apply/step-4
+    → fill + verify → STEP4_COMPLETE toast
+    → 3B loader (vault submit)
+    → 3C loader (AI scoring — real time)
+    → AI_SCORE_DONE toast
+    → /report  (replace stack)
+
+  Back behaviour at each step:
+    Back press → BackGuardPopup appears (existing spec)
+    "Go Back" → previous step (step > 1) or /home (step 1)
+    "Keep Going" → stay on current step
+
+  Interrupted session resume:
+    User closes app mid-step → data saved server side
+    On re-login → restored to exact step they left
+    All previously filled fields re-populated from server
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 6 — PHASE 4: CREDIT SCORE REPORT SCREEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SCREEN: /report
+
+┌──────────────────────────────────────────────────────┐
+│  STATUS BAR                                          │
+├──────────────────────────────────────────────────────┤
+│  STICKY HEADER  — "Your Report"  + download icon     │
+├──────────────────────────────────────────────────────┤
+│  SCORE HERO BAND                                     │
+├──────────────────────────────────────────────────────┤
+│  SCORE BREAKDOWN CARD                                │
+├──────────────────────────────────────────────────────┤
+│  PILLAR SCORES SECTION                               │
+├──────────────────────────────────────────────────────┤
+│  EXPLAINABILITY SECTION (SHAP)                       │
+├──────────────────────────────────────────────────────┤
+│  APPLY FOR LOAN CTA BAND                             │
+├──────────────────────────────────────────────────────┤
+│  BOTTOM NAV BAR                                      │
+└──────────────────────────────────────────────────────┘
+
+── SCORE HERO BAND ──────────────────────────────────────────────────────────
+
+  Same gradient as all hero bands
+  padding: 28px 20px 48px  (extra bottom to blend into score card)
+
+  Content:
+    "STEP N SCORE"  eyebrow chip
+    Score number: Inter Black  56px  #FFFFFF  centred
+    Score band: "GOOD / FAIR / POOR" chip  colour-coded
+    "Out of 850"  Inter Regular  12px  rgba(255,255,255,0.65)
+
+    Circular SVG ring (large version):
+      120×120px  strokeWidth 8px
+      bg track: rgba(255,255,255,0.20)
+      fill: #A8F0C6  clockwise  percentage of 850
+      On mount: draws from 0  1.4s  ease[0.22,1,0.36,1]
+
+    Confetti burst (score > 600 only):
+      20 small particles  #A8F0C6  #3CC068  #FFFFFF
+      Burst from score number  radiate outward  800ms  fade  once only
+
+── SCORE BREAKDOWN CARD ─────────────────────────────────────────────────────
+
+  Same card shape (bg white, radius 20px, border-top green)
+  margin: -24px 20px 0  (overlaps hero band bottom for layered effect)
+  z-index: 2  (sits on top of hero band)
+
+  Row layout  3 stat blocks:
+    "Income Score"  "Spending Score"  "Resilience Score"
+    Each: number  Inter Black  22px  #1A6B3C
+    Label: Inter Regular  12px  #8FA89B
+    Dividers between blocks
+
+  On mount: stagger  opacity 0→1  translateY(8px→0)  80ms each  delay 300ms
+
+── PILLAR SCORES SECTION ────────────────────────────────────────────────────
+
+  Section header: "Score Breakdown by Pillar"
+  Inter Bold  16px  #0D1F15  padding 0 20px
+
+  6 pillar rows  gap 12px  padding 0 20px
+
+  Each PillarRow:
+    layout: row  align-center  gap 12px
+    bg: #FFFFFF  radius 14px  border 1px #E2EDE7  padding 14px 16px
+
+    LEFT: icon circle  40×40px  bg [pillar.iconBg]  emoji centred
+    MIDDLE (flex 1):
+      Pillar name  Inter SemiBold  14px  #0D1F15
+      Progress bar:
+        height 6px  radius 999px  bg #F0F4F8
+        Fill: bg [pillar.colour]  width [score%]
+        On mount: width 0→[score%]  800ms  ease[0.22,1,0.36,1]
+        Stagger: 80ms × pillarIndex  delay 400ms
+    RIGHT:
+      Score value  Inter Bold  16px  [pillar.colour]
+
+  6 pillars:
+    P1 Income Regularity      →  #1A6B3C  💰
+    P2 Spending Discipline    →  #2D8653  💳
+    P3 Asset Ownership        →  #0277BD  🏠
+    P4 Bill Payments          →  #6A1B9A  💡
+    P5 Gig Platform History   →  #E65100  📱
+    P6 Financial Resilience   →  #00838F  🛡️
+
+── EXPLAINABILITY SECTION (SHAP) ────────────────────────────────────────────
+
+  Section header: "Why This Score?"
+  Inter Bold  16px  #0D1F15  padding 0 20px
+
+  SHAP insight cards  gap 10px  padding 0 20px
+
+  Each insight card:
+    bg: #FFFFFF  radius 14px  border 1px #E2EDE7  padding 14px 16px
+    Row  gap 10px:
+      Impact indicator:
+        POSITIVE: ▲ green chip  "+X pts"  bg #D4EDDA  text #1A6B3C
+        NEGATIVE: ▼ red chip   "-X pts"  bg #FFEBEE  text #D32F2F
+      Insight text: Inter Regular  13px  #4A6B57  flex 1
+
+  On mount: stagger  opacity 0→1  translateX(-8px→0)  50ms each
+
+── APPLY FOR LOAN CTA BAND ──────────────────────────────────────────────────
+
+  Full width band  bg #1A6B3C  padding 28px 20px
+  margin-top 24px
+
+  Content column  centred:
+    "Ready to Apply for a Loan?"
+    Inter Bold  20px  #FFFFFF  centred
+    margin-bottom 8px
+
+    "Your score qualifies you for loans up to ₹[amount]"
+    Inter Regular  14px  rgba(255,255,255,0.78)  centred
+
+    APPLY NOW button:
+      width: calc(100% - 40px)  height 56px  radius 16px
+      bg: #FFFFFF  margin-top 20px
+      Text: "APPLY FOR LOAN  →"
+      Inter Bold  16px  #1A6B3C
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15)
+
+      On press:
+        scale 0.97 spring  haptic 12ms
+        Navigate → /loan/application
+
+    Note below button:
+      "No hidden charges · Govt. approved lenders"
+      Inter Regular  11px  rgba(255,255,255,0.50)  centred  margin-top 8px
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 7 — PHASE 5: LOAN APPLICATION PIPELINE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Loan pipeline is a separate linear flow with its own mini progress bar.
+Lives inside the main app but has its own step tracker.
+
+LOAN PIPELINE PROGRESS BAR:
+  5 nodes connected by line:
+  Application → KFS → Review → Sign → Status
+
+  Same sticky tracker style as Guidelines StepProgressTracker.
+  Nodes fill green as each stage completes.
+
+── /loan/application — LOAN APPLICATION FORM ────────────────────────────────
+
+LAYOUT: same StepGuidanceCard structure (no congestion)
+
+┌──────────────────────────────────────────────────────┐
+│  STICKY HEADER  — "Loan Application"  ← Back        │
+│  LOAN PIPELINE TRACKER (5 nodes)                     │
+├──────────────────────────────────────────────────────┤
+│  HERO BAND  — "Tell us what you need"                │
+├──────────────────────────────────────────────────────┤
+│  FORM CARD                                           │
+│    Loan Amount Selector                              │
+│    Loan Purpose Select                               │
+│    Repayment Tenure Select                           │
+│    EMI Preview (live calculated)                     │
+├──────────────────────────────────────────────────────┤
+│  CONTINUE BUTTON BAR  — "Check Eligibility →"        │
+└──────────────────────────────────────────────────────┘
+
+LOAN AMOUNT SELECTOR:
+  Horizontal slider  min ₹1,000  max [user.maxEligible from score]
+  Below slider: large amount display  Inter Black  32px  #1A6B3C
+  Format: "₹10,000"
+  Preset chips below slider: "₹5K"  "₹10K"  "₹25K"  "₹50K"  (tappable)
+  Slider track: bg #E2EDE7  fill #1A6B3C
+  Thumb: 24×24px circle  bg #1A6B3C  border 3px #FFFFFF  shadow
+
+LOAN PURPOSE:
+  Bottom sheet selector (same as step select fields)
+  Options: Business · Medical · Education · Equipment · Personal · Other
+
+REPAYMENT TENURE:
+  Row of tenure chips: 3M · 6M · 12M · 18M · 24M
+  Same chip pill design — active = green
+  Each press: EMI preview recalculates live
+
+EMI PREVIEW CARD:
+  bg: #D4EDDA  radius 14px  padding 16px  border 1px rgba(60,192,104,0.30)
+  Row:
+    "Estimated Monthly EMI"  Inter Regular  13px  #4A6B57
+    "₹[calculated]"  Inter Black  20px  #1A6B3C  (live)
+  Below: "Approx. interest: X% · Total payable: ₹Y"  12px  #8FA89B
+
+CONTINUE: "Check Eligibility →"
+  On press:
+    Loader 1A (in button) → API: POST /api/loan/eligibility
+    On ELIGIBLE → toast ELIGIBILITY_PASS → navigate /loan/kfs
+    On NOT ELIGIBLE → toast ELIGIBILITY_FAIL → show reason card inline
+    On AMOUNT_ADJUSTED → toast AFFORDABILITY_FAIL → slider adjusts auto
+
+── /loan/kfs — KEY FACT STATEMENT ───────────────────────────────────────────
+
+┌──────────────────────────────────────────────────────┐
+│  STICKY HEADER  — "Key Fact Statement"  ← Back      │
+│  LOAN PIPELINE TRACKER (node 2 active)               │
+├──────────────────────────────────────────────────────┤
+│  HERO BAND  — "Read before you proceed"              │
+├──────────────────────────────────────────────────────┤
+│  KFS CARD (scrollable)                               │
+│    Lender name + RBI licence number                  │
+│    Loan amount · Interest rate · Tenure              │
+│    Total repayable amount                            │
+│    Processing fee · Prepayment charges               │
+│    Grievance redressal contact                       │
+├──────────────────────────────────────────────────────┤
+│  ACKNOWLEDGEMENT ROW + CONTINUE BUTTON BAR           │
+└──────────────────────────────────────────────────────┘
+
+KFS CARD:
+  bg: #FFFFFF  radius 20px  border-top 4px solid #0277BD
+  padding 24px  scrollable within screen
+
+  Each KFS row:
+    layout: row  justify-between  padding 12px 0
+    border-bottom: 1px solid #F0F4F8
+    Label: Inter Regular  13px  #8FA89B
+    Value: Inter SemiBold  14px  #0D1F15
+
+  Important rows (interest rate, total payable):
+    Value: Inter Bold  15px  #1A6B3C
+
+ACKNOWLEDGEMENT:
+  Fixed above continue bar
+  Row  gap 12px  align-flex-start  padding 0 20px
+
+  Checkbox: 22×22px  radius 6px
+    Unchecked: border 1.5px #E2EDE7  bg #F0F4F8
+    Checked: bg #1A6B3C  ✓ #FFFFFF  scale 0.8→1.1→1.0 spring
+
+  Text: "I have read and understood the Key Fact Statement"
+  Inter Regular  13px  #4A6B57  flex 1
+
+CONTINUE: "I Accept & Continue →"
+  DISABLED until checkbox checked
+  On press:
+    Loader 1A → API: POST /api/loan/acknowledge-kfs
+    Toast: KFS_ACKNOWLEDGED → navigate /loan/review
+
+── /loan/review — LOAN REVIEW SUMMARY ───────────────────────────────────────
+
+┌──────────────────────────────────────────────────────┐
+│  STICKY HEADER  — "Review & Confirm"                 │
+│  LOAN PIPELINE TRACKER (node 3 active)               │
+├──────────────────────────────────────────────────────┤
+│  HERO BAND  — "Everything looks good?"               │
+├──────────────────────────────────────────────────────┤
+│  SUMMARY CARD                                        │
+│    All loan details in read-only rows                │
+│    Borrower details  (name, mobile, score)           │
+│    Loan details  (amount, rate, tenure, EMI)         │
+│    Lender details  (name, branch)                    │
+├──────────────────────────────────────────────────────┤
+│  CONTINUE BUTTON  — "Confirm & Sign →"               │
+└──────────────────────────────────────────────────────┘
+
+All rows: same KFS row style (read-only)
+No editing here — back to /loan/application to change.
+
+Back press: BackGuardPopup (same spec — "Are you sure?")
+
+CONTINUE: "Confirm & Sign →"
+  On press:
+    Loader 1A → API: POST /api/loan/confirm
+    On success → navigate /loan/sign
+
+── /loan/sign — E-SIGNATURE ─────────────────────────────────────────────────
+
+┌──────────────────────────────────────────────────────┐
+│  STICKY HEADER  — "Sign Your Application"            │
+│  LOAN PIPELINE TRACKER (node 4 active)               │
+├──────────────────────────────────────────────────────┤
+│  HERO BAND  — "One last step"                        │
+├──────────────────────────────────────────────────────┤
+│  SIGNATURE CARD                                      │
+│    Instructions                                      │
+│    Signature canvas zone                             │
+│    Clear / Redo button                               │
+├──────────────────────────────────────────────────────┤
+│  CONTINUE  — "Submit Application →"                  │
+└──────────────────────────────────────────────────────┘
+
+SIGNATURE CARD:
+  bg: #FFFFFF  radius 20px  border-top 4px solid #6A1B9A
+  padding 24px
+
+  Instructions:
+    "Draw your signature below using your finger"
+    Inter Regular  13px  #8FA89B  centred  margin-bottom 16px
+
+  Canvas zone:
+    width: 100%  height: 160px  radius 14px
+    bg: #F8FBF9  border: 1.5px dashed #B2D4BF
+
+    Placeholder (before drawing):
+      "✍️  Sign here"  opacity 0.40  centred  pointer-events none
+
+    While drawing:
+      Dashed border → solid #1A6B3C  200ms
+      Stroke: #1A6B3C  2.5px  smooth bezier curve
+
+  Clear button:
+    Below canvas  right-aligned
+    "↺ Clear"  Inter SemiBold  12px  #8FA89B
+    On press: canvas wipes  fade-out 150ms  placeholder returns
+
+CONTINUE: disabled until signature drawn (canvas non-empty)
+  On press:
+    scale 0.97 spring
+    Toast: SIGNATURE_SAVED (processing)
+    Loader 3B (vault document) full screen
+    API: POST /api/loan/submit  { signature blob }
+    On success → toast LOAN_APPROVED → navigate /loan/status
+    On fail → toast SERVER_ERROR → return to sign screen
+
+── /loan/status — LOAN STATUS ───────────────────────────────────────────────
+
+┌──────────────────────────────────────────────────────┐
+│  STATUS BAR                                          │
+├──────────────────────────────────────────────────────┤
+│  STICKY HEADER  — "Loan Status"                      │
+│  LOAN PIPELINE TRACKER (node 5 active — complete)    │
+├──────────────────────────────────────────────────────┤
+│  APPROVAL HERO BAND  — celebratory                   │
+├──────────────────────────────────────────────────────┤
+│  STATUS CARD                                         │
+├──────────────────────────────────────────────────────┤
+│  DISBURSEMENT TIMELINE                               │
+├──────────────────────────────────────────────────────┤
+│  QUICK ACTION BUTTONS                                │
+└──────────────────────────────────────────────────────┘
+
+APPROVAL HERO BAND:
+  Same gradient
+  Content centred column:
+    🎉  56px  scale 0→1.2→1.0  spring  on mount
+    "Loan Approved!"  Inter Black  28px  #FFFFFF
+    "₹[amount] · [tenure] months"  Inter Regular  15px  rgba(255,255,255,0.80)
+
+  Confetti burst (same as report  score > threshold):
+    20 particles  on mount  once only
+
+STATUS CARD:
+  bg: #FFFFFF  radius 20px  border-top 4px solid #1A6B3C
+  padding 24px  margin 0 20px
+
+  Same read-only rows as review screen
+  Status row: "✅ Approved"  Inter Bold  15px  #1A6B3C
+  Reference number: "Ref: GC[XXXXXXXXXX]"  Inter Mono  13px  #8FA89B
+
+DISBURSEMENT TIMELINE:
+  3 step vertical list (same step-row design as Guidelines):
+    ✅ Application Submitted  [timestamp]
+    ✅ Approved by Lender    [timestamp]
+    ⏳ Funds to Bank Account  "Within 24–48 hrs"
+
+  Active step: animated pulse dot on step circle
+
+QUICK ACTION BUTTONS:
+  Row  gap 12px  padding 0 20px
+
+  "📥 Download Sanction Letter"
+    On press: PDF_SAVED toast → downloads PDF
+
+  "🏠 Back to Home"
+    On press: navigate /home  (replace stack)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 8 — COMPLETE NAVIGATION TRANSITION MAP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  FROM → TO                              TRANSITION TYPE
+  ──────────────────────────────────────────────────────────────────────
+  /splash → /signup                    →  fade  400ms
+  /splash → /home                      →  fade  400ms
+  /splash → /apply/step-N              →  fade  400ms
+  /splash → /report                    →  fade  400ms
+
+  /signup → /home                      →  slide-up  400ms spring
+  /signin → /home or /report           →  slide-up  400ms spring
+
+  /home → /apply/step-1 (via popup)    →  slide-up  400ms spring
+  /home → /guidelines                  →  slide-left  (push)
+  /home → /schemes                     →  slide-left  (push)
+  /home → /profile                     →  slide-left  (push)
+  /home → /report                      →  slide-up  400ms spring
+
+  /apply/step-N → /apply/step-N+1      →  3A loader (bike) + slide-left
+  /apply/step-4 → /report              →  3B+3C loaders + slide-up (replace)
+
+  /report → /loan/application          →  slide-up  400ms spring
+
+  /loan/application → /loan/kfs        →  slide-left  (push)
+  /loan/kfs → /loan/review             →  slide-left  (push)
+  /loan/review → /loan/sign            →  slide-left  (push)
+  /loan/sign → /loan/status            →  3B loader + slide-up (replace)
+
+  /loan/status → /home                 →  slide-down + fade (replace)
+
+  Any back navigation                  →  BackGuardPopup first
+                                          then slide-right (pop) if allowed
+
+  Signup ↔ Signin switch               →  cross-fade  300ms
+  ──────────────────────────────────────────────────────────────────────
+
+  REPLACE STACK routes (cannot go back to):
+    /home  (after login)
+    /report  (after step 4 complete)
+    /loan/status  (after loan submitted)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 9 — GLOBAL STATE THAT DRIVES UI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  All screens read from global state.
+  No screen hardcodes user data — always dynamic.
+
+  user.name             :  string  → greeting in home hero
+  user.completedSteps   :  0–4    → routing + home card state + progress bar
+  user.score            :  number → score hero + loan max amount
+  user.scoreBand        :  "good"|"fair"|"poor" → chip colour
+  user.maxLoanEligible  :  number → slider max in loan application
+  user.loanStatus       :  null|"applied"|"approved"|"disbursed"
+  user.applicationRef   :  string → shown in loan status card
+
+  These are fetched fresh:
+    On splash (after token check)
+    On each screen focus (shallow refresh)
+    On every step complete (full refresh)
+
+  All dynamic text in hero bands, cards, buttons
+  reads from this state — not hardcoded.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 10 — THEME UNIFORMITY CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Every screen must satisfy ALL of these — zero exceptions:
+
+  ✅ Hero band: linear-gradient(160deg, #1A6B3C, #2D8653, #3CC068)
+  ✅ Font stack: Inter (Black / Bold / SemiBold / Medium / Regular)
+  ✅ bg-screen: #F0F4F8
+  ✅ Card bg: #FFFFFF  radius 20px  border 1px #E2EDE7
+  ✅ Primary CTA: green gradient  radius 16px  height 56px
+  ✅ Back button: ChevronLeft  #1A6B3C  → BackGuardPopup on steps
+  ✅ Sticky header: 56–64px  bg #FFFFFF  shadow 0 2px 12px rgba(0,0,0,0.06)
+  ✅ Progress bar: green gradient fill  6px  sticky below header
+  ✅ Toast: fixed top  from global AppToast (never inline banner)
+  ✅ Inline errors: red  #D32F2F  below field only  (never toast for empty)
+  ✅ Loaders: context-specific (never generic circle spinner)
+  ✅ Bottom nav: present on /home /schemes /report /profile
+  ✅ Bottom nav: hidden on /apply/* /loan/* /guidelines /signup /signin
+  ✅ All animations: spring or ease — never linear except spinners/counters
+  ✅ Reduce motion: all translateY/scale off  opacity only
+  ✅ All numbers and scores: real data from API — no mock
+  ✅ Empty states: always shown if data not available (not blank screen)

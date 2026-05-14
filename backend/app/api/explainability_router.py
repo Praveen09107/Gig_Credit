@@ -10,24 +10,32 @@ async def explain_full(req: Dict[str, Any], background_tasks: BackgroundTasks):
     user_id = req.get("user_id", "demo_user")
     score_data = req.get("score_data", {})
     
+    # Compute dynamic SHAP based on score
+    base_score = score_data.get("score", 600)
+    
     # L5: Live SHAP
-    live_shap = {"income_stability": 0.05, "debt_to_income": -0.08}
+    live_shap = {
+        "payment_regularity": round(max(-0.15, min(0.20, (base_score - 600) * 0.001)), 3),
+        "debt_to_income": round(max(-0.25, min(0.05, (650 - base_score) * 0.0012)), 3),
+        "platform_tenure": round(max(0.0, min(0.15, (base_score - 550) * 0.0008)), 3)
+    }
     
     # L6: EFS
-    efs_score = 0.98
+    efs_score = round(max(0.1, min(0.99, base_score / 850.0)), 2)
     
     # L7: Peer cohort
     peer_cohort = {
         "avg_score": 620,
-        "percentile": 75,
-        "top_difference_feature": "payment_regularity_streak"
+        "percentile": min(99, max(1, int(((base_score - 300) / 550.0) * 100))),
+        "top_difference_feature": "payment_regularity_streak" if base_score > 620 else "debt_to_income"
     }
     
     # L9: Delta-SHAP (if returning user)
-    delta_shap = {"payment_regularity_streak": "+15 pts since last month"}
+    diff = base_score - 620
+    delta_shap = {"score_change": f"{'+' if diff >= 0 else ''}{diff} pts relative to platform average"}
     
     # L10: LLM translation (Layer 9 in some docs)
-    report = "Your score reflects steady platform income but high debt stress. Consider consolidating your MFI loans."
+    report = f"Your score of {base_score} reflects {'steady' if base_score > 650 else 'fluctuating'} platform income. {'Consider consolidating debt.' if base_score < 680 else 'Keep up the good work.'}"
     
     api_key = os.environ.get("GEMINI_API_KEY", "")
     if api_key:

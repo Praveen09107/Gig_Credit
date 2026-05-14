@@ -1,0 +1,480 @@
+════════════════════════════════════════════════════════════
+          GIGCREDIT — YOUR CREDIT REPORT
+════════════════════════════════════════════════════════════
+Report ID    :  GC-CR-2026-0513-RK7821
+Generated    :  13 May 2026 · 2:37 PM IST
+Your Name    :  Ramesh Kumar
+Your Work    :  Delivery Worker (Swiggy, Blinkit)
+Your City    :  Chennai, Tamil Nadu
+Valid For    :  90 days (until 13 August 2026)
+════════════════════════════════════════════════════════════
+
+
+────────────────────────────────────────────────────────────
+SECTION 1 — YOUR CREDIT SCORE
+────────────────────────────────────────────────────────────
+
+                   ╔══════════════╗
+                   ║     647      ║
+                   ║   Grade B    ║
+                   ║    GOOD      ║
+                   ╚══════════════╝
+
+Where you stand on the scale:
+
+  300 ──── Very Weak ──── 480 ──── Weak ──── 560
+  ──── Fair ──── 640 ──── GOOD ● ──── 720
+  ──── Excellent ──── 800 ──── Outstanding ──── 900
+
+  Your score : 647
+  You are in : GOOD range (640 – 719)
+  You are    : 68 out of every 100 GigCredit users
+               score lower than you ✅
+
+Score Range Explained:
+┌──────────────┬────────────────────────────────────────┐
+│  300 – 479   │  Very Weak — very limited loan options  │
+│  480 – 559   │  Weak — small loans only               │
+│  560 – 639   │  Fair — some loans available           │
+│  640 – 719   │  Good ● YOU ARE HERE                   │
+│  720 – 799   │  Excellent — best loan options         │
+│  800 – 900   │  Outstanding — best rates available    │
+└──────────────┴────────────────────────────────────────┘
+
+What your score means for loans:
+  ✅  You can apply for Emergency Micro Loan  (up to ₹22,000)
+  ✅  You can apply for Income Bridge Loan    (up to ₹82,000)
+  🔒  Growth Loan needs score 720 — you are 73 points away
+
+Your score 3 months ago  :  621
+Your score today         :  647
+Change                   :  +26 points  ↑ Improving
+
+────────────────────────────────────────────────────────────
+SECTION 2 — HOW YOUR SCORE IS BUILT
+────────────────────────────────────────────────────────────
+
+Your score is built from 8 areas of your financial life.
+Each area gets a rating from 0 (very poor) to 10 (perfect).
+
+┌────────────────────────┬──────────┬──────────────────────┐
+│  Area                  │  Rating  │  What it means       │
+├────────────────────────┼──────────┼──────────────────────┤
+│  💰 Income Stability   │  7.1/10  │  STRONG ✅           │
+│  How steady your       │          │  Your income barely  │
+│  monthly income is     │          │  changes month to    │
+│                        │          │  month. Very good.   │
+├────────────────────────┼──────────┼──────────────────────┤
+│  📅 Payment Record     │  6.8/10  │  STRONG ✅           │
+│  Do you pay bills      │          │  You paid on time    │
+│  and EMIs on time?     │          │  every month for     │
+│                        │          │  11 months straight. │
+├────────────────────────┼──────────┼──────────────────────┤
+│  💳 Existing Loans     │  5.5/10  │  AVERAGE ◐           │
+│  How much loan you     │          │  You have one loan   │
+│  already have          │          │  running. It is      │
+│                        │          │  manageable but      │
+│                        │          │  affects your score. │
+├────────────────────────┼──────────┼──────────────────────┤
+│  🏦 Money in Savings   │  6.2/10  │  GOOD ✅             │
+│  Do you have money     │          │  You have 2.1 months │
+│  saved for bad times?  │          │  of expenses saved.  │
+│                        │          │  Ideal is 3 months.  │
+├────────────────────────┼──────────┼──────────────────────┤
+│  🪪 Your Work Identity │  10/10   │  FULLY VERIFIED ✓    │
+│  Is your work and      │          │  Aadhaar, PAN,       │
+│  identity confirmed?   │          │  e-Shram, Swiggy —   │
+│                        │          │  all confirmed. 100% │
+├────────────────────────┼──────────┼──────────────────────┤
+│  🛡️ Safety Net         │  4.0/10  │  NEEDS WORK ⚠️       │
+│  Do you have           │          │  You have no         │
+│  insurance?            │          │  insurance uploaded. │
+│                        │          │  This is costing     │
+│                        │          │  you ~18 points.     │
+├────────────────────────┼──────────┼──────────────────────┤
+│  🤝 Social Standing    │  5.8/10  │  AVERAGE ◐           │
+│  Are you registered    │          │  e-Shram done ✅     │
+│  with government       │          │  PM-JAY enrolled ✅  │
+│  programmes?           │          │  Can be improved.    │
+├────────────────────────┼──────────┼──────────────────────┤
+│  📄 Tax Filing         │  3.5/10  │  LOW ⚠️              │
+│  Have you filed        │          │  No ITR filed yet.   │
+│  your income tax?      │          │  Filing it could     │
+│                        │          │  add +10 points.     │
+└────────────────────────┴──────────┴──────────────────────┘
+
+How each area affects your score:
+  💰 Income Stability   matters MOST  (28% of your score)
+  📅 Payment Record     matters A LOT (22% of your score)
+  💳 Existing Loans     matters       (15% of your score)
+  🏦 Savings            matters       (12% of your score)
+  🪪 Work Identity      matters       (10% of your score)
+  🛡️ Safety Net         matters less  ( 7% of your score)
+  🤝 Social Standing    matters less  ( 4% of your score)
+  📄 Tax Filing         matters least ( 2% of your score)
+
+
+────────────────────────────────────────────────────────────
+SECTION 3 — WHAT IS HELPING YOUR SCORE
+────────────────────────────────────────────────────────────
+
+These are the things PUSHING YOUR SCORE UP:
+
+  ✅  Your income is very steady
+      Your monthly income barely changes — only 12%
+      variation over 8 months. Better than 62% of
+      delivery workers in Chennai.
+
+  ✅  You pay bills on time, every time
+      94% of utility bills paid on time.
+      All EMIs paid on time — 11 months in a row.
+      Zero bounced payments. This is excellent.
+
+  ✅  Your work is fully verified
+      Swiggy, Blinkit, e-Shram, Aadhaar, PAN —
+      all confirmed. This gives lenders full confidence.
+
+  ✅  Your income is growing
+      Your earnings have gone up +3.2% every month.
+      Lenders see this as a very positive sign.
+
+  ✅  You have some savings
+      ₹37,800 saved. Enough for 2.1 months of expenses.
+      Not yet at the ideal 3-month level, but positive.
+
+  ✅  You never had a gap month
+      In 8 months of data, you had zero months with
+      no income. Consistent work record.
+
+
+────────────────────────────────────────────────────────────
+SECTION 4 — WHAT IS HURTING YOUR SCORE
+────────────────────────────────────────────────────────────
+
+These are the things PULLING YOUR SCORE DOWN:
+
+  ⚠️  No insurance document uploaded
+      This is your BIGGEST gap right now.
+      Uploading any insurance document — health,
+      life, or PM-JAY card — would add +18 points.
+      Cost to you: zero. It already exists if you
+      are enrolled in PM-JAY.
+
+  ⚠️  You have one running loan
+      Your ₹3,000/month personal loan is manageable
+      but it is reducing how much new loan you can get.
+      Once this loan closes (in about 11 months),
+      your score jumps +34 points automatically.
+
+  ⚠️  Savings buffer is a little thin
+      ₹37,800 is good, but the ideal is 3 months of
+      expenses (about ₹54,000). Adding ₹16,200 more
+      to savings would add +12 points.
+
+  ⚠️  No tax return filed
+      Not mandatory at your income level, but filing
+      ITR adds +10 points. Takes about 30 minutes
+      online on the income tax portal.
+
+
+────────────────────────────────────────────────────────────
+SECTION 5 — THE REAL REASON YOUR SCORE IS 647
+────────────────────────────────────────────────────────────
+
+Here is the honest explanation in simple words:
+
+  Your income is stable and growing.          ← GREAT
+  You pay everything on time.                 ← GREAT
+  Your identity is 100% verified.             ← GREAT
+
+  But you have a running personal loan.       ← HURTING
+  That loan is causing THREE problems at once:
+
+  Problem 1 → Your monthly loan payments take
+              up a bigger share of income.
+  Problem 2 → Less money left over each month
+              means your savings grow slowly.
+  Problem 3 → Combined with income ups and downs,
+              this looks risky to lenders.
+
+  These three problems all come from ONE thing:
+  the personal loan of ₹34,000 remaining.
+
+  THE ONE FIX:
+  Close that personal loan.
+  All three problems go away at once.
+  Your score goes to 681 (+34 points).
+
+  You do not need to do three separate things.
+  Fix the root cause. Everything else follows.
+
+
+────────────────────────────────────────────────────────────
+SECTION 6 — YOUR SCORE IMPROVEMENT PLAN
+────────────────────────────────────────────────────────────
+
+Here is exactly what to do, in order of ease:
+
+  ┌──────────────────────────────────────────────────────┐
+  │  STEP 1 — DO THIS TODAY                (5 minutes)  │
+  │                                                      │
+  │  Upload your insurance document in the app.          │
+  │  PM-JAY card photo OR any insurance PDF.             │
+  │                                                      │
+  │  Score goes from  647  →  665  (+18 points)          │
+  │  You will qualify for Growth Loan (needs 650) ✅     │
+  └──────────────────────────────────────────────────────┘
+
+  ┌──────────────────────────────────────────────────────┐
+  │  STEP 2 — DO THIS IN 7 DAYS          (30 minutes)   │
+  │                                                      │
+  │  File ITR on incometax.gov.in                        │
+  │  Your income (₹2.16 lakh) — simple filing.           │
+  │                                                      │
+  │  Score goes from  665  →  675  (+10 points)          │
+  └──────────────────────────────────────────────────────┘
+
+  ┌──────────────────────────────────────────────────────┐
+  │  STEP 3 — JUST KEEP GOING            (automatic)    │
+  │                                                      │
+  │  Pay everything on time for 1 more month.            │
+  │  You are already doing this — just continue.         │
+  │                                                      │
+  │  Score goes from  675  →  679  (+4 points)           │
+  └──────────────────────────────────────────────────────┘
+
+  ┌──────────────────────────────────────────────────────┐
+  │  STEP 4 — IN 2–3 MONTHS             (save money)    │
+  │                                                      │
+  │  Save ₹16,200 more in your bank account.             │
+  │  This gets your emergency buffer to 3 months.        │
+  │                                                      │
+  │  Score goes from  679  →  691  (+12 points)          │
+  └──────────────────────────────────────────────────────┘
+
+  ┌──────────────────────────────────────────────────────┐
+  │  STEP 5 — IN 11 MONTHS              (pay off loan)  │
+  │                                                      │
+  │  Your personal loan finishes naturally.              │
+  │  You do not need to do anything extra.               │
+  │                                                      │
+  │  Score goes from  691  →  725  (+34 points)          │
+  │  You reach Grade A — EXCELLENT 🎯                   │
+  └──────────────────────────────────────────────────────┘
+
+  YOUR SCORE JOURNEY:
+  ────────────────────────────────────────────────────────
+  Today          647  ●────────────────────────────────
+  After Step 1   665  ──────●──────────────────────────
+  After Step 2   675  ────────────●────────────────────
+  After Step 3   679  ──────────────●──────────────────
+  After Step 4   691  ──────────────────●──────────────
+  After Step 5   725  ────────────────────────────────●
+  ────────────────────────────────────────────────────────
+  Grade A (720) unlocks:  Growth Loan up to ₹5,00,000
+                          at 15% APR — lowest rate
+
+
+────────────────────────────────────────────────────────────
+SECTION 7 — LOANS YOU CAN GET RIGHT NOW
+────────────────────────────────────────────────────────────
+
+Based on your score of 647 and income of ₹18,000/month:
+
+  ┌──────────────────────────────────────────────────────┐
+  │  ✅ EMERGENCY MICRO LOAN                             │
+  │                                                      │
+  │  How much    :  ₹5,000 to ₹22,000                   │
+  │  Repayment   :  3 to 12 months                       │
+  │  Interest    :  24% per year                         │
+  │  Good for    :  Bike repair, phone, medical bill      │
+  │  Decision    :  Within minutes                       │
+  └──────────────────────────────────────────────────────┘
+
+  ┌──────────────────────────────────────────────────────┐
+  │  ✅ INCOME BRIDGE LOAN  ★ RECOMMENDED                │
+  │                                                      │
+  │  How much    :  ₹25,000 to ₹82,000                  │
+  │  Repayment   :  6 to 24 months                       │
+  │  Interest    :  18% per year                         │
+  │  Good for    :  Slow-season gap, stock purchase       │
+  │  Your max    :  ₹82,000 based on your income         │
+  │                                                      │
+  │  Example — if you borrow ₹50,000 for 12 months:     │
+  │  You pay  ₹4,584 per month                           │
+  │  Total paid  ₹55,008  (₹5,008 as interest)          │
+  └──────────────────────────────────────────────────────┘
+
+  ┌──────────────────────────────────────────────────────┐
+  │  🔒 GROWTH LOAN — ALMOST UNLOCKED                    │
+  │                                                      │
+  │  How much    :  ₹1,00,000 to ₹5,00,000              │
+  │  Repayment   :  12 to 48 months                      │
+  │  Interest    :  15% per year (lowest rate)            │
+  │  Good for    :  Buy equipment, grow your business     │
+  │                                                      │
+  │  Needs score :  720  (you are at 647)                │
+  │  Gap         :  73 points                            │
+  │  Fastest fix :  Upload insurance TODAY → 18 pts      │
+  │                Score becomes 665. Then ITR → 675.    │
+  └──────────────────────────────────────────────────────┘
+
+  How ₹82,000 was calculated for you:
+  ────────────────────────────────────────────────────────
+  Your monthly income          :  ₹18,000
+  Maximum EMI allowed (50%)    :  ₹9,000
+  You already pay per month    :  ₹3,000 (existing loan)
+  Left for new EMI             :  ₹6,000
+  Loan you can afford at ₹6,000:  ₹82,000 (12 months)
+  ────────────────────────────────────────────────────────
+  This number is personal to you — not a generic limit.
+
+
+────────────────────────────────────────────────────────────
+SECTION 8 — YOUR MONTHLY INCOME PICTURE
+────────────────────────────────────────────────────────────
+
+Your income over the last 8 months:
+
+  Sep 2025  ₹16,200   ████████████████░░░░
+  Oct 2025  ₹17,400   █████████████████░░░
+  Nov 2025  ₹15,800   ███████████████░░░░░  ← festival slowdown
+  Dec 2025  ₹18,600   ██████████████████░░
+  Jan 2026  ₹17,900   █████████████████░░░
+  Feb 2026  ₹18,200   ██████████████████░░
+  Mar 2026  ₹19,100   ███████████████████░
+  Apr 2026  ₹19,800   ████████████████████  ← best month
+
+  Average income   :  ₹18,000 / month
+  Direction        :  ↑ Going up (+₹3,600 from Sep to Apr)
+
+  Where your money goes each month (April):
+  ────────────────────────────────────────────────────────
+  Rent, food, daily needs  :  ₹8,400   (42% — normal ✅)
+  Electricity, phone, net  :  ₹2,300   (12% — on time ✅)
+  Loan repayment           :  ₹3,000   (15% — on time ✅)
+  Travel, fuel             :  ₹1,800   ( 9% — normal ✅)
+  Other spending           :  ₹1,200   ( 6% — controlled ✅)
+  Money saved              :  ₹3,100   (16% — positive ✅)
+  ────────────────────────────────────────────────────────
+  TOTAL                    :  ₹19,800
+
+  Good signs in your money habits:
+  ✅  You spend less than you earn every month
+  ✅  You are saving money regularly
+  ✅  You have never had a payment bounce
+  ✅  You pay all bills around the same time each month
+
+
+────────────────────────────────────────────────────────────
+SECTION 9 — IS THIS REPORT FAIR?
+────────────────────────────────────────────────────────────
+
+We check our own work to make sure your score is fair.
+Here is what we verified:
+
+  ✅  Your score was compared to 847 other delivery workers
+      in Tamil Nadu in the same age group (25–35).
+
+  ✅  Your group (Platform Workers, Tamil Nadu) gets
+      approved 72% of the time — which is ABOVE the
+      average of 68%. No disadvantage detected.
+
+  ✅  We ran 50 tests to check if your explanation is
+      stable. In 42 out of 50 tests, the explanation
+      did not change. Your report is reliable.
+
+  ✅  The month you applied (May) was checked for
+      seasonal bias. No seasonal unfairness detected.
+
+  ✅  This report contains exact numbers throughout
+      (not vague statements like "your debt is high").
+
+  ✅  Every suggestion in this report is something
+      you can actually do within 90 days.
+
+  IMPORTANT:
+  ────────────────────────────────────────────────────────
+  Your score was decided using ONLY your financial data:
+  your income, payments, savings, and loan history.
+
+  Your score was NOT affected by:
+  ✘  Your caste, religion, or gender
+  ✘  Your delivery platform or employer
+  ✘  The area of Chennai you live in
+  ✘  How many hours you work
+  ✘  Any personal information beyond finances
+  ────────────────────────────────────────────────────────
+
+  Fairness Certificate ID  :  FC-2026-0513-RK7821-f3a8
+  All 9 fairness checks    :  ✅ PASSED
+
+
+────────────────────────────────────────────────────────────
+SECTION 10 — DOCUMENTS YOU HAVE PROVIDED
+────────────────────────────────────────────────────────────
+
+  ✅  Aadhaar Card      — Identity confirmed (UIDAI)
+  ✅  PAN Card          — Tax identity confirmed
+  ✅  e-Shram Card      — Worker registration confirmed
+  ✅  Bank Statement    — 8 months (Sep 2025 – Apr 2026)
+  ✅  Swiggy Profile    — Work history confirmed (2.3 years)
+  ✅  Blinkit Profile   — Work history confirmed (8 months)
+  ✅  Mobile Number     — Verified by OTP
+  ❌  Insurance         — Not yet uploaded  ← upload for +18 pts
+  ❌  Income Tax Return — Not yet filed     ← file for +10 pts
+
+
+────────────────────────────────────────────────────────────
+SECTION 11 — YOUR 3 QUICK WINS (SUMMARY)
+────────────────────────────────────────────────────────────
+
+  If you do NOTHING else, do these three things:
+
+  ╔══════════════════════════════════════════════════════╗
+  ║  1. TODAY  →  Upload any insurance document          ║
+  ║              Score: 647 → 665  (+18 pts)             ║
+  ║              Time needed: 5 minutes                  ║
+  ╠══════════════════════════════════════════════════════╣
+  ║  2. THIS WEEK  →  File ITR on incometax.gov.in       ║
+  ║                   Score: 665 → 675  (+10 pts)        ║
+  ║                   Time needed: 30 minutes            ║
+  ╠══════════════════════════════════════════════════════╣
+  ║  3. KEEP GOING  →  Pay everything on time            ║
+  ║                    Score: 675 → 679  (+4 pts)        ║
+  ║                    Time needed: zero (already doing) ║
+  ╚══════════════════════════════════════════════════════╝
+
+  After these 3 steps  →  Score 679
+  After personal loan closes  →  Score 733  (Grade A) 🎯
+
+
+────────────────────────────────────────────────────────────
+SECTION 12 — NEED HELP OR HAVE A QUESTION?
+────────────────────────────────────────────────────────────
+
+  If you do not agree with your score or have a question:
+
+  Contact       :  Priya Menon  (Customer Support Officer)
+  Email         :  support@gigcredit.in
+  WhatsApp      :  +91 98400 00000
+  Response time :  Within 24 hours
+  Language      :  Tamil, Hindi, Telugu, Kannada, English
+
+  If you are not satisfied with our response:
+  You can escalate to the RBI Ombudsman for free.
+  Portal : cms.rbi.org.in
+
+  Always mention your Report ID when contacting us:
+  Report ID  :  GC-CR-2026-0513-RK7821
+
+  [ 📥  Save this report as PDF ]
+  [ 💰  Apply for a Loan now   ]
+  [ 🔁  Refresh my Score       ]
+
+
+════════════════════════════════════════════════════════════
+         GigCredit · Built for India's Gig Workers
+   Your data stays on your phone · Your score is yours
+      RBI-Compliant · Fair · Explained · Yours
+════════════════════════════════════════════════════════════

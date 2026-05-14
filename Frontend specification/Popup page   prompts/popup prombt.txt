@@ -1,0 +1,270 @@
+████████████████████████████████████████████████████████████████████████████████
+██                                                                            ██
+██   GIGCREDIT — GET STARTED POPUP  MOBILE APP FRONTEND PROMPT              ██
+██   Same theme · Same component patterns · Bottom sheet modal              ██
+██   Trigger: Home screen "GET STARTED" button press                        ██
+██                                                                            ██
+████████████████████████████████████████████████████████████████████████████████
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TRIGGER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Source        :  Home screen "GET STARTED" button press
+Type          :  Bottom sheet modal (not a new page — overlay on Home)
+Dismiss       :  Tap backdrop OR drag sheet down past 40% threshold
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1 — BACKDROP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: PopupBackdrop
+Position     :  fixed  full screen  top:0 left:0
+z-index      :  200
+Background   :  rgba(13,31,21,0.65)
+backdrop-filter: blur(4px)
+
+Enter anim   :  opacity 0 → 0.65   300ms ease
+Exit anim    :  opacity 0.65 → 0   250ms ease
+
+On tap backdrop:
+  Trigger exit anim → sheet slides down → both dismiss together
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2 — BOTTOM SHEET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: GetStartedSheet
+Position     :  fixed  bottom:0  left:0  right:0
+z-index      :  201
+background   :  #FFFFFF
+border-radius:  28px 28px 0 0
+padding      :  0 24px 40px
+                + safe-area-bottom inset
+max-height   :  80vh
+overflow-y   :  scroll if content exceeds height
+
+Enter anim   :  translateY(100% → 0)   420ms  cubic-bezier(0.34,1.56,0.64,1)
+Exit anim    :  translateY(0 → 100%)   300ms  ease-in
+
+Drag-to-dismiss:
+  User swipes down on drag handle or anywhere on sheet
+  If drag > 40% of sheet height → trigger exit anim + dismiss
+  If drag < 40% → snap back to open  spring stiffness 300 damping 28
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3 — SHEET CONTENT (top to bottom)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+All content items animate in sequentially after sheet enters.
+Each item has its own entrance — staggered, not simultaneous.
+
+── C1: DRAG HANDLE ──────────────────────────────────────────────────────────
+
+  Size         :  40px wide  4px tall  radius 999px
+  bg           :  #E2EDE7
+  margin       :  14px auto 0
+  centred horizontally
+
+── C2: ICON HERO ────────────────────────────────────────────────────────────
+
+  COMPONENT: PopupIconHero
+  margin-top   :  24px
+  layout       :  column  align-center
+
+  Outer glow ring:
+    Size         :  88 × 88px  circle
+    bg           :  transparent
+    border       :  2px solid rgba(60,192,104,0.20)
+    animation    :  pulse scale 1.0→1.08→1.0  2.5s ease-in-out infinite
+
+  Inner icon circle (centred inside glow ring):
+    Size         :  72 × 72px  circle
+    bg           :  linear-gradient(135deg, #1A6B3C, #3CC068)
+    box-shadow   :  0 8px 24px rgba(60,192,104,0.38)
+    Inside       :  🚀 emoji  36px  centred
+
+  On sheet enter: scale 0→1.1→1.0  spring stiffness 280 damping 18  delay 80ms
+
+── C3: HEADING ──────────────────────────────────────────────────────────────
+
+  "Ready to Start Your
+   Credit Journey?"
+
+  Font         :  Inter Black  24px  #0D1F15  centred  line-height 1.2
+  margin-top   :  20px
+
+  "Credit Journey" → colour #1A6B3C
+
+  On enter     :  opacity 0→1  translateY(14px→0)  400ms ease  delay 160ms
+
+── C4: SUBTEXT ──────────────────────────────────────────────────────────────
+
+  "We'll check your eligibility in minutes
+   using your income data — no CIBIL needed."
+
+  Font         :  Inter Regular  14px  #4A6B57  centred  line-height 1.65
+  margin-top   :  10px
+  max-width    :  280px  margin-horizontal auto
+
+  On enter     :  opacity 0→1  translateY(10px→0)  400ms ease  delay 220ms
+
+── C5: FEATURE CHIPS ROW ────────────────────────────────────────────────────
+
+  COMPONENT: FeatureChipsRow
+  layout       :  row  justify-center  gap 8px  flex-wrap wrap
+  margin-top   :  20px
+
+  3 chips:
+
+    Chip 1: "⚡  Fast Approval"
+    Chip 2: "🔒  Secure"
+    Chip 3: "📄  No CIBIL"
+
+  Each chip:
+    bg           :  #D4EDDA
+    border       :  1px solid rgba(60,192,104,0.28)
+    radius       :  999px
+    padding      :  7px 16px
+    font         :  Inter SemiBold  12px  #1A6B3C
+
+  On enter     :  stagger  opacity 0→1  scale 0.8→1.0
+                  spring  40ms per chip  delay 300ms
+
+── C6: DIVIDER ──────────────────────────────────────────────────────────────
+
+  1px solid #E2EDE7  margin: 24px 0
+
+── C7: CONTINUE BUTTON (PRIMARY CTA) ────────────────────────────────────────
+
+  COMPONENT: ContinueButton
+  width        :  100%
+  height       :  56px
+  radius       :  16px
+  bg           :  linear-gradient(135deg, #1A6B3C 0%, #3CC068 100%)
+  box-shadow   :  0 6px 20px rgba(60,192,104,0.42)
+  layout       :  row  align-center  justify-center  gap 10px
+
+  Left icon    :  ▶  18px  #FFFFFF
+  Text         :  "CONTINUE"
+  Font         :  Inter Bold  16px  #FFFFFF  uppercase  letter-spacing 0.6px
+
+  Right icon   :  →  18px  #FFFFFF
+
+  Idle state animation:
+    box-shadow pulses:
+      0 6px 20px rgba(60,192,104,0.42) → 0 6px 32px rgba(60,192,104,0.62)
+    2s ease-in-out infinite alternate
+
+  On enter     :  opacity 0→1  translateY(12px→0)  400ms ease  delay 380ms
+
+  On press:
+    scale 0.97  spring stiffness 400 damping 22
+    haptic 10ms
+    box-shadow flash: 0 0 0 6px rgba(60,192,104,0.20) → fades 400ms
+    Sheet exits (translateY 100%  300ms ease-in)
+    Backdrop fades out (300ms)
+    NAVIGATE TO  /apply/step-1   (Step 1 of application flow)
+    Transition: slide-up from bottom  400ms spring
+
+── C8: GUIDELINES BUTTON (SECONDARY) ───────────────────────────────────────
+
+  COMPONENT: GuidelinesButton
+  width        :  100%
+  height       :  52px
+  radius       :  16px
+  bg           :  transparent
+  border       :  1.5px solid #E2EDE7
+  layout       :  row  align-center  justify-center  gap 10px
+  margin-top   :  12px
+
+  Left icon    :  📋  18px
+  Text         :  "View Guidelines First"
+  Font         :  Inter SemiBold  15px  #4A6B57
+
+  On enter     :  opacity 0→1  translateY(10px→0)  400ms ease  delay 440ms
+
+  On hover/focus state:
+    border-color : rgba(60,192,104,0.40)
+    text         : #1A6B3C
+    bg           : rgba(212,237,218,0.30)
+    transition   : 200ms ease
+
+  On press:
+    scale 0.97 spring  haptic 8ms
+    bg flash: rgba(212,237,218,0.50) → transparent  250ms
+    Sheet exits (translateY 100%  300ms ease-in)
+    Backdrop fades out
+    NAVIGATE TO  /guidelines
+    Transition: slide-left  standard nav push
+
+── C9: DISMISS HINT ─────────────────────────────────────────────────────────
+
+  "Swipe down or tap outside to close"
+  Font         :  Inter Regular  11px  #8FA89B  centred
+  margin-top   :  16px
+
+  On enter     :  opacity 0→1  delay 520ms
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4 — FULL ANIMATION SEQUENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+On "GET STARTED" press:
+  t=0ms    Backdrop fades in  300ms
+  t=50ms   Sheet slides up  420ms spring
+  t=80ms   Icon hero bounces in  spring
+  t=160ms  Heading fades + rises  400ms
+  t=220ms  Subtext fades + rises  400ms
+  t=300ms  Chips stagger in  40ms each × 3
+  t=380ms  Continue button fades + rises  400ms
+  t=440ms  Guidelines button fades + rises  400ms
+  t=520ms  Dismiss hint fades  300ms
+
+On dismiss (any method):
+  t=0ms    Sheet slides down  300ms ease-in
+  t=0ms    Backdrop fades out  300ms ease
+  Both play simultaneously
+  After 300ms: component fully unmounted
+
+On Continue press:
+  Sheet + backdrop exit (300ms)
+  Navigate to /apply/step-1 at 150ms mark (while sheet is still exiting)
+  Feels seamless — no blank pause between popup close and next screen
+
+On Guidelines press:
+  Sheet + backdrop exit (300ms)
+  Navigate to /guidelines at 150ms mark
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5 — ROUTING TABLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  TRIGGER                        ACTION
+  ──────────────────────────────────────────────────────────────
+  "CONTINUE" button press      →  dismiss popup → /apply/step-1
+  "View Guidelines First"      →  dismiss popup → /guidelines
+  Backdrop tap                 →  dismiss popup only (no nav)
+  Drag sheet down > 40%        →  dismiss popup only (no nav)
+  ──────────────────────────────────────────────────────────────
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 6 — ACCESSIBILITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Focus trap       :  focus locked inside sheet while open
+  First focus      :  Continue button receives focus on sheet open
+  Escape key       :  dismisses sheet (web/PWA)
+  Screen reader    :  sheet announced as dialog role
+                      "Ready to start — dialog"
+  All buttons      :  accessibilityLabel set
+  Drag handle      :  accessibilityLabel "Drag to close"
+  Reduce motion    :  all enter/exit animations skipped
+                      sheet appears/disappears instantly
+                      pulse glow on button disabled

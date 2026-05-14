@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_typography.dart';
 
-/// P6-10: Score Status Message widget
-/// Crossfades between 6 sequential messages during score generation.
+/// Score Status Message — cycling text during score generation
+/// Shows on green background so uses white text
 class ScoreStatusMessage extends StatefulWidget {
   const ScoreStatusMessage({super.key});
 
@@ -47,7 +47,10 @@ class _ScoreStatusMessageState extends State<ScoreStatusMessage> {
       child: Text(
         _messages[_currentIndex],
         key: ValueKey(_currentIndex),
-        style: AppTypography.bodyLarge.copyWith(color: AppColors.textSecondary),
+        style: AppTypography.bodyMedium.copyWith(
+          color: Colors.white.withValues(alpha: 0.75),
+          fontSize: 14,
+        ),
         textAlign: TextAlign.center,
       ),
     );

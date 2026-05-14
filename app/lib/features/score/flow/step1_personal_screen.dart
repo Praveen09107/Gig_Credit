@@ -82,6 +82,11 @@ class _Step1PersonalScreenState extends ConsumerState<Step1PersonalScreen> {
     'vendor': 'Street Vendor',
     'tradesperson': 'Tradesperson (Electrician/Plumber)',
     'freelancer': 'Freelancer (Tech/Design/Writing)',
+    'salaried': 'Salaried Employee',
+    'self_employed': 'Self Employed / Business',
+    'gig_worker': 'Gig Worker',
+    'unemployed': 'Currently Unemployed',
+    'student': 'Student',
   };
 
   /// Demo autofill — uses DemoProfileManager singleton for consistency across steps
@@ -417,9 +422,9 @@ class _Step1PersonalScreenState extends ConsumerState<Step1PersonalScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.surfaceVariant),
+        border: Border.all(color: AppColors.borderCard),
       ),
       child: Row(
         children: [
@@ -436,7 +441,7 @@ class _Step1PersonalScreenState extends ConsumerState<Step1PersonalScreen> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.add_circle_outline, color: AppColors.accent),
+            icon: const Icon(Icons.add_circle_outline, color: AppColors.greenPrimary),
             onPressed: value < max ? () => onChanged(value + 1) : null,
           ),
         ],
@@ -448,9 +453,9 @@ class _Step1PersonalScreenState extends ConsumerState<Step1PersonalScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.surfaceVariant),
+        border: Border.all(color: AppColors.borderCard),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -459,7 +464,7 @@ class _Step1PersonalScreenState extends ConsumerState<Step1PersonalScreen> {
           Switch.adaptive(
             value: value,
             onChanged: (v) => onChanged(v),
-            activeColor: AppColors.accent,
+            activeColor: AppColors.greenPrimary,
           ),
         ],
       ),
@@ -468,9 +473,10 @@ class _Step1PersonalScreenState extends ConsumerState<Step1PersonalScreen> {
 
   InputDecoration _dropdownDecoration() => InputDecoration(
     filled: true,
-    fillColor: AppColors.card,
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.surfaceVariant)),
-    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.surfaceVariant)),
+    fillColor: AppColors.bgCard,
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.borderCard)),
+    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.borderCard)),
+    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.greenPrimary, width: 1.5)),
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
   );
 }

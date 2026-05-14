@@ -25,13 +25,13 @@ class _PillarBreakdownListState extends State<PillarBreakdownList> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.accent.withValues(alpha: 0.1),
+                color: AppColors.greenMuted,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.analytics, color: AppColors.accent, size: 20),
+              child: const Icon(Icons.analytics, color: AppColors.greenPrimary, size: 20),
             ),
             const SizedBox(width: 12),
-            Text('7. Pillar Breakdown', style: AppTypography.titleLarge.copyWith(color: Colors.white)),
+            Text('7-Pillar Breakdown', style: AppTypography.titleLarge),
           ],
         ),
         const SizedBox(height: 16),
@@ -51,10 +51,10 @@ class _PillarBreakdownListState extends State<PillarBreakdownList> {
       curve: Curves.easeOutQuart,
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isExpanded ? color.withValues(alpha: 0.6) : AppColors.surfaceVariant,
+          color: isExpanded ? color.withValues(alpha: 0.4) : AppColors.borderCard,
           width: isExpanded ? 1.5 : 1,
         ),
         boxShadow: isExpanded
@@ -77,7 +77,7 @@ class _PillarBreakdownListState extends State<PillarBreakdownList> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(pillar.title, style: AppTypography.labelLarge.copyWith(color: Colors.white, fontSize: 16)),
+                            Text(pillar.title, style: AppTypography.labelLarge.copyWith(color: AppColors.textPrimary, fontSize: 16)),
                             const SizedBox(height: 4),
                             Text(pillar.subtitle, style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
                           ],
@@ -108,7 +108,7 @@ class _PillarBreakdownListState extends State<PillarBreakdownList> {
                         builder: (_, val, __) => LinearProgressIndicator(
                           value: val,
                           minHeight: 8,
-                          backgroundColor: AppColors.surfaceVariant.withValues(alpha: 0.5),
+                          backgroundColor: AppColors.borderCard,
                           valueColor: AlwaysStoppedAnimation<Color>(color),
                         ),
                       ),
@@ -126,7 +126,7 @@ class _PillarBreakdownListState extends State<PillarBreakdownList> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Divider(color: AppColors.surfaceVariant),
+                  const Divider(color: AppColors.borderCard),
                   const SizedBox(height: 16),
                   
                   // STYLIZED POSITIVES
@@ -142,21 +142,21 @@ class _PillarBreakdownListState extends State<PillarBreakdownList> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [AppColors.accent.withValues(alpha: 0.15), AppColors.accent.withValues(alpha: 0.05)],
+                        colors: [AppColors.greenMuted, AppColors.bgCard],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
+                      border: Border.all(color: AppColors.greenBright.withValues(alpha: 0.25)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.psychology, color: AppColors.accent, size: 18),
+                            const Icon(Icons.psychology, color: AppColors.greenPrimary, size: 18),
                             const SizedBox(width: 8),
-                            Text('Detailed AI Reason', style: TextStyle(color: AppColors.accent.withValues(alpha: 0.9), fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                            Text('Detailed AI Reason', style: TextStyle(color: AppColors.greenPrimary, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                           ],
                         ),
                         const SizedBox(height: 10),

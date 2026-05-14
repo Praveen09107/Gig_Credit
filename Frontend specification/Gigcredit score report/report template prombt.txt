@@ -1,0 +1,1101 @@
+████████████████████████████████████████████████████████████████████████████████
+██                                                                            ██
+██         GIGCREDIT — CREDIT REPORT SCREEN  UI/UX IMPLEMENTATION PROMPT    ██
+██         Layout · Structure · Components · Droplets · Interactions        ██
+██                                                                            ██
+████████████████████████████████████████████████████████████████████████████████
+
+You are a senior mobile UI/UX engineer. Build the GigCredit Credit Report
+screen exactly as specified below. Every layout, every component, every
+button, every droplet, every interaction is defined here. Do not invent
+anything not specified. Do not skip anything specified.
+
+Read the full prompt before writing a single line of code.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 1 — THEME & COLOUR SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The report screen supports 3 selectable themes. Theme is stored in user
+preferences and persists across sessions. Default theme is DARK.
+
+THEME 1 — DARK (DEFAULT)
+──────────────────────────────────────────────────────────────────────────────
+  Page background         :  #0D0F14
+  Card surface            :  #161B25
+  Card surface elevated   :  #1E2535
+  Border default          :  #252D3D
+  Border active/glow      :  #2E4A7A
+
+  Text primary            :  #F0F4FF
+  Text secondary          :  #8B95A8
+  Text muted              :  #4A5568
+  Text on accent          :  #0D0F14
+
+  Accent teal             :  #00D4B4   ← primary CTA, links, active
+  Accent teal dim         :  #00D4B415 ← card background tint
+  Accent teal glow        :  #00D4B440 ← card border glow
+
+  Accent green            :  #3DD68C   ← success, strong status
+  Accent green dim        :  #3DD68C15
+
+  Accent gold             :  #F4B942   ← warning, moderate status
+  Accent gold dim         :  #F4B94215
+
+  Accent red              :  #FF4E6A   ← error, weak status
+  Accent red dim          :  #FF4E6A15
+
+  Accent purple           :  #8B5CF6   ← AI / explainability blocks
+  Accent purple dim       :  #8B5CF615
+
+  Score ring fill         :  Grade colour (see grade map below)
+  Progress bar fill       :  gradient  #00D4B4  →  #3DD68C
+
+THEME 2 — LIGHT
+──────────────────────────────────────────────────────────────────────────────
+  Page background         :  #F4F6FA
+  Card surface            :  #FFFFFF
+  Card surface elevated   :  #F0F4FF
+  Border default          :  #E2E8F0
+  Border active           :  #00B8A0
+
+  Text primary            :  #0D1117
+  Text secondary          :  #4A5568
+  Text muted              :  #94A3B8
+  Text on accent          :  #FFFFFF
+
+  All accent colours remain identical to DARK theme.
+  Score ring, progress bars, status colours — unchanged.
+  Only backgrounds and text colours flip.
+
+THEME 3 — HIGH CONTRAST (ACCESSIBILITY)
+──────────────────────────────────────────────────────────────────────────────
+  Page background         :  #000000
+  Card surface            :  #0A0A0A
+  Card surface elevated   :  #111111
+  Border default          :  #444444
+  Border active           :  #00FFD4
+
+  Text primary            :  #FFFFFF
+  Text secondary          :  #CCCCCC
+  Text muted              :  #888888
+
+  Accent teal             :  #00FFD4
+  Accent green            :  #00FF88
+  Accent gold             :  #FFD600
+  Accent red              :  #FF3355
+
+  Minimum contrast ratio  :  7:1 for all text (WCAG AAA)
+  Font size               :  +2px on all elements vs DARK theme
+  Touch targets           :  minimum 56px height (vs 48px default)
+
+GRADE COLOUR MAP (applies across all themes):
+  Grade S  (800–900)  :  #FFD700
+  Grade A  (720–799)  :  #00D4B4
+  Grade B  (640–719)  :  #3DD68C   ← Ramesh is here
+  Grade C  (560–639)  :  #F4B942
+  Grade D  (480–559)  :  #FF8C42
+  Grade E  (300–479)  :  #FF4E6A
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 2 — TYPOGRAPHY SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Font family primary   :  Inter (Google Fonts)
+Font family mono      :  JetBrains Mono (IDs, amounts, audit codes)
+Font family regional  :  Noto Sans Tamil / Noto Sans Devanagari
+                         (auto-loads when language switches)
+
+Type scale:
+  Score number        :  Inter Black    52px  letter-spacing -2px
+  Screen title        :  Inter Bold     20px
+  Section header      :  Inter SemiBold 16px  uppercase  tracking-wide
+  Card title          :  Inter SemiBold 15px
+  Body text           :  Inter Regular  15px  line-height 1.6
+  Label / caption     :  Inter Medium   12px  uppercase  tracking-widest
+  Subtext             :  Inter Regular  13px  line-height 1.5
+  Mono values         :  JetBrains Mono 12px  (report IDs, hashes)
+  CTA button text     :  Inter Bold     15px  uppercase  letter-spacing 0.5px
+  Tab label           :  Inter SemiBold 13px
+
+Responsive type:
+  All sizes above apply at 390px viewport width (standard mobile)
+  At 360px: reduce all sizes by 1px
+  At 430px+: increase all sizes by 1px
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 3 — GLOBAL LAYOUT STRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The Credit Report screen is a single scrollable page.
+It uses a STICKY HEADER + SCROLLABLE BODY + FLOATING ACTION ROW layout.
+
+┌──────────────────────────────────────────────┐  ← 56px sticky header
+│  STICKY HEADER                               │     position: sticky top-0
+│  ← back   GigCredit Report   🔔  ≡          │     z-index: 50
+├──────────────────────────────────────────────┤     backdrop-blur: 20px
+│                                              │
+│  SCROLLABLE BODY                             │  ← flex-col, gap 16px
+│  (sections stack vertically, 20px h-padding) │     padding: 0 20px 120px
+│                                              │
+│  BLOCK 1:  Score Hero Card                   │
+│  BLOCK 2:  Section Navigation Tabs           │
+│  BLOCK 3:  Score Scale Bar                   │
+│  BLOCK 4:  Pillar Grid (2-column)            │
+│  BLOCK 5:  What's Helping / Hurting Cards    │
+│  BLOCK 6:  Root Cause Card                   │
+│  BLOCK 7:  Improvement Roadmap               │
+│  BLOCK 8:  Loan Eligibility Cards            │
+│  BLOCK 9:  Income Chart                      │
+│  BLOCK 10: Fairness Badge Row                │
+│  BLOCK 11: Documents Checklist               │
+│  BLOCK 12: Language Toggle + Plain English   │
+│                                              │
+├──────────────────────────────────────────────┤
+│  FLOATING ACTION ROW                         │  ← position: fixed bottom
+│  [ Save PDF ]  [ Apply for Loan → ]          │     height: 80px
+└──────────────────────────────────────────────┘     z-index: 40
+
+Spacing system:
+  Screen horizontal padding   :  20px (left and right)
+  Gap between all blocks      :  16px
+  Gap inside cards            :  20px padding
+  Gap between rows inside card:  12px
+  Gap between label and value :  6px
+  Section divider             :  1px solid #252D3D
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 4 — STICKY HEADER DROPLET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: StickyReportHeader
+
+Height          :  56px
+Background      :  rgba(13, 15, 20, 0.90)  +  backdrop-blur(20px)
+Border-bottom   :  1px solid rgba(37, 45, 61, 0.60)
+Layout          :  row, space-between, align-center, padding 0 16px
+
+LEFT SLOT — Back Button Droplet:
+  Component     :  IconButton
+  Icon          :  ChevronLeft  22px  colour #8B95A8
+  Tap target    :  48 × 48px
+  On press      :  navigate back to Dashboard screen
+  Press state   :  background #1E2535 with 8px radius, scale 0.93
+
+CENTRE SLOT — Screen Title:
+  Text          :  "GigCredit Report"
+  Font          :  Inter SemiBold 17px #F0F4FF
+  Truncate      :  ellipsis if overflows
+
+RIGHT SLOT — Action Icons Row:
+  Component 1   :  Bell Icon Button
+    Icon        :  Bell  20px  #8B95A8
+    Badge       :  red dot (8px #FF4E6A) if unread notifications > 0
+    On press    :  open NotificationsSheet (bottom sheet, 60% height)
+    Sheet shows :  list of score change alerts and loan updates
+
+  Component 2   :  Menu Icon Button (≡)
+    Icon        :  Menu  20px  #8B95A8
+    Spacing     :  8px gap between bell and menu
+    On press    :  open SettingsSheet (bottom sheet, 50% height)
+    Sheet shows :
+      - Theme toggle row  (Dark / Light / High Contrast)
+        On toggle: apply theme immediately, persist to storage
+      - Language selector (EN / தமிழ் / हिन्दी / తెలుగు / ಕನ್ನಡ)
+        On select: re-render all plain-language sections
+      - Text size toggle (Default / Large / Extra Large)
+      - Share report option
+      - Download PDF option
+      - Logout option
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 5 — BLOCK 1: SCORE HERO CARD DROPLET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: ScoreHeroCard
+
+Card spec:
+  Background    :  radial-gradient(ellipse at 50% 0%,
+                   [gradeColour]10 0%, #161B25 70%)
+  Border        :  1px solid #252D3D
+  Border-radius :  20px
+  Padding       :  28px
+  Width         :  full
+
+INNER LAYOUT — top to bottom:
+
+  ROW 1 — Report Meta Droplet:
+    Layout      :  row, space-between
+    Left text   :  "Report · 13 May 2026"  Inter Regular 12px #8B95A8
+    Right chip  :  "Valid 90 days"
+      Background:  #1E2535
+      Border    :  1px #252D3D
+      Radius    :  999px
+      Padding   :  4px 10px
+      Text      :  Inter Medium 11px #8B95A8
+
+  ROW 2 — Score Ring Droplet:
+    Layout      :  centred column, margin-top 20px
+
+    SVG Ring:
+      Diameter  :  200px
+      Stroke-width: 10px
+      Track     :  #1E2535 (full 270° arc)
+      Fill arc  :  [gradeColour]  animated from 0° to target°
+      Target    :  (score - 300) / 600 × 270°
+                   Ramesh: (647-300)/600 × 270 = 156.15°
+      Cap style :  round on both ends
+      Shadow    :  filter drop-shadow(0 0 12px [gradeColour]60)
+      Animation :  cubic-bezier(0.34, 1.56, 0.64, 1)  duration 1200ms
+
+    Inside ring (absolutely centred):
+      Score number  :  "647"
+                       Inter Black 52px [gradeColour]
+                       Count-up animation: 0 → 647, 1000ms easeOutCubic
+      Thin divider  :  1px #252D3D  width 48px  margin 6px auto
+      Grade label   :  "Grade B"
+                       Inter SemiBold 16px [gradeColour]
+                       Fade in at t=1300ms, scale 0.8 → 1.0
+
+    Confidence interval (below ring, centred):
+      Text          :  "[ 631 ── 647 ── 663 ]"
+      Font          :  JetBrains Mono 12px #8B95A8
+      Droplet info icon (ℹ️) beside it:
+        On press    :  show tooltip overlay
+        Tooltip text:  "This range means we are 90% confident
+                        your true score falls between 631 and 663.
+                        A wider range means less data — upload
+                        more documents to narrow it."
+        Tooltip bg  :  #1E2535  border 1px #252D3D  radius 12px
+        Dismiss     :  tap anywhere outside tooltip
+
+  ROW 3 — Trend + Percentile Chips Row:
+    Layout      :  row, gap 8px, wrap
+
+    Chip 1 — Score Change:
+      Background  :  #3DD68C15
+      Border      :  1px #3DD68C40
+      Radius      :  999px
+      Padding     :  6px 12px
+      Content     :  "↑ +26 pts from 3 months ago"
+      Text colour :  #3DD68C  Inter Medium 12px
+
+    Chip 2 — Percentile:
+      Background  :  #00D4B415
+      Border      :  1px #00D4B440
+      Radius      :  999px
+      Content     :  "Top 32% of GigCredit users"
+      Text colour :  #00D4B4  Inter Medium 12px
+
+    Each chip on press:
+      Scale 0.96, then back to 1.0 (spring animation)
+      No navigation — informational only
+
+  ROW 4 — Grade Status Description:
+    Background  :  [gradeColour]10
+    Border      :  1px [gradeColour]30
+    Radius      :  12px
+    Padding     :  12px 16px
+    Text        :  "Grade B — Good Standing. You qualify for most
+                   GigCredit loan products."
+    Font        :  Inter Regular 14px #F0F4FF
+
+  ROW 5 — Primary CTA Button Droplet:
+    Component   :  PrimaryActionButton
+    Text        :  "💰  APPLY FOR A LOAN  →"
+    Height      :  56px
+    Background  :  #00D4B4
+    Text colour :  #0D0F14  Inter Bold 15px uppercase
+    Radius      :  14px
+    Width       :  100%
+    Shadow      :  0 0 20px #00D4B440, 0 4px 15px #00D4B430
+    Hover       :  background #00C4A6, scale 1.01
+    Press       :  scale 0.97, shadow reduces
+    On press    :  navigate to LoanProductSelectionScreen
+                   with slide-up transition (translateY 32px → 0)
+
+  ROW 6 — Secondary Link Droplet:
+    Component   :  TextLinkButton
+    Text        :  "View Full Report  ↓"
+    Font        :  Inter Regular 14px #8B95A8
+    Underline   :  dashed 1px #4A5568
+    Alignment   :  centred
+    On press    :  smooth scroll to BLOCK 3 (Score Scale Bar)
+                   scroll behaviour: smooth, offset 70px from top
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 6 — BLOCK 2: SECTION NAVIGATION TABS DROPLET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: SectionNavTabs
+
+Layout        :  horizontal scroll row (no wrapping)
+Background    :  #0D0F14  (matches page, appears flush)
+Padding       :  12px 0
+Gap           :  8px between tabs
+Sticky        :  sticks below header when user scrolls past hero card
+                 position: sticky  top: 56px  z-index: 40
+                 background: rgba(13,15,20,0.95) backdrop-blur(12px)
+
+6 TABS:
+
+  Tab 1: "Score"       → scrolls to BLOCK 1 (ScoreHeroCard)
+  Tab 2: "8 Areas"     → scrolls to BLOCK 4 (PillarGrid)
+  Tab 3: "Strengths"   → scrolls to BLOCK 5 (HelpingHurtingCards)
+  Tab 4: "Improve"     → scrolls to BLOCK 7 (RoadmapCard)
+  Tab 5: "Loans"       → scrolls to BLOCK 8 (LoanEligibilityCards)
+  Tab 6: "Fair?"       → scrolls to BLOCK 10 (FairnessBadgeRow)
+
+Each tab:
+  Height        :  36px
+  Padding       :  0 16px
+  Radius        :  999px
+  Font          :  Inter SemiBold 13px
+
+  Default state :
+    Background  :  #161B25
+    Border      :  1px #252D3D
+    Text        :  #8B95A8
+
+  Active state  :
+    Background  :  #00D4B4
+    Border      :  none
+    Text        :  #0D0F14
+    Transition  :  200ms ease
+
+  Active tab updates:
+    As user scrolls, the active tab updates automatically
+    based on which section is in the viewport centre.
+    Use IntersectionObserver with threshold 0.5.
+
+  On tab press  :
+    1. Smooth scroll to target section (offset 120px from top)
+    2. Tab slides to active state with 200ms transition
+    3. Slight haptic pulse (navigator.vibrate(8))
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 7 — BLOCK 3: SCORE SCALE BAR DROPLET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: ScoreScaleBar
+
+Card spec     :  standard card (bg #161B25, border #252D3D, radius 16px)
+
+Inside layout :
+
+  Section label:  "WHERE YOU STAND"  12px uppercase teal tracking-wide
+
+  Grade scale bar:
+    Width       :  100%
+    Height      :  12px
+    Radius      :  999px
+    Background  :  linear gradient left to right:
+                   #FF4E6A → #FF8C42 → #F4B942 → #3DD68C → #00D4B4 → #FFD700
+    Marker dot  :  14px circle, [gradeColour], border 3px #0D0F14
+                   Positioned at ((score - 300) / 600 × 100)%
+                   Animated: slides from 0% to position in 1000ms
+
+    Grade labels below bar (evenly spaced):
+      E     D     C     B ●   A     S
+      300   480   560   640   720   800
+
+  Score position callout:
+    Small triangle pointer below marker dot
+    Bubble: "You are here: 647"
+    Font: Inter SemiBold 12px [gradeColour]
+    Background: [gradeColour]20, border 1px [gradeColour]40, radius 8px
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 8 — BLOCK 4: PILLAR GRID DROPLET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: PillarGrid
+
+Section label :  "YOUR 8 FINANCIAL AREAS"  uppercase teal 12px
+Layout        :  2-column grid, gap 12px
+
+8 PILLAR CARDS:
+
+Each PillarCard:
+  Background    :  #161B25
+  Border        :  1px solid #252D3D
+  Border-left   :  3px solid [statusColour]
+  Border-radius :  14px
+  Padding       :  16px
+  Min-height    :  100px
+
+  Status colour rules:
+    score ≥ 0.70  →  #3DD68C (STRONG)
+    score 0.50–0.69 → #F4B942 (AVERAGE)
+    score < 0.50  →  #FF4E6A (NEEDS WORK)
+    score = 1.00  →  #00D4B4 (VERIFIED)
+
+  Inside each card (top to bottom):
+
+    TOP ROW:
+      Left  :  Pillar emoji + code  "💰 P1"
+               Inter Bold 12px [statusColour]
+      Right :  Status badge chip
+               text: "STRONG" / "AVERAGE" / "NEEDS WORK" / "VERIFIED"
+               bg: [statusColour]20  text: [statusColour]
+               radius 999px  padding 3px 8px  font 10px
+
+    SCORE ROW:
+      Big number :  "7.1 / 10"
+                    Inter Black 24px #F0F4FF
+      Below it   :  Confidence dots: 5 circles 8px each
+                    Filled in [statusColour] based on confidence level
+                    95% confidence → 5 filled
+                    60% confidence → 3 filled
+                    40% confidence → 2 filled
+
+    LABEL ROW:
+      Text: pillar plain-English name
+      "Income Stability" / "Payment Record" / "Existing Loans" /
+      "Savings" / "Work Identity" / "Safety Net" /
+      "Social Standing" / "Tax Filing"
+      Font: Inter Medium 13px #8B95A8
+
+  INTERACTIVE BEHAVIOUR — Expand Droplet:
+    Each pillar card is tappable.
+    On press: card expands inline (not a sheet) with animation.
+    Expand animation: height 0 → auto, opacity 0 → 1, 300ms ease.
+
+    Expanded content shows:
+      ─ divider line ─
+      Top insight (1 sentence, plain English, no jargon)
+      Example: "You paid every bill on time for 11 months straight."
+
+      Mini bar: "Your rating vs similar workers"
+        [████████░░]  "Better than 62% of delivery workers near you"
+
+      Quick fix tip (if status is AVERAGE or NEEDS WORK):
+        Background: [statusColour]10
+        Border-left: 3px [statusColour]
+        Radius: 8px  Padding: 10px
+        Text: "💡  Upload insurance document → +18 points estimated"
+        Font: Inter Regular 13px #F0F4FF
+
+      Expand state icon: chevron rotates 180° when open
+    On press again: collapses back
+
+  Stagger animation on mount:
+    Each card animates in with 60ms delay × index
+    Enter: opacity 0 → 1, translateY 12px → 0
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 9 — BLOCK 5: HELPING / HURTING CARDS DROPLET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: HelpingHurtingSection
+
+Section label :  "WHAT'S HELPING AND HURTING YOU"  uppercase teal 12px
+
+Layout        :  Two stacked cards
+
+CARD 1 — WHAT IS HELPING:
+  Background  :  #3DD68C15
+  Border      :  1px solid #3DD68C40
+  Border-left :  4px solid #3DD68C
+  Radius      :  16px  Padding: 20px
+
+  Header row  :  "✅  What's working for you"
+                 Inter Bold 15px #3DD68C
+
+  List of strength items (6 items):
+    Each item:
+      Icon zone  :  28px circle bg #3DD68C20, "✅" centred
+      Text       :  plain English, one line, specific number included
+      Sub-text   :  smaller comparison ("Better than X% of similar workers")
+      Font body  :  Inter Regular 14px #F0F4FF
+      Font sub   :  Inter Regular 12px #8B95A8
+
+    Items:
+      "Your income barely changes month to month (only 12% variation)"
+        sub: "Better than 62% of Chennai delivery workers"
+      "You paid every bill and EMI on time for 11 months straight"
+        sub: "Zero missed payments — perfect record"
+      "Your Aadhaar, PAN, e-Shram, and platforms are all confirmed"
+        sub: "100% identity verified"
+      "Your income has been growing every month (+3.2% per month)"
+        sub: "Lenders see this as a strong positive signal"
+      "You have ₹37,800 saved — covers 2.1 months of expenses"
+        sub: "Positive savings habit"
+      "You had zero months with no income in 8 months"
+        sub: "Consistent work without gaps"
+
+  "Show less" toggle at bottom:
+    Default: show all 6 items
+    After 3rd item: show "Show 3 more ↓" link in #00D4B4
+    On press: expand to all 6 with 300ms animation
+    When expanded: link changes to "Show less ↑"
+
+CARD 2 — WHAT IS HURTING:
+  Background  :  #FF4E6A15
+  Border      :  1px solid #FF4E6A40
+  Border-left :  4px solid #FF4E6A
+  Radius      :  16px  Padding: 20px
+
+  Header row  :  "⚠️  What's holding you back"
+                 Inter Bold 15px #FF4E6A
+
+  List of gap items (4 items):
+    Each item:
+      Icon zone  :  28px circle bg #FF4E6A20, "⚠️" centred
+      Text body  :  plain English, specific number
+      Fix chip   :  small teal chip showing fix and point gain
+                    bg #00D4B415  border #00D4B440  radius 999px
+                    text: "Fix → +18 pts"  font 11px #00D4B4
+      Fix chip on press: scrolls to that item in Roadmap (Block 7)
+
+    Items:
+      "No insurance document uploaded — biggest single gap"
+        fix chip: "Upload today → +18 pts"
+      "Running personal loan takes up 16.7% of your income"
+        fix chip: "Close in 11 months → +34 pts"
+      "Savings cover only 2.1 months — ideal is 3 months"
+        fix chip: "Save ₹16,200 more → +12 pts"
+      "No income tax return filed yet"
+        fix chip: "File ITR → +10 pts"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 10 — BLOCK 6: ROOT CAUSE CARD DROPLET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: RootCauseCard
+
+Background    :  #8B5CF615
+Border        :  1px solid #8B5CF640
+Border-left   :  4px solid #8B5CF6
+Radius        :  16px  Padding: 20px
+
+Header row:
+  Icon        :  "🤖"  24px
+  Title       :  "The REAL reason behind 3 gaps"
+                 Inter Bold 15px #8B5CF6
+  Subtitle    :  "Three of your weak areas come from ONE thing"
+                 Inter Regular 13px #8B95A8
+
+Causal chain visual (vertical flow):
+
+  BOX 1 — Root Cause Box:
+    Background  :  #FF4E6A15
+    Border      :  1px #FF4E6A40
+    Radius      :  12px  Padding: 14px
+    Label       :  "ROOT CAUSE"  10px uppercase #FF4E6A
+    Text        :  "You have a personal loan with ₹34,000 remaining
+                   (₹3,000/month payment)"
+    Font        :  Inter SemiBold 14px #F0F4FF
+
+  Arrow connector:  "↓"  centred  #8B95A8  24px  margin 8px 0
+
+  BOX 2 — Effects Box:
+    Background  :  #F4B94215
+    Border      :  1px #F4B94240
+    Radius      :  12px  Padding: 14px
+    Label       :  "3 EFFECTS"  10px uppercase #F4B942
+    Three effect rows (each with → prefix):
+      → "Loan payments take up 16.7% of your income"
+      → "Less money left over, so savings are thin (2.1 months)"
+      → "Loan + income variation together look risky to lenders"
+    Font        :  Inter Regular 13px #F0F4FF
+
+  Arrow connector  ↓
+
+  BOX 3 — Score Cost Box:
+    Background  :  #FF4E6A10
+    Border-left :  3px #FF4E6A
+    Radius      :  8px  Padding: 12px
+    Text        :  "These 3 effects cost you about 34 points combined —
+                   but they all have ONE fix."
+    Font        :  Inter Regular 13px #F0F4FF
+
+  Arrow connector  ↓
+
+  BOX 4 — Root Fix Box:
+    Background  :  #3DD68C15
+    Border      :  1px #3DD68C40
+    Radius      :  12px  Padding: 14px
+    Label       :  "THE FIX"  10px uppercase #3DD68C
+    Text        :  "Close your personal loan (finishes naturally in 11 months)
+                   → Score jumps from 647 to 681 automatically"
+    Font        :  Inter SemiBold 14px #F0F4FF
+
+  "NOT YOUR FAULT" explanation row (if systemic flag is true):
+    Hidden for Ramesh (systemic = false)
+    Shown when seasonal income pattern detected:
+      Background: #F4B94215  text: "This is caused by platform
+      seasonality — not your financial behaviour."
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 11 — BLOCK 7: IMPROVEMENT ROADMAP DROPLET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: ImprovementRoadmap
+
+Section label :  "YOUR IMPROVEMENT PLAN"  uppercase teal 12px
+
+Score Journey Bar (at top):
+  Full-width bar showing current score and target scores:
+  647 ──────●────────────────────────── 733
+  Labels below:
+    Today (647)   →   After Steps (699)   →   Grade A (733)
+  Animated progress dot sliding from left to right on mount
+
+5 STEP CARDS (stacked vertically, gap 12px):
+
+  Each StepCard:
+    Background  :  #161B25
+    Border      :  1px #252D3D
+    Border-left :  4px [stepColour]
+    Radius      :  14px  Padding: 16px
+
+    Header row:
+      Left  :  Step badge  "STEP 1"  uppercase 10px
+               bg [stepColour]20  text [stepColour]  radius 999px
+      Right :  Timeline chip  "TODAY" / "7 DAYS" / "30 DAYS" etc
+               bg #1E2535  text #8B95A8  radius 999px  11px
+
+    Step title  :  Inter SemiBold 15px #F0F4FF
+    Step detail :  Inter Regular 13px #8B95A8  line-height 1.5
+
+    Score impact row:
+      Left  :  "647 → 665"  Inter Bold 14px #F0F4FF
+               Arrow: #3DD68C bold
+      Right :  "+18 points"  chip  bg #3DD68C20  text #3DD68C  radius 999px
+
+    Action CTA (only on actionable steps):
+      Step 1 (insurance): "UPLOAD NOW →"  teal small button
+        On press: opens DocumentUploadSheet
+      Step 2 (ITR):       "HOW TO FILE →"  teal small button
+        On press: opens external link to incometax.gov.in
+      Step 3 (streak):    no button — "Keep paying on time ✅"
+      Step 4 (savings):   "SET SAVINGS GOAL →"  teal small button
+        On press: opens SavingsGoalSheet (set monthly savings target)
+      Step 5 (loan):      "SET REMINDER →"  teal small button
+        On press: creates calendar reminder for loan payoff date
+
+  Step colour map:
+    Step 1 (TODAY):      #00D4B4 (teal — urgent and easy)
+    Step 2 (7 DAYS):     #3DD68C (green — soon)
+    Step 3 (30 DAYS):    #3DD68C (green — automatic)
+    Step 4 (60 DAYS):    #F4B942 (gold — requires effort)
+    Step 5 (11 MONTHS):  #8B5CF6 (purple — long-term)
+
+  Completed steps (user has done step):
+    Border-left becomes full background overlay
+    Step badge shows "✅ DONE" instead of "STEP N"
+    Opacity: 0.7 (dimmed — done, not urgent)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 12 — BLOCK 8: LOAN ELIGIBILITY CARDS DROPLET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: LoanEligibilitySection
+
+Section label  :  "LOANS YOU CAN GET RIGHT NOW"  uppercase teal 12px
+
+3 LOAN CARDS stacked vertically:
+
+CARD 1 — EMERGENCY MICRO LOAN:
+  Background   :  #FF4E6A15
+  Border-left  :  4px #FF4E6A
+  Radius       :  16px  Padding: 20px
+
+  Header row:
+    Left  :  "🚨  Emergency Micro Loan"  Inter Bold 16px #F0F4FF
+    Right :  "Score 450+ ✅"
+             bg #3DD68C20  text #3DD68C  radius 999px  11px
+
+  Details grid (2×2):
+    ₹5,000 – ₹22,000  |  3–12 months
+    24% per year        |  "For urgent needs"
+
+  Max eligible banner:
+    bg #0D0F14  radius 10px  padding 10px 14px
+    "Your maximum: ₹22,000 (calculated from your income)"
+    JetBrains Mono 12px #8B95A8
+
+  CTA: "SELECT THIS LOAN →"
+    bg #FF4E6A  text #F0F4FF  height 44px  radius 10px
+    On press: navigate to LoanDetailsForm with product=emergency_micro
+
+CARD 2 — INCOME BRIDGE LOAN (RECOMMENDED):
+  Background   :  #00D4B415
+  Border       :  1px #00D4B440
+  Border-left  :  4px #00D4B4
+  Radius       :  16px  Padding: 20px
+
+  Recommended badge (top-right corner):
+    "★  RECOMMENDED"  bg #00D4B4  text #0D0F14  radius 999px  10px Bold
+
+  Header: "🌉  Income Bridge Loan"  Inter Bold 16px #F0F4FF
+
+  Details grid (2×2):
+    ₹25,000 – ₹82,000  |  6–24 months
+    18% per year         |  "For income gaps and stock"
+
+  Live EMI preview droplet (interactive):
+    Background: #0D0F14  radius 12px  padding 14px
+    Label: "QUICK ESTIMATE"  10px uppercase #00D4B4
+    Row: "₹50,000 for 12 months = ₹4,584/month"
+    Mini slider below:
+      Drag to change amount (₹25K–₹82K)
+      EMI updates in real-time as slider moves
+    On EMI row press: navigates to LoanDetailsForm
+
+  CTA: "SELECT THIS LOAN →"
+    bg #00D4B4  text #0D0F14  height 44px  radius 10px
+    On press: navigate to LoanDetailsForm with product=income_bridge
+
+CARD 3 — GROWTH LOAN (LOCKED):
+  Background   :  #8B5CF615
+  Border       :  1px #8B5CF640
+  Border-left  :  4px #8B5CF6
+  Opacity      :  0.85
+  Radius       :  16px  Padding: 20px
+
+  Lock badge: "🔒 LOCKED"  bg #8B5CF6  text #F0F4FF  radius 999px  10px
+
+  Header: "📈  Growth Loan"  Inter Bold 16px #F0F4FF
+
+  Gap strip:
+    bg #FF4E6A15  border #FF4E6A30  radius 10px  padding 12px
+    "⚠️  Your score: 647 · Needed: 650 · Gap: 3 points"
+    Inter Medium 13px
+
+  Unlock hint strip:
+    bg #3DD68C15  border #3DD68C30  radius 10px  padding 12px
+    "💡 Upload insurance → score goes to 665 → this unlocks instantly"
+    Inter Regular 13px #3DD68C
+
+  CTA: "HOW TO UNLOCK →"
+    bg transparent  border #8B5CF6  text #8B5CF6
+    height 44px  radius 10px
+    On press: opens UnlockSheet (bottom sheet)
+    Sheet shows:
+      "2 steps to unlock Growth Loan"
+      Step 1: Upload insurance → score 665 (unlocks immediately)
+        Button: "UPLOAD NOW →"  teal
+      Step 2: File ITR → score 675 (extra cushion)
+        Button: "HOW TO FILE →"  teal
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 13 — BLOCK 9: INCOME CHART DROPLET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: IncomeChartCard
+
+Card spec     :  standard card
+Section label :  "YOUR INCOME (LAST 8 MONTHS)"  uppercase teal 12px
+
+Chart type    :  Bar chart (NOT a line chart — bars are more readable)
+
+Bar chart spec:
+  Height      :  180px
+  Bars        :  8 bars, evenly spaced, gap 8px between bars
+  Bar colour  :  gradient from #00D4B4 (top) to #00D4B460 (bottom)
+  Bar radius  :  6px on top corners
+  Animation   :  bars grow from 0% height to target height
+                 stagger: 60ms delay per bar
+                 easing: spring (stiffness 200, damping 20)
+
+  Axis labels (below bars):
+    Month abbreviations: "Sep" "Oct" "Nov" "Dec" "Jan" "Feb" "Mar" "Apr"
+    Font: Inter Regular 11px #8B95A8
+
+  Y-axis:
+    3 horizontal guide lines at ₹10K, ₹15K, ₹20K
+    Dashed 1px #252D3D
+    Labels: "₹10K" "₹15K" "₹20K" on left  12px #4A5568
+
+  Tooltip (on bar press):
+    Shows month + exact income
+    Background: #1E2535  border 1px #252D3D  radius 10px
+    "Oct 2025 · ₹17,400"  Inter SemiBold 13px #F0F4FF
+    Arrow pointing down to selected bar
+    Dismiss: tap anywhere else
+
+  Average line:
+    Horizontal dashed line at ₹18,000
+    Colour: #F4B942  dashed 1px
+    Right label: "Avg ₹18K"  11px #F4B942
+
+  Trend annotation:
+    Bottom right: "↑ +22% over 8 months"  12px #3DD68C
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 14 — BLOCK 10: FAIRNESS BADGE ROW DROPLET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: FairnessBadgeRow
+
+Section label :  "IS THIS REPORT FAIR?"  uppercase teal 12px
+
+Card spec     :
+  Background  :  #8B5CF615
+  Border      :  1px #8B5CF640
+  Border-left :  4px #8B5CF6
+  Radius      :  16px  Padding: 20px
+
+TOP ROW — 5 Fairness Check Badges (horizontal scroll):
+  Each badge:
+    Background  :  #3DD68C15
+    Border      :  1px #3DD68C40
+    Radius      :  999px
+    Padding     :  8px 14px
+    Icon        :  ✅
+    Text        :  short label (below)
+    Font        :  Inter Medium 12px #3DD68C
+    On press    :  expands inline explanation below badge row
+
+  Badges:
+    ✅  No group bias
+    ✅  Similar people, similar scores
+    ✅  Numbers are accurate
+    ✅  No seasonal bias
+    ✅  Steps are achievable
+
+EXPANDED EXPLANATION (shown on badge press):
+  Background  :  #1E2535
+  Radius      :  12px  Padding: 14px  margin-top 12px
+  Text        :  plain English explanation of that fairness check
+  Font        :  Inter Regular 13px #F0F4FF
+  Dismiss     :  "Got it ✓" button  teal  small
+
+COMPARISON ROW:
+  "Your group (Platform Workers, Tamil Nadu, 25–35)"
+  "Approval rate: 72%  vs  system average: 68%"
+  "Your group is 4% ABOVE average — no disadvantage"
+  Font: Inter Regular 13px #8B95A8
+
+CERTIFICATE STRIP:
+  Background  :  #0D0F14
+  Radius      :  10px  Padding: 12px
+  JetBrains Mono 11px #8B95A8
+  "Fairness Certificate ID: FC-2026-0513-RK7821-f3a8 · All 9 checks passed"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 15 — BLOCK 11: DOCUMENTS CHECKLIST DROPLET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: DocumentsChecklist
+
+Section label :  "YOUR DOCUMENTS"  uppercase teal 12px
+Card spec     :  standard card
+
+Each document row:
+  Height        :  52px
+  Layout        :  row, align-center, space-between
+  Border-bottom :  1px #252D3D (except last row)
+
+  LEFT:
+    Status icon :  ✅ (verified) or ❌ (missing)
+                   24px circle  bg [#3DD68C20 or #FF4E6A20]
+    Text        :  document name  Inter Medium 14px #F0F4FF
+    Sub-text    :  verification source  12px #8B95A8
+
+  RIGHT (for missing docs):
+    "UPLOAD →"  chip
+    bg #00D4B415  border #00D4B440  text #00D4B4  radius 999px
+    padding 6px 12px  font Inter SemiBold 12px
+    On press: opens DocumentUploadSheet for that document type
+
+  RIGHT (for verified docs):
+    "VERIFIED ✓"  chip  bg #3DD68C20  text #3DD68C  radius 999px
+
+  Rows:
+    ✅  Aadhaar Card         UIDAI confirmed
+    ✅  PAN Card             Income Tax Dept confirmed
+    ✅  e-Shram Card         Ministry of Labour confirmed
+    ✅  Bank Statement       8 months loaded
+    ✅  Swiggy Profile       2.3 years confirmed
+    ✅  Blinkit Profile      8 months confirmed
+    ✅  Mobile Number        OTP verified
+    ❌  Insurance Document   UPLOAD →   (missing — biggest gap)
+    ❌  Income Tax Return    UPLOAD →   (missing)
+
+  Upload Sheet Behaviour (DocumentUploadSheet):
+    Bottom sheet, 70% screen height
+    Drag handle at top
+    Title: "Upload [Document Name]"
+    3 upload options as large tap targets:
+      1. "Take Photo" — opens camera
+      2. "Choose from Gallery" — opens file picker
+      3. "Choose PDF" — opens document picker
+    After upload: shows progress ring, then
+      Success: ✅ "Verified! Score updating..."
+               animate score in hero card to new value
+      Failure: ❌ "Could not read this document — try again"
+                  with tips for better photo
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 16 — BLOCK 12: LANGUAGE TOGGLE + PLAIN ENGLISH DROPLET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: PlainLanguageSection
+
+Section label :  "YOUR SCORE IN YOUR LANGUAGE"  uppercase teal 12px
+
+LANGUAGE TOGGLE ROW:
+  Layout      :  horizontal scroll row  gap 8px
+
+  5 language pills:
+    [ EN ]  [ தமிழ் ]  [ हिन्दी ]  [ తెలుగు ]  [ ಕನ್ನಡ ]
+
+  Each pill:
+    Height    :  36px  Padding: 0 16px  Radius: 999px
+    Default   :  bg #161B25  border #252D3D  text #8B95A8
+    Active    :  bg #00D4B4  text #0D0F14
+    On press  :  switch active language, re-render text below
+
+TEXT CARD (renders in active language):
+  Background  :  #161B25
+  Border      :  1px #252D3D
+  Radius      :  16px  Padding: 20px
+
+  3 sections with headers:
+
+    SECTION HEADER STYLE:
+      Font      :  Inter Bold 14px #00D4B4
+      Text      :  "YOUR STRENGTHS" / "YOUR MAIN GAP" /
+                   "YOUR FASTEST PATH"
+      Underline :  2px solid #00D4B440  below header
+
+    Body text:
+      English   :  Inter Regular 15px #F0F4FF  line-height 1.7
+      Tamil     :  Noto Sans Tamil 15px #F0F4FF  line-height 2.0
+                   (Tamil script needs more line height)
+      Hindi     :  Noto Sans Devanagari 15px
+      Telugu    :  Noto Sans Telugu 15px
+      Kannada   :  Noto Sans Kannada 15px
+
+  Audio button (below text):
+    "🔊  Listen in [Language]"
+    bg #1E2535  border #252D3D  radius 999px
+    padding 10px 20px  text #8B95A8 14px
+    On press: TTS plays the plain language text
+    While playing: button shows pause icon and pulsing ring animation
+    On press again: stops audio
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 17 — FLOATING ACTION ROW DROPLET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: FloatingActionRow
+
+Position      :  fixed bottom 0 left 0 right 0
+Height        :  80px (includes safe area inset bottom)
+Background    :  rgba(13,15,20,0.95)  backdrop-blur(20px)
+Border-top    :  1px solid #252D3D
+Padding       :  12px 20px
+Layout        :  row  gap 12px  align-center
+
+BUTTON 1 — Save PDF:
+  Width       :  30% of row
+  Height      :  48px
+  Background  :  transparent
+  Border      :  1px #252D3D
+  Radius      :  12px
+  Text        :  "📥  Save PDF"
+  Font        :  Inter SemiBold 14px #8B95A8
+  On press    :
+    1. Show loading state on button (spinner replaces icon)
+    2. Generate PDF from report data (all sections)
+    3. PDF spec: A4, dark theme or light theme matching current
+       Contains: all sections except technical Section 10
+       Password: Aadhaar last 4 digits
+       AES-128 encrypted
+    4. On success: show share sheet with Save + Share options
+    5. Toast: "Report saved ✓"  #3DD68C
+
+BUTTON 2 — Apply for Loan:
+  Width       :  70% of row
+  Height      :  52px
+  Background  :  #00D4B4
+  Radius      :  14px
+  Text        :  "💰  APPLY FOR A LOAN  →"
+  Font        :  Inter Bold 15px #0D0F14 uppercase
+  Shadow      :  0 0 20px #00D4B440
+  On press    :  navigate to LoanProductSelectionScreen
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 18 — GLOBAL ANIMATION RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Screen enter  :  fade in + translateY(24px → 0)  400ms  ease[0.22,1,0.36,1]
+Card stagger  :  each block delays 60ms × index  opacity 0→1 translateY 12→0
+Score ring    :  arc fill  1200ms  cubic-bezier(0.34,1.56,0.64,1)
+Score count   :  0 → 647   1000ms  easeOutCubic
+Grade label   :  fade in at 1300ms  scale 0.8→1.0
+Pillar cards  :  stagger 60ms  translateY 12→0
+Progress bars :  width 0→target  800ms  ease[0.22,1,0.36,1]
+Bar chart     :  bars grow from 0  stagger 60ms  spring
+Sheets        :  translateY 100%→0  350ms  ease[0.34,1.56,0.64,1]
+Button press  :  scale spring  stiffness 400  damping 25
+Haptics       :  light pulse (8ms) on every primary button press
+Transitions   :  all colour changes  200ms ease
+Shimmer       :  loading skeleton  1.5s linear infinite sweep
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 19 — TOAST NOTIFICATION SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Position      :  bottom, 96px from bottom (above floating action row)
+Width         :  calc(100% - 40px)  centred
+Background    :  #161B25
+Border-left   :  4px [type colour]
+Border        :  1px [type colour]40
+Radius        :  14px  Padding: 14px 16px
+Shadow        :  0 8px 32px rgba(0,0,0,0.4)
+
+Types:
+  success  :  #3DD68C  icon ✅
+  error    :  #FF4E6A  icon ❌
+  warning  :  #F4B942  icon ⚠️
+  info     :  #00D4B4  icon ℹ️
+
+Enter   :  translateY(80px→0) opacity(0→1)  400ms spring
+Exit    :  translateY(0→80px) opacity(1→0)  300ms ease-in
+Dismiss :  3500ms auto  OR  swipe down to dismiss early
+
+Toasts used on this screen:
+  Document uploaded successfully  →  success  "Insurance uploaded ✓ +18 pts"
+  Document upload failed          →  error    "Could not read document. Retry."
+  PDF saved                       →  success  "Report saved to your device ✓"
+  Score refresh completed         →  info     "Score updated to [new score]"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 20 — ACCESSIBILITY REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+All tap targets             :  minimum 48×48px  (56px in HC theme)
+Contrast ratio (DARK)       :  minimum 4.5:1 for body, 3:1 for large text
+Contrast ratio (HC theme)   :  minimum 7:1 for all text
+Screen reader labels        :  every icon button has aria-label
+Score ring                  :  aria-label = "Credit score 647, Grade B, Good"
+Chart bars                  :  aria-label = "September 2025: ₹16,200"
+Focus ring                  :  2px solid #00D4B4  offset 2px
+Reduce motion               :  if prefers-reduced-motion: skip all animations
+                               still update values, just no transitions
+Font scaling                :  all sizes in rem, respects system font scale
+RTL                         :  not required for v1 (all supported languages LTR)

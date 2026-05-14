@@ -1,43 +1,67 @@
 import 'package:flutter/material.dart';
 
+/// GigCredit Design System — Green-Dominant Fintech Palette
+/// Light mode base with green brand accents throughout
 class AppColors {
   AppColors._();
 
-  // Core palette
-  static const Color primary = Color(0xFF1A1A2E);       // Deep navy
-  static const Color accent = Color(0xFF0F3460);         // Electric blue
-  static const Color accentLight = Color(0xFF1A5276);    // Lighter blue
-  static const Color highlight = Color(0xFFE94560);      // Pink accent
-  static const Color surface = Color(0xFF0A0A1A);        // Background (darkest)
-  static const Color surfaceVariant = Color(0xFF12122A); // Slightly lighter bg
-  static const Color card = Color(0xFF1E1E3A);           // Card background
-  static const Color cardElevated = Color(0xFF26264A);   // Raised card bg
+  // ═══════════════════════════════════════════════════════════════════════
+  // BRAND GREENS
+  // ═══════════════════════════════════════════════════════════════════════
+  static const Color greenPrimary = Color(0xFF1A6B3C);   // Deep forest green
+  static const Color greenMid     = Color(0xFF2E8B57);   // Sea green
+  static const Color greenBright  = Color(0xFF3CC068);   // Bright accent green
+  static const Color greenMint    = Color(0xFFA8E6CF);   // Mint highlight
+  static const Color greenMuted   = Color(0xFFE8F5E9);   // Very light green tint
 
-  // Text
-  static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xFFB0B0C8);
-  static const Color textTertiary = Color(0xFF6B6B88);
-  static const Color textDisabled = Color(0xFF4A4A60);
+  // ═══════════════════════════════════════════════════════════════════════
+  // BACKGROUNDS
+  // ═══════════════════════════════════════════════════════════════════════
+  static const Color bgScreen    = Color(0xFFF5F7F5);   // Screen background
+  static const Color bgCard      = Color(0xFFFFFFFF);   // Card / elevated surface
+  static const Color bgInput     = Color(0xFFFAFAFA);   // Input fields
 
-  // Status
-  static const Color success = Color(0xFF4CAF50);
-  static const Color successLight = Color(0xFF1B5E20);  // Dark bg for success chips
-  static const Color warning = Color(0xFFFFC107);
-  static const Color warningLight = Color(0xFF4A3800);
-  static const Color error = Color(0xFFF44336);
-  static const Color errorLight = Color(0xFF4A0C0C);
-  static const Color verified = Color(0xFF00E676);       // Green checkmark / badges
-  static const Color verifiedLight = Color(0xFF003D1A);  // Dark bg for verified chips
+  // ═══════════════════════════════════════════════════════════════════════
+  // TEXT
+  // ═══════════════════════════════════════════════════════════════════════
+  static const Color textPrimary   = Color(0xFF1A1F1A);   // Near-black on light
+  static const Color textSecondary = Color(0xFF5A6B5A);   // Body text
+  static const Color textMuted     = Color(0xFF8A9B8A);   // Muted / captions
+  static const Color textDisabled  = Color(0xFFB0BEB0);   // Disabled
 
-  // Grade colors (S→E)
-  static const Color gradeS = Color(0xFF00E676);  // 800-900 Exceptional (bright green)
+  // ═══════════════════════════════════════════════════════════════════════
+  // BORDERS & DIVIDERS
+  // ═══════════════════════════════════════════════════════════════════════
+  static const Color borderCard    = Color(0xFFE0E8E0);   // Card border
+  static const Color borderActive  = Color(0xFF1A6B3C);   // Focused input border
+  static const Color borderVerified = Color(0xFF00C853);   // Success border
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // STATUS
+  // ═══════════════════════════════════════════════════════════════════════
+  static const Color success       = Color(0xFF00C853);
+  static const Color successLight  = Color(0xFFE8F5E9);
+  static const Color warning       = Color(0xFFFFA726);
+  static const Color warningLight  = Color(0xFFFFF3E0);
+  static const Color error         = Color(0xFFE53935);
+  static const Color errorLight    = Color(0xFFFCE4EC);
+  static const Color errorBg       = Color(0xFFFFF5F5);
+  static const Color verified      = Color(0xFF00C853);
+  static const Color verifiedLight = Color(0xFFE8F5E9);
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // GRADE COLORS (S→E)
+  // ═══════════════════════════════════════════════════════════════════════
+  static const Color gradeS = Color(0xFF00C853);  // 800-900 Exceptional
   static const Color gradeA = Color(0xFF4CAF50);  // 720-799 Excellent
-  static const Color gradeB = Color(0xFF8BC34A);  // 640-719 Good (yellow-green)
-  static const Color gradeC = Color(0xFFFFC107);  // 560-639 Fair (amber)
-  static const Color gradeD = Color(0xFFFF9800);  // 480-559 Needs Improvement (orange)
-  static const Color gradeE = Color(0xFFF44336);  // 300-479 Poor (red)
+  static const Color gradeB = Color(0xFF8BC34A);  // 640-719 Good
+  static const Color gradeC = Color(0xFFFFC107);  // 560-639 Fair
+  static const Color gradeD = Color(0xFFFF9800);  // 480-559 Needs Improvement
+  static const Color gradeE = Color(0xFFE53935);  // 300-479 Poor
 
-  // Pillar colors (P1-P7 each gets a distinct accent)
+  // ═══════════════════════════════════════════════════════════════════════
+  // PILLAR COLORS (P1-P7)
+  // ═══════════════════════════════════════════════════════════════════════
   static const Color pillar1 = Color(0xFF5C6BC0); // Income - Indigo
   static const Color pillar2 = Color(0xFF26A69A); // Payment - Teal
   static const Color pillar3 = Color(0xFFEF5350); // Debt - Red
@@ -46,22 +70,78 @@ class AppColors {
   static const Color pillar6 = Color(0xFFFFA726); // Resilience - Orange
   static const Color pillar7 = Color(0xFF29B6F6); // Social - Light Blue
 
-  // Dividers & borders
-  static const Color divider = Color(0xFF2A2A48);
-  static const Color border = Color(0xFF2E2E50);
-  static const Color borderActive = Color(0xFF0F3460);
-  static const Color borderVerified = Color(0xFF00E676);
-  static const Color borderWarning = Color(0xFFFFC107);
+  // ═══════════════════════════════════════════════════════════════════════
+  // SCHEME COLORS (Schemes screen accent per category)
+  // ═══════════════════════════════════════════════════════════════════════
+  static const Color schemeLoan        = Color(0xFF1A6B3C);
+  static const Color schemePension     = Color(0xFF5C6BC0);
+  static const Color schemeMudra       = Color(0xFFFF8F00);
+  static const Color schemeInsurance   = Color(0xFFE53935);
+  static const Color schemeRegistration = Color(0xFF26A69A);
 
-  // Shimmer
-  static const Color shimmerBase = Color(0xFF1E1E3A);
-  static const Color shimmerHighlight = Color(0xFF2E2E52);
+  // ═══════════════════════════════════════════════════════════════════════
+  // SHIMMER
+  // ═══════════════════════════════════════════════════════════════════════
+  static const Color shimmerBase      = Color(0xFFE8E8E8);
+  static const Color shimmerHighlight = Color(0xFFF5F5F5);
 
-  // Gradient pair helpers
-  static const List<Color> primaryGradient = [accent, highlight];
+  // ═══════════════════════════════════════════════════════════════════════
+  // GRADIENTS
+  // ═══════════════════════════════════════════════════════════════════════
+  static const LinearGradient heroGradient = LinearGradient(
+    begin: Alignment(-0.5, -0.6),
+    end: Alignment(0.5, 0.8),
+    colors: [greenPrimary, greenMid, greenBright],
+    stops: [0.0, 0.55, 1.0],
+  );
+
+  static const LinearGradient ctaGradient = LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    colors: [greenPrimary, greenBright],
+  );
+
+  static const List<Color> primaryGradient = [greenPrimary, greenBright];
   static const List<Color> successGradient = [verified, Color(0xFF4CAF50)];
 
-  // Utility
+  // ═══════════════════════════════════════════════════════════════════════
+  // SHADOWS
+  // ═══════════════════════════════════════════════════════════════════════
+  static final List<BoxShadow> cardShadow = [
+    BoxShadow(
+      color: greenPrimary.withValues(alpha: 0.06),
+      blurRadius: 12,
+      offset: const Offset(0, 4),
+    ),
+  ];
+
+  static final List<BoxShadow> cardShadowHover = [
+    BoxShadow(
+      color: greenPrimary.withValues(alpha: 0.12),
+      blurRadius: 20,
+      offset: const Offset(0, 8),
+    ),
+  ];
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // LEGACY ALIASES (for backward compat with existing code)
+  // ═══════════════════════════════════════════════════════════════════════
+  static const Color primary       = greenPrimary;
+  static const Color accent        = greenBright;
+  static const Color accentLight   = greenMid;
+  static const Color highlight     = greenMint;
+  static const Color surface       = bgScreen;
+  static const Color surfaceVariant = bgInput;
+  static const Color card          = bgCard;
+  static const Color cardElevated  = bgCard;
+  static const Color textTertiary  = textMuted;
+  static const Color divider       = borderCard;
+  static const Color border        = borderCard;
+  static const Color borderWarning = warning;
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // UTILITY METHODS
+  // ═══════════════════════════════════════════════════════════════════════
   static Color gradeColor(String grade) {
     switch (grade.toUpperCase()) {
       case 'S': return gradeS;
@@ -82,8 +162,7 @@ class AppColors {
       case 'P5': return pillar5;
       case 'P6': return pillar6;
       case 'P7': return pillar7;
-      default: return accent;
+      default: return greenBright;
     }
   }
 }
-

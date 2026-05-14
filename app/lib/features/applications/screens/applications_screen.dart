@@ -8,6 +8,8 @@ import '../../../shared/widgets/cards/app_card.dart';
 import '../../../app/app_router.dart';
 import '../../../state/loan_applications_provider.dart';
 
+/// GigCredit Application Tracker Screen
+/// Green hero → application cards with status badges
 class ApplicationsScreen extends ConsumerWidget {
   const ApplicationsScreen({super.key});
 
@@ -16,45 +18,86 @@ class ApplicationsScreen extends ConsumerWidget {
     final applications = ref.watch(loanApplicationsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Application Tracker')),
-      body: applications.isEmpty
-          ? _buildEmptyState(context)
-          : ListView(
-              padding: const EdgeInsets.all(24),
-              children: [
-                Text('Track Your Loans', style: AppTypography.displaySmall)
-                    .animate().fadeIn().slideX(begin: -0.1, end: 0),
-                const SizedBox(height: 8),
-                Text(
-                  'Monitor the status of your micro-loan applications applied via GigCredit.',
-                  style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary, height: 1.5),
-                ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.1, end: 0),
-                const SizedBox(height: 32),
-                ...applications.asMap().entries.map((entry) {
-                  final i = entry.key;
-                  final app = entry.value;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: _ApplicationCard(
-                      bankName: app.nbfcName,
-                      loanType: '${app.purpose} Loan',
-                      amount: '₹${app.amount}',
-                      date: _formatDate(app.appliedAt),
-                      status: app.status,
-                      refId: app.refId,
-                      icon: Icons.account_balance_rounded,
-                      delayMs: 200 + i * 100,
-                      onTap: () {},
-                    ),
-                  );
-                }),
-              ],
+      backgroundColor: AppColors.bgScreen,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            floating: true,
+            snap: true,
+            backgroundColor: AppColors.bgCard,
+            elevation: 0,
+            title: Text('Track Applications',
+                style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w600)),
+            centerTitle: true,
+          ),
+
+          // Hero band
+          SliverToBoxAdapter(
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+              decoration: const BoxDecoration(gradient: AppColors.heroGradient),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('📋  Application Tracker',
+                      style: AppTypography.eyebrow.copyWith(fontSize: 13)),
+                  const SizedBox(height: 10),
+                  Text(
+                    applications.isNotEmpty
+                        ? '${applications.length} Active\nApplications'
+                        : 'No Applications\nSubmitted Yet',
+                    style: AppTypography.heroHeading.copyWith(fontSize: 24),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Monitor the status of your micro-loan applications applied via GigCredit.',
+                    style: AppTypography.heroBody,
+                  ),
+                ],
+              ),
+            ).animate().fadeIn(duration: 400.ms),
+          ),
+
+          // Content
+          if (applications.isEmpty)
+            SliverFillRemaining(child: _buildEmptyState(context))
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (ctx, i) {
+                    final app = applications[i];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: _ApplicationCard(
+                        bankName: app.nbfcName,
+                        loanType: '${app.purpose} Loan',
+                        amount: '₹${app.amount}',
+                        date: _formatDate(app.appliedAt),
+                        status: app.status,
+                        refId: app.refId,
+                        icon: Icons.account_balance_rounded,
+                        delayMs: 200 + i * 80,
+                        onTap: () {},
+                      ),
+                    );
+                  },
+                  childCount: applications.length,
+                ),
+              ),
             ),
+        ],
+      ),
     );
   }
 
   String _formatDate(DateTime dt) {
-    final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
     return '${dt.day} ${months[dt.month - 1]}, ${dt.year}';
   }
 
@@ -66,28 +109,29 @@ class ApplicationsScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              width: 72,
+              height: 72,
               decoration: BoxDecoration(
-                color: AppColors.card,
+                color: AppColors.greenMuted,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.surfaceVariant),
               ),
-              child: const Icon(Icons.assignment_outlined, size: 48, color: AppColors.textSecondary),
+              child: const Icon(Icons.assignment_outlined,
+                  size: 32, color: AppColors.greenPrimary),
             ),
-            const SizedBox(height: 24),
-            const Text('No Applications Yet', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+            const SizedBox(height: 20),
+            Text('No Applications Yet',
+                style: AppTypography.headlineMedium),
             const SizedBox(height: 8),
-            const Text(
-              'After you apply for a loan via your GigCredit Report, your applications will appear here.',
+            Text(
+              'Apply for a loan via your GigCredit Report.\nYour applications will appear here.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.5),
+              style: AppTypography.bodyMedium.copyWith(height: 1.5),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
             ElevatedButton.icon(
               onPressed: () => context.go(AppRoutes.score),
-              icon: const Icon(Icons.credit_score),
+              icon: const Icon(Icons.credit_score, size: 18),
               label: const Text('Generate Credit Report'),
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.accent, foregroundColor: Colors.white),
             ),
           ],
         ),
@@ -97,12 +141,7 @@ class ApplicationsScreen extends ConsumerWidget {
 }
 
 class _ApplicationCard extends StatelessWidget {
-  final String bankName;
-  final String loanType;
-  final String amount;
-  final String date;
-  final String status;
-  final String refId;
+  final String bankName, loanType, amount, date, status, refId;
   final IconData icon;
   final int delayMs;
   final VoidCallback onTap;
@@ -123,7 +162,7 @@ class _ApplicationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isProcessing = status == 'Processing';
 
-    Color statusColor = AppColors.verified;
+    Color statusColor = AppColors.success;
     if (isProcessing) statusColor = AppColors.warning;
 
     IconData statusIcon = Icons.check_circle_rounded;
@@ -131,89 +170,107 @@ class _ApplicationCard extends StatelessWidget {
 
     return AppCard(
       onTap: onTap,
-      padding: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceVariant,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: AppColors.accent, size: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.greenMuted,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(bankName, style: AppTypography.titleLarge),
-                      const SizedBox(height: 4),
-                      Text(loanType, style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: statusColor.withValues(alpha: 0.3)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(statusIcon, color: statusColor, size: 14),
-                      const SizedBox(width: 4),
-                      Text(status, style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Divider(height: 1),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
+                child: Icon(icon, color: AppColors.greenPrimary, size: 20),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Amount Applied', style: AppTypography.labelSmall.copyWith(color: AppColors.textTertiary)),
-                    const SizedBox(height: 4),
-                    Text(amount, style: AppTypography.titleMedium.copyWith(color: AppColors.accent, fontWeight: FontWeight.bold)),
+                    Text(bankName,
+                        style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 2),
+                    Text(loanType,
+                        style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted)),
                   ],
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: statusColor.withValues(alpha: 0.25)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('Applied On', style: AppTypography.labelSmall.copyWith(color: AppColors.textTertiary)),
-                    const SizedBox(height: 4),
-                    Text(date, style: AppTypography.titleMedium),
+                    Icon(statusIcon, color: statusColor, size: 12),
+                    const SizedBox(width: 4),
+                    Text(status,
+                        style: TextStyle(
+                          color: statusColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        )),
                   ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text('Ref: $refId', style: const TextStyle(color: AppColors.textTertiary, fontSize: 11, fontFamily: 'monospace')),
-            if (isProcessing) ...[
-              const SizedBox(height: 16),
-              LinearProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.warning),
-                backgroundColor: AppColors.surfaceVariant,
-                borderRadius: BorderRadius.circular(4),
-              ).animate(onPlay: (controller) => controller.repeat(reverse: true)).fade(begin: 0.4, end: 1.0, duration: 800.ms),
-            ]
-          ],
-        ),
+              ),
+            ],
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 14),
+            child: Divider(height: 1, color: AppColors.borderCard),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Amount',
+                      style: AppTypography.labelSmall.copyWith(color: AppColors.textMuted, fontSize: 10)),
+                  const SizedBox(height: 3),
+                  Text(amount,
+                      style: AppTypography.labelLarge.copyWith(
+                        color: AppColors.greenPrimary,
+                        fontWeight: FontWeight.w700,
+                      )),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('Applied',
+                      style: AppTypography.labelSmall.copyWith(color: AppColors.textMuted, fontSize: 10)),
+                  const SizedBox(height: 3),
+                  Text(date, style: AppTypography.labelLarge),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text('Ref: $refId',
+              style: TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 10,
+                fontFamily: 'monospace',
+              )),
+          if (isProcessing) ...[
+            const SizedBox(height: 14),
+            LinearProgressIndicator(
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.warning),
+              backgroundColor: AppColors.borderCard,
+              borderRadius: BorderRadius.circular(4),
+            ).animate(onPlay: (c) => c.repeat(reverse: true))
+                .fade(begin: 0.4, end: 1.0, duration: 800.ms),
+          ]
+        ],
       ),
-    ).animate().slideY(begin: 0.2, end: 0).fadeIn(delay: Duration(milliseconds: delayMs));
+    ).animate()
+        .slideY(begin: 0.08, end: 0, duration: 400.ms, curve: Curves.easeOutCubic)
+        .fadeIn(delay: Duration(milliseconds: delayMs));
   }
 }

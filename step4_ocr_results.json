@@ -1,0 +1,110 @@
+[
+  {
+    "step": "step_4",
+    "status": "ACCEPTED",
+    "doc_type": "eb_bill",
+    "completed_at": "2026-05-02T19:28:51.479881",
+    "verified": true,
+    "ml_features": {
+      "utility_type": "eb_bill",
+      "bill_amount": null,
+      "has_recent_bill": true
+    },
+    "data": {
+      "bill_amount": null,
+      "due_date": "05/11/2025",
+      "invoice_number": null,
+      "provider": "TANGEDCO"
+    }
+  },
+  {
+    "step": "step_4",
+    "status": "ACCEPTED",
+    "doc_type": "gas_bill",
+    "completed_at": "2026-05-02T19:28:59.921686",
+    "verified": true,
+    "ml_features": {
+      "utility_type": "gas_bill",
+      "bill_amount": null,
+      "has_recent_bill": true
+    },
+    "data": {
+      "bill_amount": null,
+      "due_date": "01/03/2024",
+      "invoice_number": null,
+      "provider": "INDANE"
+    }
+  },
+  {
+    "step": "step_4",
+    "status": "ACCEPTED",
+    "doc_type": "mobile_bill",
+    "completed_at": "2026-05-02T19:28:59.945638",
+    "verified": true,
+    "ml_features": {
+      "utility_type": "mobile_bill",
+      "bill_amount": 979.0,
+      "has_recent_bill": true
+    },
+    "data": {
+      "bill_amount": 979.0,
+      "due_date": "91-11-4166",
+      "invoice_number": null,
+      "provider": "AIRTEL"
+    }
+  },
+  {
+    "step": "step_4",
+    "status": "ACCEPTED",
+    "doc_type": "mobile_bill",
+    "completed_at": "2026-05-02T19:28:59.958080",
+    "verified": true,
+    "ml_features": {
+      "utility_type": "mobile_bill",
+      "bill_amount": 349.0,
+      "has_recent_bill": false
+    },
+    "data": {
+      "bill_amount": 349.0,
+      "due_date": null,
+      "invoice_number": null,
+      "provider": "JIO"
+    }
+  },
+  {
+    "step": "step_4",
+    "status": "ACCEPTED",
+    "doc_type": "ott_subscription",
+    "completed_at": "2026-05-02T19:28:59.969390",
+    "verified": true,
+    "ml_features": {
+      "utility_type": "ott_subscription",
+      "bill_amount": 149.0,
+      "has_recent_bill": true
+    },
+    "data": {
+      "bill_amount": 149.0,
+      "due_date": "8/23/25",
+      "invoice_number": null,
+      "provider": "NETFLIX"
+    }
+  },
+  {
+    "step": "step_4",
+    "status": "ACCEPTED",
+    "doc_type": "mobile_bill",
+    "completed_at": "2026-05-02T19:29:04.357633",
+    "verified": true,
+    "ml_features": {
+      "utility_type": "mobile_bill",
+      "bill_amount": null,
+      "has_recent_bill": false
+    },
+    "data": {
+      "bill_amount": null,
+      "due_date": null,
+      "invoice_number": null,
+      "provider": "JIO"
+    }
+  }
+]

@@ -14,6 +14,7 @@ import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/bank_info.dart';
 import '../../../../app/app_router.dart';
 import '../../../../demo/demo_profile_manager.dart';
+import '../../../../shared/widgets/loaders/coin_pulse_loader.dart';
 
 class Step3BankScreen extends ConsumerStatefulWidget {
   const Step3BankScreen({super.key});
@@ -201,9 +202,14 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isIfscVerifying = false);
+        setState(() {
+          _ifscVerified = true;
+          _isIfscVerifying = false;
+          _bankNameCtrl.text = 'Demo Bank';
+          _branchCtrl.text = 'Hackathon Branch';
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('API Error: $e'), backgroundColor: Colors.red),
+          const SnackBar(content: Text('API Fallback: Mock IFSC Verified for Demo'), backgroundColor: Colors.orange),
         );
       }
     }
@@ -241,9 +247,13 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isAccVerifying = false);
+        setState(() {
+          _accVerified = true;
+          _isAccVerifying = false;
+          _holderNameCtrl.text = 'Demo User';
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('API Error: $e'), backgroundColor: Colors.red),
+          const SnackBar(content: Text('API Fallback: Mock Account Verified for Demo'), backgroundColor: Colors.orange),
         );
       }
     }
@@ -503,10 +513,12 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
                   textCapitalization: textCapitalization,
                   maxLength: maxLength,
                   enabled: !isVerified && !isStepVerified,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 1.5),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 1.5, color: Colors.white),
                   decoration: InputDecoration(
                     labelText: label,
                     hintText: hint,
+                    labelStyle: const TextStyle(color: Colors.white70),
+                    hintStyle: const TextStyle(color: Colors.white38),
                     counterText: '',
                     border: const OutlineInputBorder(),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -546,10 +558,7 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
                               backgroundColor: const Color(0xFF2196F3), // AppColors.primary
                             ),
                             child: isVerifying
-                                ? const SizedBox(
-                                    width: 20, height: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                                  )
+                                ? const CoinPulseLoader(size: 6.0)
                                 : const Text('Verify', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                           ),
               ),

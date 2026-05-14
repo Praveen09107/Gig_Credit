@@ -1,0 +1,852 @@
+████████████████████████████████████████████████████████████████████████████████
+██                                                                            ██
+██   GIGCREDIT — COMPLETE ERROR PREVENTION MASTER PROMPT                    ██
+██   All failure modes · Per-page checklist · Pre-deploy verification       ██
+██   CORS · Static values · Routing · Layout · Timeout · Connectivity       ██
+██                                                                            ██
+████████████████████████████████████████████████████████████████████████████████
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1 — ERROR CATEGORY REGISTRY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Every possible error class that can occur in GigCredit.
+Each has a root cause, a detection method, and a fix rule.
+
+  CAT-1   Frontend ↔ Backend endpoint mismatch
+  CAT-2   Static values left in frontend
+  CAT-3   Timeout and processing time mismatch
+  CAT-4   Buttons with no functionality wired
+  CAT-5   Layout overflow / component collision / congestion
+  CAT-6   404 errors on frontend routes
+  CAT-7   Backend ↔ Frontend routing mismatch
+  CAT-8   CORS and connectivity failures
+  CAT-9   On-device ↔ Frontend event mismatch
+  CAT-10  Auth token handling failures
+  CAT-11  Form data / multipart body errors
+  CAT-12  State not cleared between sessions
+  CAT-13  Missing error boundary / uncaught exceptions
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2 — CAT-1: ENDPOINT MISMATCH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ROOT CAUSE:
+  Frontend calls /auth/verify-otp but backend has /auth/signin.
+  Frontend sends { phone } but backend expects { mobile }.
+  Frontend expects response.data.token but backend returns response.token.
+  Frontend sends JSON but backend expects multipart/form-data.
+  Backend adds a new field — frontend never reads it.
+
+DETECTION:
+  Run this audit on every API call in the codebase:
+    1. Open the frontend call → note: METHOD, PATH, BODY KEYS, HEADERS
+    2. Open the backend route → note: METHOD, PATH, BODY KEYS, RESPONSE KEYS
+    3. Compare line by line. Any diff = bug.
+
+PREVENTION RULES:
+
+  RULE E1: API CLIENT FILE (single source)
+    Create ONE file: /lib/api-client.ts  (Next.js) or api_client.py (mobile)
+    ALL fetch/axios calls live here. Zero direct fetch() calls in components.
+    Each function named after the endpoint:
+      sendOtp(mobile)        → POST /auth/send-otp
+      signup(mobile,otp,name)→ POST /auth/signup
+      getMe()                → GET /user/me
+      submitStep1(formData)  → POST /steps/1/submit
+      ... etc for every endpoint in the registry
+
+    Component code:
+      CORRECT:   const res = await api.signup(mobile, otp, name)
+      FORBIDDEN: const res = await fetch('/auth/signup', {...})
+
+  RULE E2: RESPONSE DESTRUCTURING CONTRACT
+    For every endpoint, define a TypeScript interface or Python TypedDict:
+
+      interface SignupResponse {
+        token: string
+        user_id: string
+        name: string
+        mobile: string
+        completed_steps: number
+        created_at: string
+      }
+
+    Frontend ONLY reads fields defined in the interface.
+    If backend sends extra fields → ignored (no crash).
+    If backend removes a required field → TypeScript error caught at build.
+
+  RULE E3: BODY KEY AUDIT
+    Before implementing any POST/PATCH:
+    Open the Endpoint Registry (previous spec Section 2).
+    Match every body key name character by character.
+    Common mismatches to watch:
+      mobile vs phone vs mobile_number
+      otp vs code vs otp_code
+      full_name vs name vs fullName
+      completed_steps vs steps_completed vs stepsCompleted
+      score_band vs scoreBand vs band
+
+  RULE E4: CONTENT-TYPE HEADER
+    Text endpoints (auth, loan):
+      Content-Type: application/json
+      Body: JSON.stringify(data)
+    Upload endpoints (steps 1-4):
+      Content-Type: multipart/form-data  (DO NOT set manually — let browser set with boundary)
+      Body: FormData object
+      COMMON BUG: manually setting Content-Type on multipart removes boundary → 400 error
+
+  RULE E5: POST-IMPLEMENTATION VERIFICATION
+    After implementing every API call:
+      1. Open browser DevTools → Network tab
+      2. Trigger the action
+      3. Verify: request URL, method, headers, body match registry exactly
+      4. Verify: response status is 200 and response body matches interface
+      5. Verify: UI component reads and displays the correct response field
+      If any step fails → fix before moving to next component
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3 — CAT-2: STATIC VALUES IN FRONTEND
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ROOT CAUSE:
+  Developer hardcodes "742" as score during UI build → forgets to replace.
+  Hardcoded "₹48,000" for max loan eligible.
+  Hardcoded "Ravi Kumar" in greeting.
+  Hardcoded pillar explanation text as string literals.
+  Default state fallback: score = 750 (for testing) → ships to production.
+  API fails silently → UI shows stale cached/default value.
+
+DETECTION — RUN THIS GREP ON ENTIRE FRONTEND CODEBASE:
+  Search for any of these patterns:
+    Hardcoded scores:       /[0-9]{3,3}(?= score|\/850|pts)/g
+    Hardcoded amounts:      /₹[0-9,]+/g  (outside input placeholders)
+    Hardcoded names:        /"Ravi|"Kumar|"Test User/g
+    Hardcoded bands:        /"good"|"fair"|"poor"/g (as values not types)
+    Hardcoded explanations: any string > 40 chars in JSX that isn't a label
+    Default state with real numbers: useState(742) useState(48000)
+
+PREVENTION RULES:
+
+  RULE S1: DEFAULT STATE IS ALWAYS NULL
+    CORRECT:   const [score, setScore] = useState<number | null>(null)
+    FORBIDDEN: const [score, setScore] = useState(742)
+    CORRECT:   const [userName, setUserName] = useState<string>('')
+    FORBIDDEN: const [userName, setUserName] = useState('Ravi Kumar')
+
+  RULE S2: NULL GUARD RENDERING
+    If score is null → show Skeleton/Empty state (not "0" or "—")
+    If userName is '' → show Skeleton (not "User" or "Friend")
+    If maxLoanEligible is null → disable loan slider (not show ₹50,000)
+    Pattern:
+      { score !== null ? <ScoreDisplay score={score}/> : <ScoreSkeleton/> }
+
+  RULE S3: NO INLINE STRING CONTENT FROM REPORT
+    FORBIDDEN:
+      <Text>"Your income has been consistent across months."</Text>
+    CORRECT:
+      <Text>{report.pillar_explanations.P1_income_regularity}</Text>
+    All explanation text, suggestion text, factor text
+    must come from POST /report/generate response only.
+
+  RULE S4: LOAN AMOUNTS ARE API-DRIVEN
+    FORBIDDEN: const maxLoan = 50000
+    CORRECT:   const maxLoan = user.max_loan_eligible
+    If user.max_loan_eligible is null → loan section shows locked state
+
+  RULE S5: STATIC VALUE AUDIT (run before every commit)
+    Open each screen component file.
+    Search for any JSX with literal numbers or text that represents user data.
+    If found → replace with state variable from API response.
+    The ONLY allowed hardcoded text in JSX:
+      · UI labels ("Full Name", "Mobile Number")
+      · Button text ("SEND OTP", "CONTINUE")
+      · Error messages (inline field errors)
+      · App name ("GigCredit")
+      · Legal/static content (KFS terms that don't change per user)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4 — CAT-3: TIMEOUT AND PROCESSING TIME MISMATCH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ROOT CAUSE:
+  Frontend timeout set to 5s but OCR processing takes 12s → timeout kills it.
+  Frontend shows loader for fixed 3s then navigates regardless of API response.
+  setTimeout(() => navigate('/report'), 3000) — completely wrong.
+  Score processing sub-labels shown on fixed timer not on real events.
+  API call completes in 200ms → loader still shows for 3s (jarring).
+  Multiple async calls, no AbortController → stale responses update UI.
+
+PREVENTION RULES:
+
+  RULE T1: TIMEOUT VALUES (per endpoint)
+    Set these exact timeout values on the API client:
+
+      Auth endpoints     :  10,000ms  (10s)
+      Step 1-3 submit    :  30,000ms  (30s — OCR + verification)
+      Step 4 submit      :  30,000ms  (30s — bill OCR + feature package)
+      Report generate    :  45,000ms  (45s — Groq LLM call)
+      Loan eligibility   :  20,000ms  (20s)
+      Loan submit        :  30,000ms  (30s)
+      GET endpoints      :  10,000ms  (10s)
+      Upload progress    :  no timeout while upload in progress
+                            (use XHR with onprogress instead of fetch)
+
+    Implementation:
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS)
+      fetch(url, { signal: controller.signal })
+      .finally(() => clearTimeout(timeoutId))
+
+  RULE T2: NEVER NAVIGATE ON TIMER
+    FORBIDDEN:
+      setTimeout(() => router.push('/report'), 3000)
+    CORRECT:
+      // Only navigate after API response + minimum display time
+      const [apiResult, _] = await Promise.all([
+        api.generateReport(shapOutput),
+        new Promise(resolve => setTimeout(resolve, MIN_DISPLAY_MS))
+      ])
+      router.push('/report')
+
+  RULE T3: MINIMUM DISPLAY TIME (prevents flash)
+    Button loaders (1A/1B/1C)      : MIN_DISPLAY 300ms
+    Card loaders (2A/2B/2C)        : MIN_DISPLAY 500ms
+    Full screen loaders (3A/3B/3C) : MIN_DISPLAY 800ms
+    Promise.all([apiCall, delay(MIN_DISPLAY)]) on all loading states.
+
+  RULE T4: PROCESSING EVENTS ARE REAL (on-device)
+    FORBIDDEN:
+      setTimeout(() => setStage('PILLAR_SCORING'), 1500)
+      setTimeout(() => setStage('SCORE_READY'), 3000)
+    CORRECT:
+      scoringEngine.on('PILLAR_SCORE_READY', (event) => {
+        setCurrentPillar(event.payload.pillar)
+        setPillarScores(prev => ({...prev, [event.payload.pillar]: event.payload.score}))
+      })
+      scoringEngine.on('SCORE_READY', (event) => {
+        setScore(event.payload.score)
+        setScoreBand(event.payload.score_band)
+      })
+
+  RULE T5: ABORT STALE REQUESTS
+    When user navigates away from a screen mid-request:
+      useEffect cleanup → call controller.abort()
+      Prevents stale response from updating unmounted component state
+    Pattern:
+      useEffect(() => {
+        const controller = new AbortController()
+        fetchData(controller.signal)
+        return () => controller.abort()
+      }, [])
+
+  RULE T6: TIMEOUT ERROR HANDLING
+    On AbortError (timeout):
+      if (error.name === 'AbortError') {
+        showToast('REQUEST_TIMEOUT')  // from toast spec
+      }
+    Map to correct toast: REQUEST_TIMEOUT (not SERVER_ERROR)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5 — CAT-4: BUTTONS WITH NO FUNCTIONALITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ROOT CAUSE:
+  Button placed in UI with onClick={() => {}} or no onClick at all.
+  "Download Report" button exists in design but PDF logic not implemented.
+  "Resend OTP" button renders but resend timer state not wired.
+  "Cancel Loan" button shown but POST /loan/cancel not called.
+  Back button navigates directly without BackGuardPopup.
+  Bottom nav tabs render but route doesn't exist yet.
+
+DETECTION:
+  Search codebase for:
+    onClick={() => {}}
+    onClick={() => console.log}
+    onClick={() => alert(
+    onPress={undefined}
+    href="#"
+    // TODO: wire this button
+
+PREVENTION RULES:
+
+  RULE B1: BUTTON IMPLEMENTATION CONTRACT
+    No button goes to production without ALL of these:
+      ✅ onClick/onPress handler defined (not empty)
+      ✅ Handler calls an API function OR on-device engine method
+         OR a defined navigation route OR opens a defined popup
+      ✅ Loading state shown during any async action
+      ✅ Success path defined (navigate / toast / state update)
+      ✅ Error path defined (toast + state reset)
+      ✅ Disabled state defined (when should button not be pressable)
+
+  RULE B2: NOT-YET-IMPLEMENTED BUTTONS
+    If a button's backend is not ready:
+      Option A: Hide the button entirely (not render it)
+      Option B: Show button as disabled with no onPress
+      FORBIDDEN: Show active button that does nothing or shows console.log
+
+  RULE B3: BUTTON AUDIT TABLE (verify before each screen ships)
+    Screen           Button                   Wired To
+    ─────────────────────────────────────────────────────────────────
+    Sign Up          Send OTP                 POST /auth/send-otp
+    Sign Up          Create Account           POST /auth/signup
+    Sign In          Send OTP                 POST /auth/send-otp
+    Sign In          Sign In                  POST /auth/signin
+    Sign In          Forgot Password          navigate /forgot-password
+    Sign Up/In       Switch link              cross-fade navigate
+    Home             GET STARTED              GetStartedPopup open
+    Home             CONTINUE STEP N          navigate /apply/step-N
+    Home             VIEW REPORT              navigate /report
+    Home             See all (schemes)        navigate /schemes
+    Steps 1-4        Back (←)                 BackGuardPopup open
+    Steps 1-4        Upload zone              native file picker
+    Steps 1-4        Continue                 POST /steps/N/submit
+    Steps 1-4        "Keep Going" (popup)     dismiss popup + stay
+    Steps 1-4        "Go Back" (popup)        navigate previous/home
+    Processing       (no buttons)             auto-flow via events
+    Report           Download PDF             generate + save PDF file
+    Report           Pillar row press         expand accordion
+    Report           APPLY FOR LOAN           navigate /loan/application
+    Loan App         Tenure chips             update EMI preview calc
+    Loan App         Preset amount chips      update slider position
+    Loan App         Check Eligibility        POST /loan/eligibility
+    Loan KFS         Checkbox                 toggle acknowledge state
+    Loan KFS         I Accept & Continue      POST /loan/acknowledge-kfs
+    Loan Review      Back                     BackGuardPopup
+    Loan Review      Confirm & Sign           POST /loan/confirm
+    Loan Sign        Clear signature          clear canvas
+    Loan Sign        Submit Application       POST /loan/submit
+    Loan Status      Download Sanction Letter POST /report/pdf + download
+    Loan Status      Back to Home             navigate /home (replace)
+    Loan Status      Cancel Loan              POST /loan/cancel
+    Schemes          Any scheme card press    open scheme detail / apply_url
+    Schemes          Apply button             open scheme apply_url
+    Guidelines       Any step row press       expand accordion
+    Profile          Save button              PATCH /user/profile
+    Profile          Logout                   clear token + navigate /signin
+    Bottom Nav       Home tab                 navigate /home
+    Bottom Nav       Apply tab                navigate /apply/step-N or /report
+    Bottom Nav       Schemes tab              navigate /schemes
+    Bottom Nav       Profile tab              navigate /profile
+    OTP screen       Resend (after 30s)       POST /auth/send-otp (resend)
+    Toast            ✕ button                 dismiss toast
+    Toast            Link in subtitle         navigate to linked screen
+    ─────────────────────────────────────────────────────────────────
+
+  RULE B4: VERIFY EACH BUTTON AFTER IMPLEMENTATION
+    Click/tap the button in the running app.
+    Observe: does the correct network request appear in DevTools?
+    Observe: does the correct loader appear?
+    Observe: does the success response update the UI with real data?
+    Observe: does a wrong input show the correct error?
+    If any of the 4 observations fail → the button is not done.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 6 — CAT-5: LAYOUT OVERFLOW / COMPONENT COLLISION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ROOT CAUSE:
+  Fixed bottom continue bar overlaps last input field → user can't see it.
+  Toast notification covers form card — user can't interact.
+  Bottom sheet + toast appear simultaneously → z-index collision.
+  BackGuardPopup appears but keyboard is still open → layout squashed.
+  Horizontal scroll card row overflows screen width → clipped.
+  Long user name breaks single-line greeting → layout wraps badly.
+  Accordion expansion pushes content below fixed button bar → hidden.
+  Step hero band height varies → form card top position shifts.
+  Modal backdrop z-index lower than sticky header → header bleeds through.
+
+PREVENTION RULES:
+
+  RULE L1: Z-INDEX HIERARCHY (strict, enforced everywhere)
+    0         :  screen background
+    1-9       :  normal content (cards, inputs)
+    10        :  sticky progress bar
+    20        :  sticky step header
+    30        :  sticky bottom nav bar
+    40        :  bottom sheet backdrop
+    50        :  fixed continue button bar
+    60        :  bottom sheet card
+    70        :  BackGuardPopup backdrop
+    80        :  BackGuardPopup card
+    90        :  GetStartedPopup
+    100       :  full screen loader overlay (3A/3B/3C)
+    200       :  loading overlay on cards (2A/2B)
+    300       :  keyboard avoid layer
+    500       :  Toast notification (ALWAYS highest — nothing covers it)
+
+    Rule: NEVER use z-index values outside this table.
+    Rule: Toast is always z-index 500. Nothing can be 501+.
+    Rule: Popups (60-90) always include backdrop that covers sticky header (20).
+
+  RULE L2: BOTTOM PADDING FOR FIXED BARS
+    Every scrollable screen that has a fixed bottom bar:
+      Last child in scroll view has padding-bottom equal to
+      fixed bar height + safe-area-bottom + 16px buffer.
+    Steps screens: padding-bottom = 96px + safe-area-bottom
+    Home screen:   padding-bottom = 80px + safe-area-bottom (bottom nav)
+    Loan screens:  padding-bottom = 96px + safe-area-bottom
+
+  RULE L3: KEYBOARD AVOIDANCE
+    All screens with inputs:
+      KeyboardAvoidingView wraps the scroll + button bar
+      behavior: 'padding' (iOS)  behavior: 'height' (Android)
+      When keyboard appears: continue button moves up with keyboard
+      When keyboard appears: active input scrolls into view above keyboard
+
+    On dismiss button (popup) when keyboard is open:
+      Dismiss keyboard first (Keyboard.dismiss() / blur())
+      Wait 200ms
+      Then show popup
+      Prevents popup + keyboard overlap
+
+  RULE L4: TEXT OVERFLOW GUARDS
+    All user-generated text (name, scheme name, explanation text):
+      numberOfLines={1} + ellipsizeMode='tail' for single-line zones
+      numberOfLines={3} + ellipsizeMode='tail' for card descriptions
+      flex-shrink: 1 on text containers in flex rows (prevents overflow)
+    Score number: Inter Black 56px — if somehow > 3 digits, font scales:
+      adjustsFontSizeToFit={true} minimumFontScale={0.7}
+
+  RULE L5: HORIZONTAL SCROLL OVERFLOW
+    Horizontal scroll rows (scheme strip, tenure chips):
+      overflow-x: scroll  on container
+      white-space: nowrap  on item row
+      padding: 0 20px  (first/last item have screen edge padding)
+      scrollIndicatorInsets: handled (iOS shows scroll indicator)
+    FORBIDDEN: overflow: hidden on horizontal scroll container parents
+
+  RULE L6: ACCORDION EXPANSION SAFE ZONE
+    Pillar accordion on Report screen:
+      When expanded, check if bottom of expanded card is below screen - 96px
+      (96px = continue bar or bottom nav height)
+      If yes: scroll to bring expanded content into view automatically
+      scrollIntoView with offset 120px  400ms smooth
+
+  RULE L7: COMPONENT ISOLATION TEST
+    After implementing each screen:
+      Test with a long name: "Thiruvenkataraman Krishnaswamy" (29 chars)
+      Test with score 300 and score 850 (boundary values)
+      Test with 0 existing EMI and ₹50,000 existing EMI
+      Test with phone in landscape mode (if supported)
+      Test with large system font size (accessibility)
+    All layouts must hold without overflow, clipping or wrap breaks.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 7 — CAT-6: 404 ERRORS ON FRONTEND ROUTES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ROOT CAUSE (Next.js App Router):
+  Component calls router.push('/apply/step-1') but file is at
+  app/apply/step1/page.tsx (missing hyphen) → 404.
+  Dynamic route /apply/step-[n] but file named [stepNumber] → 404.
+  /loan/kfs exists but navigation says /loan/key-fact → 404.
+  Forgot to create page.tsx for a route → 404.
+  Case sensitivity: /Report vs /report → 404 on Linux server.
+
+PREVENTION RULES:
+
+  RULE R1: AUTHORITATIVE ROUTE TABLE
+    Create /lib/routes.ts — single source for all routes:
+
+      export const ROUTES = {
+        SPLASH:           '/',
+        SIGNUP:           '/signup',
+        SIGNIN:           '/signin',
+        HOME:             '/home',
+        GUIDELINES:       '/guidelines',
+        SCHEMES:          '/schemes',
+        STEP:             (n: number) => `/apply/step-${n}`,
+        STEP_1:           '/apply/step-1',
+        STEP_2:           '/apply/step-2',
+        STEP_3:           '/apply/step-3',
+        STEP_4:           '/apply/step-4',
+        PROCESSING:       '/processing',
+        REPORT:           '/report',
+        LOAN_APPLICATION: '/loan/application',
+        LOAN_KFS:         '/loan/kfs',
+        LOAN_REVIEW:      '/loan/review',
+        LOAN_SIGN:        '/loan/sign',
+        LOAN_STATUS:      '/loan/status',
+        PROFILE:          '/profile',
+        FORGOT_PASSWORD:  '/forgot-password',
+      } as const
+
+    Rule: Every router.push() and <Link href> must use ROUTES.XXX constant.
+    FORBIDDEN: router.push('/apply/step1')  (string literal)
+    CORRECT:   router.push(ROUTES.STEP_1)
+
+  RULE R2: FILE SYSTEM ↔ ROUTES.TS MATCH
+    After creating ROUTES.TS, verify every entry has a matching file:
+
+    ROUTES.SIGNUP           → app/signup/page.tsx         ✅/❌
+    ROUTES.SIGNIN           → app/signin/page.tsx         ✅/❌
+    ROUTES.HOME             → app/home/page.tsx           ✅/❌
+    ROUTES.GUIDELINES       → app/guidelines/page.tsx     ✅/❌
+    ROUTES.SCHEMES          → app/schemes/page.tsx        ✅/❌
+    ROUTES.STEP_1           → app/apply/step-1/page.tsx   ✅/❌
+    ROUTES.STEP_2           → app/apply/step-2/page.tsx   ✅/❌
+    ROUTES.STEP_3           → app/apply/step-3/page.tsx   ✅/❌
+    ROUTES.STEP_4           → app/apply/step-4/page.tsx   ✅/❌
+    ROUTES.PROCESSING       → app/processing/page.tsx     ✅/❌
+    ROUTES.REPORT           → app/report/page.tsx         ✅/❌
+    ROUTES.LOAN_APPLICATION → app/loan/application/page.tsx ✅/❌
+    ROUTES.LOAN_KFS         → app/loan/kfs/page.tsx       ✅/❌
+    ROUTES.LOAN_REVIEW      → app/loan/review/page.tsx    ✅/❌
+    ROUTES.LOAN_SIGN        → app/loan/sign/page.tsx      ✅/❌
+    ROUTES.LOAN_STATUS      → app/loan/status/page.tsx    ✅/❌
+    ROUTES.PROFILE          → app/profile/page.tsx        ✅/❌
+    ROUTES.FORGOT_PASSWORD  → app/forgot-password/page.tsx✅/❌
+
+  RULE R3: CUSTOM 404 PAGE
+    Create app/not-found.tsx:
+      Shows GigCredit themed error page (not Next.js default)
+      "Page not found" with Back to Home button
+      Logs the attempted route for debugging
+
+  RULE R4: ROUTE GUARD IMPLEMENTATION
+    /apply/* /processing /report /loan/* /profile
+    All protected → check token in middleware.ts:
+
+      export function middleware(request: NextRequest) {
+        const token = request.cookies.get('auth_token')
+        const isProtected = PROTECTED_PATHS.some(p =>
+          request.nextUrl.pathname.startsWith(p))
+        if (isProtected && !token) {
+          return NextResponse.redirect(new URL(ROUTES.SIGNIN, request.url))
+        }
+      }
+
+    Step guard (can't skip steps):
+      On each step page mount → GET /user/me
+      If completed_steps < N-1 → redirect to ROUTES.STEP(completed_steps + 1)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 8 — CAT-7: BACKEND ROUTING PROBLEMS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ROOT CAUSE:
+  FastAPI router prefix /api/v1 but frontend calls /auth/send-otp → 404.
+  Route defined as /steps/{step_id} but frontend calls /steps/1/submit → 404.
+  Backend returns 200 with { message: "success" } but frontend expects
+  { status: "sent" } → silent failure.
+  FastAPI validation error returns 422 Unprocessable Entity with Pydantic
+  format that frontend doesn't parse → shows raw error object in UI.
+
+PREVENTION RULES:
+
+  RULE BR1: FASTAPI BASE URL CONFIG
+    In frontend .env:
+      NEXT_PUBLIC_API_URL=http://localhost:8000    (development)
+      NEXT_PUBLIC_API_URL=https://api.gigcredit.in (production)
+
+    In api-client.ts:
+      const BASE = process.env.NEXT_PUBLIC_API_URL
+      // All calls: fetch(`${BASE}/auth/send-otp`)
+
+    In FastAPI main.py:
+      app = FastAPI()
+      # No /api/v1 prefix — paths match frontend exactly
+      # OR if using prefix:
+      app.include_router(auth_router, prefix="/auth")
+      app.include_router(steps_router, prefix="/steps")
+      app.include_router(report_router, prefix="/report")
+      app.include_router(loan_router, prefix="/loan")
+      app.include_router(user_router, prefix="/user")
+
+  RULE BR2: 422 PYDANTIC ERROR NORMALIZATION
+    FastAPI's default 422 response:
+      { "detail": [{"loc": ["body","mobile"], "msg": "field required", "type": "value_error.missing"}] }
+    Frontend cannot display this as-is.
+
+    Add global exception handler in FastAPI:
+      @app.exception_handler(RequestValidationError)
+      async def validation_exception_handler(request, exc):
+          errors = {}
+          for error in exc.errors():
+              field = error['loc'][-1]
+              errors[field] = error['msg']
+          return JSONResponse(
+              status_code=400,
+              content={"error": "VALIDATION_FAILED", "fields": errors}
+          )
+
+    Now frontend receives: { "error": "VALIDATION_FAILED", "fields": {"mobile": "field required"} }
+    And maps to toast: STEP_INPUT_INVALID
+
+  RULE BR3: ROUTE EXISTS VERIFICATION (backend)
+    For every endpoint in the registry run:
+      uvicorn main:app --reload
+      Open http://localhost:8000/docs
+      Verify every path from registry appears in Swagger UI
+      Verify each path accepts the documented method (GET/POST/PATCH)
+
+  RULE BR4: RESPONSE SHAPE VERIFICATION (backend)
+    For every endpoint, add a response_model in FastAPI:
+      @app.post("/auth/signup", response_model=SignupResponse)
+      FastAPI will validate your response matches the model
+      If backend accidentally omits a field → error caught at runtime
+      Prevents mismatched response from reaching frontend silently
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 9 — CAT-8: CORS AND CONNECTIVITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ROOT CAUSE:
+  Frontend on localhost:3000 calls backend on localhost:8000 → CORS blocked.
+  Backend CORS allows * in dev but restricts in prod → prod breaks.
+  Authorization header not in CORS allowed_headers → token stripped.
+  Preflight OPTIONS request fails → POST never sent.
+  multipart/form-data content-type not in CORS allowed_headers.
+
+PREVENTION RULES:
+
+  RULE C1: FASTAPI CORS CONFIGURATION
+    from fastapi.middleware.cors import CORSMiddleware
+
+    DEVELOPMENT:
+      app.add_middleware(
+          CORSMiddleware,
+          allow_origins=["http://localhost:3000"],
+          allow_credentials=True,
+          allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+          allow_headers=["Authorization", "Content-Type",
+                         "X-Requested-With"],
+      )
+
+    PRODUCTION:
+      app.add_middleware(
+          CORSMiddleware,
+          allow_origins=["https://gigcredit.in",
+                         "https://www.gigcredit.in"],
+          allow_credentials=True,
+          allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+          allow_headers=["Authorization", "Content-Type"],
+      )
+
+  RULE C2: FRONTEND ENVIRONMENT DETECTION
+    .env.local:     NEXT_PUBLIC_API_URL=http://localhost:8000
+    .env.production: NEXT_PUBLIC_API_URL=https://api.gigcredit.in
+
+    NEVER commit .env files. Use .env.example with placeholder values.
+
+  RULE C3: AUTHORIZATION HEADER FORMAT
+    ALL protected requests must send:
+      Authorization: Bearer {firebase_id_token}
+    NOT: Token {token}  NOT: JWT {token}  NOT: {token} without prefix
+
+  RULE C4: OFFLINE DETECTION
+    Before any API call:
+      if (!navigator.onLine) {
+        showToast('NO_INTERNET')
+        return  // don't attempt the call
+      }
+    Also use window event listener:
+      window.addEventListener('offline', () => showToast('NO_INTERNET'))
+      window.addEventListener('online', () => showToast({
+        type: 'info', title: 'Back Online', subtitle: 'Reconnected'
+      }))
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 10 — CAT-9: ON-DEVICE EVENT MISMATCH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ROOT CAUSE:
+  Frontend listens for event "PILLAR_SCORE_READY" but engine emits
+  "PILLAR_SCORED" → UI never updates.
+  Frontend subscribes AFTER engine has already finished → misses all events.
+  Engine throws exception mid-processing → no SCORING_ERROR event emitted
+  → UI stuck on loader forever.
+  Feature package from backend has 88 fields but engine expects 92 → crash.
+
+PREVENTION RULES:
+
+  RULE OD1: EVENT NAME CONSTANTS
+    Create /lib/scoring-events.ts:
+      export const SCORING_EVENTS = {
+        FEATURE_ENGINEERING_START:    'FEATURE_ENGINEERING_START',
+        FEATURE_ENGINEERING_COMPLETE: 'FEATURE_ENGINEERING_COMPLETE',
+        PILLAR_SCORING_START:         'PILLAR_SCORING_START',
+        PILLAR_SCORE_READY:           'PILLAR_SCORE_READY',
+        ALL_PILLARS_COMPLETE:         'ALL_PILLARS_COMPLETE',
+        AGGREGATION_START:            'AGGREGATION_START',
+        SCORE_READY:                  'SCORE_READY',
+        SHAP_COMPUTATION_START:       'SHAP_COMPUTATION_START',
+        SHAP_COMPLETE:                'SHAP_COMPLETE',
+        SCORING_ERROR:                'SCORING_ERROR',
+      } as const
+
+    Frontend subscribes using SCORING_EVENTS.PILLAR_SCORE_READY (never strings).
+    Engine emits using SCORING_EVENTS.PILLAR_SCORE_READY (same constant file).
+    Zero string mismatch possible.
+
+  RULE OD2: SUBSCRIBE BEFORE STARTING ENGINE
+    FORBIDDEN:
+      engine.start(featurePackage)
+      engine.on('SCORE_READY', handler)   // too late — may miss it
+    CORRECT:
+      engine.on(SCORING_EVENTS.SCORE_READY, handler)
+      engine.on(SCORING_EVENTS.SCORING_ERROR, handler)
+      engine.start(featurePackage)  // subscribe first, THEN start
+
+  RULE OD3: SCORING_ERROR ALWAYS EMITTED
+    Wrap entire engine execution in try/catch:
+      try {
+        // all processing
+      } catch (error) {
+        this.emit(SCORING_EVENTS.SCORING_ERROR, {
+          stage: currentStage,
+          error_code: 'INFERENCE_FAIL'
+        })
+      }
+    Frontend: ALWAYS subscribe to SCORING_ERROR.
+    If SCORING_ERROR received → dismiss loader → toast AI_SCORE_FAILED.
+
+  RULE OD4: FEATURE PACKAGE VALIDATION
+    Before passing feature_package to engine:
+      const REQUIRED_FEATURES = [...88 feature names from spec...]
+      const missing = REQUIRED_FEATURES.filter(f => !(f in featurePackage))
+      if (missing.length > 0) {
+        emit(SCORING_EVENTS.SCORING_ERROR, {
+          stage: 'FEATURE_ENGINEERING_START',
+          error_code: 'INSUFFICIENT_FEATURES',
+          missing_count: missing.length
+        })
+        return
+      }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 11 — CAT-10/11/12/13: REMAINING ERROR CATEGORIES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CAT-10: AUTH TOKEN FAILURES
+  RULE: Auto-refresh on 401
+    Interceptor in api-client.ts:
+      if (response.status === 401) {
+        const newToken = await refreshToken()
+        if (newToken) retry original request with new token
+        else clearStorage() + navigate(ROUTES.SIGNIN) + toast SESSION_EXPIRED
+      }
+  RULE: Token stored securely
+    Web: httpOnly cookie (not localStorage for token)
+    Mobile: Secure storage (Keychain/Keystore)
+  RULE: Token expiry pre-check
+    Before any API call: check token expiry time
+    If expires within 5 minutes: refresh proactively (no 401 mid-flow)
+
+CAT-11: MULTIPART FORM DATA ERRORS
+  RULE: Never set Content-Type manually on multipart
+    const formData = new FormData()
+    formData.append('full_name', values.full_name)
+    formData.append('aadhaar_file', file, file.name)
+    fetch(url, { method: 'POST', body: formData })
+    // NO headers: {'Content-Type': ...}  ← browser sets with boundary
+  RULE: File size check before upload
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('DOC_TOO_LARGE')
+      return
+    }
+  RULE: File type check before upload
+    const allowed = ['image/jpeg','image/png','application/pdf']
+    if (!allowed.includes(file.type)) {
+      showToast('DOC_UNSUPPORTED_FORMAT')
+      return
+    }
+
+CAT-12: STATE NOT CLEARED BETWEEN SESSIONS
+  RULE: On logout — clear ALL state
+    localStorage.clear()
+    sessionStorage.clear()
+    Reset all Zustand/Redux/Context stores to initial state
+    Clear all form state
+    Navigate to ROUTES.SIGNIN with router.replace (no back)
+  RULE: On session expiry — same as logout
+  RULE: Form data persists only server-side (GET /steps/N/saved)
+    Do NOT persist form state to localStorage
+    On re-login → re-fetch saved data from server
+
+CAT-13: MISSING ERROR BOUNDARIES
+  RULE: Wrap entire app in ErrorBoundary (app/layout.tsx)
+    Catches unhandled React render errors
+    Shows GigCredit-themed error page (not white screen of death)
+    Logs error to server-side logging (not visible to user)
+  RULE: Separate ErrorBoundary for scoring/processing screen
+    If processing page crashes → user returns to Step 4
+    Data is saved — no re-entry required
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 12 — PER-PAGE COMPLETION CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Run this checklist on EVERY page before marking it complete.
+Zero exceptions. If any box is unchecked → the page is not done.
+
+  PAGE: _________________________ DATE: _______
+
+  ENDPOINT CONNECTION:
+  ☐ Every API call uses api-client.ts function (no raw fetch in component)
+  ☐ Request method, path, body keys match endpoint registry exactly
+  ☐ Content-Type correct (JSON vs multipart)
+  ☐ Authorization header sent on all protected calls
+  ☐ All response fields read from typed interface only
+  ☐ All error status codes handled with correct toast ID
+
+  DYNAMIC DATA:
+  ☐ Zero hardcoded user data (names, scores, amounts, explanations)
+  ☐ All state initialised as null/empty (no test values)
+  ☐ Null guard renders skeleton/empty state (not 0 or "—")
+  ☐ Loading state shown from call start to response (or error)
+  ☐ Loading state dismissed on BOTH success AND error
+
+  BUTTONS:
+  ☐ Every visible button has a complete handler (no empty onClick)
+  ☐ Every async button shows loading state during action
+  ☐ Every button has disabled state defined and working
+  ☐ Back buttons trigger BackGuardPopup on step/loan screens
+
+  LAYOUT:
+  ☐ Z-index values follow hierarchy table (Section 6)
+  ☐ Bottom padding accounts for fixed bars (96px + safe-area)
+  ☐ Text overflow guarded (numberOfLines + ellipsize)
+  ☐ Tested with long name (29 chars) — no layout break
+  ☐ Tested with keyboard open — inputs visible, not behind keyboard
+  ☐ Toast does not cover interactive elements
+
+  ROUTING:
+  ☐ All navigation uses ROUTES constants (no string literals)
+  ☐ Route guard in place (token check → redirect to signin if missing)
+  ☐ Step guard in place (can't access step N if N-1 not complete)
+  ☐ Page file exists at exact path in ROUTES.TS
+
+  ON-DEVICE (processing page and upload fields only):
+  ☐ Subscribed to all events BEFORE engine.start()
+  ☐ Uses SCORING_EVENTS constants (no string event names)
+  ☐ SCORING_ERROR handler implemented (dismisses loader + toast)
+  ☐ Feature package validated before passing to engine
+  ☐ Sub-labels update on real events only (no setTimeout mock)
+
+  PERFORMANCE:
+  ☐ Correct timeout set per endpoint (Section 4 RULE T1)
+  ☐ AbortController cleanup in useEffect return
+  ☐ Promise.all([apiCall, delay(MIN_DISPLAY)]) for minimum show time
+  ☐ No navigation on fixed timer — only on API response
+
+  FINAL:
+  ☐ Tested with real API call (not mock) — real response displayed
+  ☐ Tested error case — API returns error — correct toast shown
+  ☐ Tested offline — NO_INTERNET toast shown
+  ☐ No console.error or console.warn in browser DevTools
+  ☐ No TypeScript errors in terminal
+  ☐ Page added to ROUTES.TS and file exists at matching path

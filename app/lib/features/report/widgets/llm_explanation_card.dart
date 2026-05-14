@@ -4,17 +4,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_typography.dart';
 
-/// LLM Explanation Card with Typewriter Animation
-/// 
-/// Displays the AI-generated plain-language explanation with a
-/// character-by-character typewriter effect, as specified in
-/// COMP_20_LLM_REPORT_PIPELINE.md and DEV_B_AGENT_IMPLEMENTATION_GUIDE.md Step 9.
-///
-/// Features:
-///   - Character-by-character text reveal with blinking cursor
-///   - "AI-Powered Analysis" header with gradient icon
-///   - Suggestions list that fades in after explanation completes
-///   - Language badge showing the response language
+/// GigCredit LLM Explanation Card — Typewriter animation + suggestions
+/// Green-themed with AI gradient icon
 class LlmExplanationCard extends StatefulWidget {
   final String explanation;
   final List<String> suggestions;
@@ -62,7 +53,6 @@ class _LlmExplanationCardState extends State<LlmExplanationCard> {
       } else {
         timer.cancel();
         setState(() => _isTypingComplete = true);
-        // Show suggestions after a brief pause
         Future.delayed(const Duration(milliseconds: 400), () {
           if (mounted) setState(() => _showSuggestions = true);
         });
@@ -70,7 +60,6 @@ class _LlmExplanationCardState extends State<LlmExplanationCard> {
     });
   }
 
-  /// Skip typewriter animation — show full text immediately
   void _skipAnimation() {
     _timer?.cancel();
     setState(() {
@@ -85,32 +74,23 @@ class _LlmExplanationCardState extends State<LlmExplanationCard> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFF2A2A4A),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accent.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: AppColors.borderCard),
+        boxShadow: AppColors.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header ──
+          // Header
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               gradient: LinearGradient(
                 colors: [
-                  AppColors.accent.withOpacity(0.15),
-                  AppColors.card,
+                  AppColors.greenMuted,
+                  AppColors.bgCard,
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -121,12 +101,7 @@ class _LlmExplanationCardState extends State<LlmExplanationCard> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.accent,
-                        AppColors.highlight,
-                      ],
-                    ),
+                    gradient: AppColors.ctaGradient,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
@@ -136,37 +111,35 @@ class _LlmExplanationCardState extends State<LlmExplanationCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'AI-Powered Analysis',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
+                        style: AppTypography.titleSmall.copyWith(
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       Text(
                         'Powered by LLaMA 3 • ${widget.language}',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textMuted,
                           fontSize: 11,
                         ),
                       ),
                     ],
                   ),
                 ),
-                // Language badge
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.accent.withOpacity(0.2),
+                    color: AppColors.greenMuted,
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.greenBright.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     widget.language,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 10,
+                    style: AppTypography.labelSmall.copyWith(
+                      color: AppColors.greenPrimary,
                       fontWeight: FontWeight.w600,
+                      fontSize: 10,
                     ),
                   ),
                 ),
@@ -174,49 +147,45 @@ class _LlmExplanationCardState extends State<LlmExplanationCard> {
             ),
           ),
 
-          // ── Typewriter Text ──
+          // Typewriter Text
           GestureDetector(
             onTap: _isTypingComplete ? null : _skipAnimation,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: RichText(
                 text: TextSpan(
-                  style: const TextStyle(
+                  style: AppTypography.bodyMedium.copyWith(
                     color: AppColors.textPrimary,
                     fontSize: 14,
                     height: 1.6,
-                    fontFamily: 'Inter',
                   ),
                   children: [
                     TextSpan(text: _displayedText),
-                    // Blinking cursor during typing
                     if (!_isTypingComplete)
-                      WidgetSpan(
-                        child: _BlinkingCursor(),
-                      ),
+                      WidgetSpan(child: _BlinkingCursor()),
                   ],
                 ),
               ),
             ),
           ),
 
-          // ── "Tap to skip" hint during typing ──
+          // Skip hint
           if (!_isTypingComplete)
             Padding(
               padding: const EdgeInsets.only(left: 16, bottom: 8),
               child: Text(
                 'Tap to skip animation',
-                style: TextStyle(
-                  color: AppColors.textSecondary.withOpacity(0.5),
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.textMuted.withValues(alpha: 0.5),
                   fontSize: 10,
                   fontStyle: FontStyle.italic,
                 ),
               ),
             ),
 
-          // ── Suggestions Section ──
+          // Suggestions
           if (_showSuggestions && widget.suggestions.isNotEmpty) ...[
-            const Divider(color: Color(0xFF2A2A4A), height: 1),
+            const Divider(color: AppColors.borderCard, height: 1),
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -226,11 +195,11 @@ class _LlmExplanationCardState extends State<LlmExplanationCard> {
                     children: [
                       const Icon(Icons.lightbulb_outline, color: AppColors.warning, size: 16),
                       const SizedBox(width: 6),
-                      const Text(
+                      Text(
                         'Suggestions to Improve',
-                        style: TextStyle(
+                        style: AppTypography.labelLarge.copyWith(
                           color: AppColors.warning,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                           fontSize: 13,
                         ),
                       ),
@@ -244,19 +213,20 @@ class _LlmExplanationCardState extends State<LlmExplanationCard> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Container(
-                            width: 20, height: 20,
+                            width: 20,
+                            height: 20,
                             margin: const EdgeInsets.only(right: 10, top: 1),
                             decoration: BoxDecoration(
-                              color: AppColors.accent.withOpacity(0.2),
+                              color: AppColors.greenMuted,
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Center(
                               child: Text(
                                 '${entry.key + 1}',
-                                style: const TextStyle(
-                                  color: AppColors.textPrimary,
+                                style: AppTypography.labelSmall.copyWith(
+                                  color: AppColors.greenPrimary,
+                                  fontWeight: FontWeight.w700,
                                   fontSize: 11,
-                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
@@ -264,7 +234,7 @@ class _LlmExplanationCardState extends State<LlmExplanationCard> {
                           Expanded(
                             child: Text(
                               entry.value,
-                              style: const TextStyle(
+                              style: AppTypography.bodySmall.copyWith(
                                 color: AppColors.textSecondary,
                                 fontSize: 13,
                                 height: 1.4,
@@ -287,7 +257,6 @@ class _LlmExplanationCardState extends State<LlmExplanationCard> {
   }
 }
 
-/// Blinking cursor widget for the typewriter effect
 class _BlinkingCursor extends StatefulWidget {
   @override
   State<_BlinkingCursor> createState() => _BlinkingCursorState();
@@ -320,7 +289,7 @@ class _BlinkingCursorState extends State<_BlinkingCursor>
         width: 2,
         height: 16,
         margin: const EdgeInsets.only(left: 1),
-        color: AppColors.accent,
+        color: AppColors.greenPrimary,
       ),
     );
   }

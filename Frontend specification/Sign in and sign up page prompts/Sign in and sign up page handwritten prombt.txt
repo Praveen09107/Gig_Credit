@@ -1,0 +1,5 @@
+Sign in and sign up page 
+
+For signup and signin page both should be look similar ok 
+For signup page name and mobile number, ?signin and for login mobile number and forgot password and ?signup liek 
+Make these pages also so effective and impressive then the notification like invalid password invalid otp , already exists the account, no account found like all possible notification in the signin and signup page should be there with so and impressive structure and lookings like it will appear and for 3 seconda and slowly disappear with effects

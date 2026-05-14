@@ -1,0 +1,1 @@
+In profile page same process it contains name and mobile number and logout button ok then make this page use the same louts but impressive

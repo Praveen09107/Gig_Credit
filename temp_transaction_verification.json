@@ -1,0 +1,112 @@
+{
+  "generated_at": "2026-05-02T23:08:43.260216",
+  "bank_source": "Bank Statement - 3.pdf",
+  "total_bank_transactions": 419,
+  "bill_verifications": [
+    {
+      "bill": "EB Bill",
+      "payment_info": {
+        "amount": null,
+        "ref_id": "PGIBP2801862359",
+        "payment_date": "2025-11-05",
+        "payee_name": "TANGEDCO",
+        "raw_snippet": "Tamil Nadu Power Distribution Corporation Limited (Online Electricity Bill Payment) E-Receipt Name : RAKIMMA BEEVI S.C.Number: 0119400742 Payment Mode: BHARAT BILL PAYMENT SYSTEM Receipt No  : PGIBP2801862359 Date : 05/11/2025 23:27:40 S.NO Bill Details Amount (Rs.) 1 23100-CC Charges 905.00 Total 9"
+      },
+      "verification": {
+        "match_found": false,
+        "confidence": 0.08,
+        "matched_txn": {
+          "date": "2025-11-03",
+          "amount": 2250.0,
+          "type": "credit",
+          "ref_id": "567312901094",
+          "description": "UPI/P2A/567312901094/PRABAKARA/AXIS BANK/UPI/"
+        }
+      }
+    },
+    {
+      "bill": "Mobile (Airtel)",
+      "payment_info": {
+        "amount": 979.0,
+        "ref_id": "7257359752066396160",
+        "payment_date": "91-11-4666",
+        "payee_name": "AIRTEL",
+        "raw_snippet": "MOBILE SERVICES Original copy for Recipient - Tax Invoice KALAISELVAM 627 16th Cross Neeladri Nagar PinCode: 560100 GSTIN: State Code: KARNATAKA Phone no: 9788039199 Email ID: INVOICE DETAILS Type of Service Prepaid Recharge Transaction Date & Time 30 Oct 24, 17:26 PM Transaction ID 7257359752066396"
+      },
+      "verification": {
+        "match_found": false,
+        "confidence": 0.294,
+        "matched_txn": {
+          "date": "2026-01-03",
+          "amount": 1000.0,
+          "type": "credit",
+          "ref_id": "637004125985",
+          "description": "UPI/P2A/637004125985/YOGESHWAR/IOBA/U PI/"
+        }
+      }
+    },
+    {
+      "bill": "Mobile (Jio)",
+      "payment_info": {
+        "amount": 295.76,
+        "ref_id": null,
+        "payment_date": null,
+        "payee_name": "JIO",
+        "raw_snippet": "Tax Invoice (Original for Recipient) Reliance Retail Limited 5th Floor, 89, A-1 Towers, DR. Radhakrishna Salai, Mylapore, Chennai Chennai Tamil Nadu 600004 Invoice No : 33R26I0108035841 PAN No : Order Ref. No. : BR000CLEMQ6T GST No : AABCR1718E 33AABCR1718E1ZW Payment Ref. No. : 20260316210440000240"
+      },
+      "verification": {
+        "match_found": false,
+        "confidence": 0.296,
+        "matched_txn": {
+          "date": "2025-10-08",
+          "amount": 300.0,
+          "type": "debit",
+          "ref_id": "528176088613",
+          "description": "UPI/P2A/528176088613/TAMILSELVI G /UPI/KARUR VYSA BANK"
+        }
+      }
+    },
+    {
+      "bill": "OTT (Netflix)",
+      "payment_info": {
+        "amount": 126.27,
+        "ref_id": null,
+        "payment_date": "8/23/25",
+        "payee_name": "NETFLIX",
+        "raw_snippet": "Netflix Entertainment Services India LLP. Level 11, Godrej BKC Plot C-68, G Block, BKC - Bandra (East) Mumbai 400051 Maharashtra, India Tax number: 27AANFN9351J1ZN nataliebjerregaard@gmail.com Invoice No. 324E6-59C2A-48507-6C23B Date Description Service Period Amount IGST % IGST Total 23/08/25 Strea"
+      },
+      "verification": {
+        "match_found": false,
+        "confidence": 0.297,
+        "matched_txn": {
+          "date": "2026-01-08",
+          "amount": 125.0,
+          "type": "debit",
+          "ref_id": "600892544193",
+          "description": "UPI/P2M/600892544193/GK KITCHEN /UPI/AXIS BANK"
+        }
+      }
+    },
+    {
+      "bill": "WiFi",
+      "payment_info": {
+        "amount": null,
+        "ref_id": null,
+        "payment_date": "2025-09-23",
+        "payee_name": "AIRTEL",
+        "raw_snippet": "Page 1 of 4 Total Amount Payable: Due Date: ` 942.82 03 Nov 2025 Pay via Airtel Thanks App www.airtel.in/pay Scan & pay via any UPI Apps Powered by Last bill amount Payment made Credits This month's charges Amount Payable Amount after due date(03Nov) ` 942.82 - ` 942.82 - ` 0.00 + ` 942.82 = ` 942.8"
+      },
+      "verification": {
+        "match_found": false,
+        "confidence": 0.09,
+        "matched_txn": {
+          "date": "2025-09-22",
+          "amount": 230.0,
+          "type": "credit",
+          "ref_id": "526511797681",
+          "description": "UPI/P2A/526511797681/SHANTHI  /State Ban/UPI/"
+        }
+      }
+    }
+  ]
+}

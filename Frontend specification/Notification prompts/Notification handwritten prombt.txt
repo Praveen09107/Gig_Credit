@@ -1,0 +1,10 @@
+Notification 
+
+In our complete app there are some many notifications will be occur while user use our app ok make the notification so impressive and delever the correct information like when the backend hits the error like invalid, verfied successfully like for all the backend response as msa display in the frontend notification impressively make sure the notification should be implemented all the case when user wnter wrong and invalid and sucess msg from the backend and ondevice processissing during running ok
+
+
+Toast messages 
+
+When user enter wrong password or wrong number or wrong otp , account already exists, account not found then in steps when user click verfy after the verfication ifnthe verfication is correct successfully toast message notification or wrong means toast message notification like that then each step move to next step means if the step is verified means all input verfied toast message or else input not valid if any of the inputs is nkt valid ok based on that putbthe toast message 
+
+Mainthin don't put same toast message notification like if the fiesl is empty that need to be indicated in that field below show in red like required fiesl based on the input and situation implement the correct toast type notification and message ok this for our entire app make it as so impressive and at the same time uniform without any conflict don't show the exact erroa make the error as clear msg don't show the backend hits red error in backend implemente all the possible error message

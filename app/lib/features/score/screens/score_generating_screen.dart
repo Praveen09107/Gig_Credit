@@ -7,6 +7,7 @@ import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_typography.dart';
 import '../../../state/verified_profile_provider.dart';
 import '../../../state/score_provider.dart';
+import '../../../state/user_provider.dart';
 import '../../../state/loan_provider.dart';
 import '../../../models/loan_offer_model.dart';
 import '../../../scoring/score_pipeline.dart';
@@ -15,6 +16,7 @@ import '../../../models/score_report_model.dart';
 import '../../../state/api_service_provider.dart';
 import '../../../services/loan_api_service.dart';
 import '../widgets/score_status_message.dart';
+import '../../../shared/widgets/loaders/delivery_bike_loader.dart';
 
 import '../../../services/scoring_service.dart';
 
@@ -108,6 +110,16 @@ class _ScoreGeneratingScreenState extends ConsumerState<ScoreGeneratingScreen>
 
       // Store result in provider
       ref.read(scoreProvider.notifier).setSuccess(report);
+
+      // Store in backend
+      final user = ref.read(userProvider);
+      if (user?.id.isNotEmpty == true) {
+        try {
+          await ScoringService().storeScore(report, user!.id);
+        } catch (e) {
+          print('Failed to push score to backend: $e');
+        }
+      }
 
       // Seed personalized loan offers based on the generated score
       await _seedLoanOffers(report.finalScore);
@@ -239,50 +251,8 @@ class _ScoreGeneratingScreenState extends ConsumerState<ScoreGeneratingScreen>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Pulsing gradient ring
-                        AnimatedBuilder(
-                          animation: _pulseController,
-                          builder: (context, child) {
-                            final scale = 0.92 + _pulseController.value * 0.12;
-                            final opacity = 0.4 + _pulseController.value * 0.6;
-                            return Transform.scale(
-                              scale: scale,
-                              child: Container(
-                                width: 140,
-                                height: 140,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: RadialGradient(
-                                    colors: [
-                                      Colors.white.withValues(alpha: opacity * 0.20),
-                                      Colors.white.withValues(alpha: opacity * 0.06),
-                                      Colors.transparent,
-                                    ],
-                                  ),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: opacity),
-                                    width: 2.5,
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Container(
-                                    width: 72,
-                                    height: 72,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: Colors.white.withValues(alpha: 0.15),
-                                    ),
-                                    child: const Icon(
-                                      Icons.psychology_rounded,
-                                      size: 40,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                        // Delivery Bike Loader instead of the static psychology icon
+                        const DeliveryBikeLoader(),
                         const SizedBox(height: 40),
                         
                         Text(

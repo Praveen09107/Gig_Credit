@@ -47,36 +47,44 @@ class HomeScreen extends ConsumerWidget {
                   statusBarColor: Colors.transparent,
                   statusBarIconBrightness: Brightness.dark,
                 ),
-                title: Row(
-                  children: [
-                    // Brand icon
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: AppColors.greenPrimary,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        'G',
-                        style: AppTypography.labelLarge.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 16,
+                title: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    children: [
+                      // Brand icon
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: AppColors.greenPrimary,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(color: AppColors.greenPrimary.withValues(alpha: 0.4), blurRadius: 8, spreadRadius: 1)
+                          ],
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text('GigCredit', style: AppTypography.brandName),
-                  ],
-                ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          'G',
+                          style: AppTypography.labelLarge.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ).animate(onPlay: (c) => c.repeat(reverse: true)).shimmer(duration: 2.seconds, color: Colors.white24),
+                      const SizedBox(width: 8),
+                      Text('GigCredit', style: AppTypography.brandName),
+                    ],
+                  ),
+                ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.1),
                 actions: [
                   // Nav pills
                   _NavPill(
                     label: 'About',
                     onTap: () => context.push(AppRoutes.about),
                   ),
+                  const SizedBox(width: 4),
                   _NavPill(
                     label: 'Schemes',
                     onTap: () => context.push(AppRoutes.schemes),

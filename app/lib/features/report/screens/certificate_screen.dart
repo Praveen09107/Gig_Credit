@@ -7,8 +7,8 @@ import '../../../shared/theme/app_typography.dart';
 import '../../../shared/widgets/buttons/secondary_button.dart';
 import '../../../state/score_provider.dart';
 
-/// P7-03: Certificate Screen
-/// A highly stylized official "certificate" view of the score that can be saved.
+/// GigCredit Official Certificate Screen
+/// Formal green-themed certificate card with export capability
 class CertificateScreen extends ConsumerStatefulWidget {
   const CertificateScreen({super.key});
 
@@ -26,9 +26,12 @@ class _CertificateScreenState extends ConsumerState<CertificateScreen> {
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData != null) {
         if (!mounted) return;
-        // In a real app: share or save to gallery
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Certificate saved to gallery (Demo)')),
+          SnackBar(
+            content: Text('Certificate saved to gallery (Demo)',
+                style: AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary)),
+            backgroundColor: AppColors.bgCard,
+          ),
         );
       }
     } catch (e) {
@@ -39,15 +42,30 @@ class _CertificateScreenState extends ConsumerState<CertificateScreen> {
   @override
   Widget build(BuildContext context) {
     final report = ref.watch(scoreProvider).reportData;
-    
+
     if (report == null) {
-      return const Scaffold(body: Center(child: Text('No report data')));
+      return Scaffold(
+        backgroundColor: AppColors.bgScreen,
+        body: Center(
+          child: Text('No report data', style: AppTypography.bodyMedium),
+        ),
+      );
     }
 
+    final gradeColor = AppColors.gradeColor(report.grade);
+
     return Scaffold(
+      backgroundColor: AppColors.bgScreen,
       appBar: AppBar(
-        title: const Text('Official Certificate'),
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.bgCard,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.greenPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text('Official Certificate',
+            style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w600)),
+        centerTitle: true,
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -60,12 +78,21 @@ class _CertificateScreenState extends ConsumerState<CertificateScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(32),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF151821), // Dark rich blue-grey
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.accent, width: 2),
+                    gradient: const LinearGradient(
+                      begin: Alignment(-0.5, -0.8),
+                      end: Alignment(0.5, 1.0),
+                      colors: [
+                        Color(0xFF0D3320), // Very dark green
+                        Color(0xFF1A6B3C), // greenPrimary
+                        Color(0xFF0D3320),
+                      ],
+                      stops: [0.0, 0.5, 1.0],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.greenBright.withValues(alpha: 0.4), width: 2),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.accent.withValues(alpha: 0.3),
+                        color: AppColors.greenPrimary.withValues(alpha: 0.25),
                         blurRadius: 30,
                         spreadRadius: -10,
                       ),
@@ -73,49 +100,88 @@ class _CertificateScreenState extends ConsumerState<CertificateScreen> {
                   ),
                   child: Column(
                     children: [
-                      const Icon(Icons.workspace_premium, size: 64, color: AppColors.accent),
+                      // Trophy icon
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.10),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.20)),
+                        ),
+                        child: const Icon(Icons.workspace_premium, size: 36, color: AppColors.greenMint),
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'VERIFIED GIG CREDIT SCORE',
-                        style: AppTypography.titleMedium.copyWith(
-                          color: AppColors.accent,
+                        style: AppTypography.sectionLabel.copyWith(
+                          color: AppColors.greenMint,
                           letterSpacing: 2,
+                          fontSize: 12,
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 28),
+
+                      // Score number
                       Text(
                         report.finalScore.toString(),
                         style: AppTypography.displayLarge.copyWith(
-                          fontSize: 80,
+                          fontSize: 72,
                           fontWeight: FontWeight.w900,
                           color: Colors.white,
+                          letterSpacing: -2,
                         ),
                       ),
-                      Text(
-                        'Score Grade: ${report.grade}',
-                        style: AppTypography.titleLarge.copyWith(color: Colors.white70),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: gradeColor.withValues(alpha: 0.20),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: gradeColor.withValues(alpha: 0.40)),
+                        ),
+                        child: Text(
+                          'Grade ${report.grade}  •  ${report.riskBand} Risk',
+                          style: TextStyle(
+                            color: gradeColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 32),
-                      const Divider(color: Colors.white24),
-                      const SizedBox(height: 24),
+
+                      const SizedBox(height: 28),
+                      Divider(color: Colors.white.withValues(alpha: 0.15)),
+                      const SizedBox(height: 20),
+
+                      // Details
                       _RowItem(label: 'Cert ID:', val: report.proofId),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                       _RowItem(
                         label: 'Issued:',
                         val: '${report.generatedAt.day}-${report.generatedAt.month}-${report.generatedAt.year}',
                       ),
-                      const SizedBox(height: 8),
-                      _RowItem(label: 'Data Integrity:', val: '${(report.overallConfidence * 100).toInt()}% Verified'),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 10),
+                      _RowItem(
+                        label: 'Data Integrity:',
+                        val: '${(report.overallConfidence * 100).toInt()}% Verified',
+                      ),
+
+                      const SizedBox(height: 28),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.shield, size: 16, color: AppColors.gradeA),
-                          const SizedBox(width: 8),
+                          Icon(Icons.shield, size: 14,
+                              color: Colors.white.withValues(alpha: 0.50)),
+                          const SizedBox(width: 6),
                           Text(
                             'Powered by GigCredit Engine',
-                            style: AppTypography.labelSmall.copyWith(color: Colors.white54),
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.45),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
@@ -123,7 +189,7 @@ class _CertificateScreenState extends ConsumerState<CertificateScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 32),
               SecondaryButton(
                 label: 'Export PNG to Gallery',
                 onPressed: _exportAsImage,
@@ -146,8 +212,15 @@ class _RowItem extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white54, fontSize: 14)),
-        Text(val, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+        Text(label, style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.50),
+          fontSize: 13,
+        )),
+        Text(val, style: const TextStyle(
+          color: Colors.white,
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+        )),
       ],
     );
   }

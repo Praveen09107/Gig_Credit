@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_typography.dart';
 
+/// GigCredit Score Summary Card — Animated counter + grade/risk badges
 class ScoreSummaryCard extends StatefulWidget {
   final int finalScore;
   final String grade;
@@ -40,27 +41,19 @@ class _ScoreSummaryCardState extends State<ScoreSummaryCard>
     super.dispose();
   }
 
-  Color get _gradeColor {
-    switch (widget.grade) {
-      case 'S': return AppColors.gradeS;
-      case 'A': return AppColors.gradeA;
-      case 'B': return AppColors.gradeB;
-      case 'C': return AppColors.gradeC;
-      default: return AppColors.error;
-    }
-  }
+  Color get _gradeColor => AppColors.gradeColor(widget.grade);
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _gradeColor.withValues(alpha: 0.4)),
+        border: Border.all(color: _gradeColor.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: _gradeColor.withValues(alpha: 0.15),
+            color: _gradeColor.withValues(alpha: 0.10),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -92,16 +85,16 @@ class _ScoreSummaryCardState extends State<ScoreSummaryCard>
           const SizedBox(height: 16),
           Text(
             'Score range: 300 – 900',
-            style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+            style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           // Score bar
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
               value: (widget.finalScore - 300) / 600,
               minHeight: 8,
-              backgroundColor: AppColors.surfaceVariant,
+              backgroundColor: AppColors.borderCard,
               valueColor: AlwaysStoppedAnimation<Color>(_gradeColor),
             ),
           ),
@@ -121,10 +114,14 @@ class _Chip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(20),
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(label, style: AppTypography.labelSmall.copyWith(color: color)),
+      child: Text(label,
+          style: AppTypography.labelSmall.copyWith(
+            color: color,
+            fontWeight: FontWeight.w600,
+          )),
     );
   }
 }

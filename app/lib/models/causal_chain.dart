@@ -16,6 +16,12 @@ class CausalTrigger {
       threshold: (json['threshold'] as num).toDouble(),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'feature_index': featureIndex,
+    'operator': operator,
+    'threshold': threshold,
+  };
 }
 
 class CausalRule {
@@ -64,4 +70,18 @@ class CausalRule {
       workTypes: List<String>.from(json['work_types'] as List? ?? []),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'rule_id': ruleId,
+    'name': name,
+    'triggers': triggers.map((t) => t.toJson()).toList(),
+    'trigger_logic': triggerLogic,
+    'root_cause': rootCause,
+    'causal_chain': causalChain,
+    'applicant_message': applicantMessage,
+    'actionable': actionable,
+    'action_text': actionText,
+    'pillar_affected': pillarAffected,
+    'work_types': workTypes,
+  };
 }

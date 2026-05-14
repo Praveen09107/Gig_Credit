@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
+import '../loaders/seedling_loader.dart';
 
 class LoadingView extends StatelessWidget {
   final String? message;
@@ -13,21 +14,8 @@ class LoadingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const CircularProgressIndicator(
-            color: AppColors.accent,
-            strokeWidth: 3,
-          ),
-          if (message != null) ...[
-            const SizedBox(height: 16),
-            Text(
-              message!,
-              style: AppTypography.bodyMedium,
-            ),
-          ],
-        ],
+      child: SeedlingLoader(
+        label: message ?? 'Loading...',
       ),
     );
   }

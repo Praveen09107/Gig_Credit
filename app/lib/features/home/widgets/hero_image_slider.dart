@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_typography.dart';
 
+/// GigCredit Floating Image Carousel
+/// Auto-scrolling PageView with parallax scale, rounded cards, green captions
 class HeroImageSlider extends StatefulWidget {
   const HeroImageSlider({super.key});
 
@@ -11,7 +12,8 @@ class HeroImageSlider extends StatefulWidget {
 }
 
 class _HeroImageSliderState extends State<HeroImageSlider> {
-  final PageController _controller = PageController(viewportFraction: 0.85);
+  final PageController _controller = PageController(viewportFraction: 0.82);
+  int _currentPage = 0;
 
   final List<String> _images = [
     'assets/images/gig_delivery.jpeg',
@@ -28,6 +30,26 @@ class _HeroImageSliderState extends State<HeroImageSlider> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    // Auto-scroll every 4s
+    _startAutoScroll();
+  }
+
+  void _startAutoScroll() {
+    Future.delayed(const Duration(seconds: 4), () {
+      if (!mounted) return;
+      final nextPage = (_currentPage + 1) % _images.length;
+      _controller.animateToPage(
+        nextPage,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOut,
+      );
+      _startAutoScroll();
+    });
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     super.dispose();
@@ -36,80 +58,126 @@ class _HeroImageSliderState extends State<HeroImageSlider> {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Empowering India\'s Gig Workers',
-          style: AppTypography.titleLarge,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Building financial inclusion for 300M+ informal workers across India.',
-          style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 16),
+        // Cards
         SizedBox(
-          height: 220,
+          height: 200,
           child: PageView.builder(
             controller: _controller,
             itemCount: _images.length,
+            onPageChanged: (i) => setState(() => _currentPage = i),
             itemBuilder: (context, index) {
               return AnimatedBuilder(
                 animation: _controller,
                 builder: (context, child) {
-                  double value = 1.0;
+                  double scale = 1.0;
                   if (_controller.position.haveDimensions) {
-                    value = _controller.page! - index;
-                    value = (1 - (value.abs() * 0.2)).clamp(0.8, 1.0);
+                    final page = _controller.page ?? _currentPage.toDouble();
+                    final diff = (page - index).abs();
+                    scale = (1 - (diff * 0.12)).clamp(0.88, 1.0);
                   }
                   return Center(
-                    child: SizedBox(
-                      height: Curves.easeOut.transform(value) * 220,
-                      width: Curves.easeOut.transform(value) * 350,
+                    child: Transform.scale(
+                      scale: scale,
                       child: child,
                     ),
                   );
                 },
                 child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                  margin: const EdgeInsets.symmetric(horizontal: 6),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
+                        color: AppColors.greenPrimary.withValues(alpha: 0.10),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
                       ),
                     ],
-                    image: DecorationImage(
-                      image: AssetImage(_images[index]),
-                      fit: BoxFit.cover,
-                    ),
                   ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      gradient: LinearGradient(
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                        colors: [
-                          Colors.black.withValues(alpha: 0.6),
-                          Colors.transparent,
-                        ],
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // Image
+                      Image.asset(
+                        _images[index],
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: AppColors.greenMuted,
+                          child: const Icon(Icons.image_outlined,
+                              color: AppColors.greenPrimary, size: 48),
+                        ),
                       ),
-                    ),
-                    alignment: Alignment.bottomLeft,
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      _captions[index],
-                      style: AppTypography.titleMedium.copyWith(color: Colors.white),
-                    ),
+
+                      // Gradient overlay
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.center,
+                            colors: [
+                              AppColors.greenPrimary.withValues(alpha: 0.75),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Caption
+                      Positioned(
+                        bottom: 14,
+                        left: 16,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 4,
+                              height: 18,
+                              decoration: BoxDecoration(
+                                color: AppColors.greenMint,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _captions[index],
+                              style: AppTypography.titleSmall.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               );
             },
           ),
-        ).animate().fadeIn(duration: 800.ms).slideY(begin: 0.1, end: 0),
+        ),
+
+        const SizedBox(height: 12),
+
+        // Dot indicators
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(_images.length, (i) {
+            final isActive = i == _currentPage;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 280),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: isActive ? 20 : 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: isActive
+                    ? AppColors.greenPrimary
+                    : AppColors.borderCard,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            );
+          }),
+        ),
       ],
     );
   }

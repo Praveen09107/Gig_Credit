@@ -55,8 +55,8 @@ class DemoProfileService {
         isVerified: true,
         accountHolderName: name,
         bankName: bank,
-        ifscCode: 'UTIB0000345',
-        accountNumber: '9240100${_rng.nextInt(90000000) + 10000000}',
+        ifscCode: 'HDFC0001234',
+        accountNumber: '098765432123',
         monthlyCredits: monthlyCredits,
         monthlyDebits: monthlyDebits,
       );

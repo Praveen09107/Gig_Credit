@@ -1,0 +1,14 @@
+Common errors : frontend and backend api end points mismatch 
+
+Static values and results will be still place in the frontend 
+
+Time out and processing time will be mismatcha and conflict 
+
+Some of the button may not have a functionallty 
+
+Overcoverd overflow one loaut will be apply in another laoyte conflite congestion 
+
+
+404 errors for frontend pages 
+
+Backend and frontend routing prombles and mainthing is connectivity issues like all possible errors may be come please check each and every thing whenever complete each pages ok

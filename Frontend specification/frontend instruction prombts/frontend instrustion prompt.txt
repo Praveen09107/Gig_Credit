@@ -1,0 +1,736 @@
+████████████████████████████████████████████████████████████████████████████████
+██                                                                            ██
+██   GIGCREDIT — MASTER FRONTEND IMPLEMENTATION INSTRUCTIONS                ██
+██   Complete app · All components · All pages · Advanced effects only      ██
+██   Zero generic effects · Theme-bound · Uniform across entire app         ██
+██                                                                            ██
+████████████████████████████████████████████████████████████████████████████████
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PRIME DIRECTIVE — READ BEFORE WRITING ANY CODE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Every single visual element in this app must feel like it was
+designed specifically for GigCredit and its users — gig workers,
+delivery partners, street vendors, daily-wage earners in India.
+
+BANNED: generic circle spinners · plain fade-ins · flat cards with
+        no life · static hero images · loading text ("Loading...") ·
+        default OS transitions · unstyled dropdowns · any effect that
+        could belong to a generic SaaS app.
+
+REQUIRED: Every animation tells a story tied to the context.
+          Every card reacts to the user's touch with personality.
+          Every loader is a mini narrative.
+          Every transition feels earned and purposeful.
+          The entire app feels like ONE designer built it.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1 — DESIGN TOKEN SYSTEM (single source of truth)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Define these as CSS custom properties / JS constants / Dart const.
+Never hardcode colour or spacing anywhere else in the app.
+
+── COLOUR TOKENS ────────────────────────────────────────────────────────────
+
+  --green-deep      :  #1A6B3C   (primary brand, CTAs, active states)
+  --green-mid       :  #2D8653   (gradient mid, accents)
+  --green-bright    :  #3CC068   (highlights, progress fills, pulse glows)
+  --green-mint      :  #A8F0C6   (light accents, score rings, subtle fills)
+  --green-muted     :  #D4EDDA   (badge bg, success chip bg, card tints)
+  --green-faint     :  #F0F4F8   (screen background, input bg)
+  --green-border    :  #E2EDE7   (card borders, dividers, input borders)
+
+  --text-primary    :  #0D1F15   (headings, strong labels)
+  --text-secondary  :  #4A6B57   (body text, descriptions)
+  --text-muted      :  #8FA89B   (placeholders, labels, hints)
+
+  --error           :  #D32F2F
+  --error-bg        :  #FFEBEE
+  --warning         :  #E65100
+  --warning-bg      :  #FFF3E0
+  --info            :  #0277BD
+  --info-bg         :  #BBDEFB
+
+  --white           :  #FFFFFF
+  --overlay-dark    :  rgba(13,31,21,0.65)
+
+── GRADIENT TOKENS ──────────────────────────────────────────────────────────
+
+  --grad-hero       :  linear-gradient(160deg, #1A6B3C 0%, #2D8653 55%, #3CC068 100%)
+  --grad-button     :  linear-gradient(135deg, #1A6B3C 0%, #3CC068 100%)
+  --grad-screen-bg  :  linear-gradient(180deg, #1A6B3C 0%, #2D8653 40%, #F0F4F8 100%)
+
+── SHADOW TOKENS ────────────────────────────────────────────────────────────
+
+  --shadow-card     :  0 4px 16px rgba(26,107,60,0.08)
+  --shadow-card-hover: 0 8px 28px rgba(26,107,60,0.16)
+  --shadow-button   :  0 4px 16px rgba(60,192,104,0.38)
+  --shadow-button-pulse: 0 6px 32px rgba(60,192,104,0.60)
+  --shadow-header   :  0 2px 12px rgba(0,0,0,0.06)
+  --shadow-toast    :  0 8px 28px rgba(0,0,0,0.12)
+
+── RADIUS TOKENS ────────────────────────────────────────────────────────────
+
+  --radius-screen   :  0
+  --radius-card     :  20px
+  --radius-card-sm  :  14px
+  --radius-button   :  16px
+  --radius-input    :  14px
+  --radius-chip     :  999px
+  --radius-icon     :  12px
+
+── SPACING TOKENS ───────────────────────────────────────────────────────────
+
+  --screen-pad      :  20px
+  --card-pad        :  20px 20px
+  --card-pad-inner  :  24px
+  --gap-cards       :  14px
+  --gap-inputs      :  16px
+  --gap-sections    :  24px
+
+── TYPOGRAPHY TOKENS ────────────────────────────────────────────────────────
+
+  --font            :  'Inter', -apple-system, sans-serif
+  --text-display    :  Inter Black  28–32px
+  --text-heading    :  Inter Bold   20–22px
+  --text-title      :  Inter SemiBold  16–18px
+  --text-body       :  Inter Regular  14–15px
+  --text-caption    :  Inter Regular  12–13px
+  --text-label      :  Inter SemiBold  11–13px  uppercase  letter-spacing 1px
+
+── ANIMATION TOKENS ─────────────────────────────────────────────────────────
+
+  --spring-bounce   :  cubic-bezier(0.34, 1.56, 0.64, 1)
+  --spring-smooth   :  cubic-bezier(0.22, 1, 0.36, 1)
+  --ease-out        :  cubic-bezier(0, 0, 0.2, 1)
+  --ease-in         :  cubic-bezier(0.4, 0, 1, 1)
+
+  --dur-instant     :  100ms
+  --dur-fast        :  200ms
+  --dur-normal      :  350ms
+  --dur-slow        :  500ms
+  --dur-enter       :  420ms
+  --dur-hero        :  600ms
+
+  --stagger-cards   :  60ms
+  --stagger-fields  :  40ms
+  --stagger-chips   :  30ms
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2 — UNIVERSAL CARD BEHAVIOUR (every card in every screen)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Every card — scheme card, step card, pillar card, loan card,
+report card — shares this behaviour. No card is inert.
+
+── MOUNT ANIMATION ──────────────────────────────────────────────────────────
+
+  opacity     :  0 → 1
+  translateY  :  24px → 0
+  scale       :  0.97 → 1.0
+  duration    :  500ms  var(--spring-smooth)
+  stagger     :  var(--stagger-cards) × card index
+
+── HOVER / FOCUS STATE (web/PWA) ────────────────────────────────────────────
+
+  box-shadow  :  var(--shadow-card) → var(--shadow-card-hover)
+  translateY  :  0 → -3px
+  duration    :  200ms  ease-out
+  border      :  1px solid rgba(60,192,104,0.30)
+
+── PRESS / ACTIVE STATE (all platforms) ─────────────────────────────────────
+
+  scale       :  1.0 → 0.97
+  box-shadow  :  var(--shadow-card) → 0 2px 8px rgba(26,107,60,0.10)
+  translateY  :  0 → 1px
+  spring      :  stiffness 400  damping 22
+  haptic      :  8ms (mobile)
+
+── MOVING BORDER GLOW (on press — the "outline shadow moving" effect) ────────
+
+  This is the signature effect for every interactive card.
+
+  Implementation:
+    Before element (pseudo ::before or animated border):
+      position: absolute  inset -1px  radius same as card  z-index -1
+      background: conic-gradient(
+        from var(--angle),
+        transparent 0%,
+        rgba(60,192,104,0.60) 25%,
+        transparent 50%
+      )
+    @property --angle: { syntax: '<angle>' initial-value: 0deg }
+
+    On card press:
+      Animate --angle: 0deg → 360deg  600ms linear
+      opacity: 0 → 0.80 → 0  (flares then fades)
+
+    Result: glowing arc travels around card border on press
+    Like a pulse of energy going around the card edge.
+
+  Apply to: ALL interactive cards without exception.
+
+── RELEASE ANIMATION ────────────────────────────────────────────────────────
+
+  scale       :  0.97 → 1.02 → 1.0  spring  300ms
+  (slight overshoot — card bounces back with life)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3 — SCROLL EFFECTS (every scrollable screen)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+── HERO BAND PARALLAX ───────────────────────────────────────────────────────
+
+  As user scrolls down:
+    Hero band bg moves at 0.4× scroll speed (parallax)
+    Hero band content fades: opacity 1 → 0  at 50% hero height scrolled
+    Hero band compresses: scale 1.0 → 0.96  simultaneous
+    Sticky header shadow intensifies as hero exits viewport
+
+  Implementation:
+    onScroll: heroTranslate = scrollY * 0.4
+    heroOpacity = Math.max(0, 1 - scrollY / (heroHeight * 0.5))
+    Apply via transform / opacity on hero band inner content
+
+── CARD SCROLL REVEAL (IntersectionObserver) ────────────────────────────────
+
+  Cards below fold are initially invisible.
+  As each card enters viewport:
+    opacity     :  0 → 1
+    translateY  :  32px → 0
+    scale       :  0.95 → 1.0
+    duration    :  500ms  var(--spring-smooth)
+    threshold   :  0.15 (triggers when 15% of card is visible)
+    once        :  true (never re-triggers)
+
+  Stagger within same viewport batch: 60ms × visibilityOrder
+
+── SCROLL MOMENTUM STRETCH (iOS rubber band style on all platforms) ──────────
+
+  When user reaches top and pulls further:
+    Hero band stretches down: scaleY 1.0 → 1.04
+    Background gradient brightens slightly
+    Releases back: spring stiffness 200 damping 20
+
+── STICKY HEADER MORPH ──────────────────────────────────────────────────────
+
+  As user scrolls past hero band:
+    Header bg: transparent → rgba(255,255,255,0.95)  200ms ease
+    Header backdrop-filter: blur(0px) → blur(12px)
+    Header box-shadow: none → var(--shadow-header)
+    Header title: appears if previously hidden  opacity 0→1  200ms
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4 — HERO BAND EFFECTS (every screen)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+── LIVING GRADIENT ──────────────────────────────────────────────────────────
+
+  The gradient is never static. It breathes.
+
+  background-size: 200% 200%
+  animation: gradientBreath 8s ease-in-out infinite alternate
+
+  @keyframes gradientBreath:
+    0%   → backgroundPosition 0% 0%
+    100% → backgroundPosition 100% 100%
+  Effect: gradient slowly shifts — deep green to bright green and back
+
+── FLOATING PARTICLE SYSTEM ─────────────────────────────────────────────────
+
+  20 tiny particles float inside every hero band.
+  They are non-interactive, purely decorative.
+
+  Each particle:
+    Shape     :  circle  2–5px  random size
+    Colour    :  rgba(168,240,198, 0.15 to 0.35)  random opacity
+    Position  :  random x,y within hero band
+    Movement  :  float upward  translateY 0 → -40px
+                 simultaneously drift sideways ±15px  sine wave
+    Duration  :  4–8s  random per particle  ease-in-out infinite
+    Reset     :  when particle reaches top edge  reappear at bottom
+    Stagger   :  all particles have different random delays
+
+  Implementation:
+    Generate 20 divs/spans in hero band  position absolute
+    Each gets randomised CSS animation via JS or inline style
+
+── BACKGROUND GLOW ORBS ─────────────────────────────────────────────────────
+
+  2 large orbs inside hero band (existing spec + animation):
+
+  Orb 1:  200px  rgba(255,255,255,0.07)  top-right
+    Animation: scale 1.0→1.15→1.0  12s ease-in-out infinite
+    + drift: translate 0,0 → -10px,10px → 0,0  same duration
+
+  Orb 2:  130px  rgba(255,255,255,0.04)  bottom-left
+    Animation: scale 1.0→1.20→1.0  9s ease-in-out infinite  delay 3s
+    + drift: translate 0,0 → 8px,-8px → 0,0
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5 — BUTTON EFFECTS (all CTA buttons)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+── PRIMARY BUTTON (green gradient) ──────────────────────────────────────────
+
+  IDLE GLOW PULSE:
+    box-shadow oscillates between:
+      0 4px 16px rgba(60,192,104,0.38)
+      0 6px 28px rgba(60,192,104,0.58)
+    duration: 2s ease-in-out infinite alternate
+
+  RIPPLE ON PRESS:
+    Click/touch origin point → expanding circle
+    rgba(255,255,255,0.25)  radius 0→200px  opacity 0.25→0
+    duration 500ms ease-out
+    clipped to button radius
+
+  GRADIENT SHIFT ON PRESS:
+    gradient angle: 135deg → 160deg  200ms
+    gradient: brightens slightly
+    Returns on release: 200ms
+
+  ICON ARROW MOVEMENT:
+    "→" in button text
+    On hover: translateX 0→4px  200ms ease
+    On press:  translateX 4px→2px  100ms
+
+  LOADING STATE (from Spinner spec — LOADER 1A):
+    Text + icon fade out  150ms
+    Coin bounce loader fades in  150ms
+    Button does NOT change size (prevents layout shift)
+
+  SUCCESS FLASH:
+    On success before navigation:
+      Button bg flashes rgba(255,255,255,0.20) overlay  150ms
+      ✓ mark draws  300ms
+      Then navigates
+
+── SECONDARY BUTTON (white/outlined) ────────────────────────────────────────
+
+  On hover:
+    bg: rgba(212,237,218,0.30)
+    border-color: rgba(60,192,104,0.40)
+    200ms ease
+
+  On press:
+    bg flash: rgba(212,237,218,0.50) → transparent  250ms
+    scale 0.97 spring
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 6 — INPUT FIELD EFFECTS (all forms)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+── FOCUS SEQUENCE ───────────────────────────────────────────────────────────
+
+  t=0ms   border colour transitions to --green-deep  200ms ease
+  t=0ms   bg transitions to #FFFFFF  200ms ease
+  t=0ms   left icon colour changes to --green-deep  200ms ease
+  t=50ms  focus glow ring expands:
+            box-shadow: 0 0 0 0 → 0 0 0 3px rgba(60,192,104,0.14)  200ms
+  t=100ms label floats up (if floating label design):
+            translateY 0 → -20px  scale 1.0→0.85  200ms spring
+            colour changes to --green-deep
+
+── TYPING VISUAL FEEDBACK ───────────────────────────────────────────────────
+
+  Each keystroke:
+    Cursor blink: custom styled  2px  #1A6B3C  blink 1s step-end infinite
+
+  Character count fields (e.g. Aadhaar = 12 digits):
+    Progress dots row below field
+    12 dots  each 6px circle  --green-border colour
+    As digits typed: dots fill left to right  bg --green-deep  scale 0.8→1.0
+    On complete (all dots filled): row glows  0 0 8px rgba(60,192,104,0.30)
+
+── VALIDATION TICK SEQUENCE ─────────────────────────────────────────────────
+
+  On blur, valid value:
+    t=0ms   border → solid --green-deep
+    t=100ms tick circle appears right side:
+              scale 0→1.2→1.0  spring  stiffness 400 damping 20
+    t=200ms  tick stroke draws inside circle:
+              strokeDashoffset 100%→0  200ms ease-out
+    Satisfying = intentional
+
+── ERROR SHAKE + GLOW ───────────────────────────────────────────────────────
+
+  translateX: 0→-5px→5px→-4px→4px→-2px→2px→0  350ms ease
+  border: flashes --error colour  2 times  100ms interval
+  bg: transitions to --error-bg  200ms
+  Left icon: colour → --error  200ms
+
+── OTP 6-BOX FILL EFFECT ────────────────────────────────────────────────────
+
+  Each box fill:
+    scale 0.8→1.05→1.0  spring  200ms
+    bg: #F0F4F8 → rgba(212,237,218,0.30)  200ms
+    border: --green-border → --green-deep  200ms
+
+  All 6 filled:
+    Row does gentle glow pulse  0 0 12px rgba(60,192,104,0.25)  once
+    Then auto-submits with 300ms delay
+
+  Wrong OTP shake:
+    All 6 boxes simultaneously:
+      translateX -6px→6px→-4px→4px→0  400ms
+      bg: → --error-bg  200ms
+      border: → --error  200ms
+      Scale: 1.0→0.95→1.0  spring simultaneous
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 7 — SCREEN TRANSITION CHOREOGRAPHY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+── FORWARD NAVIGATION (push) ────────────────────────────────────────────────
+
+  Exiting screen:
+    translateX: 0 → -30%  opacity 1→0  350ms var(--ease-in)
+    scale: 1.0→0.96 simultaneously
+
+  Entering screen:
+    translateX: 60px→0  opacity 0→1  420ms var(--spring-smooth)
+    scale: 0.97→1.0 simultaneously
+    Overlap: enters while exit is still 60% done
+
+── BACKWARD NAVIGATION (pop) ────────────────────────────────────────────────
+
+  Exiting screen (current):
+    translateX: 0 → 60px  opacity 1→0.3  300ms var(--ease-in)
+    scale: 1.0→1.02
+
+  Entering screen (previous):
+    translateX: -30%→0  opacity 0.7→1  350ms var(--spring-smooth)
+
+── SLIDE-UP (modal / major transition) ──────────────────────────────────────
+
+  Exiting:
+    scale: 1.0→0.95  translateY 0→-20px  opacity 1→0.6  350ms ease-in
+
+  Entering:
+    translateY: 100%→0  opacity 0→1  420ms var(--spring-bounce)
+    scale: 0.97→1.0 simultaneously
+
+── CROSS-FADE (signin ↔ signup switch) ──────────────────────────────────────
+
+  Exiting: opacity 1→0  scale 1.0→0.98  200ms ease-in
+  Entering: opacity 0→1  scale 0.98→1.0  300ms ease-out
+  Overlap: simultaneous
+
+── STEP-TO-STEP (via bike loader) ───────────────────────────────────────────
+
+  Before loader:
+    Current step card: translateY 0→-30px  opacity 1→0  300ms ease-in
+    Progress bar fills to new width simultaneously
+  Loader 3A plays (real-time bike animation)
+  After loader:
+    New step hero band: slides in from right  translateX 40px→0  500ms spring
+    New step form card: rises from below  translateY 32px→0  500ms  delay 150ms
+    Inputs stagger in: 40ms × fieldIndex  delay 300ms
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 8 — REPORT SCREEN: ADVANCED INTERACTION EFFECTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This is the most important screen — user gets their score here.
+Every element must feel premium and celebratory.
+
+── SCORE RING DRAW ───────────────────────────────────────────────────────────
+
+  SVG circle  120px  strokeWidth 8px
+  strokeDasharray = circumference  strokeDashoffset = circumference
+  On mount:
+    strokeDashoffset animates to (1 - score/850) × circumference
+    duration: 1.4s  var(--spring-smooth)  delay 300ms
+
+  Glow during draw:
+    filter: drop-shadow(0 0 4px rgba(60,192,104,0.50)) → 
+            drop-shadow(0 0 12px rgba(60,192,104,0.70))  pulses as it draws
+
+  Score number counts up:
+    0 → finalScore  over 1.2s  ease-out  starts with ring draw
+    Font scales: Inter Regular 32px → Inter Black 56px  during count
+    Blur clears: filter blur(6px→0)  800ms
+
+  On complete:
+    Ring glows once more intensely  0 0 20px rgba(60,192,104,0.60)  400ms
+    Score number: scale 1.0→1.06→1.0  spring  once
+
+── PILLAR CARDS: PRESS-TO-EXPAND ────────────────────────────────────────────
+
+  Each pillar row is pressable.
+  On press:
+    Moving border glow (Section 2) fires around the row
+    Row expands inline (accordion):
+      height: 60px → auto  350ms var(--spring-bounce)
+      Shows detailed breakdown inside:
+        Sub-scores, data points used, SHAP impact values
+        Each sub-item fades in  stagger 40ms
+
+    Progress bar inside: re-draws from 0 to value  600ms on expand
+    Bar glow: box-shadow 0 0 6px [pillar.colour] pulses  2s infinite
+
+  Press again: collapses  250ms ease-in
+
+  Multiple pillars can be open simultaneously.
+
+── PILLAR PROGRESS BAR ON MOUNT ─────────────────────────────────────────────
+
+  All 6 bars start at width 0%.
+  Stagger in after score ring finishes:
+    Delay: 1600ms (after ring) + 80ms × pillarIndex
+  Each bar fills: width 0→value  800ms var(--spring-smooth)
+  Bar pulse on complete: glow flashes once  [pillar.colour] 40% opacity
+
+── SHAP INSIGHT CARDS: TILT EFFECT ──────────────────────────────────────────
+
+  Each SHAP insight card responds to device gyroscope (mobile)
+  or mouse position (web):
+
+  3D tilt using CSS transform perspective:
+    perspective: 600px
+    rotateX: ±8deg  rotateY: ±8deg
+    Based on pointer position relative to card centre
+    transition: none while moving  0.15s ease-out on leave (snap back)
+
+  Inner shadow shifts with tilt:
+    box-shadow moves opposite to tilt direction
+    Gives depth — card appears to float
+
+  On tap: moving border glow fires + card expands to show more detail
+
+── CONFETTI ON ARRIVAL ──────────────────────────────────────────────────────
+
+  If score > 600: confetti burst on report mount
+  20 particles:
+    Shapes: circle + rect  8–14px
+    Colours: --green-mint  --green-bright  #FFFFFF  --warning-bg
+    Launch: from score ring  radiate in all directions
+    Each: random initial velocity  gravity applied (translateY increases)
+    Rotation: each spins randomly  duration 0.8–1.2s  randomised
+    Opacity: 1 → 0  over full duration  1.2s
+    ONCE only on mount — never replays
+
+── SCORE BAND CHIP ENTRANCE ─────────────────────────────────────────────────
+
+  "GOOD" / "FAIR" / "POOR" chip:
+    scale 0→1.3→1.0  spring  delay 1000ms (after number finishes counting)
+    Glow on entrance: band colour at 40% opacity  200ms
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 9 — MICROINTERACTIONS (every small element)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+── CHIPS / FILTER TABS ──────────────────────────────────────────────────────
+
+  On press: scale 0.92→1.0  spring  stiffness 500 damping 22
+  Active state change: bg crossfades  200ms  no jump
+
+── BOTTOM NAV TAB SWITCH ────────────────────────────────────────────────────
+
+  Active icon: scale 0.85→1.05→1.0  spring  duration 300ms
+  Active dot: scale 0→1  spring  duration 200ms
+  Inactive → active colour: 200ms ease
+  Icon: translateY 0→-2px→0  spring  (tiny lift on select)
+
+── CHECKBOX TICK ────────────────────────────────────────────────────────────
+
+  On check:
+    bg: --green-border → --green-deep  200ms
+    scale: 1.0→0.85→1.15→1.0  spring  350ms
+    ✓ stroke draws: strokeDashoffset 100%→0  250ms ease-out  delay 100ms
+    Ripple: rgba(60,192,104,0.20) expands from checkbox  300ms
+
+── SLIDER (loan amount) ─────────────────────────────────────────────────────
+
+  Thumb drag:
+    thumb scale: 1.0→1.25  200ms ease
+    track fill: width updates real-time  0ms lag (CSS variable driven)
+    Amount display: numbers tick/roll  counter animation
+    Haptic at preset snap points (5K, 10K etc.)  6ms each
+
+  Preset chip press: slider thumb lerps to value  400ms spring
+
+── TOGGLE SWITCHES ──────────────────────────────────────────────────────────
+
+  Thumb slide: translateX  300ms var(--spring-bounce)
+  Track bg: crossfade --green-border → --green-deep  300ms
+  On: thumb glow  0 0 8px rgba(60,192,104,0.40)
+
+── SKELETON → CONTENT TRANSITION ────────────────────────────────────────────
+
+  Shimmer stops: opacity 1→0  200ms
+  Skeleton elements: scale 1.0→0.98  simultaneously  100ms
+  Real content: opacity 0→1  translateY(6px→0)  300ms  var(--spring-smooth)
+  Stagger: 40ms × element index
+
+── PROGRESS DOTS (home score status card) ───────────────────────────────────
+
+  Completed dots: scale oscillates 1.0→1.1→1.0  1.5s infinite  (breathing)
+  Current dot: pulse glow  0 0 0 0 → 0 0 0 4px rgba(60,192,104,0.35)
+               1.5s ease-in-out infinite
+  Connecting line fill: animates from left on mount  800ms spring
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 10 — SCREEN-SPECIFIC SIGNATURE EFFECTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Each screen has one signature effect that makes it unique.
+All others are shared from Sections 2–9.
+
+SPLASH SCREEN:
+  "G" logo: draws as if being written — SVG path stroke animation
+  Stroke draws from start to end  800ms ease-out
+  Then fill fades in behind stroke  400ms
+  Progress bar fill: left→right with moving highlight dot on fill edge
+
+HOME SCREEN:
+  Score status card floats slightly:
+    translateY 0→-4px→0  4s ease-in-out infinite
+  Quick action cards: sequential rainbow entrance (60ms stagger)
+  Scheme strip: cards slide in from right  40ms stagger  on viewport enter
+
+SCHEMES SCREEN:
+  Each scheme card border-left: colour accent pulses once on mount
+  Expand animation: card border-left brightens as description slides down
+  Apply button: gradient shifts direction on idle  135deg→160deg→135deg  3s
+
+GUIDELINES SCREEN:
+  TYPE B droplet: on expand  subtle paper-unfold effect:
+    scaleY 0→1  transformOrigin top  350ms var(--spring-bounce)
+  Step number circles: draw clockwise border on mount  600ms
+
+SIGN UP / SIGN IN:
+  Form card entrance: rises with slight perspective:
+    rotateX -4deg→0  translateY 32px→0  500ms var(--spring-smooth)
+  OTP boxes: each box entrance is staggered scale  30ms per box
+
+APPLICATION STEPS:
+  Upload zone: dashed border animates — dashes travel clockwise
+    stroke-dashoffset changes  2s linear infinite  while user hovers
+  Input group headers: each group slides in from left  40ms stagger  on mount
+
+REPORT SCREEN:
+  SHAP cards: tilt effect (Section 8)
+  Pillar bars: wave entrance — bars don't all fill simultaneously
+    they fill in a wave left→right  80ms stagger after ring finishes
+
+LOAN APPLICATION:
+  Slider thumb: pulsing glow  0 0 0 0→0 0 0 6px rgba(60,192,104,0.35)  1.5s
+  EMI preview card: numbers roll when tenure/amount changes  400ms
+
+LOAN STATUS (approval):
+  Confetti burst (same as report)
+  Approval text: each word scales in  0→1  50ms stagger
+  Timeline nodes: draw connecting line progressively  600ms between nodes
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 11 — EMPTY STATES (every possible empty screen)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Never show a blank screen or plain "No data" text.
+
+STRUCTURE: centred column  padding 40px 20px
+
+  1. ILLUSTRATION (SVG — inline, themed, animated):
+     Each context gets its own illustration. Examples:
+       No score yet  →  LOADER 2A (seedling, frozen at sapling stage)
+       No schemes    →  simple building icon  opacity pulse
+       No internet   →  disconnected plug icon  oscillates
+       Load error    →  small cloud with X  sways
+
+  2. HEADING:
+     Context-specific  Inter Bold  18px  --text-primary  centred
+
+  3. DESCRIPTION:
+     1–2 lines  Inter Regular  14px  --text-secondary  centred
+
+  4. ACTION BUTTON (if applicable):
+     Primary CTA or retry button
+
+  All empty state elements:
+    Mount: stagger  opacity 0→1  translateY(16px→0)  500ms
+    Illustration: gentle idle animation after mount (never fully static)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 12 — PERFORMANCE RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Impressive effects must not kill performance. Every rule below is hard.
+
+  ONLY animate:  transform  opacity  filter  (these use GPU compositor)
+  NEVER animate: width  height  top  left  margin  padding  (causes reflow)
+  Exception:     height on accordion expand → use max-height trick instead
+
+  will-change:
+    Add will-change: transform to: hero band, cards, buttons, bottom sheet
+    Remove will-change after animation completes (memory cleanup)
+
+  Particle system:
+    Max 20 particles per screen
+    Use CSS animations (not JS animation loop)
+    Paused when screen not in focus (Page Visibility API)
+
+  IntersectionObserver:
+    One shared observer instance for all scroll reveals
+    Disconnect after element animates in (cleanup)
+
+  Skeleton duration:
+    Show skeleton immediately on data-fetch start
+    Never show skeleton for fetches expected < 200ms
+    (Check cached data first — show real content instantly if cached)
+
+  Reduce motion (prefers-reduced-motion: reduce):
+    ALL translateX/Y/scale animations: skip (values jump to final state)
+    ALL spring/bounce: disabled
+    Gradient breath: paused
+    Particle system: hidden
+    Confetti: hidden
+    Progress bar: still fills (timing only, value is useful)
+    Opacity transitions: kept at 200ms (not instant)
+
+  Frame budget:
+    All animations must maintain 60fps on mid-range Android
+    (Redmi 10, Samsung A-series equivalents)
+    Test on these devices — not just flagships
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 13 — UNIFORMITY ENFORCEMENT CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Run this check on EVERY screen before considering it done.
+
+  ✅ Uses only tokens from Section 1 — no hardcoded values
+  ✅ Hero band has living gradient + particles + glow orbs
+  ✅ All cards have mount stagger + press glow border effect
+  ✅ All cards have hover lift + shadow increase (web)
+  ✅ All buttons have ripple + glow pulse + arrow movement
+  ✅ All inputs have focus glow + validation tick + error shake
+  ✅ All loaders are context-specific (none are generic circles)
+  ✅ Screen enter has parallax hero + card stagger reveal
+  ✅ Empty state has animated illustration (never blank)
+  ✅ Sticky header morphs on scroll
+  ✅ Bottom nav present where specified (hidden on auth/steps/loan)
+  ✅ Back button triggers BackGuardPopup on steps/loan screens
+  ✅ Toasts use global AppToast (no local banners)
+  ✅ Inline errors only for empty/format issues (never toasts)
+  ✅ All animations use transform/opacity only (no reflow)
+  ✅ will-change applied and cleaned up correctly
+  ✅ reduce-motion variant implemented
+  ✅ Tested on mid-range device equivalent
+  ✅ Signature screen effect is present (Section 10)
+  ✅ Font is Inter everywhere — no fallback to system font visually

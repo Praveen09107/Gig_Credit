@@ -1,0 +1,6 @@
+Spinner and processing time 
+
+When it loading or move from one page to another or processissing means based on the situation and context implement the impressive spinner and processing not the generic one make that liek animated one fishing in the river or car is going liek impressive technicsv 
+
+
+Implement that impression based on the our app thems

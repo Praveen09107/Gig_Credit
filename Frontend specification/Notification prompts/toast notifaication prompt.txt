@@ -1,0 +1,466 @@
+████████████████████████████████████████████████████████████████████████████████
+██                                                                            ██
+██   GIGCREDIT — GLOBAL NOTIFICATION & TOAST SYSTEM  FRONTEND PROMPT        ██
+██   Entire app · All screens · All states · Uniform + conflict-free        ██
+██   Toast for backend responses · Inline for empty/invalid fields          ██
+██                                                                            ██
+████████████████████████████████████████████████████████████████████████████████
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CORE RULE — READ BEFORE IMPLEMENTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TWO separate feedback systems. Never mix them.
+
+  SYSTEM 1 — INLINE FIELD ERROR
+    Used for: empty fields, format errors caught on device BEFORE any API call
+    Position: directly below the input field
+    Trigger : on blur OR on submit attempt with empty/invalid field
+    NEVER show a toast for these — only inline
+
+  SYSTEM 2 — TOAST NOTIFICATION
+    Used for: backend responses, step completions, processing results,
+              server errors, account states, on-device AI/verification results
+    Position: fixed top of screen
+    Trigger : after API response arrives OR processing completes
+    NEVER show a toast for something that can be caught inline
+
+Rule: if the error can be detected WITHOUT a server call → inline only.
+      if the error comes FROM the server or processing engine → toast only.
+      NEVER show both for the same error at the same time.
+      NEVER show raw backend error text. Always map to clean user message.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1 — SYSTEM 1: INLINE FIELD ERROR SPEC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: InlineFieldError
+Position    :  directly below the input field  margin-top 6px
+z-index     :  local (no fixed positioning)
+
+Shape:
+  layout    :  row  align-center  gap 5px
+  no bg  no border  no card — just icon + text inline
+
+  Icon      :  ⚠  12px  #D32F2F
+  Text      :  error message  Inter Regular  12px  #D32F2F  line-height 1.4
+
+Enter anim  :  opacity 0→1  translateY(-4px→0)  200ms ease
+Exit anim   :  opacity 1→0  100ms ease
+              (exits when user starts correcting the field)
+
+Field state when error shows:
+  border    :  1.5px solid #D32F2F
+  bg        :  #FFF5F5
+  box-shadow:  0 0 0 3px rgba(211,47,47,0.10)
+
+Field shake on submit attempt with errors:
+  translateX  -5px→5px→-4px→4px→-2px→2px→0  350ms ease
+  All invalid fields shake simultaneously
+
+INLINE MESSAGES — by field type:
+
+  Empty (any required field):
+    "This field is required"
+
+  Name (< 2 chars or has numbers):
+    "Enter your full name (letters only)"
+
+  Mobile (not 10 digits / wrong start):
+    "Enter a valid 10-digit mobile number"
+
+  OTP (< 6 digits):
+    "Enter all 6 digits of the OTP"
+
+  Aadhaar number (not 12 digits):
+    "Aadhaar must be exactly 12 digits"
+
+  PAN (wrong format):
+    "Enter a valid PAN (e.g. ABCDE1234F)"
+
+  Bank account number (too short):
+    "Enter a valid account number"
+
+  Amount (out of range):
+    "Amount must be between ₹[min] and ₹[max]"
+
+  Amount (non-numeric):
+    "Enter a valid amount in rupees"
+
+  Purpose (not selected):
+    "Please select a purpose to continue"
+
+  Upload field (no file selected on submit):
+    "Please upload this document to continue"
+
+  Checkbox (not checked on submit):
+    "Please tick to confirm and continue"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2 — SYSTEM 2: TOAST NOTIFICATION SPEC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: AppToast
+Position    :  fixed  top: safe-area-top + 12px
+              centred horizontal  width calc(100% - 40px)
+z-index     :  500  (above all screens, sheets, modals)
+
+Shape:
+  bg        :  #FFFFFF
+  radius    :  16px
+  padding   :  14px 16px
+  border-left: 4px solid [type.colour]
+  border    :  1px solid [type.borderColour]
+  box-shadow:  0 8px 28px rgba(0,0,0,0.12)
+  layout    :  row  align-center  gap 12px
+
+Left icon zone:
+  38 × 38px  circle
+  bg        :  [type.iconBg]
+  Inside    :  [type.emoji]  18px  centred
+
+Text column (flex 1):
+  Title     :  Inter SemiBold  14px  #0D1F15
+  Subtitle  :  Inter Regular  12px  #4A6B57  margin-top 2px  (optional)
+
+Right dismiss button:
+  "✕"  15px  #8FA89B  tap target 36×36px
+  On press  :  dismiss immediately (exit anim)
+
+ENTER ANIMATION:
+  translateY(-28px → 0)  opacity 0→1
+  420ms  cubic-bezier(0.34,1.56,0.64,1)
+
+AUTO DISMISS TIMER:
+  success   :  3000ms then exit
+  error     :  3500ms then exit
+  warning   :  3500ms then exit
+  info      :  3000ms then exit
+  processing:  stays until replaced by result toast (no auto-dismiss)
+
+EXIT ANIMATION:
+  translateY(0 → -20px)  opacity 1→0  320ms ease-in
+  Unmount after 320ms
+
+SWIPE-UP to dismiss early:
+  Follow finger velocity
+  If swipe velocity > threshold → trigger exit anim
+
+QUEUE RULE:
+  Only 1 toast visible at a time
+  New toast cancels current (exit anim 150ms fast) → new toast enters
+  No stacking
+
+PROGRESS BAR (bottom of toast):
+  1px height  radius 999px  bottom of toast card
+  colour: [type.colour at 40% opacity]
+  Fills left→right in toast duration ms  linear
+  Disappears with toast on exit
+
+TYPE DEFINITIONS:
+
+  success:
+    colour       :  #1A6B3C
+    borderColour :  rgba(26,107,60,0.20)
+    iconBg       :  #D4EDDA
+
+  error:
+    colour       :  #D32F2F
+    borderColour :  rgba(211,47,47,0.20)
+    iconBg       :  #FFEBEE
+
+  warning:
+    colour       :  #E65100
+    borderColour :  rgba(230,81,0,0.20)
+    iconBg       :  #FFF3E0
+
+  info:
+    colour       :  #0277BD
+    borderColour :  rgba(2,119,189,0.20)
+    iconBg       :  #BBDEFB
+
+  processing:
+    colour       :  #6A1B9A
+    borderColour :  rgba(106,27,154,0.20)
+    iconBg       :  #E1BEE7
+    Left icon zone: replace emoji with CSS spinner arc 20px [type.colour]
+                    rotating 800ms linear infinite
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3 — AUTH SCREEN TOASTS (Sign Up / Sign In)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ID                       Type      Emoji  Title                        Subtitle
+  ─────────────────────────────────────────────────────────────────────────────────────
+  OTP_SENT                 success   📱     "OTP Sent"                   "Check your SMS — valid for 5 minutes"
+  OTP_RESENT               success   🔁     "New OTP Sent"               "Previous code is now invalid"
+  ACCOUNT_CREATED          success   🎉     "Account Created"            "Welcome to GigCredit!"
+  SIGNIN_SUCCESS           success   ✅     "Signed In"                  "Welcome back!"
+
+  OTP_INCORRECT            error     ❌     "Incorrect OTP"              "The code doesn't match. Try again"
+  OTP_EXPIRED              error     ⏱️     "OTP Expired"                "Request a new one and try again"
+  ACCOUNT_EXISTS           error     👤     "Account Already Exists"     "This number is registered — sign in instead"
+  ACCOUNT_NOT_FOUND        error     🔍     "No Account Found"           "Sign up first to create your account"
+  OTP_SEND_FAILED          error     📵     "Couldn't Send OTP"          "Check your number and try again"
+
+  TOO_MANY_ATTEMPTS        warning   ⚠️     "Too Many Attempts"          "Wait 10 minutes before trying again"
+  RESEND_LIMIT             warning   🔁     "Resend Limit Reached"       "Maximum 3 OTPs allowed per hour"
+
+  SERVER_ERROR             info      🌐     "Something Went Wrong"       "Please try again in a moment"
+  NO_INTERNET              info      📶     "No Internet"                "Check your connection and retry"
+  ─────────────────────────────────────────────────────────────────────────────────────
+
+  Additional UI for ACCOUNT_EXISTS and ACCOUNT_NOT_FOUND:
+    Subtitle includes tappable text link:
+      ACCOUNT_EXISTS    → "Sign In →"  on press navigate /signin
+      ACCOUNT_NOT_FOUND → "Sign Up →"  on press navigate /signup
+    Link: Inter SemiBold 12px  [type.colour]  inline in subtitle
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4 — APPLICATION STEPS TOASTS (Steps 1–4)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PROCESSING (shown instantly when user hits Next/Verify on any step):
+  ID                       Type        Title                        Subtitle
+  ─────────────────────────────────────────────────────────────────────────────
+  STEP_VERIFYING           processing  "Verifying Your Details"     "This takes just a second..."
+  DOC_UPLOADING            processing  "Uploading Document"         "Please don't close the app"
+  DOC_PROCESSING           processing  "Reading Your Document"      "Our AI is extracting the details"
+  ─────────────────────────────────────────────────────────────────────────────
+  These stay until replaced by a result toast.
+
+STEP COMPLETION:
+  ID                       Type      Emoji  Title                        Subtitle
+  ─────────────────────────────────────────────────────────────────────────────
+  STEP1_COMPLETE           success   ✅     "Personal Details Saved"     "Moving to income details"
+  STEP2_COMPLETE           success   ✅     "Income Details Saved"       "Moving to document uploads"
+  STEP3_COMPLETE           success   ✅     "Documents Verified"         "Moving to credit history"
+  STEP4_COMPLETE           success   🎯     "All Details Submitted"      "Checking your eligibility now"
+  ─────────────────────────────────────────────────────────────────────────────
+
+STEP VALIDATION ERRORS (any input in the step fails backend validation):
+  ID                       Type      Emoji  Title                        Subtitle
+  ─────────────────────────────────────────────────────────────────────────────
+  STEP_INPUT_INVALID       error     ❌     "Some Details Need Fixing"   "Check the highlighted fields and try again"
+  AADHAAR_MISMATCH         error     🪪     "Aadhaar Doesn't Match"      "The number and uploaded card don't match"
+  PAN_MISMATCH             error     🗂️     "PAN Details Don't Match"    "Check the number and try uploading again"
+  MOBILE_ALREADY_LINKED    error     📱     "Mobile Already Linked"      "This number is linked to another account"
+  DOB_MISMATCH             error     📅     "Date of Birth Mismatch"     "Doesn't match your Aadhaar records"
+  ─────────────────────────────────────────────────────────────────────────────
+
+DOCUMENT UPLOAD RESULTS:
+  ID                       Type      Emoji  Title                        Subtitle
+  ─────────────────────────────────────────────────────────────────────────────
+  DOC_VERIFIED             success   ✅     "Document Verified"          "Details extracted successfully"
+  DOC_UNREADABLE           error     📷     "Couldn't Read Document"     "Try a clearer photo in good lighting"
+  DOC_WRONG_TYPE           error     📄     "Wrong Document"             "Please upload the correct document type"
+  DOC_EXPIRED              error     📆     "Document Expired"           "Upload a more recent document"
+  DOC_TOO_LARGE            error     📦     "File Too Large"             "Maximum size is 5MB. Try compressing it"
+  DOC_UNSUPPORTED_FORMAT   error     🗃️     "Format Not Supported"       "Upload JPG, PNG or PDF only"
+  DOC_PARTIAL              warning   ⚠️     "Partial Details Read"       "Some info missing — try a clearer photo"
+  ─────────────────────────────────────────────────────────────────────────────
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5 — ON-DEVICE AI / PROCESSING TOASTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Shown during local ML processing — no server involved.
+
+  ID                       Type        Title                        Subtitle
+  ─────────────────────────────────────────────────────────────────────────────
+  AI_SCORE_RUNNING         processing  "Calculating Your Score"     "Analysing your financial signals"
+  AI_SCORE_DONE            success     🏆     "Score Ready"          "Your GigCredit report is updated"
+  AI_SCORE_FAILED          error       🤖     "Scoring Unavailable"  "Try again — your data is saved"
+
+  OCR_RUNNING              processing  "Reading Document"           "Extracting text with AI..."
+  OCR_SUCCESS              success     📋     "Document Read"        "All fields extracted successfully"
+  OCR_LOW_CONFIDENCE       warning     🔍     "Low Confidence Read"  "Please check extracted values before continuing"
+  OCR_FAILED               error       📷     "Couldn't Read Text"   "Try a clearer photo or PDF upload"
+
+  FACE_MATCH_RUNNING       processing  "Verifying Identity"         "Comparing with Aadhaar records"
+  FACE_MATCH_SUCCESS       success     🪪     "Identity Verified"    "Your Aadhaar is confirmed"
+  FACE_MATCH_FAILED        error       🪪     "Identity Check Failed" "Photo doesn't match — try again"
+
+  BANK_PARSE_RUNNING       processing  "Reading Bank Statement"     "Finding income and transactions"
+  BANK_PARSE_SUCCESS       success     🏦     "Statement Analysed"   "Income patterns extracted"
+  BANK_PARSE_FAILED        error       🏦     "Couldn't Read Statement" "Upload a clearer PDF from your bank app"
+  ─────────────────────────────────────────────────────────────────────────────
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 6 — LOAN APPLICATION FLOW TOASTS (Screens 2–7)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ID                       Type      Emoji  Title                        Subtitle
+  ─────────────────────────────────────────────────────────────────────────────
+  KFS_ACKNOWLEDGED         success   ✅     "Terms Confirmed"            "You've accepted the Key Fact Statement"
+  ELIGIBILITY_PASS         success   🎯     "Eligibility Confirmed"      "Sending to our decision engine"
+  ELIGIBILITY_FAIL         error     ❌     "Not Eligible Right Now"     "See the report below to understand why"
+  LOAN_APPROVED            success   🎉     "Loan Approved!"             "Tap below to sign and receive funds"
+  LOAN_DISBURSED           success   🏦     "Funds on the Way"           "₹[amount] will reach your account shortly"
+  LOAN_CANCELLED           info      🚫     "Loan Cancelled"             "No charges applied — cooling-off period used"
+  SIGNATURE_SAVED          success   ✍️     "Signature Captured"         "Tap Confirm to complete your application"
+  DSCR_FAIL                warning   ⚠️     "Income Ratio Concern"       "Your EMI load may be high — check the details"
+  AFFORDABILITY_FAIL       warning   ⚠️     "Loan Amount Adjusted"       "We've suggested a smaller amount that fits"
+  AMOUNT_OUT_OF_RANGE      warning   💰     "Amount Not in Range"        "Adjust to between ₹[min] and ₹[max]"
+  PDF_SAVED                success   📥     "PDF Saved"                  "Your report is in your downloads folder"
+  PDF_FAILED               error     📄     "Couldn't Save PDF"          "Try again or take a screenshot"
+  ─────────────────────────────────────────────────────────────────────────────
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 7 — PROFILE & SESSION TOASTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ID                       Type      Emoji  Title                        Subtitle
+  ─────────────────────────────────────────────────────────────────────────────
+  LOGOUT_SUCCESS           info      👋     "Logged Out"                 "See you next time!"
+  SESSION_EXPIRED          warning   🔒     "Session Expired"            "Please sign in again to continue"
+  PROFILE_UPDATED          success   ✅     "Profile Updated"            "Your changes have been saved"
+  SCORE_REFRESHED          success   📊     "Score Updated"              "Your GigCredit score has been recalculated"
+  ─────────────────────────────────────────────────────────────────────────────
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 8 — GLOBAL NETWORK & SERVER TOASTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+These fire for any API call failure regardless of screen.
+
+  ID                       Type      Emoji  Title                        Subtitle
+  ─────────────────────────────────────────────────────────────────────────────
+  NO_INTERNET              info      📶     "No Internet"                "Check your connection and retry"
+  SERVER_ERROR             info      🌐     "Something Went Wrong"       "Please try again in a moment"
+  REQUEST_TIMEOUT          warning   ⏳     "Request Timed Out"          "Slow connection detected — try again"
+  DATA_SAVE_FAILED         error     💾     "Couldn't Save"              "Your data is safe — please retry"
+  DATA_LOAD_FAILED         error     🔄     "Couldn't Load Data"         "Pull down to refresh"
+  ─────────────────────────────────────────────────────────────────────────────
+
+  Backend error mapping rule:
+    HTTP 400 → map to most relevant specific toast based on endpoint context
+    HTTP 401 → SESSION_EXPIRED
+    HTTP 404 → context-specific (ACCOUNT_NOT_FOUND, etc.)
+    HTTP 409 → ACCOUNT_EXISTS or MOBILE_ALREADY_LINKED
+    HTTP 422 → STEP_INPUT_INVALID
+    HTTP 429 → TOO_MANY_ATTEMPTS
+    HTTP 500 → SERVER_ERROR
+    Network fail → NO_INTERNET or REQUEST_TIMEOUT
+
+  NEVER expose:
+    Raw HTTP status codes in UI
+    Stack traces or error objects
+    Backend field names or API route names
+    Technical error strings
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 9 — IMPLEMENTATION RULES (enforce across entire app)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHEN TO USE INLINE (System 1):
+  ✓  Field is empty on submit
+  ✓  Field has wrong format caught on device
+  ✓  File not selected on submit
+  ✓  Checkbox not ticked on submit
+  ✓  Amount out of allowed range (local range check)
+  ✗  Never for backend responses
+  ✗  Never for processing results
+
+WHEN TO USE TOAST (System 2):
+  ✓  Any API call response (success or error)
+  ✓  Step completion
+  ✓  On-device AI / OCR / processing result
+  ✓  Account state (exists, not found, session)
+  ✓  File upload result
+  ✓  Loan state changes
+  ✓  Network state
+  ✗  Never for empty fields
+  ✗  Never for format errors caught pre-submit
+
+CONFLICT PREVENTION RULES:
+  1. One toast at a time — queue cancels previous
+  2. Inline errors clear as soon as user starts typing
+  3. Processing toast stays until result toast replaces it
+  4. Never show STEP_INPUT_INVALID AND individual field errors together
+     → STEP_INPUT_INVALID fires once, then inline errors handle the specifics
+  5. Empty field toasts are banned — always inline for empty
+  6. Success and error toasts for the same action cannot overlap
+  7. Toast IDs are unique constants — no string duplication across the app
+
+TOAST TRIGGER POINTS — WHERE TO CALL:
+  ┌─────────────────────────────────────────┬──────────────────────────────┐
+  │  Event                                  │  Toast to fire               │
+  ├─────────────────────────────────────────┼──────────────────────────────┤
+  │  User presses Send OTP                  │  processing → OTP_SENT/FAIL  │
+  │  User presses Verify OTP (wrong)        │  OTP_INCORRECT               │
+  │  User presses Verify OTP (expired)      │  OTP_EXPIRED                 │
+  │  Signup — mobile exists                 │  ACCOUNT_EXISTS              │
+  │  Signin — mobile not found              │  ACCOUNT_NOT_FOUND           │
+  │  Signup success                         │  ACCOUNT_CREATED             │
+  │  Signin success                         │  SIGNIN_SUCCESS              │
+  │  Step Next pressed                      │  STEP_VERIFYING              │
+  │  Step verification pass                 │  STEPN_COMPLETE              │
+  │  Step verification fail                 │  STEP_INPUT_INVALID          │
+  │  Upload pressed                         │  DOC_UPLOADING               │
+  │  OCR completes                          │  OCR_SUCCESS/FAILED          │
+  │  Face match completes                   │  FACE_MATCH_SUCCESS/FAILED   │
+  │  Bank parse completes                   │  BANK_PARSE_SUCCESS/FAILED   │
+  │  Aadhaar–Number mismatch from server    │  AADHAAR_MISMATCH            │
+  │  KFS checkbox ticked + Next pressed     │  KFS_ACKNOWLEDGED            │
+  │  Eligibility check completes            │  ELIGIBILITY_PASS/FAIL       │
+  │  AI score engine finishes               │  AI_SCORE_DONE/FAILED        │
+  │  Loan approved                          │  LOAN_APPROVED               │
+  │  Loan disbursed                         │  LOAN_DISBURSED              │
+  │  Loan cancelled                         │  LOAN_CANCELLED              │
+  │  Logout confirmed                       │  LOGOUT_SUCCESS              │
+  │  Session token expired                  │  SESSION_EXPIRED             │
+  │  PDF download completes                 │  PDF_SAVED/FAILED            │
+  │  Score refreshed after doc upload       │  SCORE_REFRESHED             │
+  │  Any network failure                    │  NO_INTERNET/SERVER_ERROR    │
+  └─────────────────────────────────────────┴──────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 10 — TOAST ANIMATION MASTER SPEC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Enter:
+  translateY(-28px → 0)  opacity 0→1
+  420ms  cubic-bezier(0.34,1.56,0.64,1)
+  Scale 0.96→1.0 simultaneously  same duration
+
+Cancel current + enter new:
+  Current exits: translateY(0 → -16px)  opacity 1→0  150ms ease-in
+  New enters immediately after 100ms overlap
+
+Auto-dismiss exit:
+  translateY(0 → -20px)  opacity 1→0  320ms ease-in
+  Unmount at 320ms
+
+Progress bar:
+  width 100%→0  linear  [toast.duration]ms
+  colour: [type.colour] at 35% opacity
+  height 3px  radius 0 0 16px 16px (bottom of card)
+
+Dismiss button tap:
+  Same exit as auto-dismiss but triggers immediately
+
+Swipe-up gesture:
+  Follow finger  →  if release velocity > 300px/s → exit anim fires
+  Otherwise snap back  spring stiffness 400 damping 28
+
+Processing toast icon:
+  Spinner: 20px circle arc  [type.colour]  strokeWidth 2.5
+  Rotating 800ms linear infinite
+  On replacement by result toast: spinner fades 150ms, result icon scales in
+
+Reduce motion:
+  All translateY/scale skipped
+  Toasts appear and disappear instantly
+  Progress bar still runs (timing only, no visual bar)
+  Spinner: opacity pulse 0.4→1.0 instead of rotation

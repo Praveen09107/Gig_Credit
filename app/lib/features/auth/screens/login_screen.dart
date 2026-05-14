@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_typography.dart';
+import '../../../shared/theme/app_spacing.dart';
 import '../../../shared/widgets/inputs/phone_input_field.dart';
 import '../../../shared/widgets/buttons/primary_button.dart';
 import '../../../shared/widgets/status/inline_message_banner.dart';
+import '../../../shared/widgets/feedback/toast_service.dart';
+import '../../../shared/widgets/feedback/toast_types.dart';
 import '../controllers/auth_controller.dart';
-import '../widgets/auth_mode_switcher.dart';
 import '../../../app/app_router.dart';
 
+/// GigCredit Sign In Screen
+/// Green gradient top band → white form card → Send OTP → switch to signup
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -16,14 +22,54 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _mobileController = TextEditingController();
   bool _isMobileValid = false;
   String? _errorMsg;
 
+  late AnimationController _enterController;
+  late Animation<double> _bandFade;
+  late Animation<Offset> _cardSlide;
+  late Animation<double> _cardFade;
+
+  @override
+  void initState() {
+    super.initState();
+    _enterController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+    _bandFade = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _enterController,
+        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+      ),
+    );
+
+    _cardSlide = Tween<Offset>(
+      begin: const Offset(0, 0.12),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _enterController,
+      curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+    ));
+
+    _cardFade = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _enterController,
+        curve: const Interval(0.2, 0.8, curve: Curves.easeOut),
+      ),
+    );
+
+    _enterController.forward();
+  }
+
   @override
   void dispose() {
     _mobileController.dispose();
+    _enterController.dispose();
     super.dispose();
   }
 
@@ -36,22 +82,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _handleLogin() async {
     final mobile = _mobileController.text;
-    final responseStr = await ref.read(authControllerProvider.notifier).sendOtp(mobile);
-    
+    final responseStr =
+        await ref.read(authControllerProvider.notifier).sendOtp(mobile);
+
     // Check if it's a 6-digit OTP (success)
-    if (responseStr != null && RegExp(r'^\d{6}$').hasMatch(responseStr) && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Demo OTP: $responseStr', style: const TextStyle(fontWeight: FontWeight.bold)),
-          backgroundColor: Colors.green.shade800,
-          duration: const Duration(seconds: 10),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    if (responseStr != null &&
+        RegExp(r'^\d{6}$').hasMatch(responseStr) &&
+        mounted) {
+      debugPrint('[GigCredit] OTP Generated: $responseStr');
+
+      // Show premium toast notification
+      globalToastService.showById(ToastId.otpSent);
+
+      // Also show OTP in a subtle way for demo purposes
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Demo OTP: $responseStr',
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            backgroundColor: AppColors.greenPrimary,
+            duration: const Duration(seconds: 8),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
       context.push('${AppRoutes.otp}?mobile=$mobile&isSignup=false');
     } else {
+      // Show error toast based on response
+      final errorMsg = responseStr ?? 'Failed to send OTP';
+      if (errorMsg.contains('not found') || errorMsg.contains('No account')) {
+        globalToastService.showById(ToastId.accountNotFound);
+      } else if (errorMsg.contains('too many') || errorMsg.contains('limit')) {
+        globalToastService.showById(ToastId.tooManyAttempts);
+      } else {
+        globalToastService.showById(ToastId.otpSendFailed);
+      }
       setState(() {
-        _errorMsg = responseStr ?? 'Failed to send OTP. Please try again.';
+        _errorMsg = errorMsg;
       });
     }
   }
@@ -59,58 +126,208 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final isLoading = ref.watch(authControllerProvider);
+    final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight - 48),
-                child: IntrinsicHeight(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 40),
-                      // Header
-                      Text('Welcome back', style: AppTypography.displayMedium),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Enter your mobile number to access your credit profile',
-                        style: AppTypography.bodyMedium,
-                      ),
-                      const SizedBox(height: 40),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppColors.greenPrimary,
+              AppColors.greenMid,
+              Color(0xFFE8F5E9),
+              AppColors.bgScreen,
+            ],
+            stops: [0.0, 0.25, 0.45, 0.65],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: screenHeight -
+                    MediaQuery.of(context).padding.top -
+                    MediaQuery.of(context).padding.bottom,
+              ),
+              child: Column(
+                children: [
+                  // ── Brand Band ─────────────────────────────────────
+                  FadeTransition(
+                    opacity: _bandFade,
+                    child: _buildBrandBand(),
+                  ),
 
-                      // Form
-                      if (_errorMsg != null) ...[
-                        InlineMessageBanner(message: _errorMsg!),
-                        const SizedBox(height: 16),
-                      ],
-                      
-                      PhoneInputField(
-                        controller: _mobileController,
-                        onChanged: _validate,
-                      ),
-                      const SizedBox(height: 32),
-                      
-                      PrimaryButton(
-                        label: 'Send OTP',
-                        isLoading: isLoading,
-                        isDisabled: !_isMobileValid,
-                        onPressed: _handleLogin,
-                      ),
-                      
-                      const Spacer(),
-                      const AuthModeSwitcher(isLogin: true),
-                      const SizedBox(height: 16),
-                    ],
+                  // ── Form Card ──────────────────────────────────────
+                  SlideTransition(
+                    position: _cardSlide,
+                    child: FadeTransition(
+                      opacity: _cardFade,
+                      child: _buildFormCard(isLoading),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBrandBand() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 48, bottom: 32),
+      child: Column(
+        children: [
+          // App icon
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.28),
+                width: 2,
+              ),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              'G',
+              style: AppTypography.displayLarge.copyWith(
+                color: Colors.white,
+                fontSize: 36,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'GigCredit',
+            style: AppTypography.displayMedium.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Welcome back',
+            style: AppTypography.bodyMedium.copyWith(
+              color: Colors.white.withValues(alpha: 0.80),
+              fontSize: 15,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormCard(bool isLoading) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
+      decoration: BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 32,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Title
+          Text(
+            'Sign In',
+            style: AppTypography.headlineLarge.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Enter your mobile number to continue',
+            style: AppTypography.bodyMedium.copyWith(fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 28),
+
+          // Error banner
+          if (_errorMsg != null) ...[
+            InlineMessageBanner(message: _errorMsg!),
+            const SizedBox(height: 16),
+          ],
+
+          // Phone input
+          PhoneInputField(
+            controller: _mobileController,
+            onChanged: _validate,
+          ),
+
+          const SizedBox(height: 28),
+
+          // Send OTP
+          PrimaryButton(
+            label: 'SEND OTP',
+            isLoading: isLoading,
+            isDisabled: !_isMobileValid,
+            onPressed: _handleLogin,
+            suffixIcon: const Icon(Icons.arrow_forward_rounded,
+                color: Colors.white, size: 18),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Divider
+          Row(
+            children: [
+              Expanded(child: Divider(color: AppColors.borderCard)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'OR',
+                  style: AppTypography.caption.copyWith(fontSize: 12),
+                ),
+              ),
+              Expanded(child: Divider(color: AppColors.borderCard)),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Switch to signup
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                "Don't have an account?  ",
+                style: AppTypography.bodyMedium.copyWith(fontSize: 14),
+              ),
+              GestureDetector(
+                onTap: () => context.go(AppRoutes.signup),
+                child: Text(
+                  'Sign Up',
+                  style: AppTypography.labelLarge.copyWith(
+                    color: AppColors.greenPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
                   ),
                 ),
               ),
-            );
-          },
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }

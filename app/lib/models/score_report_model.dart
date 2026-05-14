@@ -54,12 +54,12 @@ class ScoreReportModel {
   });
 
   factory ScoreReportModel.fromJson(Map<String, dynamic> json) => ScoreReportModel(
-    finalScore: json['finalScore'] as int,
-    grade: json['grade'] as String,
-    riskBand: json['riskBand'] as String,
-    proofId: json['proofId'] as String,
-    generatedAt: DateTime.parse(json['generatedAt'] as String),
-    overallConfidence: (json['overallConfidence'] as num).toDouble(),
+    finalScore: json['finalScore'] as int? ?? 0,
+    grade: json['grade'] as String? ?? 'C',
+    riskBand: json['riskBand'] as String? ?? 'Unknown',
+    proofId: json['proofId'] as String? ?? 'N/A',
+    generatedAt: json['generatedAt'] != null ? DateTime.parse(json['generatedAt'] as String) : DateTime.now(),
+    overallConfidence: (json['overallConfidence'] as num?)?.toDouble() ?? 0.0,
     probability: (json['probability'] as num?)?.toDouble() ?? 0.0,
     workType: json['workType'] as String? ?? 'unknown',
     computeTimeMs: json['computeTimeMs'] as int? ?? 0,
@@ -67,11 +67,12 @@ class ScoreReportModel {
     peerCohort: json['peerCohort'] as String?,
     efs: json['efs'] as String?,
     deltaShap: json['deltaShap'] as String?,
-    pillars: (json['pillars'] as List).map((e) => ScorePillarModel.fromJson(e)).toList(),
+    pillars: (json['pillars'] as List?)?.map((e) => ScorePillarModel.fromJson(e)).toList() ?? [],
     pillarContributions: Map<String, int>.from(json['pillarContributions'] ?? {}),
-    topStrengths: (json['topStrengths'] as List).map((e) => ShapFactorModel.fromJson(e)).toList(),
-    topConcerns: (json['topConcerns'] as List).map((e) => ShapFactorModel.fromJson(e)).toList(),
-    tailoredSuggestions: List<String>.from(json['tailoredSuggestions']),
+    topStrengths: (json['topStrengths'] as List?)?.map((e) => ShapFactorModel.fromJson(e)).toList() ?? [],
+    topConcerns: (json['topConcerns'] as List?)?.map((e) => ShapFactorModel.fromJson(e)).toList() ?? [],
+    tailoredSuggestions: List<String>.from(json['tailoredSuggestions'] ?? []),
+    causalChains: (json['causalChains'] as List?)?.map((e) => CausalRule.fromJson(e)).toList() ?? [],
   );
 
   Map<String, dynamic> toJson() => {
@@ -81,10 +82,18 @@ class ScoreReportModel {
     'proofId': proofId,
     'generatedAt': generatedAt.toIso8601String(),
     'overallConfidence': overallConfidence,
+    'probability': probability,
+    'workType': workType,
+    'computeTimeMs': computeTimeMs,
     'llmExplanation': llmExplanation,
+    'peerCohort': peerCohort,
+    'efs': efs,
+    'deltaShap': deltaShap,
     'pillars': pillars.map((e) => e.toJson()).toList(),
+    'pillarContributions': pillarContributions,
     'topStrengths': topStrengths.map((e) => e.toJson()).toList(),
     'topConcerns': topConcerns.map((e) => e.toJson()).toList(),
     'tailoredSuggestions': tailoredSuggestions,
+    'causalChains': causalChains.map((e) => e.toJson()).toList(),
   };
 }

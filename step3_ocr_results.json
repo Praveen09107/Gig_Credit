@@ -1,0 +1,210 @@
+{
+  "results": [
+    {
+      "Type-1 (Canara/RAHUL)": {
+        "extraction": {
+          "status": "PARTIAL_EXTRACTION",
+          "doc_type": "bank_statement",
+          "confidence": 1.0,
+          "file": "Bank Statement - 2.pdf",
+          "quality": {
+            "passed": true,
+            "page_count": 25,
+            "file_size_kb": 955.8
+          },
+          "fields": {
+            "account_number": "4023600012015",
+            "bank_name": "CANARA BANK",
+            "ifsc_code": "CNRB0001399",
+            "statement_from": "05/07/2022",
+            "statement_to": "30-09-2022",
+            "statement_months": 1
+          },
+          "warnings": [
+            "account_holder_name_not_found",
+            "period_inferred",
+            "avg_monthly_income_not_computable"
+          ],
+          "lines_extracted": 1937
+        },
+        "temp_storage": {
+          "step": "step_3",
+          "doc_type": "bank_statement",
+          "verified": true,
+          "timestamp": "2026-05-02T18:42:43.249314",
+          "data": {
+            "account_number": "4023600012015",
+            "bank_name": "CANARA BANK",
+            "ifsc_code": "CNRB0001399",
+            "statement_from": "05/07/2022",
+            "statement_to": "30-09-2022",
+            "statement_months": 1
+          },
+          "warnings": [
+            "account_holder_name_not_found",
+            "period_inferred",
+            "avg_monthly_income_not_computable"
+          ]
+        }
+      }
+    },
+    {
+      "Type-2 (FSFB/AMJAD)": {
+        "extraction": {
+          "status": "ACCEPTED",
+          "doc_type": "bank_statement",
+          "confidence": 0.95,
+          "file": "Bank Statement -1.pdf",
+          "quality": {
+            "passed": true,
+            "page_count": 35,
+            "file_size_kb": 116.1
+          },
+          "fields": {
+            "account_number": "19100012744648",
+            "bank_name": "FSFB",
+            "ifsc_code": "FSFB0000001",
+            "statement_from": "10/12/2023",
+            "statement_to": "09/06/2024",
+            "total_credits": 14670.0,
+            "credit_count": 37,
+            "total_debits": 500.0,
+            "debit_count": 1,
+            "avg_monthly_credit": 2934.0,
+            "monthly_credit_months": 5,
+            "income_stability_cv": 0.7948,
+            "income_growth_slope": 16.5192,
+            "avg_monthly_debit": 500.0,
+            "income_expense_ratio": 5.856,
+            "statement_months": 5,
+            "avg_monthly_income_norm": 0.0147
+          },
+          "warnings": [
+            "account_holder_name_not_found",
+            "period_inferred"
+          ],
+          "lines_extracted": 4457
+        },
+        "temp_storage": {
+          "step": "step_3",
+          "doc_type": "bank_statement",
+          "verified": true,
+          "timestamp": "2026-05-02T18:42:43.353484",
+          "data": {
+            "account_number": "19100012744648",
+            "bank_name": "FSFB",
+            "ifsc_code": "FSFB0000001",
+            "statement_from": "10/12/2023",
+            "statement_to": "09/06/2024",
+            "total_credits": 14670.0,
+            "credit_count": 37,
+            "total_debits": 500.0,
+            "debit_count": 1,
+            "avg_monthly_credit": 2934.0,
+            "monthly_credit_months": 5,
+            "income_stability_cv": 0.7948,
+            "income_growth_slope": 16.5192,
+            "avg_monthly_debit": 500.0,
+            "income_expense_ratio": 5.856,
+            "statement_months": 5,
+            "avg_monthly_income_norm": 0.0147
+          },
+          "warnings": [
+            "account_holder_name_not_found",
+            "period_inferred"
+          ]
+        }
+      }
+    },
+    {
+      "Type-3 (Axis/PRAVEEN)": {
+        "extraction": {
+          "status": "ACCEPTED",
+          "doc_type": "bank_statement",
+          "confidence": 0.95,
+          "file": "Bank Statement - 3.pdf",
+          "quality": {
+            "passed": true,
+            "page_count": 12,
+            "file_size_kb": 45.0
+          },
+          "fields": {
+            "account_holder_name": "PRAVEEN KUMAR P",
+            "account_number": "924010058793901",
+            "bank_name": "CANARA BANK",
+            "ifsc_code": "UTIB0000345",
+            "statement_from": "19-09-2025",
+            "statement_to": "19-03-2026",
+            "opening_balance": 22.93,
+            "closing_balance": 144.0,
+            "total_credits": 21749.0,
+            "credit_count": 112,
+            "avg_monthly_credit": 3624.83,
+            "monthly_credit_months": 6,
+            "income_stability_cv": 0.6606,
+            "income_growth_slope": 5.4311,
+            "statement_months": 6,
+            "avg_monthly_income_norm": 0.0181
+          },
+          "warnings": [],
+          "lines_extracted": 2467
+        },
+        "temp_storage": {
+          "step": "step_3",
+          "doc_type": "bank_statement",
+          "verified": true,
+          "timestamp": "2026-05-02T18:42:43.404465",
+          "data": {
+            "account_holder_name": "PRAVEEN KUMAR P",
+            "account_number": "924010058793901",
+            "bank_name": "CANARA BANK",
+            "ifsc_code": "UTIB0000345",
+            "statement_from": "19-09-2025",
+            "statement_to": "19-03-2026",
+            "opening_balance": 22.93,
+            "closing_balance": 144.0,
+            "total_credits": 21749.0,
+            "credit_count": 112,
+            "avg_monthly_credit": 3624.83,
+            "monthly_credit_months": 6,
+            "income_stability_cv": 0.6606,
+            "income_growth_slope": 5.4311,
+            "statement_months": 6,
+            "avg_monthly_income_norm": 0.0181
+          },
+          "warnings": []
+        }
+      }
+    }
+  ],
+  "step3_profile": {
+    "step": "step_3",
+    "completed_at": "2026-05-02T18:42:43.404465",
+    "bank_verified": true,
+    "ml_features": {
+      "avg_monthly_income_norm": 0.0181,
+      "income_stability_cv": 0.6606,
+      "income_growth_slope": 5.4311,
+      "income_expense_ratio": null,
+      "statement_months": 6
+    },
+    "extracted_data": {
+      "account_holder_name": "PRAVEEN KUMAR P",
+      "account_number": "924010058793901",
+      "bank_name": "CANARA BANK",
+      "ifsc_code": "UTIB0000345",
+      "statement_from": "19-09-2025",
+      "statement_to": "19-03-2026",
+      "opening_balance": 22.93,
+      "closing_balance": 144.0,
+      "total_credits": 21749.0,
+      "credit_count": 112,
+      "avg_monthly_credit": 3624.83,
+      "monthly_credit_months": 6,
+      "income_stability_cv": 0.6606,
+      "income_growth_slope": 5.4311,
+      "statement_months": 6,
+      "avg_monthly_income_norm": 0.0181
+    }
+  }
+}

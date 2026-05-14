@@ -1,0 +1,527 @@
+████████████████████████████████████████████████████████████████████████████████
+██                                                                            ██
+██   GIGCREDIT — GLOBAL SPINNER & LOADING SYSTEM  FRONTEND PROMPT           ██
+██   Context-aware animated loaders · App-themed · Zero generic spinners    ██
+██   Every loading state has its own personality                            ██
+██                                                                            ██
+████████████████████████████████████████████████████████████████████████████████
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CORE RULE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NO generic circle spinners anywhere in the app.
+Every loading state has a context-specific animated loader that
+tells the user exactly what is happening — visually, not just with text.
+
+All loaders follow the GigCredit theme:
+  Primary   :  #1A6B3C  #2D8653  #3CC068
+  Accent    :  #A8F0C6  #D4EDDA
+  Dark text :  #0D1F15
+  Font      :  Inter family
+
+Three loader levels:
+  LEVEL 1 — INLINE MICRO  : inside a button or small zone  (20–36px)
+  LEVEL 2 — CARD LOADER   : replaces a card or section     (120–160px zone)
+  LEVEL 3 — FULL SCREEN   : blocks entire screen           (full viewport)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1 — LEVEL 1: INLINE BUTTON LOADERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Used inside CTA buttons when an action is processing.
+Button text hides, loader takes its place.
+
+LOADER 1A — COIN STACK PULSE (payment / submit actions)
+  Used when : Send OTP, Verify, Submit Step, Apply Now
+  Size      : 28px wide
+
+  Animation:
+    3 small circles stacked horizontally  gap 5px
+    Each circle: 8px  bg #FFFFFF  radius 999px
+    Wave bounce: circle 1 translateY(0→-8px→0) 400ms
+                 circle 2 same delay 120ms
+                 circle 3 same delay 240ms
+    Loop infinite  ease-in-out
+    Looks like coins bouncing on a surface
+
+  Colours on green button: circles #FFFFFF
+  Colours on white button: circles #1A6B3C
+
+─────────────────────────────────────────────────────────────────────────────
+
+LOADER 1B — RUNNING DOTS TRAIL (navigation / page move)
+  Used when : Continue, Sign In, Sign Up, Next Step buttons
+  Size      : 36px wide
+
+  Animation:
+    4 dots in a row  gap 4px
+    Each dot: 6px circle
+    Colour sequence: #A8F0C6 → #3CC068 → #2D8653 → #1A6B3C
+    Slide-in from left: dots appear one by one from left edge
+    After all 4 appear → all fade out → loop
+    Duration per dot: 180ms  stagger 100ms
+    Gives feeling of "moving forward on a path"
+
+─────────────────────────────────────────────────────────────────────────────
+
+LOADER 1C — DOCUMENT SCAN LINE (upload / OCR actions)
+  Used when : Upload button, Verify Document, Scan button
+  Size      : 28 × 20px
+
+  Animation:
+    Rectangle outline: 28×20px  radius 4px  border 1.5px #FFFFFF
+    Inside: horizontal scan line 1.5px #A8F0C6
+    Line moves: translateY(top→bottom→top)  1.2s ease-in-out infinite
+    Line glows: box-shadow 0 0 4px #A8F0C6  pulses with position
+    Looks like a document scanner in action
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2 — LEVEL 2: CARD / SECTION LOADERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Shown inside a card or section while data loads.
+Card shell remains visible — only content area replaced with loader.
+
+LOADER 2A — GROWING SEEDLING (score / report loading)
+  Used when : Credit score card loading, Report section loading
+  Zone      : centred inside card  120 × 120px
+
+  Animation breakdown (CSS / SVG / Lottie-style):
+
+    GROUND BAR:
+      Rectangle 80px wide × 4px  radius 999px  bg #D4EDDA
+      Centred bottom of zone
+
+    STEM:
+      Rectangle 3px wide  bg #1A6B3C  radius 999px
+      Grows from 0px → 48px height  upward  800ms ease[0.34,1.56,0.64,1]
+      Starts at ground bar centre
+
+    LEAF LEFT:
+      Ellipse 18×10px  bg #3CC068  radius 50%
+      Rotates from stem at -40°
+      Scale 0→1  400ms ease  delay 700ms
+      Origin: right-centre of ellipse (attaches to stem)
+
+    LEAF RIGHT:
+      Ellipse 18×10px  bg #2D8653
+      Rotates +40° from stem
+      Scale 0→1  400ms ease  delay 900ms
+
+    SMALL LEAVES (top):
+      2 tiny 10×6px ellipses at stem top
+      Scale 0→1  300ms  delay 1100ms
+
+    After full growth (1.4s):
+      Entire plant does gentle sway:
+        rotate -3deg → 3deg → -3deg  2s ease-in-out infinite
+      Stem glow: box-shadow 0 0 8px rgba(60,192,104,0.40) pulses
+
+    LABEL below animation:
+      "Building your profile..."  Inter Regular  13px  #4A6B57
+      Dots trail after: ". . ."  each dot fades in/out stagger 300ms
+
+─────────────────────────────────────────────────────────────────────────────
+
+LOADER 2B — FILING PAPERS (document verification loading)
+  Used when : Document review, OCR processing, Aadhaar/PAN check
+  Zone      : centred  140 × 120px
+
+  Animation breakdown:
+
+    STACK BASE:
+      3 rectangles (papers) stacked  each 80×60px  radius 8px
+      Papers 2 & 3 slightly rotated: +3° and -2°  bg #E2EDE7
+      Top paper: bg #FFFFFF  border 1px #E2EDE7
+
+    MAGNIFYING GLASS:
+      Circle 28px  border 3px #1A6B3C  no fill
+      Handle: line 16px  stroke 3px  #1A6B3C  45° angle
+
+      Movement: glass orbits slowly over the top paper
+        Path: ellipse across paper surface
+        Duration: 2s linear infinite
+        At each corner: brief pause 200ms
+
+    SCAN HIGHLIGHT on paper:
+      Small rectangle 30×4px  bg rgba(60,192,104,0.25)
+      Follows glass position  blur 2px
+      Moves with glass across paper
+
+    TICK MARK (appears after 2 full orbits):
+      ✓ drawn on paper  stroke #1A6B3C  strokeWidth 2.5
+      Draw animation: path strokeDashoffset 100%→0  400ms ease
+
+    LABEL:
+      "Checking your documents..."  Inter Regular  13px  #4A6B57
+
+─────────────────────────────────────────────────────────────────────────────
+
+LOADER 2C — RUPEE COIN ROLLING (financial calculation)
+  Used when : Loan eligibility check, Score calculation, DSCR check
+  Zone      : centred  140 × 80px
+
+  Animation breakdown:
+
+    ROAD:
+      Horizontal line 120px  1.5px  bg #E2EDE7  centred bottom
+      Dashed segments on road: 4 small marks  #D4EDDA  spaced evenly
+
+    COIN:
+      Circle 32×32px  bg linear-gradient(135deg, #1A6B3C, #3CC068)
+      box-shadow 0 4px 10px rgba(26,107,60,0.30)
+      Inside: "₹"  Inter Black  14px  #FFFFFF
+
+      Roll animation:
+        translateX: -60px → +60px  1.6s ease-in-out
+        rotate: 0→360deg simultaneously  1.6s linear
+        At +60px: ease-out  coin slows → bounces once
+        translateY: at end -4px→0  200ms  (small bounce on landing)
+        Then reverse: rolls back left  same timing
+        Loop infinite  alternates direction
+
+    SHADOW under coin:
+      Ellipse 32×6px  rgba(0,0,0,0.12)  below coin
+      Scales with coin height: when coin bounces up shadow shrinks
+
+    LABEL:
+      "Calculating your eligibility..."  Inter Regular  13px  #4A6B57
+
+─────────────────────────────────────────────────────────────────────────────
+
+LOADER 2D — SIGNAL BARS PULSING (network / data fetch)
+  Used when : Loading schemes, Loading guidelines, Fetching user data
+  Zone      : centred  80 × 60px
+
+  Animation breakdown:
+
+    4 bars side by side  gap 6px  aligned to bottom
+    Heights: 16px  24px  32px  24px  (wave shape)
+    bg: #1A6B3C  radius 3px 3px 0 0  width 10px each
+
+    Each bar pulses height independently:
+      Bar 1: 16px→28px→16px  1s ease-in-out infinite
+      Bar 2: 24px→36px→24px  delay 150ms
+      Bar 3: 32px→44px→32px  delay 300ms
+      Bar 4: 24px→36px→24px  delay 450ms
+
+    Colour during peak: #3CC068
+    Colour at rest    : #1A6B3C
+    Transition        : 200ms ease
+
+    LABEL:
+      "Loading..."  Inter Regular  13px  #4A6B57
+
+─────────────────────────────────────────────────────────────────────────────
+
+LOADER 2E — SKELETON SHIMMER (list / card content loading)
+  Used when : Home cards loading, Scheme list loading, Step list loading
+  Zone      : full card width
+
+  Animation:
+
+    Skeleton placeholders mimic actual content layout:
+      Title row    : rounded rect  120px × 16px  bg #F0F4F8
+      Subtitle row : rounded rect  80px × 12px   bg #F0F4F8  margin-top 8px
+      Icon circle  : 40×40px circle  bg #F0F4F8
+      Button bar   : full width 48px  radius 12px  bg #F0F4F8
+
+    Shimmer effect on all skeleton elements:
+      Gradient sweeps left→right  repeating
+      gradient: linear-gradient(90deg,
+        #F0F4F8 0%,
+        #E2EDE7 40%,
+        #F0F4F8 80%)
+      backgroundSize: 200% 100%
+      backgroundPosition: -200%→200%  1.4s ease-in-out infinite
+
+    No label — skeletons are self-explanatory
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3 — LEVEL 3: FULL SCREEN LOADERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Full screen overlay. Blocks all interaction.
+Used for heavy operations where nothing can be done in background.
+
+LAYOUT:
+  Position    :  fixed  full screen  z-index 400
+  bg          :  rgba(13,31,21,0.88)
+  backdrop-filter: blur(6px)
+  layout      :  column  align-center  justify-center  gap 24px
+
+Enter anim    :  opacity 0→1  250ms ease
+Exit anim     :  opacity 1→0  300ms ease  then unmount
+
+─────────────────────────────────────────────────────────────────────────────
+LOADER 3A — GIG WORKER ON A BIKE (page navigation / screen transition)
+─────────────────────────────────────────────────────────────────────────────
+
+  Used when : Navigating between major screens (Home → Apply, Step → Step)
+
+  Zone      : 200 × 120px  centred
+
+  ROAD:
+    Full width line  2px  rgba(255,255,255,0.20)  centred bottom
+    Dashed segments scroll: dashes translateX right→left continuously
+      speed 1.2s linear infinite  giving illusion of moving road
+
+  RIDER:
+    Simplified 2-icon rider on bike  (SVG, ~40px)
+    Bike wheels: 2 circles 12px each  border 2px #3CC068  no fill
+    Wheel rotation: rotate 0→360  0.6s linear infinite
+    Body: simple rectangle 20×14px  #1A6B3C  radius 4px
+    Head: circle 10px  #A8F0C6
+    Bag (delivery bag): small square 10px behind body  #2D8653
+
+    Rider bobs slightly: translateY 0→-3px→0  0.6s ease-in-out infinite
+    (in sync with wheel rotation)
+
+    Speed lines behind rider:
+      3 short horizontal lines  14px 10px 6px  rgba(168,240,198,0.40)
+      translateX right→fade  0.4s ease-out infinite  stagger 100ms
+
+  LABEL below:
+    Dynamic text — changes based on context:
+      Page transition   :  "On the way..."
+      Step navigation   :  "Moving to next step..."
+      Login             :  "Signing you in..."
+      Signup            :  "Creating your account..."
+
+    Font: Inter SemiBold  15px  #FFFFFF
+    Below label: dots trail  same as LOADER 1B  colour #A8F0C6
+
+─────────────────────────────────────────────────────────────────────────────
+LOADER 3B — DOCUMENT FLYING INTO VAULT (submit / final apply)
+─────────────────────────────────────────────────────────────────────────────
+
+  Used when : Final application submit, Creating account, Loan submit
+
+  Zone      : 180 × 160px  centred
+
+  VAULT DOOR (right side of zone):
+    Circle 56px  border 3px #3CC068  bg rgba(60,192,104,0.10)
+    Inside: 🔒 emoji  24px  centred
+    Vault pulses glow: box-shadow 0 0 0px → 0 0 16px rgba(60,192,104,0.50)
+      1.6s ease-in-out infinite
+
+  DOCUMENT (left side, animates to vault):
+    Rectangle 44×56px  bg #FFFFFF  radius 6px  border 1px #E2EDE7
+    3 text lines inside (just grey bars)  simulating content
+
+    Launch animation (triggers on appear):
+      Start: left side  scale 1.0
+      Arc path to vault:  translateX +100px  translateY -20px→+20px
+      Simultaneously: rotate 0→15deg  scale 1.0→0.6
+      Duration: 800ms  ease[0.22,1,0.36,1]
+
+    At vault: document disappears (scale 0  opacity 0  100ms)
+    Vault lock flashes: border flashes #A8F0C6→#3CC068  200ms
+    Tick mark draws inside vault circle after each document received
+
+    Loop: new document appears from left, arcs to vault  every 1.2s
+
+  LABEL:
+    "Submitting your application..."
+    Font: Inter SemiBold  15px  #FFFFFF
+
+─────────────────────────────────────────────────────────────────────────────
+LOADER 3C — BRAIN PULSE WITH GRAPH (AI score calculation)
+─────────────────────────────────────────────────────────────────────────────
+
+  Used when : AI credit scoring running, On-device model inference
+
+  Zone      : 200 × 180px  centred
+
+  BRAIN ICON:
+    🧠 emoji  48px  centred top of zone
+    Pulse: scale 1.0→1.10→1.0  1s ease-in-out infinite
+    Glow: filter drop-shadow(0 0 8px rgba(60,192,104,0.60)) oscillates
+
+  PULSE RINGS:
+    3 concentric rings expand from brain centre
+    Each ring: circle outline  rgba(60,192,104,0.30/0.20/0.10)
+    Scale 0.4→1.4  opacity 0.6→0  1.8s ease-out infinite
+    Stagger: 600ms per ring
+
+  MINI GRAPH below brain:
+    5 bars  width 12px each  gap 6px  height varies
+    Heights animate independently (random-ish pattern):
+      Each bar: height cycles through 3 values  800ms stagger 80ms
+    Colours: bars fill from #A8F0C6 → #1A6B3C (active bar is brightest)
+    Active bar indicator: small dot on top  #3CC068  8px
+
+  SCORE COUNTER (below graph):
+    Numbers tick up: "0 → [final score]"  but BLURRED until complete
+    Filter blur(4px)  while processing
+    On complete → blur resolves  200ms
+    Font: Inter Black  32px  #FFFFFF
+
+  PILLAR LABELS (tiny, below counter):
+    "Income  ·  Spending  ·  Assets  ·  Bills"
+    Font: Inter Regular  10px  rgba(255,255,255,0.50)
+
+  LABEL:
+    "Our AI is reading your financial story..."
+    Font: Inter Regular  14px  rgba(255,255,255,0.80)  centred  max-width 220px
+    line-height 1.6
+
+─────────────────────────────────────────────────────────────────────────────
+LOADER 3D — APP LAUNCH SPLASH SCREEN (initial app open)
+─────────────────────────────────────────────────────────────────────────────
+
+  Used when : First open / cold start of app
+
+  Full screen bg: linear-gradient(160deg, #1A6B3C 0%, #2D8653 60%, #3CC068 100%)
+
+  CONTENT (centred column):
+
+    APP ICON:
+      80×80px  rounded square  radius 22px
+      bg: rgba(255,255,255,0.18)
+      border: 2px solid rgba(255,255,255,0.30)
+      "G"  Inter Black  40px  #FFFFFF
+      On appear: scale 0→1.1→1.0  spring  600ms
+
+    APP NAME:
+      "GigCredit"
+      Inter Black  30px  #FFFFFF  letter-spacing -0.5px
+      On appear: opacity 0→1  translateY(12px→0)  400ms  delay 300ms
+
+    TAGLINE:
+      "Credit for every worker"
+      Inter Regular  14px  rgba(255,255,255,0.70)
+      On appear: opacity 0→1  delay 500ms
+
+    LOADING BAR:
+      Width 160px  height 3px  radius 999px  margin-top 40px
+      bg track: rgba(255,255,255,0.20)
+
+      Fill bar:
+        bg: #A8F0C6
+        width 0%→100%  1.8s ease-in-out
+        After 100%: screen fades out  opacity 1→0  400ms
+        Then navigate to /home or /signin
+
+      Glow on fill: box-shadow 0 0 6px rgba(168,240,198,0.60)
+
+  Background decorations:
+    Same circles as Hero bands: faint, non-interactive
+    Slow rotate: rotate 0→360  30s linear infinite
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4 — CONTEXT → LOADER MAPPING TABLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CONTEXT                                    LOADER TO USE
+  ─────────────────────────────────────────────────────────────────────────
+  App cold start / splash                  →  3D  (full screen splash)
+  Sign In / Sign Up button press           →  1A  (coin pulse in button)
+                                              + 3A (bike) if nav happens
+  Send OTP / Resend OTP button             →  1A  (coin pulse in button)
+  OTP verification processing             →  1A  (in verify button)
+  Step 1–4 Next / Verify button            →  1A  (in button)
+                                              + 2B (filing papers in card)
+  Any document upload button               →  1C  (scan line in button)
+                                              + 2B (filing papers in section)
+  OCR / document AI reading                →  2B  (filing papers in card)
+  Bank statement parsing                   →  2B  (filing papers in card)
+  AI credit score calculation              →  3C  (full screen brain pulse)
+  Page navigate (major screen change)      →  3A  (full screen bike rider)
+  Step-to-step navigation                  →  3A  (full screen bike rider)
+  Loan eligibility check                   →  2C  (coin rolling in card)
+                                              + 3C if takes > 3 seconds
+  Final application submit                 →  3B  (full screen vault)
+  Loading schemes list                     →  2E  (skeleton shimmer)
+  Loading home cards                       →  2E  (skeleton shimmer)
+  Loading guidelines                       →  2E  (skeleton shimmer)
+  Loading credit score card                →  2A  (growing seedling)
+  Loading report section                   →  2A  (growing seedling)
+  Any data fetch (generic)                 →  2D  (signal bars)
+  Network retry in progress                →  2D  (signal bars)
+  ─────────────────────────────────────────────────────────────────────────
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5 — LOADER DURATION & TIMEOUT RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  LOADER             MIN SHOW   TIMEOUT   ON TIMEOUT ACTION
+  ─────────────────────────────────────────────────────────────────────────
+  1A (button)        300ms      10s       reset button + toast SERVER_ERROR
+  1B (button)        300ms      10s       same
+  1C (button)        300ms      15s       same
+  2A (card)          500ms      15s       show retry button in card
+  2B (card)          500ms      15s       show retry button in card
+  2C (card)          500ms      20s       show retry button in card
+  2D (card)          300ms      10s       show retry button
+  2E (skeleton)      400ms      10s       show error state in skeleton zone
+  3A (full screen)   600ms      8s        dismiss + toast SERVER_ERROR
+  3B (full screen)   800ms      20s       dismiss + toast DATA_SAVE_FAILED
+  3C (full screen)   1000ms     30s       dismiss + toast AI_SCORE_FAILED
+  3D (splash)        2000ms     —         always auto-dismisses after bar fills
+  ─────────────────────────────────────────────────────────────────────────
+
+  MIN SHOW rule: loader stays visible for at least min-show ms
+  even if the response arrives faster.
+  Prevents jarring flash if API is instant.
+  Minimum show achieved with: Promise.all([apiCall, delay(minShow)])
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 6 — SUCCESS TRANSITION FROM LOADER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+When any loader completes successfully:
+
+  BUTTON LOADERS (1A / 1B / 1C):
+    Loader fades out  150ms
+    ✓ icon draws in button:
+      Circle 20px  bg #FFFFFF  centred
+      ✓ stroke #1A6B3C  strokeDashoffset 100%→0  300ms
+    Button stays in success state 600ms
+    Then navigate or continue
+
+  CARD LOADERS (2A / 2B / 2C / 2D):
+    Loader fades out  200ms
+    Card content fades in  300ms  translateY(8px→0)
+    No success icon — content is the confirmation
+
+  SKELETON (2E):
+    Shimmer stops  shimmer opacity 1→0  200ms
+    Real content fades in over skeleton  opacity 0→1  300ms  translateY(4px→0)
+
+  FULL SCREEN LOADERS (3A / 3B / 3C):
+    Overlay fades out  300ms ease-in
+    New screen slides in simultaneously (no blank gap)
+    For 3B: vault flashes bright  rgba(60,192,104,0.30)  200ms before exit
+    For 3C: score number de-blurs + scale 1.0→1.05→1.0  spring before exit
+
+  SPLASH (3D):
+    Bar fills to 100%  glow pulses once
+    Entire screen: opacity 1→0  fade  400ms
+    New screen (home/signin) fades in  simultaneously
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 7 — REDUCE MOTION FALLBACKS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  prefers-reduced-motion: reduce
+
+  1A  →  3 static dots with opacity pulse only (no translateY)
+  1B  →  single dot opacity pulse  no translateX
+  1C  →  static rectangle with opacity pulse  no scan line movement
+  2A  →  plant appears fully grown instantly  gentle opacity pulse only
+  2B  →  static magnifying glass icon  opacity pulse on document
+  2C  →  static coin  bar fills left→right  no rotation
+  2D  →  bars static  opacity 0.4→1.0 pulse  no height change
+  2E  →  shimmer replaced with static  bg: #F0F4F8  opacity pulse 0.6→1.0
+  3A  →  bike stays still  road dashes still  only label visible with pulse
+  3B  →  static vault icon  doc appears then fades  no arc path
+  3C  →  static brain  graph bars static  opacity pulse on entire zone
+  3D  →  progress bar fills  no scale/spring on icon  fade transitions only

@@ -1,0 +1,716 @@
+████████████████████████████████████████████████████████████████████████████████
+██                                                                            ██
+██   GIGCREDIT — SCHEMES SCREEN  MOBILE APP FRONTEND PROMPT                 ██
+██   Same theme tokens · Same layout system · Same component patterns       ██
+██   Framework: Flutter / React Native / Next.js PWA (mobile-first)         ██
+██   5 Government Schemes · Accordion expand · External apply links         ██
+██                                                                            ██
+████████████████████████████████████████████████████████████████████████████████
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1 — FULL SCREEN LAYOUT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┌──────────────────────────────────────────────────────┐
+│  STATUS BAR (system)                   safe-area-top │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 1  —  STICKY HEADER BAR         56px fixed    │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 2  —  HERO BAND                 auto height   │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 3  —  FILTER CATEGORY TABS     52px sticky    │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 4  —  SCHEMES LIST             auto height    │
+│              5 SchemeCards stacked                   │
+│              Each expands inline on press            │
+├──────────────────────────────────────────────────────┤
+│  BLOCK 5  —  HELPLINE STRIP            auto height   │
+├──────────────────────────────────────────────────────┤
+│              safe-area-bottom padding                │
+└──────────────────────────────────────────────────────┘
+
+bg-screen      :  #F0F4F8
+screen-padding :  20px horizontal
+gap-blocks     :  16px
+Entire screen  :  one scrollable column
+BLOCK 1 + 3    :  sticky stacked — header at top:0, tabs at top:56px
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2 — BLOCK 1: STICKY HEADER BAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: AppTopBar  (reused from Home / Profile screens)
+position     :  sticky  top-0  z-index 50
+height       :  56px
+background   :  #FFFFFF
+box-shadow   :  0 2px 12px rgba(0,0,0,0.06)
+padding      :  0 20px
+
+Layout row:
+┌──────────────────────────────────────────────────────┐
+│  [ ← Back ]      "Government Schemes"    [ Search ]  │
+└──────────────────────────────────────────────────────┘
+
+LEFT — BackButton:
+  ChevronLeft  24px  green-primary (#1A6B3C)
+  tap target   :  44 × 44px
+  On press     :  navigate back (pop screen)
+  press anim   :  scale 0.92 spring
+
+CENTRE — Title:
+  "Government Schemes"
+  Font         :  Inter SemiBold  17px  text-primary (#0D1F15)
+
+RIGHT — SearchButton:
+  🔍 icon  22px  green-primary
+  tap target   :  44 × 44px
+  On press     :
+    SearchBar slides down from header (replaces title row)
+    Anim        :  translateY(-20px→0)  opacity 0→1  300ms spring
+    height      :  40px  radius: 12px  border: 1px solid #E2EDE7
+    bg          :  #F0F4F8
+    placeholder :  "Search schemes..."  text-muted
+    keyboard    :  opens immediately on SearchBar appear
+    On type     :  live filter SchemeCards by name / type (debounce 200ms)
+    No match    :  show empty state — "No schemes found" centred caption
+    On clear / back press :
+      SearchBar collapses back up  300ms ease-in
+      Full list restores  stagger fade-in 40ms each card
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3 — BLOCK 2: HERO BAND
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: SchemeHeroBand
+Background   :  linear-gradient(160deg, #1A6B3C 0%, #2D8653 55%, #3CC068 100%)
+padding      :  28px 20px 36px
+overflow     :  hidden
+
+Background decorations (absolute, non-interactive):
+  Circle 1  :  200px  rgba(255,255,255,0.07)  position: top:-50px right:-50px
+  Circle 2  :  130px  rgba(255,255,255,0.04)  position: bottom:0 left:-30px
+  Dot grid  :  faint rgba(255,255,255,0.04) grid pattern across full band
+
+Content column (flex-start):
+
+  1. EYEBROW CHIP:
+     Text        :  "🏛️  Government of India · RBI Authorised"
+     background  :  rgba(255,255,255,0.18)
+     border      :  1px solid rgba(255,255,255,0.28)
+     radius      :  999px  padding: 5px 14px
+     font        :  Inter SemiBold  12px  #FFFFFF
+     On mount    :  opacity 0→1  translateX(-12px→0)  450ms ease
+
+  2. HEADING:
+     "Schemes Built
+      for You"
+     Font        :  Inter Black  28px  #FFFFFF  line-height 1.2
+     "for You"   →  colour #A8F0C6 (mint highlight)
+     margin-top  :  10px
+     On mount    :  opacity 0→1  translateY(16px→0)  500ms ease  delay 80ms
+
+  3. DESCRIPTION:
+     "Real government programmes — loans, pension,
+      insurance, and registration — designed for gig
+      workers and unorganised sector earners who are
+      left out of traditional banking."
+     Font        :  Inter Regular  13px  rgba(255,255,255,0.80)
+     line-height :  1.65
+     margin-top  :  10px
+     On mount    :  opacity 0→1  translateY(12px→0)  500ms ease  delay 160ms
+
+  4. STATS ROW (3 blocks, same structure as Home hero stats):
+
+     ┌──────────────┬──────────────┬─────────────────┐
+     │      5       │   ₹0 Cost    │  Govt. Backed   │
+     │   Schemes    │  to Apply    │   Verified      │
+     └──────────────┴──────────────┴─────────────────┘
+
+     Each block: flex 1  centred column
+     Number : Inter Black 20px #FFFFFF
+     Label  : Inter Regular 11px rgba(255,255,255,0.65)
+     Vertical dividers: 1px rgba(255,255,255,0.25)  height 36px
+
+     On mount: stagger opacity 0→1  translateY(12px→0)  80ms per block  delay 300ms
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4 — BLOCK 3: FILTER CATEGORY TABS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: SchemeCategoryTabs
+position       :  sticky  top: 56px  z-index 40
+height         :  52px
+background     :  rgba(240,244,248,0.92)
+backdrop-filter:  blur(12px)
+padding        :  8px 20px
+border-bottom  :  1px solid #E2EDE7
+
+Layout  :  horizontal scroll row  gap 8px  no wrap  hide scrollbar
+
+5 FILTER TABS:
+  "All"         →  shows all 5 schemes
+  "Loan"        →  schemes with type = Loan
+  "Pension"     →  schemes with type = Pension
+  "Insurance"   →  schemes with type = Insurance
+  "Registration"→  schemes with type = Registration
+
+Each tab pill:
+  height       :  34px
+  padding      :  0 16px
+  radius       :  999px
+  font         :  Inter SemiBold  13px
+
+  Default state:
+    background :  #FFFFFF
+    border     :  1px solid #E2EDE7
+    text       :  text-secondary (#4A6B57)
+
+  Active state:
+    background :  #1A6B3C
+    border     :  none
+    text       :  #FFFFFF
+    box-shadow :  0 3px 10px rgba(26,107,60,0.30)
+
+  Transition   :  200ms ease
+
+  On press:
+    activeFilter updates → list re-renders
+    Active tab  :  scale 0.95→1.0 spring
+    Non-matching cards: opacity 0→1 fade  150ms
+    Matching cards: stagger fade-in  40ms each
+
+COUNT BADGE on "All" tab:
+  Circle  14px  background green-bright (#3CC068)
+  Text    "5"   Inter Bold  10px  #FFFFFF
+  Positioned right of "All" text  gap 4px
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5 — BLOCK 4: SCHEME CARD COMPONENT SPEC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: SchemeCard
+Applies identically to all 5 cards.
+Only colours, content, icon, and link differ per card.
+
+ACCORDION RULE:
+  Only ONE card expanded at a time.
+  When second card is pressed:
+    Open card collapses first (200ms ease-in)
+    Then new card expands (350ms spring)
+  Pressing already-open card: collapses it.
+
+MOUNT STAGGER (all 5 cards):
+  opacity 0→1  translateY(24px→0)
+  60ms delay × card index  duration 500ms  ease[0.22,1,0.36,1]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+COLLAPSED STATE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Shape:
+  background   :  #FFFFFF
+  radius       :  20px
+  border       :  1px solid #E2EDE7
+  border-left  :  4px solid [scheme.accentColour]
+  box-shadow   :  0 4px 16px rgba(26,107,60,0.07)
+  padding      :  18px 16px 18px 20px
+  overflow     :  hidden
+
+Layout (row, align-center, gap 14px):
+
+  LEFT — ICON ZONE:
+    Size         :  52 × 52px  rounded square  radius 14px
+    Background   :  [scheme.iconBg]
+    Inside       :  [scheme.emoji]  28px  centred
+    box-shadow   :  0 4px 10px [scheme.glow]
+
+  MIDDLE — TEXT COLUMN (flex 1):
+    Top row (row, align-center, gap 8px):
+      Scheme name   :  Inter SemiBold  15px  text-primary
+      Type badge    :  InlineChip
+                       bg: [scheme.badgeBg]  text: [scheme.badgeText]
+                       radius: 999px  padding: 3px 10px
+                       font: Inter Medium  10px  uppercase  letter-spacing 0.4px
+
+    Bottom row (margin-top 3px):
+      Issuing body  :  Inter Regular  12px  text-muted (#8FA89B)
+
+  RIGHT — CHEVRON:
+    ChevronDown  18px  text-muted
+    Rotates 180° when expanded  transition 300ms ease
+
+On press (collapse → expand):
+  1. haptic 8ms
+  2. border-left colour brightens 10%  150ms
+  3. box-shadow: 0 4px 16px → 0 8px 28px rgba(26,107,60,0.14)  200ms
+  4. Card expands: height auto  overflow visible  350ms ease[0.34,1.56,0.64,1]
+  5. Chevron rotates 180°  300ms ease
+  6. Inner content fades in stagger  opacity 0→1  delay 100ms
+
+On press again (expand → collapse):
+  Reverse animations  250ms ease-in
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EXPANDED STATE (appended inside same card below collapsed row)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Top divider: 1px solid #E2EDE7  margin: 0 -16px  (spans full card width)
+
+E1 — DESCRIPTION:
+  Section label  :  "ABOUT THIS SCHEME"
+  Font           :  Inter SemiBold  11px  text-muted  uppercase  letter-spacing 1px
+  padding-top    :  16px
+
+  Body text:
+  Font           :  Inter Regular  14px  text-secondary  line-height 1.65
+  (scheme-specific — see data below)
+  On expand      :  opacity 0→1  translateY(8px→0)  300ms ease  delay 80ms
+
+E2 — KEY BENEFITS CHIPS:
+  Section label  :  "KEY BENEFITS"
+  Same label style as above  margin-top 16px
+
+  Horizontal scroll row  gap 8px  no wrap  hide scrollbar
+
+  Each chip:
+    bg           :  #D4EDDA  (green-muted)
+    border       :  1px solid rgba(60,192,104,0.25)
+    radius       :  999px  padding: 6px 14px
+    font         :  Inter Medium  12px  green-primary (#1A6B3C)
+    prefix       :  ✅ before each text
+
+  On expand: stagger  opacity 0→1  translateX(-8px→0)  30ms each  delay 150ms
+
+E3 — HOW TO APPLY STEPS:
+  Section label  :  "HOW TO APPLY"
+  Same label style  margin-top 16px
+
+  Vertical step list  gap 10px
+
+  Each StepRow (row, align-flex-start, gap 12px):
+
+    Step Number Circle:
+      26 × 26px  circle  background #1A6B3C
+      Text: step number  Inter Bold  12px  #FFFFFF  centred
+
+      Connector line to next step:
+        1px dashed rgba(26,107,60,0.25)
+        Centred below circle  height fills gap between rows
+        Last step: no line
+
+    Step Text:
+      flex 1
+      Inter Regular  14px  text-primary  line-height 1.55
+
+  On expand: stagger  opacity 0→1  translateX(-12px→0)  60ms each  delay 200ms
+
+E4 — ELIGIBILITY TAGS:
+  Section label  :  "WHO CAN APPLY"
+  Same label style  margin-top 16px
+
+  Wrap row  gap 8px
+
+  Each tag:
+    bg           :  #F0F4F8
+    border       :  1px solid #E2EDE7
+    radius       :  8px  padding: 5px 12px
+    font         :  Inter Regular  12px  text-secondary
+    prefix emoji before each tag text
+
+E5 — APPLY NOW BUTTON:
+  margin-top     :  20px
+
+  COMPONENT: ApplyNowButton
+  width          :  100%
+  height         :  52px
+  radius         :  14px
+  background     :  linear-gradient(135deg, #1A6B3C 0%, #3CC068 100%)
+  box-shadow     :  0 4px 16px rgba(60,192,104,0.38)
+  layout         :  row  align-center  justify-center  gap 10px
+
+  Left icon      :  🔗  18px
+  Text           :  "APPLY ON OFFICIAL WEBSITE  →"
+  Font           :  Inter Bold  13px  #FFFFFF  uppercase  letter-spacing 0.4px
+
+  On press:
+    scale 0.97 spring
+    haptic 10ms
+    Ripple effect: circle expands from press point
+      rgba(255,255,255,0.28)  radius 0→120px  opacity 0.28→0  200ms
+    After 150ms → open [scheme.externalLink] in in-app WebView overlay
+
+  WebView overlay spec:
+    Full screen  z-index 100
+    Header bar (56px):
+      Left  : "← Back to GigCredit"  Inter Medium 14px green-primary
+               On press: closes WebView, returns to Schemes screen
+      Centre: URL shown read-only  Inter Regular 12px text-muted  truncated
+      Right : "↗" open-in-browser icon
+               On press: opens system browser with same URL
+    Enter anim: slide-up from bottom  400ms spring
+    Exit anim : slide-down  300ms ease-in
+
+  Caption below button:
+    "↗  Official government website"
+    Inter Regular  11px  text-muted  centred  margin-top 6px
+
+  On expand: opacity 0→1  translateY(8px→0)  delay 350ms  (last to appear)
+
+  Bottom padding inside expanded card: 20px
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 6 — THE 5 SCHEMES: FULL CONTENT DATA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHEME 1 — PM SVANidhi
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  name          :  "PM SVANidhi"
+  type          :  Loan
+  ministry      :  Ministry of Housing & Urban Affairs
+  emoji         :  🏪
+  materialIcon  :  storefront
+  accentColour  :  #1A6B3C
+  iconBg        :  linear-gradient(135deg, #D4EDDA, #A8F0C6)
+  glow          :  rgba(26,107,60,0.20)
+  badgeBg       :  #D4EDDA
+  badgeText     :  #1A6B3C
+  externalLink  :  https://pmsvanidhi.mohua.gov.in
+
+  description:
+    "PM Street Vendor's AtmaNirbhar Nidhi gives
+     affordable working capital loans to street
+     vendors and gig workers. Start with ₹10,000 —
+     repay on time and unlock ₹20,000, then ₹50,000.
+     No collateral required. Govt. pays interest subsidy."
+
+  benefits:
+    "₹10K → ₹20K → ₹50K loan ladder"
+    "7% interest subsidy from Govt."
+    "No collateral or guarantor needed"
+    "Builds your credit score (CIBIL)"
+    "Digital repayment earns cashback rewards"
+
+  steps:
+    1. "Visit pmsvanidhi.mohua.gov.in or your nearest Urban Local Body (ULB) office"
+    2. "Fill the application form with Aadhaar and vending certificate/letter"
+    3. "Submit to a participating bank, MFI, or NBFC in your city"
+    4. "Loan disbursed directly to your linked bank account"
+    5. "Repay in monthly instalments via UPI to unlock the next tier"
+
+  eligibility:
+    "👤  Street vendors and hawkers"
+    "📍  Urban area residents"
+    "📱  Aadhaar-linked mobile number"
+    "🔞  Age 18 years and above"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHEME 2 — PM Shram Yogi Maan-dhan (PM-SYM)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  name          :  "PM Shram Yogi Maan-dhan"
+  type          :  Pension
+  ministry      :  Ministry of Labour & Employment
+  emoji         :  💰
+  materialIcon  :  account_balance_wallet
+  accentColour  :  #6A1B9A
+  iconBg        :  linear-gradient(135deg, #E1BEE7, #CE93D8)
+  glow          :  rgba(106,27,154,0.18)
+  badgeBg       :  #E1BEE7
+  badgeText     :  #6A1B9A
+  externalLink  :  https://maandhan.in
+
+  description:
+    "A voluntary and contributory pension scheme giving
+     unorganised sector workers a guaranteed monthly
+     pension of ₹3,000 after age 60. Govt. matches your
+     contribution equally — you pay half, Govt. pays half.
+     Built specifically for gig workers and daily-wage earners."
+
+  benefits:
+    "₹3,000 guaranteed monthly pension after 60"
+    "Govt. matches your contribution 1:1"
+    "Contribution as low as ₹55/month at age 18"
+    "Spouse receives pension on subscriber's death"
+    "Exit permitted — full refund with interest"
+
+  steps:
+    1. "Visit maandhan.in or go to nearest Common Service Centre (CSC)"
+    2. "Bring Aadhaar card and savings bank account / Jan Dhan passbook"
+    3. "Fill the registration form — choose monthly contribution amount"
+    4. "Monthly auto-debit from your bank account starts immediately"
+    5. "At age 60, ₹3,000 pension credited to account every month"
+
+  eligibility:
+    "👤  Age 18–40 years at entry"
+    "💼  Unorganised sector / gig workers"
+    "💵  Monthly income ≤ ₹15,000"
+    "❌  Not for EPFO / ESIC / NPS members"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHEME 3 — PM Mudra Yojana (PMMY)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  name          :  "PM Mudra Yojana"
+  type          :  Loan
+  ministry      :  Ministry of Finance · MUDRA
+  emoji         :  ₹
+  materialIcon  :  currency_rupee
+  accentColour  :  #2D8653
+  iconBg        :  linear-gradient(135deg, #D4EDDA, #B2DFDB)
+  glow          :  rgba(45,134,83,0.20)
+  badgeBg       :  #D4EDDA
+  badgeText     :  #1A6B3C
+  externalLink  :  https://www.hdfcbank.com/content/bbp/repositories/723fb80a-2dde-42a3-9793-7ae1be57c87f/?folderPath=/Common/Loans-&-Credit-Cards/Loans/Business-Loan/pm-mudra-yojana
+
+  description:
+    "Pradhan Mantri MUDRA Yojana offers loans up to
+     ₹10 lakh for small and micro businesses. Three
+     tiers: Shishu (up to ₹50K), Kishore (₹50K–5L),
+     Tarun (₹5L–10L). No collateral for Shishu.
+     Ideal for gig workers expanding their own setup."
+
+  benefits:
+    "Up to ₹10 lakh loan amount"
+    "No collateral for Shishu tier"
+    "Available at any bank or NBFC"
+    "Repayment tenure up to 5 years"
+    "Women applicants get priority processing"
+
+  steps:
+    1. "Choose your tier: Shishu / Kishore / Tarun based on amount needed"
+    2. "Visit HDFC Bank branch or apply via the link above"
+    3. "Submit: Aadhaar, PAN, business proof, 6 months bank statement"
+    4. "Bank reviews and processes in 7–10 working days"
+    5. "Amount disbursed to account; EMI repayment begins next month"
+
+  eligibility:
+    "👤  Self-employed / gig / freelance workers"
+    "🏢  Non-farm micro enterprises"
+    "📄  Basic KYC documents required"
+    "❌  Not for large corporates"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHEME 4 — PM Jeevan Jyoti Bima Yojana (PMJJBY)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  name          :  "PM Jeevan Jyoti Bima"
+  type          :  Insurance
+  ministry      :  Ministry of Finance · LIC / Banks
+  emoji         :  🛡️
+  materialIcon  :  health_and_safety
+  accentColour  :  #0277BD
+  iconBg        :  linear-gradient(135deg, #BBDEFB, #90CAF9)
+  glow          :  rgba(2,119,189,0.18)
+  badgeBg       :  #BBDEFB
+  badgeText     :  #0277BD
+  externalLink  :  https://www.myscheme.gov.in/schemes/pmjjby
+
+  description:
+    "A renewable 1-year term life insurance cover of
+     ₹2 lakh for savings account holders aged 18–50.
+     Annual premium is just ₹436 — auto-debited from
+     your bank account. No medical test required.
+     Critical cover for gig workers with no employer insurance."
+
+  benefits:
+    "₹2 lakh life cover on death"
+    "Only ₹436 per year premium"
+    "Auto-debit — no manual renewal needed"
+    "No medical examination required"
+    "Renews automatically every year"
+
+  steps:
+    1. "Visit your bank branch or open your bank's mobile app"
+    2. "Search for PMJJBY and fill the consent-cum-declaration form"
+    3. "Aadhaar-linked savings bank account is mandatory"
+    4. "₹436 is auto-debited every year on 1st June from your account"
+    5. "Nominee receives ₹2 lakh on claim; submit death certificate + form"
+
+  eligibility:
+    "👤  Age 18–50 years"
+    "🏦  Active savings bank account"
+    "📱  Aadhaar linked to bank account"
+    "🔁  Renewable annually up to age 55"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHEME 5 — Udyam Registration Certificate
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  name          :  "Udyam Registration"
+  type          :  Registration
+  ministry      :  Ministry of MSME
+  emoji         :  ✅
+  materialIcon  :  verified
+  accentColour  :  #00838F
+  iconBg        :  linear-gradient(135deg, #B2EBF2, #80DEEA)
+  glow          :  rgba(0,131,143,0.18)
+  badgeBg       :  #B2EBF2
+  badgeText     :  #00838F
+  externalLink  :  https://scsthub.in/udyam-registration
+
+  description:
+    "Udyam Registration is the official MSME certificate
+     issued by the Government of India. Once registered,
+     you get a permanent Udyam Registration Number (URN)
+     that qualifies you for priority sector loans, govt.
+     tenders, and collateral-free credit under CGTMSE."
+
+  benefits:
+    "Official MSME recognition from Govt. of India"
+    "Qualify for priority sector bank loans"
+    "Access to collateral-free credit (CGTMSE)"
+    "Eligible for government tenders and subsidies"
+    "Free registration — no cost, no paperwork"
+
+  steps:
+    1. "Visit scsthub.in/udyam-registration (SC/ST hub portal)"
+    2. "Login with Aadhaar OTP — no other document needed initially"
+    3. "Fill enterprise details: type of business, NIC code, investment"
+    4. "Submit the form — certificate generated instantly online"
+    5. "Download your Udyam Registration Certificate (PDF) for records"
+
+  eligibility:
+    "👤  Any individual running a business"
+    "🏢  Micro, Small, or Medium enterprise"
+    "📄  Only Aadhaar required to start"
+    "✅  SC/ST entrepreneurs get priority support"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 7 — BLOCK 5: HELPLINE STRIP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT: HelplineStrip
+margin       :  0 20px 32px
+background   :  #1A6B3C
+radius       :  20px
+padding      :  20px
+box-shadow   :  0 6px 20px rgba(26,107,60,0.22)
+
+Content column (centred):
+
+  1. HEADING ROW:
+     row  align-center  gap 8px  justify-center
+     📞  20px  #A8F0C6
+     "Need Help Applying?"
+     Font: Inter Bold  16px  #FFFFFF
+
+  2. BODY TEXT:
+     "Our support team guides you through any of
+      these schemes in your language."
+     Font: Inter Regular  13px  rgba(255,255,255,0.75)
+     centred  line-height 1.6  margin-top 6px
+
+  3. CALL BUTTON:
+     width: 100%  height: 48px  radius: 12px
+     background: rgba(255,255,255,0.15)
+     border: 1px solid rgba(255,255,255,0.28)
+     text: "📞  Call 1800-XXX-XXXX  (Toll Free)"
+     font: Inter SemiBold  14px  #FFFFFF
+     margin-top: 16px
+     On press: scale 0.96 spring → open device dialer with number pre-filled
+
+  4. LANGUAGE NOTE:
+     "Tamil · Hindi · Telugu · Kannada · English"
+     Font: Inter Regular  11px  rgba(255,255,255,0.48)
+     centred  margin-top: 8px
+
+  On screen mount: opacity 0→1  translateY(16px→0)  last block to appear
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 8 — ANIMATION MASTER LIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Screen enter:
+  opacity 0→1  translateY(24px→0)  400ms ease
+
+Hero band gradient:
+  Slow shift  8s ease-in-out infinite alternate
+  keyframe 0% → 100%: subtle hue drift between #1A6B3C and #1B5E3B
+
+Filter tabs:
+  Active: scale 0.95→1.0 spring + background transition 200ms
+
+Cards on mount:
+  Stagger: 60ms × index  opacity 0→1  translateY(24px→0)  500ms
+
+Card expand:
+  height auto  ease[0.34,1.56,0.64,1]  350ms
+  Content order (each 80ms apart):
+    description → benefit chips → steps → eligibility tags → apply button
+  Chevron: rotates 180°  300ms ease
+
+Card collapse:
+  Reverse  250ms ease-in
+  Chevron: rotates back  300ms ease
+
+Accordion lock (only 1 open):
+  Open card collapses (200ms) → new card expands (350ms) sequentially
+
+Filter press:
+  Non-matching: opacity 1→0  scale 1→0.96  150ms
+  Matching: opacity 0→1  scale 0.96→1  stagger 40ms
+
+Search bar:
+  Open: translateY(-20px→0)  opacity 0→1  300ms spring
+  Close: reverse  300ms ease-in
+  Live filter: debounce 200ms  cards fade in/out 150ms
+
+Apply button press:
+  scale 0.97 spring  haptic 10ms
+  Ripple: rgba(255,255,255,0.28)  radius 0→120px  200ms  opacity→0
+
+WebView:
+  Open: slide-up from bottom  400ms spring
+  Close: slide-down  300ms ease-in
+
+Reduce motion:
+  All translateY/scale/spring animations skipped
+  Values update instantly
+  Accordion: instant height change
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 9 — ROUTING TABLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  TRIGGER                              ACTION
+  ──────────────────────────────────────────────────────────────────────
+  Header ← Back                     →  navigate back (pop screen)
+  Header 🔍 Search                  →  expand SearchBar inline (no nav)
+  Filter tab press                   →  filter cards live (no nav)
+  SchemeCard collapsed — press       →  expand inline (no nav)
+  SchemeCard expanded — press        →  collapse inline (no nav)
+
+  Scheme 1 "APPLY ON OFFICIAL WEBSITE"
+    → WebView: https://pmsvanidhi.mohua.gov.in
+
+  Scheme 2 "APPLY ON OFFICIAL WEBSITE"
+    → WebView: https://maandhan.in
+
+  Scheme 3 "APPLY ON OFFICIAL WEBSITE"
+    → WebView: https://www.hdfcbank.com/[pm-mudra-yojana path]
+
+  Scheme 4 "APPLY ON OFFICIAL WEBSITE"
+    → WebView: https://www.myscheme.gov.in/schemes/pmjjby
+
+  Scheme 5 "APPLY ON OFFICIAL WEBSITE"
+    → WebView: https://scsthub.in/udyam-registration
+
+  WebView "← Back to GigCredit"     →  close WebView, return to Schemes
+  WebView "↗" open-in-browser       →  open system browser with same URL
+
+  Helpline Call button               →  open device dialer (number pre-filled)
+  ──────────────────────────────────────────────────────────────────────
+
+  All external links open inside in-app WebView first.
+  User always returns to GigCredit via the WebView back button.
+  Never force-close the app or navigate away without user intent.red)
