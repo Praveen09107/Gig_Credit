@@ -2,6 +2,7 @@ import 'score_pillar_model.dart';
 import 'shap_factor_model.dart';
 import 'trajectory_result.dart';
 import 'causal_chain.dart';
+import 'tailored_suggestion.dart';
 
 class ScoreReportModel {
   final int finalScore;
@@ -22,12 +23,15 @@ class ScoreReportModel {
   final Map<String, int> pillarContributions;
   final List<ShapFactorModel> topStrengths;
   final List<ShapFactorModel> topConcerns;
-  final List<String> tailoredSuggestions;
+  final List<TailoredSuggestion> tailoredSuggestions;
   final TrajectoryResult? trajectory;
   final List<CausalRule> causalChains;
+  final double? metaProbability;
+  final String? modelUsed;
+  final String? efsVerdict;
 
   /// Alias for tailoredSuggestions — used by LlmExplanationCard
-  List<String>? get llmSuggestions => tailoredSuggestions.isNotEmpty ? tailoredSuggestions : null;
+  List<TailoredSuggestion>? get llmSuggestions => tailoredSuggestions.isNotEmpty ? tailoredSuggestions : null;
 
 
   const ScoreReportModel({
@@ -51,6 +55,9 @@ class ScoreReportModel {
     required this.tailoredSuggestions,
     this.trajectory,
     this.causalChains = const [],
+    this.metaProbability,
+    this.modelUsed,
+    this.efsVerdict,
   });
 
   factory ScoreReportModel.fromJson(Map<String, dynamic> json) => ScoreReportModel(
@@ -71,8 +78,14 @@ class ScoreReportModel {
     pillarContributions: Map<String, int>.from(json['pillarContributions'] ?? {}),
     topStrengths: (json['topStrengths'] as List?)?.map((e) => ShapFactorModel.fromJson(e)).toList() ?? [],
     topConcerns: (json['topConcerns'] as List?)?.map((e) => ShapFactorModel.fromJson(e)).toList() ?? [],
-    tailoredSuggestions: List<String>.from(json['tailoredSuggestions'] ?? []),
+    tailoredSuggestions: (json['tailoredSuggestions'] as List?)?.map((e) {
+      if (e is String) return TailoredSuggestion(text: e, estimatedPtsGain: 15);
+      return TailoredSuggestion.fromJson(e);
+    }).toList() ?? [],
     causalChains: (json['causalChains'] as List?)?.map((e) => CausalRule.fromJson(e)).toList() ?? [],
+    metaProbability: (json['metaProbability'] as num?)?.toDouble(),
+    modelUsed: json['modelUsed'] as String?,
+    efsVerdict: json['efsVerdict'] as String?,
   );
 
   Map<String, dynamic> toJson() => {
@@ -93,7 +106,10 @@ class ScoreReportModel {
     'pillarContributions': pillarContributions,
     'topStrengths': topStrengths.map((e) => e.toJson()).toList(),
     'topConcerns': topConcerns.map((e) => e.toJson()).toList(),
-    'tailoredSuggestions': tailoredSuggestions,
+    'tailoredSuggestions': tailoredSuggestions.map((e) => e.toJson()).toList(),
     'causalChains': causalChains.map((e) => e.toJson()).toList(),
+    'metaProbability': metaProbability,
+    'modelUsed': modelUsed,
+    'efsVerdict': efsVerdict,
   };
 }

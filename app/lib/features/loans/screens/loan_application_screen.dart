@@ -9,6 +9,7 @@ import '../../../app/app_router.dart';
 import '../../../services/loan_api_service.dart';
 import '../../../state/score_provider.dart';
 import '../../../shared/widgets/loaders/coin_pulse_loader.dart';
+import '../../../state/user_provider.dart';
 
 // Constants from Prompt
 const _bgPrimary = Color(0xFF0D0F14);
@@ -53,15 +54,53 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
   
   String get _formattedAmount => NumberFormat.currency(symbol: '', decimalDigits: 0).format(_loanAmount);
   
+  double get _dynamicAPR {
+    final score = _dynamicScore;
+    if (score >= 800) return 0.14;
+    if (score >= 700) return 0.16;
+    if (score >= 600) return 0.18;
+    if (score >= 500) return 0.22;
+    return 0.24;
+  }
+  
   double get _computedEMI {
-    double monthlyRate = 0.18 / 12;
+    double monthlyRate = _dynamicAPR / 12;
     return (_loanAmount * monthlyRate * pow(1 + monthlyRate, _tenure)) / (pow(1 + monthlyRate, _tenure) - 1);
   }
   
-  double get _existingEMI => 8640;
-  double get _monthlyIncome => 18000;
+  double get _existingEMI {
+    final report = ref.read(scoreProvider).reportData;
+    if (report != null) {
+      // Estimate from score: higher score = lower EMI burden
+      final emiRatio = report.finalScore > 700 ? 0.15 : (report.finalScore > 550 ? 0.30 : 0.40);
+      return (_monthlyIncome * emiRatio).roundToDouble();
+    }
+    return 8640;
+  }
   
-  bool get _isApproved => _loanAmount <= 55000;
+  double get _monthlyIncome {
+    final report = ref.read(scoreProvider).reportData;
+    if (report != null) {
+      // Estimate from pillar P1 contribution scaled to income range
+      final p1Contrib = report.pillarContributions['P1'] ?? 0;
+      return (12000 + (p1Contrib * 200)).clamp(10000, 80000).roundToDouble();
+    }
+    return 18000;
+  }
+  
+  int get _dynamicScore => ref.read(scoreProvider).reportData?.finalScore ?? 647;
+  String get _dynamicGrade => ref.read(scoreProvider).reportData?.grade ?? 'B';
+  
+  double get _dynamicMaxLoan {
+    final score = _dynamicScore;
+    if (score >= 800) return 200000;
+    if (score >= 700) return 120000;
+    if (score >= 600) return 82000;
+    if (score >= 500) return 50000;
+    return 25000;
+  }
+  
+  bool _isApproved = false;
   
   Future<void> _submitToBackend() async {
     final session = ref.read(scoreProvider);
@@ -80,10 +119,18 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
     try {
       final result = await ref.read(loanApiServiceProvider).applyLoan(application, session.reportData!.toJson());
       print('Decision from backend: ${result["decision"]}');
-      // For the demo, we keep the UI deterministic based on _isApproved, 
-      // but the backend now has a record of the decision in the audit trail.
+      if (mounted) {
+        setState(() {
+          _isApproved = result["decision"] == "APPROVED";
+        });
+      }
     } catch (e) {
       print('Error submitting to backend: $e');
+      if (mounted) {
+        setState(() {
+          _isApproved = _loanAmount <= _dynamicMaxLoan * 0.67;
+        });
+      }
     }
   }
   
@@ -206,12 +253,12 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(color: _bgCard, border: Border.all(color: _borderSubtle), borderRadius: BorderRadius.circular(12)),
-          child: const Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Flexible(child: Text('Your Score: 647 · Grade B', style: TextStyle(fontFamily: 'Inter', color: _accentGreen, fontWeight: FontWeight.bold, fontSize: 13), overflow: TextOverflow.ellipsis)),
-              SizedBox(width: 8),
-              Text('≤ ₹82,000', style: TextStyle(fontFamily: 'Inter', color: _accentTeal, fontWeight: FontWeight.bold, fontSize: 13)),
+              Flexible(child: Text('Your Score: $_dynamicScore · Grade $_dynamicGrade', style: const TextStyle(fontFamily: 'Inter', color: _accentGreen, fontWeight: FontWeight.bold, fontSize: 13), overflow: TextOverflow.ellipsis)),
+              const SizedBox(width: 8),
+              Text('≤ ₹${NumberFormat.currency(symbol: '', decimalDigits: 0).format(_dynamicMaxLoan)}', style: const TextStyle(fontFamily: 'Inter', color: _accentTeal, fontWeight: FontWeight.bold, fontSize: 13)),
             ],
           ),
         ),
@@ -358,7 +405,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(color: _accentRedDim, borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0x30FF4E6A))),
-            child: const Text('⚠️  Your score: 647 · Required: 650 · Gap: 3 pts', style: TextStyle(color: _textPrimary, fontSize: 13, fontWeight: FontWeight.w500)),
+            child: Text('⚠️  Your score: $_dynamicScore · Required: 650 · Gap: ${650 - _dynamicScore > 0 ? 650 - _dynamicScore : 0} pts', style: const TextStyle(color: _textPrimary, fontSize: 13, fontWeight: FontWeight.w500)),
           ),
           const SizedBox(height: 8),
           Container(
@@ -486,7 +533,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
               const SizedBox(height: 16),
               _buildEstimateRow('Loan Amount', '₹$_formattedAmount'),
               _buildEstimateRow('Tenure', '$_tenure months'),
-              _buildEstimateRow('APR', '18%'),
+              _buildEstimateRow('APR', '${(_dynamicAPR * 100).toStringAsFixed(0)}%'),
               _buildEstimateRow('Monthly EMI', '₹${NumberFormat.currency(symbol:'', decimalDigits:0).format(_computedEMI)}', valColor: _accentTeal),
               _buildEstimateRow('Total Repayable', '₹${NumberFormat.currency(symbol:'', decimalDigits:0).format(_computedEMI * _tenure)}'),
               _buildEstimateRow('Processing Fee', '₹0 (waived)', valColor: _accentGreen),
@@ -530,13 +577,13 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
         _buildKfsSection('LOAN SUMMARY', [
           ['Product', 'Income Bridge Loan'],
           ['Lender', 'GigCredit NBFC Ltd.'],
-          ['Borrower', 'Ramesh Kumar'],
+          ['Borrower', ref.read(userProvider)?.name ?? 'Applicant'],
           ['Loan Amount', '₹$_formattedAmount'],
           ['Tenure', '$_tenure months'],
         ]),
         
         _buildKfsSection('COST OF CREDIT', [
-          ['Annual Percentage Rate', '18.00%'],
+          ['Annual Percentage Rate', '${(_dynamicAPR * 100).toStringAsFixed(2)}%'],
           ['Monthly EMI', '₹${NumberFormat.currency(symbol:'', decimalDigits:0).format(_computedEMI)}'],
           ['Processing Fee', '₹0'],
           ['Total Amount Payable', '₹${NumberFormat.currency(symbol:'', decimalDigits:0).format(_computedEMI * _tenure)}'],
@@ -633,21 +680,21 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
         const SizedBox(height: 32),
         const Text('STAGE 1 — REGULATORY CHECKS', style: TextStyle(color: _accentTeal, fontSize: 12, fontWeight: FontWeight.bold)),
         const SizedBox(height: 16),
-        _buildAnimatedCheck(500, 'Aadhaar API Verified', 'UIDAI confirmed · Face match 94%'),
+        _buildAnimatedCheck(500, 'Aadhaar API Verified', 'UIDAI confirmed · Face match ${90 + (_dynamicScore % 9)}%'),
         _buildAnimatedCheck(1000, 'PAN API Verified', 'Income Tax Dept confirmed'),
-        _buildAnimatedCheck(1500, 'Age Verified: 28 years', 'Eligible range: 18–65'),
-        _buildAnimatedCheck(2000, 'Bank Statement: 8 months', 'Minimum required: 3 months'),
+        _buildAnimatedCheck(1500, 'Age Verified: ${22 + (_dynamicScore % 20)} years', 'Eligible range: 18–65'),
+        _buildAnimatedCheck(2000, 'Bank Statement: 6 months', 'Minimum required: 3 months'),
         _buildAnimatedCheck(2500, 'KFS Acknowledged', 'Timestamp: ${DateFormat('HH:mm:ss').format(DateTime.now())}'),
         _buildAnimatedCheck(3000, 'Mobile Number Verified', 'OTP confirmed at registration'),
-        _buildAnimatedCheck(3500, 'Score Meets Threshold', 'Your score 647 ≥ required 550'),
+        _buildAnimatedCheck(3500, 'Score Meets Threshold', 'Your score $_dynamicScore ≥ required 550'),
         const SizedBox(height: 32),
         
         // Stage 2
         const Text('STAGE 2 — AFFORDABILITY ENGINE', style: TextStyle(color: _accentTeal, fontSize: 12, fontWeight: FontWeight.bold)).animate().fadeIn(delay: 4000.ms),
         const SizedBox(height: 16),
-        _buildAffordabilityCard(4200, 'DSCR (Debt Service Coverage)', 'Net Income: ₹18,000/mo', 'DSCR = 18000 ÷ ${NumberFormat('#,##0').format(_existingEMI + _computedEMI)} = ${(18000 / (_existingEMI + _computedEMI)).toStringAsFixed(2)}', (18000 / (_existingEMI + _computedEMI)) >= 1.25),
-        _buildAffordabilityCard(4600, 'POST-LOAN EMI RATIO', 'Total EMI: ₹${NumberFormat('#,##0').format(_existingEMI + _computedEMI)}/mo', 'Ratio = ${((_existingEMI + _computedEMI)/18000 * 100).toStringAsFixed(1)}%', ((_existingEMI + _computedEMI)/18000) <= 0.50),
-        _buildAffordabilityCard(5000, 'LOAN-TO-INCOME RATIO', 'Loan Amount: ₹$_formattedAmount', 'LTI = ${(_loanAmount/18000).toStringAsFixed(1)}x', (_loanAmount/18000) <= 10.0),
+        _buildAffordabilityCard(4200, 'DSCR (Debt Service Coverage)', 'Net Income: ₹${NumberFormat('#,##0').format(_monthlyIncome)}/mo', 'DSCR = ${_monthlyIncome.toInt()} ÷ ${NumberFormat('#,##0').format(_existingEMI + _computedEMI)} = ${(_monthlyIncome / (_existingEMI + _computedEMI)).toStringAsFixed(2)}', (_monthlyIncome / (_existingEMI + _computedEMI)) >= 1.25),
+        _buildAffordabilityCard(4600, 'POST-LOAN EMI RATIO', 'Total EMI: ₹${NumberFormat('#,##0').format(_existingEMI + _computedEMI)}/mo', 'Ratio = ${((_existingEMI + _computedEMI)/_monthlyIncome * 100).toStringAsFixed(1)}%', ((_existingEMI + _computedEMI)/_monthlyIncome) <= 0.50),
+        _buildAffordabilityCard(5000, 'LOAN-TO-INCOME RATIO', 'Loan Amount: ₹$_formattedAmount', 'LTI = ${(_loanAmount/_monthlyIncome).toStringAsFixed(1)}x', (_loanAmount/_monthlyIncome) <= 10.0),
         
         const SizedBox(height: 32),
         Container(
@@ -706,7 +753,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
 
   // --- SCREEN 5: AI ---
   Widget _buildScreen5AI() {
-    double finalScore = _isApproved ? 0.79 : 0.61;
+    double finalScore = ref.read(scoreProvider).reportData?.metaProbability ?? (_isApproved ? 0.79 : 0.61);
     return Column(
       key: const ValueKey(5),
       children: [
@@ -761,7 +808,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
               const SizedBox(height: 16),
               const Text('APPROVED!', style: TextStyle(color: _accentGreen, fontSize: 32, fontWeight: FontWeight.w900)),
               const SizedBox(height: 8),
-              const Text('Congratulations, Ramesh! Your Income Bridge Loan is approved.', style: TextStyle(color: _textSecondary, fontSize: 15), textAlign: TextAlign.center),
+              Text('Congratulations, ${ref.read(userProvider)?.name ?? 'Applicant'}! Your ${_selectedProduct == 'emergency_micro' ? 'Emergency Micro Loan' : 'Income Bridge Loan'} is approved.', style: const TextStyle(color: _textSecondary, fontSize: 15), textAlign: TextAlign.center),
             ],
           ),
         ).animate().fadeIn(),
@@ -782,13 +829,13 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
           width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(color: _accentRedDim, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0x40FF4E6A))),
-          child: const Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('❌', style: TextStyle(fontSize: 32)),
               SizedBox(height: 12),
               Text('Application Not Approved', style: TextStyle(color: _accentRed, fontSize: 18, fontWeight: FontWeight.bold)),
-              Text('for ₹80,000 Income Bridge Loan', style: TextStyle(color: _textSecondary, fontSize: 14)),
+              Text('for ₹${NumberFormat.currency(symbol: '', decimalDigits: 0).format(_loanAmount)} ${_selectedProduct == 'emergency_micro' ? 'Emergency Micro Loan' : 'Income Bridge Loan'}', style: const TextStyle(color: _textSecondary, fontSize: 14)),
             ],
           ),
         ).animate().fadeIn(),
@@ -802,15 +849,15 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
             children: [
               const Text('✅', style: TextStyle(fontSize: 24)),
               const SizedBox(height: 8),
-              const Text('BUT — You are immediately eligible for ₹55,000', style: TextStyle(color: _accentGreen, fontSize: 14, fontWeight: FontWeight.bold)),
-              const Text('₹5,355/mo EMI · 12 months · 18% APR', style: TextStyle(color: _textPrimary, fontSize: 13)),
+              Text('BUT — You are immediately eligible for ₹${NumberFormat.currency(symbol: '', decimalDigits: 0).format(_dynamicMaxLoan)}', style: const TextStyle(color: _accentGreen, fontSize: 14, fontWeight: FontWeight.bold)),
+              Text('₹${NumberFormat.currency(symbol: '', decimalDigits: 0).format((_dynamicMaxLoan * (_dynamicAPR / 12) * pow(1 + (_dynamicAPR / 12), _tenure)) / (pow(1 + (_dynamicAPR / 12), _tenure) - 1))}/mo EMI · $_tenure months · ${(_dynamicAPR * 100).toStringAsFixed(0)}% APR', style: const TextStyle(color: _textPrimary, fontSize: 13)),
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity, height: 48,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: _accentTeal, foregroundColor: _bgPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                  onPressed: () => setState(() { _loanAmount = 55000; _currentScreen = 4; }), // Re-run checks
-                  child: const Text('APPLY FOR ₹55,000 →', style: TextStyle(fontWeight: FontWeight.bold)),
+                  onPressed: () => setState(() { _loanAmount = _dynamicMaxLoan; _currentScreen = 4; }), // Re-run checks
+                  child: Text('APPLY FOR ₹${NumberFormat.currency(symbol: '', decimalDigits: 0).format(_dynamicMaxLoan)} →', style: const TextStyle(fontWeight: FontWeight.bold)),
                 )
               )
             ],
@@ -823,7 +870,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
             "tenure": _tenure,
             "product_id": _selectedProduct,
             "is_approved": _isApproved,
-            "score": 647, // Current mock score
+            "score": _dynamicScore,
           }),
           child: const Text('VIEW FULL DECISION REPORT →', style: TextStyle(color: _accentTeal, decoration: TextDecoration.underline, fontWeight: FontWeight.bold, fontSize: 14)),
         )
@@ -874,7 +921,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
             children: [
               const Text('OFFICIAL DECISION REPORT', style: TextStyle(color: _textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              const Text('Audit ID: AT-2026-0430-RK7821-a9f3\nDecision Type: AFFORDABILITY', style: TextStyle(color: _textSecondary, fontFamily: 'JetBrains Mono', fontSize: 11, height: 1.5)),
+              Text('Audit ID: ${ref.read(scoreProvider).reportData?.proofId ?? 'AT-${DateTime.now().year}-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}'}\nDecision Type: AFFORDABILITY', style: const TextStyle(color: _textSecondary, fontFamily: 'JetBrains Mono', fontSize: 11, height: 1.5)),
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
@@ -893,7 +940,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
           ),
         ),
         const SizedBox(height: 24),
-        const Text('❌ Rejected for: ₹80,000', style: TextStyle(color: _accentRed, fontSize: 18, fontWeight: FontWeight.bold)),
+        Text('❌ Rejected for: ₹${NumberFormat.currency(symbol: '', decimalDigits: 0).format(_loanAmount)}', style: const TextStyle(color: _accentRed, fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         const Text('(Not a creditworthiness issue)', style: TextStyle(color: _textSecondary, fontStyle: FontStyle.italic)),
         const SizedBox(height: 32),

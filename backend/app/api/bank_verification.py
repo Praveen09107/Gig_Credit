@@ -1,7 +1,8 @@
 import re
 from typing import Annotated
+from datetime import datetime
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 
 from app.auth.hmac_validator import verify_hmac_headers
 from app.db.connection import get_db
@@ -78,4 +79,36 @@ async def check_loans(
         "has_active_loans": bool(record.get("has_active_loans", bool(loans))),
         "loan_count": len(loans),
         "loans": loans,
+    }
+
+@router.post("/statement/upload")
+async def upload_bank_statement(
+    file: UploadFile = File(...),
+    user_id: str = Form(...),
+    db=Depends(get_db)
+):
+    if file.content_type != "application/pdf":
+        raise HTTPException(400, "Only PDF files accepted")
+
+    contents = await file.read()
+    if len(contents) > 10 * 1024 * 1024:  # 10MB limit
+        raise HTTPException(400, "File too large — max 10MB")
+
+    # Store temporarily for processing pipeline
+    doc = {
+        "user_id": user_id,
+        "filename": file.filename,
+        "content_type": file.content_type,
+        "size_bytes": len(contents),
+        "uploaded_at": datetime.utcnow().isoformat(),
+        "status": "uploaded",
+        "parsed": False
+    }
+    result = await db["bank_statements"].insert_one(doc)
+
+    return {
+        "status": "uploaded",
+        "statement_id": str(result.inserted_id),
+        "message": "Bank statement received. Processing on device.",
+        "size_bytes": len(contents)
     }

@@ -133,7 +133,7 @@ class RealApiService implements ApiService {
   @override
   Future<Map<String, dynamic>> verifyUan(String uanNumber) async {
     final response = await _post(
-      '$baseUrl/gov/uan/verify',
+      '$baseUrl/gov/eshram/verify',
       headers: _headers,
       body: jsonEncode({'uan': uanNumber}),
     );

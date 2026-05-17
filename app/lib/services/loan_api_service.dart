@@ -53,6 +53,7 @@ class LoanApiService {
       body: jsonEncode({
         'application': application,
         'score_report': scoreReport,
+        'meta_probability': scoreReport['metaProbability'] ?? scoreReport['probability'] ?? 0.85,
       }),
     ).timeout(const Duration(seconds: 15));
     

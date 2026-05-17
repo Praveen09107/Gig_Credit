@@ -84,4 +84,32 @@ class CausalRule {
     'pillar_affected': pillarAffected,
     'work_types': workTypes,
   };
+
+  // Convenience getters for XAI display
+  String get patternId => ruleId;
+
+  /// Parse causalChain text into displayable steps
+  List<CausalStep> get steps {
+    final parts = causalChain.split(' → ');
+    if (parts.length <= 1) {
+      // Single-block chain: split on '.' for multi-sentence
+      return [
+        CausalStep(label: rootCause, detail: causalChain),
+      ];
+    }
+    return parts.map((p) => CausalStep(label: p.trim(), detail: '')).toList();
+  }
+
+  String get rootFix => actionText.isNotEmpty ? actionText : applicantMessage;
+
+  int get estimatedGain {
+    // Estimate from number of triggers × 12 pts
+    return triggers.length * 12;
+  }
+}
+
+class CausalStep {
+  final String label;
+  final String detail;
+  const CausalStep({required this.label, required this.detail});
 }

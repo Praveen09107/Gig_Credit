@@ -16,10 +16,10 @@ class Layer3Actionable {
         continue;
       }
 
-      var tagData = actionabilityJson[factor.featureName];
+      var tagData = actionabilityJson[factor.featureKey];
       if (tagData == null) continue;
 
-      actionableList.add(ActionableItem.fromJson(factor.featureName, tagData));
+      actionableList.add(ActionableItem.fromJson(factor.featureKey, tagData));
     }
 
     // Sort: Immediate first, then Behavioural.

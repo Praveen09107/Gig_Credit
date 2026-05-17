@@ -8,6 +8,7 @@ import '../../../state/loan_provider.dart';
 import '../../../models/score_report_model.dart';
 import '../../../services/scoring_service.dart';
 import '../../../state/user_provider.dart';
+import '../../../state/auth_provider.dart';
 import '../../../app/app_router.dart';
 import '../../../models/loan_offer_model.dart';
 import '../../../services/loan_api_service.dart';
@@ -31,10 +32,12 @@ class _ReportHistoryScreenState extends ConsumerState<ReportHistoryScreen> {
   }
 
   Future<void> _fetchHistory() async {
-    final user = ref.read(userProvider);
-    if (user?.id.isNotEmpty == true) {
+    final authState = ref.read(authProvider);
+    final userId = authState.userId ?? ref.read(userProvider)?.id;
+    
+    if (userId != null && userId.isNotEmpty) {
       try {
-        final data = await ScoringService().getScoreHistory(user!.id);
+        final data = await ScoringService().getScoreHistory(userId);
         if (mounted) {
           setState(() {
             _history = data;
@@ -176,15 +179,10 @@ class _ReportHistoryScreenState extends ConsumerState<ReportHistoryScreen> {
                         children: [
                           const Icon(Icons.history_rounded, size: 80, color: Color(0xFF4A5568)),
                           const SizedBox(height: 16),
-                          const Text('No Reports Yet',
-                              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Complete the verification to\ngenerate your first credit report.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Color(0xFF8B95A8), fontSize: 14),
-                          ),
-                          const SizedBox(height: 24),
+                          const Text('No Reports Yet', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 12),
+                          const Text('Complete the verification to\ngenerate your first credit report.', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF8B95A8), fontSize: 15, height: 1.5)),
+                          const SizedBox(height: 32),
                           ElevatedButton.icon(
                             onPressed: () => context.go(AppRoutes.score),
                             icon: const Icon(Icons.add_rounded, color: Color(0xFF0D0F14)),

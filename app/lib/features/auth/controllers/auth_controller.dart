@@ -35,7 +35,7 @@ class AuthController extends StateNotifier<bool> {
         final userData = response['user'];
         
         final user = UserModel(
-          id: 'USR_${DateTime.now().millisecondsSinceEpoch}',
+          id: 'USR_$mobile',
           name: userData['name'],
           mobile: mobile,
           isVerified: false,

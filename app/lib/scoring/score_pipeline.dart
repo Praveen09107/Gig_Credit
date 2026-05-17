@@ -2,6 +2,7 @@
 import '../models/verified_profile/verified_profile.dart';
 import '../models/score_report_model.dart';
 import '../models/score_pillar_model.dart';
+import '../models/tailored_suggestion.dart';
 import 'features/feature_engineer.dart';
 import 'engine/scoring_engine.dart';
 import 'engine/confidence_engine.dart';
@@ -106,9 +107,15 @@ class ScorePipeline {
       pillarContributions: xaiBundle.pillarContributions,
       topStrengths: xaiBundle.topStrengths,
       topConcerns: xaiBundle.topConcerns,
-      tailoredSuggestions: xaiBundle.actions.map((a) => a.actionText).toList(),
+      tailoredSuggestions: xaiBundle.actions.map((a) => TailoredSuggestion(
+        text: a.actionText,
+        estimatedPtsGain: a.expectedGainPts > 0 ? a.expectedGainPts : null,
+      )).toList(),
       trajectory: xaiBundle.trajectory,
       causalChains: xaiBundle.causalChains,
+      metaProbability: probability,
+      efsVerdict: overallConfidence > 0.7 ? 'STABLE' : 'UNSTABLE',
+      modelUsed: 'llama-3.3-70b-versatile',
     );
   }
 

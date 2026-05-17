@@ -1,0 +1,75 @@
+import json
+
+action_tags_path = r'app/assets/constants/actionability_tags.json'
+causal_chains_path = r'app/assets/constants/causal_chains.json'
+
+with open(action_tags_path, 'r', encoding='utf-8') as f:
+    actionability = json.load(f)
+
+for k, v in actionability.items():
+    if v.get('actionable') in ['immediate', 'behavioural']:
+        v['action_text'] = f"Improve {k.replace('_', ' ')} to boost score."
+        v['expected_gain_pts'] = 15 if v['actionable'] == 'immediate' else 25
+        v['pillar'] = 'P2' if 'spend' in k else 'P1'
+        v['difficulty'] = 'Low' if v['actionable'] == 'immediate' else 'Medium'
+        v['horizon'] = '1 week' if v['actionable'] == 'immediate' else '1-3 months'
+        v['fix_category'] = 'Optimization'
+    else:
+        v['actionable'] = 'non_actionable'
+
+with open(action_tags_path, 'w', encoding='utf-8') as f:
+    json.dump(actionability, f, indent=2)
+
+causal_chains = [
+    {
+        "rule_id": "CR-001",
+        "name": "High Expense Dependency",
+        "triggers": [
+            {"feature_index": 0, "operator": "<", "threshold": 0.5},
+            {"feature_index": 1, "operator": ">", "threshold": 0.8}
+        ],
+        "trigger_logic": "AND",
+        "root_cause": "Low income stability coupled with high discretionary spend.",
+        "causal_chain": "Income instability limits savings ? Discretionary spend exceeds safe limits ? Debt dependency increases.",
+        "applicant_message": "Your spending is outpacing your earnings stability.",
+        "actionable": True,
+        "action_text": "Reduce discretionary spend by 20% to build a buffer.",
+        "pillar_affected": "P2",
+        "work_types": ["all"]
+    },
+    {
+        "rule_id": "CR-002",
+        "name": "Platform Verification Gap",
+        "triggers": [
+            {"feature_index": 4, "operator": "<", "threshold": 0.4}
+        ],
+        "trigger_logic": "AND",
+        "root_cause": "Low platform verified income ratio.",
+        "causal_chain": "Income is not verified by platforms ? Lenders cannot trust income stability ? Loan limits are constrained.",
+        "applicant_message": "Link more gig platforms to verify your income.",
+        "actionable": True,
+        "action_text": "Link your Swiggy/Zomato profiles to GigCredit.",
+        "pillar_affected": "P1",
+        "work_types": ["all"]
+    },
+    {
+        "rule_id": "CR-003",
+        "name": "Excellent Repayment History",
+        "triggers": [
+            {"feature_index": 2, "operator": ">", "threshold": 0.9}
+        ],
+        "trigger_logic": "AND",
+        "root_cause": "Consistent on-time repayments.",
+        "causal_chain": "On-time repayments ? Lower perceived risk ? Eligible for premium rates.",
+        "applicant_message": "Your excellent repayment history qualifies you for better rates.",
+        "actionable": False,
+        "action_text": "Maintain your current repayment habits.",
+        "pillar_affected": "P3",
+        "work_types": ["all"]
+    }
+]
+
+with open(causal_chains_path, 'w', encoding='utf-8') as f:
+    json.dump(causal_chains, f, indent=2)
+
+print("Fixed JSONs")

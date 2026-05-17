@@ -1,62 +1,70 @@
 [
   {
-    "rule": "Rule 1",
-    "suggestion": "Suggestion 1"
+    "rule_id": "CR-001",
+    "name": "High Expense Dependency",
+    "triggers": [
+      {
+        "feature_index": 0,
+        "operator": "<",
+        "threshold": 0.5
+      },
+      {
+        "feature_index": 1,
+        "operator": ">",
+        "threshold": 0.8
+      }
+    ],
+    "trigger_logic": "AND",
+    "root_cause": "Low income stability coupled with high discretionary spend.",
+    "causal_chain": "Income instability limits savings ? Discretionary spend exceeds safe limits ? Debt dependency increases.",
+    "applicant_message": "Your spending is outpacing your earnings stability.",
+    "actionable": true,
+    "action_text": "Reduce discretionary spend by 20% to build a buffer.",
+    "pillar_affected": "P2",
+    "work_types": [
+      "all"
+    ]
   },
   {
-    "rule": "Rule 2",
-    "suggestion": "Suggestion 2"
+    "rule_id": "CR-002",
+    "name": "Platform Verification Gap",
+    "triggers": [
+      {
+        "feature_index": 4,
+        "operator": "<",
+        "threshold": 0.4
+      }
+    ],
+    "trigger_logic": "AND",
+    "root_cause": "Low platform verified income ratio.",
+    "causal_chain": "Income is not verified by platforms ? Lenders cannot trust income stability ? Loan limits are constrained.",
+    "applicant_message": "Link more gig platforms to verify your income.",
+    "actionable": true,
+    "action_text": "Link your Swiggy/Zomato profiles to GigCredit.",
+    "pillar_affected": "P1",
+    "work_types": [
+      "all"
+    ]
   },
   {
-    "rule": "Rule 3",
-    "suggestion": "Suggestion 3"
-  },
-  {
-    "rule": "Rule 4",
-    "suggestion": "Suggestion 4"
-  },
-  {
-    "rule": "Rule 5",
-    "suggestion": "Suggestion 5"
-  },
-  {
-    "rule": "Rule 6",
-    "suggestion": "Suggestion 6"
-  },
-  {
-    "rule": "Rule 7",
-    "suggestion": "Suggestion 7"
-  },
-  {
-    "rule": "Rule 8",
-    "suggestion": "Suggestion 8"
-  },
-  {
-    "rule": "Rule 9",
-    "suggestion": "Suggestion 9"
-  },
-  {
-    "rule": "Rule 10",
-    "suggestion": "Suggestion 10"
-  },
-  {
-    "rule": "Rule 11",
-    "suggestion": "Suggestion 11"
-  },
-  {
-    "rule": "Rule 12",
-    "suggestion": "Suggestion 12"
-  },
-  {
-    "rule": "Rule 13",
-    "suggestion": "Suggestion 13"
-  },
-  {
-    "rule": "Rule 14",
-    "suggestion": "Suggestion 14"
-  },
-  {
-    "rule": "Rule 15",
-    "suggestion": "Suggestion 15"
+    "rule_id": "CR-003",
+    "name": "Excellent Repayment History",
+    "triggers": [
+      {
+        "feature_index": 2,
+        "operator": ">",
+        "threshold": 0.9
+      }
+    ],
+    "trigger_logic": "AND",
+    "root_cause": "Consistent on-time repayments.",
+    "causal_chain": "On-time repayments ? Lower perceived risk ? Eligible for premium rates.",
+    "applicant_message": "Your excellent repayment history qualifies you for better rates.",
+    "actionable": false,
+    "action_text": "Maintain your current repayment habits.",
+    "pillar_affected": "P3",
+    "work_types": [
+      "all"
+    ]
   }
 ]

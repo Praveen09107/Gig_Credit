@@ -2,6 +2,7 @@ import 'actionable_item.dart';
 
 class ShapFactorModel {
   final String featureName;
+  final String featureKey;
   final String description;
   final String direction; // 'positive' or 'negative'
   final double impactStrength; // absolute SHAP value for scaling bars
@@ -11,6 +12,7 @@ class ShapFactorModel {
 
   const ShapFactorModel({
     required this.featureName,
+    required this.featureKey,
     required this.description,
     required this.direction,
     required this.impactStrength,
@@ -31,6 +33,7 @@ class ShapFactorModel {
 
     return ShapFactorModel(
       featureName: json['featureName'] as String,
+      featureKey: json['featureKey'] as String? ?? json['featureName'] as String,
       description: json['description'] as String,
       direction: json['direction'] as String,
       impactStrength: (json['impactStrength'] as num).toDouble(),
@@ -42,6 +45,7 @@ class ShapFactorModel {
 
   Map<String, dynamic> toJson() => {
     'featureName': featureName,
+    'featureKey': featureKey,
     'description': description,
     'direction': direction,
     'impactStrength': impactStrength,

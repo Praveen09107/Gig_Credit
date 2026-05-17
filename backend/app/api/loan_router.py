@@ -77,7 +77,13 @@ async def apply_loan(req: Dict[str, Any]):
 
         # Safe vars() conversion that handles non-serializable fields
         def safe_vars(obj):
-            d = vars(obj)
+            if isinstance(obj, dict):
+                d = obj
+            else:
+                try:
+                    d = vars(obj)
+                except TypeError:
+                    d = {"value": str(obj)}
             result = {}
             for k, v in d.items():
                 if v is None or isinstance(v, (str, int, float, bool, list, dict)):
@@ -90,7 +96,7 @@ async def apply_loan(req: Dict[str, Any]):
         if not hr_outcome.all_passed:
             failure = hr_outcome.first_failure
             decision_payload = {
-                "decision": "rejected",
+                "decision": "REJECTED",
                 "rejection_bucket": "HARD_RULE",
                 "reason": failure.reason,
                 "remediation": failure.remediation,
@@ -103,7 +109,7 @@ async def apply_loan(req: Dict[str, Any]):
         aff_result = affordability_engine.compute(application, score_report, product_id)
         if not aff_result.passed:
             decision_payload = {
-                "decision": "rejected",
+                "decision": "REJECTED",
                 "rejection_bucket": "AFFORDABILITY",
                 "reason": aff_result.rejection_reason,
                 "counter_offer": aff_result.counter_offer,
@@ -112,10 +118,20 @@ async def apply_loan(req: Dict[str, Any]):
             audit_trail_service.append_record(loan_id, decision_payload, score_report, application)
             return decision_payload
             
-        repayment_prob = 0.85
+        repayment_prob = req.get("meta_probability") or \
+                         req.get("repayment_probability") or \
+                         req.get("score_report", {}).get("metaProbability") or \
+                         req.get("score_report", {}).get("meta_probability")
+
+        if repayment_prob is None:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=422,
+                detail="meta_probability missing from request body")
+
+        repayment_prob = float(repayment_prob)
         if repayment_prob < 0.65:
             decision_payload = {
-                "decision": "rejected",
+                "decision": "REJECTED",
                 "rejection_bucket": "MODEL_SCORED",
                 "reason": "Our AI model predicts a higher risk of repayment difficulties based on your financial behaviour."
             }
@@ -123,7 +139,7 @@ async def apply_loan(req: Dict[str, Any]):
             return decision_payload
             
         decision_payload = {
-            "decision": "approved",
+            "decision": "APPROVED",
             "loan_id": loan_id,
             "details": {
                 "approved_amount": application.get("loan_amount", application.get("amount")),
@@ -143,15 +159,14 @@ async def apply_loan(req: Dict[str, Any]):
                 elif "proofId" in score_report:
                     user_id = score_report["proofId"]
                     
-                import asyncio
-                asyncio.create_task(db.loan_applications.insert_one({
+                await db.loan_applications.insert_one({
                     "loan_id": loan_id,
                     "user_id": user_id,
                     "application": safe_vars(application),
                     "score_report": safe_vars(score_report),
                     "decision": safe_vars(decision_payload),
                     "created_at": datetime.datetime.utcnow()
-                }))
+                })
         except Exception as dbe:
             print(f"Failed to store loan app in Mongo: {dbe}")
 
@@ -167,6 +182,18 @@ async def apply_loan(req: Dict[str, Any]):
 
 @router.get("/decision/{loan_id}")
 async def get_decision(loan_id: str):
-    return {"loan_id": loan_id, "status": "approved"}
+    from fastapi import HTTPException
+    db = get_db()
+    if db is None:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    decision = await db.loan_applications.find_one(
+        {"loan_id": loan_id},
+        {"_id": 0}
+    )
+    if not decision:
+        raise HTTPException(status_code=404,
+            detail=f"No decision found for loan_id: {loan_id}")
+    return decision.get("decision", decision)
 
 

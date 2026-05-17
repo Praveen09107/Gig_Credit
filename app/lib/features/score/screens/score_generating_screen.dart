@@ -12,6 +12,7 @@ import '../../../state/loan_provider.dart';
 import '../../../models/loan_offer_model.dart';
 import '../../../app/app_router.dart';
 import '../../../models/score_report_model.dart';
+import '../../../models/tailored_suggestion.dart';
 import '../../../state/api_service_provider.dart';
 import '../../../services/loan_api_service.dart';
 import '../widgets/score_status_message.dart';
@@ -94,7 +95,15 @@ class _ScoreGeneratingScreenState extends ConsumerState<ScoreGeneratingScreen>
             topStrengths: report.topStrengths,
             topConcerns: report.topConcerns,
             llmExplanation: llmResponse['explanation'],
-            tailoredSuggestions: List<String>.from(llmResponse['suggestions'] ?? []),
+            tailoredSuggestions: (llmResponse['suggestions'] as List?)?.map((s) {
+              if (s is String) return TailoredSuggestion(text: s);
+              return TailoredSuggestion.fromJson(s);
+            }).toList() ?? report.tailoredSuggestions,
+            causalChains: report.causalChains,
+            trajectory: report.trajectory,
+            metaProbability: report.metaProbability,
+            modelUsed: llmResponse['model_used'] as String? ?? report.modelUsed,
+            efsVerdict: report.efsVerdict,
           );
         }
       } catch (e) {

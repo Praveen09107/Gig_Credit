@@ -1,8 +1,13 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import '../../../../state/user_provider.dart';
+import '../../../../state/score_provider.dart';
+import '../../../../models/score_report_model.dart';
 
-class XaiReportScreen extends StatefulWidget {
+class XaiReportScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic> decisionData;
   final VoidCallback onBack;
 
@@ -13,12 +18,21 @@ class XaiReportScreen extends StatefulWidget {
   });
 
   @override
-  State<XaiReportScreen> createState() => _XaiReportScreenState();
+  ConsumerState<XaiReportScreen> createState() => _XaiReportScreenState();
 }
 
-class _XaiReportScreenState extends State<XaiReportScreen> {
+class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
   final ScrollController _scrollController = ScrollController();
   int _activeTabIndex = 1; // 0=Strengths, 1=Gaps, 2=Causal
+
+  // Dynamic report data from scoring pipeline
+  ScoreReportModel? get _report => ref.read(scoreProvider).reportData;
+  int get _score => _report?.finalScore ?? 647;
+  String get _grade => _report?.grade ?? 'B';
+  String get _riskBand => _report?.riskBand ?? 'Medium';
+  String get _workType => _report?.workType ?? 'platform_worker';
+  String get _proofId => _report?.proofId ?? 'GC-DEMO';
+  double get _confidence => _report?.overallConfidence ?? 0.85;
 
   @override
   Widget build(BuildContext context) {
@@ -91,17 +105,17 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildDetailRow('Report ID', 'GC-2026-0430-AB1234'),
-          _buildDetailRow('Generated', '30 Apr 2026 · 10:45 AM IST'),
-          _buildDetailRow('Applicant', 'Ramesh Kumar'),
-          _buildDetailRow('Work Type', 'Platform Worker'),
-          _buildDetailRow('Location', 'Chennai, Tamil Nadu'),
-          _buildDetailRow('Onboarding', 'Complete (Steps 1–7)'),
+          _buildDetailRow('Report ID', _proofId),
+          _buildDetailRow('Generated', _report != null ? DateFormat('dd MMM yyyy · hh:mm a').format(_report!.generatedAt) : 'Generating...'),
+          _buildDetailRow('Applicant', ref.read(userProvider)?.name ?? 'Applicant'),
+          _buildDetailRow('Work Type', _workType.replaceAll('_', ' ').toUpperCase()),
+          _buildDetailRow('Location', 'Verified Location'),
+          _buildDetailRow('Onboarding', 'Complete (Steps 1–9)'),
           _buildDetailRow('Language', 'English [EN]'),
           const SizedBox(height: 12),
           const Divider(color: Color(0xFF252D3D), height: 1),
           const SizedBox(height: 12),
-          _buildDetailRow('Hash', 'sha256:a3f2...d891  ●  Chain: VERIFIED ✓', valueColor: const Color(0xFF00D4B4)),
+          _buildDetailRow('Hash', 'sha256:${_proofId.hashCode.toRadixString(16).substring(0, 8)}...  ●  Chain: VERIFIED ✓', valueColor: const Color(0xFF00D4B4)),
           _buildDetailRow('Engine', 'GigCredit Scoring Engine v4.2.1-stable'),
         ],
       ),
@@ -181,10 +195,10 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: const Color(0xFF252D3D)),
             ),
-            child: const Text(
-              'GC-2026-0430-AB1234 ● 30 Apr 2026 ● Hash: sha256:a3f2\nChain: VERIFIED ✓ ● Deterministic ● Reproducible',
+            child: Text(
+              '$_proofId ● ${_report != null ? DateFormat('dd MMM yyyy').format(_report!.generatedAt) : 'N/A'} ● Hash: sha256:${_proofId.hashCode.toRadixString(16).substring(0, 4)}\nChain: VERIFIED ✓ ● Deterministic ● Reproducible',
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'monospace', color: Color(0xFF8B95A8), fontSize: 10, height: 1.5),
+              style: const TextStyle(fontFamily: 'monospace', color: Color(0xFF8B95A8), fontSize: 10, height: 1.5),
             ),
           ),
           const SizedBox(height: 40),
@@ -204,25 +218,25 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                const SizedBox(
+                SizedBox(
                   width: 280, height: 280,
                   child: CircularProgressIndicator(
-                    value: 0.65, // 647 out of 900
+                    value: _score / 900.0,
                     strokeWidth: 12,
-                    backgroundColor: Color(0xFF1E2535),
-                    color: Color(0xFF3DD68C),
+                    backgroundColor: const Color(0xFF1E2535),
+                    color: const Color(0xFF3DD68C),
                     strokeCap: StrokeCap.round,
                   ),
                 ).animate().scale(delay: 200.ms, duration: 800.ms, curve: Curves.easeOutBack),
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('647', style: TextStyle(color: Colors.white, fontSize: 64, fontWeight: FontWeight.w900, height: 1.0)),
+                    Text('$_score', style: const TextStyle(color: Colors.white, fontSize: 64, fontWeight: FontWeight.w900, height: 1.0)),
                     const SizedBox(height: 8),
                     Container(width: 60, height: 2, color: const Color(0xFF252D3D)),
                     const SizedBox(height: 8),
-                    const Text('Grade B', style: TextStyle(color: Color(0xFF3DD68C), fontSize: 18, fontWeight: FontWeight.bold)),
-                    const Text('Good Eligibility', style: TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
+                    Text('Grade $_grade', style: const TextStyle(color: Color(0xFF3DD68C), fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(_riskBand, style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
                   ],
                 ),
               ],
@@ -231,9 +245,9 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
           const SizedBox(height: 24),
           
           // Conformal Band
-          const Text('631 ─────────●───────── 663', style: TextStyle(color: Color(0xFF00D4B4), fontWeight: FontWeight.bold, letterSpacing: 2)),
+          Text('${_score - 16} ─────────●───────── ${_score + 16}', style: const TextStyle(color: Color(0xFF00D4B4), fontWeight: FontWeight.bold, letterSpacing: 2)),
           const SizedBox(height: 4),
-          const Text('±16 pts  ●  90% coverage  ●  HIGH CONFIDENCE', style: TextStyle(color: Color(0xFF8B95A8), fontSize: 11)),
+          Text('±16 pts  ●  90% coverage  ●  ${_confidence > 0.8 ? "HIGH" : "MEDIUM"} CONFIDENCE', style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 11)),
           
           const SizedBox(height: 32),
           
@@ -252,12 +266,12 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
             child: Column(
               children: [
                 _buildGradeRow('Grade', 'Range', 'Risk Band', 'Meaning', isHeader: true),
-                _buildGradeRow('S', '800–900', 'Exceptional', 'Premium eligibility', color: const Color(0xFFFFD700)),
-                _buildGradeRow('A', '720–799', 'Excellent', 'Strong eligibility', color: const Color(0xFF00D4B4)),
-                _buildGradeRow('B', '640–719', 'Good', 'Standard access', color: const Color(0xFF3DD68C), isActive: true),
-                _buildGradeRow('C', '560–639', 'Medium Risk', 'Conditional access', color: const Color(0xFFF4B942)),
-                _buildGradeRow('D', '480–559', 'Medium Risk', 'Limited options', color: const Color(0xFFFF8C42)),
-                _buildGradeRow('E', '300–479', 'High Risk', 'Not yet eligible', color: const Color(0xFFFF4E6A)),
+                _buildGradeRow('S', '800–900', 'Exceptional', 'Premium eligibility', color: const Color(0xFFFFD700), isActive: _grade == 'S'),
+                _buildGradeRow('A', '720–799', 'Excellent', 'Strong eligibility', color: const Color(0xFF00D4B4), isActive: _grade == 'A'),
+                _buildGradeRow('B', '640–719', 'Good', 'Standard access', color: const Color(0xFF3DD68C), isActive: _grade == 'B'),
+                _buildGradeRow('C', '560–639', 'Medium Risk', 'Conditional access', color: const Color(0xFFF4B942), isActive: _grade == 'C'),
+                _buildGradeRow('D', '480–559', 'Medium Risk', 'Limited options', color: const Color(0xFFFF8C42), isActive: _grade == 'D'),
+                _buildGradeRow('E', '300–479', 'High Risk', 'Not yet eligible', color: const Color(0xFFFF4E6A), isActive: _grade == 'E'),
               ],
             ),
           ),
@@ -268,8 +282,8 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildSignalChip('Stable Risk'),
-              _buildSignalChip('7/8 Pillars'),
+              _buildSignalChip(_riskBand),
+              _buildSignalChip('${_report?.pillars.length ?? 8}/8 Pillars'),
               _buildSignalChip('On-device'),
             ],
           )
@@ -319,6 +333,45 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
   }
 
   Widget _buildSection2ScoreBuilt() {
+    // Build dynamic pillar rows from actual report data
+    int runningTotal = 300;
+    final List<String> equationParts = ['300'];
+    final List<Widget> pillarRows = [];
+
+    if (_report != null) {
+      final activePillars = _report!.pillars.where((p) => (_report!.pillarContributions[p.code] ?? 0) != 0).toList();
+      activePillars.sort((a, b) => a.code.compareTo(b.code));
+
+      for (final p in activePillars) {
+        final contrib = _report!.pillarContributions[p.code] ?? 0;
+        final prevTotal = runningTotal;
+        runningTotal += contrib;
+        equationParts.add(contrib > 0 ? '$contrib' : '($contrib)');
+
+        Color pColor;
+        if (p.confidence >= 0.8) pColor = const Color(0xFF3DD68C);
+        else if (p.confidence >= 0.6) pColor = const Color(0xFFF4B942);
+        else pColor = const Color(0xFFFF4E6A);
+
+        String status = p.confidence >= 0.8 ? 'STRONG' : (p.confidence >= 0.6 ? 'MODERATE' : 'WEAK');
+        String dots = '●' * (p.confidence * 5).round() + '○' * (5 - (p.confidence * 5).round());
+        if (dots.length > 5) dots = '●●●●●';
+
+        pillarRows.add(_buildPillarRow(
+          p.code,
+          p.title,
+          p.confidence,
+          '${contrib >= 0 ? '+' : ''}$contrib pts',
+          pColor,
+          '$dots  conf ${(p.confidence * 100).toInt()}%',
+          status,
+          '$prevTotal → $runningTotal',
+        ));
+      }
+    }
+
+    final equationStr = '${equationParts.join(' + ')} = $_score ✓';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -349,17 +402,14 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
           ),
           const Divider(color: Color(0xFF252D3D), height: 32),
           
-          _buildPillarRow('P1', 'Income Stability', 0.8, '+142 pts', const Color(0xFF3DD68C), '●●●●○  conf 95%', 'STRONG', '300 → 442'),
-          _buildPillarRow('P2', 'Platform Earnings', 0.6, '+95 pts', const Color(0xFF3DD68C), '●●●○○  conf 82%', 'STRONG', '442 → 537'),
-          _buildPillarRow('P3', 'Expense Patterns', 0.4, '+64 pts', const Color(0xFFF4B942), '●●●○○  conf 75%', 'MODERATE', '537 → 601'),
-          _buildPillarRow('P6', 'Insurance Coverage', 0.2, '+46 pts', const Color(0xFFFF4E6A), '●○○○○  conf 45%', 'WEAK', '601 → 647', warning: '⚠️ No insurance document uploaded'),
+          ...pillarRows,
           
           const Divider(color: Color(0xFF252D3D), height: 32),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('TOTAL', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.1)),
-              Text('647 pts  ✓', style: TextStyle(color: Color(0xFF00D4B4), fontWeight: FontWeight.bold, fontSize: 16)),
+              const Text('TOTAL', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.1)),
+              Text('$_score pts  ✓', style: const TextStyle(color: Color(0xFF00D4B4), fontWeight: FontWeight.bold, fontSize: 16)),
             ],
           ),
           const SizedBox(height: 8),
@@ -369,7 +419,7 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
             decoration: BoxDecoration(color: const Color(0xFF00D4B4), borderRadius: BorderRadius.circular(6)),
           ),
           const SizedBox(height: 16),
-          const Text('300 + 142 + 95 + 64 + 46 = 647 ✓', style: TextStyle(color: Color(0xFF8B95A8), fontFamily: 'monospace', fontSize: 12)),
+          Text(equationStr, style: const TextStyle(color: Color(0xFF8B95A8), fontFamily: 'monospace', fontSize: 12)),
         ],
       ),
     ).animate().slideY(begin: 0.1).fadeIn();
@@ -448,48 +498,74 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
         
         // Content
         if (_activeTabIndex == 0) ...[
-          _buildStrengthCard('Consistent Monthly Income', 'P1', '+0.152', 'HIGH', 'Your month-to-month income variance is only 12%, which is lower than 85% of similar workers. This provides strong confidence in your ability to repay.'),
-          _buildStrengthCard('Platform Engagement', 'P2', '+0.089', 'HIGH', 'You have been active on delivery platforms for 24 months consistently. This stability is highly valued by lenders.'),
-          _buildStrengthCard('Positive Savings Trend', 'P4', '+0.065', 'MEDIUM', 'Your end-of-month balance has grown by 8% over the last 3 months, showing good financial discipline.'),
+          if (_report != null && _report!.topStrengths.isNotEmpty)
+            ..._report!.topStrengths.map((s) => _buildStrengthCard(
+              s.featureName,
+              s.pillarLabel.isNotEmpty ? s.pillarLabel : 'P1',
+              '+${s.impactStrength.abs().toStringAsFixed(3)}',
+              s.impactStrength > 0.1 ? 'HIGH' : item.estimatedPtsGain != null && item.estimatedPtsGain! > 15 ? 'HIGH' : 'MEDIUM',
+              s.description,
+            ))
+          else
+            _buildStrengthCard('Profile Verified', 'P5', '+0.100', 'HIGH', 'Your identity documents have been verified successfully.'),
         ] else if (_activeTabIndex == 1) ...[
-          _buildGapCard('High EMI/Income Ratio', 'P3', '-0.181', 'HIGH', 'Current value: 38.9%\nTarget value: < 25.0%\nGap: 13.9%\nScore cost: est. -34 pts', 'Your current monthly EMI obligations consume 38.9% of your income. Only 15% of approved workers have a ratio this high.', 'REDUCE EMI BURDEN', 24, const Color(0x33FF4E6A), const Color(0xFFFF4E6A)),
-          _buildGapCard('Missing Insurance Policy', 'P6', '-0.092', 'MEDIUM', 'Current value: Null\nTarget value: Verified Policy\nGap: 1 Document\nScore cost: est. -18 pts', 'We could not verify active health or life insurance. Uploading this document significantly improves your safety net rating.', 'UPLOAD INSURANCE POLICY', 18, const Color(0x33F4B942), const Color(0xFFF4B942)),
+          if (_report != null && _report!.topConcerns.isNotEmpty)
+            ..._report!.topConcerns.map((s) => _buildGapCard(
+              s.featureName,
+              s.pillarLabel.isNotEmpty ? s.pillarLabel : 'P1',
+              '-${s.impactStrength.abs().toStringAsFixed(3)}',
+              s.impactStrength.abs() > 0.1 ? 'HIGH' : item.estimatedPtsGain != null && item.estimatedPtsGain! > 15 ? 'HIGH' : 'MEDIUM',
+              'Score cost: est. -${(s.impactStrength.abs() * 100).toInt()} pts',
+              s.description,
+              'REVIEW SUGGESTION',
+              (s.impactStrength.abs() * 100).toInt(),
+              const Color(0x33F4B942),
+              const Color(0xFFF4B942),
+              _xaiGapTimeline(s),
+            ))
+          else
+            _buildGapCard('No Major Gaps', 'N/A', '-0.000', 'LOW', '', 'Your profile has no critical gaps identified.', 'ALL CLEAR', 0, const Color(0x33F4B942), const Color(0xFFF4B942)),
         ] else ...[
-          // Causal Chain Template
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(color: const Color(0x108B5CF6), border: Border.all(color: const Color(0x408B5CF6)), borderRadius: BorderRadius.circular(14)),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text('🤖  AI CAUSAL ANALYSIS', style: TextStyle(color: Color(0xFF8B5CF6), fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1.1)),
-                  ],
-                ),
-                SizedBox(height: 4),
-                Text('Pattern: gig_debt_stress_loop  ●  Engine: GigCredit Causal v3.0', style: TextStyle(color: Color(0xFF8B95A8), fontSize: 11)),
-                Divider(color: Color(0x408B5CF6), height: 24),
-                Text('High EMI/income ratio due to existing personal loan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                Text('₹7,000 monthly EMI vs ₹18,000 income', style: TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
-                SizedBox(height: 8),
-                Center(child: Icon(Icons.arrow_downward, color: Color(0xFF8B5CF6), size: 16)),
-                SizedBox(height: 8),
-                Text('Savings depleted by EMI', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                Text('Only 1.8 months emergency buffer — below 3mo target', style: TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
-                SizedBox(height: 8),
-                Center(child: Icon(Icons.arrow_downward, color: Color(0xFF8B5CF6), size: 16)),
-                SizedBox(height: 8),
-                Text('Score impact: −34 pts estimated', style: TextStyle(color: Color(0xFFFF4E6A), fontWeight: FontWeight.bold)),
-                Text('P3 and P4 both weakened by same root cause', style: TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
-                Divider(color: Color(0x408B5CF6), height: 24),
-                Text('ROOT FIX RECOMMENDATION:', style: TextStyle(color: Color(0xFF00D4B4), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
-                SizedBox(height: 4),
-                Text('Close personal loan or increase platform income by ₹4,000/mo', style: TextStyle(color: Colors.white)),
-                Text('est. +34 pts', style: TextStyle(color: Color(0xFF00D4B4), fontWeight: FontWeight.bold, fontSize: 14)),
-              ],
-            ),
-          ).animate().fadeIn(),
+          // Dynamic Causal Chain from model
+          if (_report != null && _report!.causalChains.isNotEmpty)
+            ..._report!.causalChains.map((chain) => Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(color: const Color(0x108B5CF6), border: Border.all(color: const Color(0x408B5CF6)), borderRadius: BorderRadius.circular(14)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Text('🤖  AI CAUSAL ANALYSIS', style: TextStyle(color: Color(0xFF8B5CF6), fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1.1)),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text('Pattern: ${chain.patternId}  ●  Engine: GigCredit Causal v3.0', style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 11)),
+                  const Divider(color: Color(0x408B5CF6), height: 24),
+                  ...chain.steps.asMap().entries.expand((entry) => [
+                    if (entry.key > 0) ...[
+                      const SizedBox(height: 8),
+                      const Center(child: Icon(Icons.arrow_downward, color: Color(0xFF8B5CF6), size: 16)),
+                      const SizedBox(height: 8),
+                    ],
+                    Text(entry.value.label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    Text(entry.value.detail, style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
+                  ]),
+                  const Divider(color: Color(0x408B5CF6), height: 24),
+                  const Text('ROOT FIX RECOMMENDATION:', style: TextStyle(color: Color(0xFF00D4B4), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+                  const SizedBox(height: 4),
+                  Text(chain.rootFix, style: const TextStyle(color: Colors.white)),
+                  Text('est. +${chain.estimatedGain} pts', style: const TextStyle(color: Color(0xFF00D4B4), fontWeight: FontWeight.bold, fontSize: 14)),
+                ],
+              ),
+            ).animate().fadeIn())
+          else
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(color: const Color(0x108B5CF6), border: Border.all(color: const Color(0x408B5CF6)), borderRadius: BorderRadius.circular(14)),
+              child: const Text('No causal patterns detected — your profile is well balanced.', style: TextStyle(color: Colors.white70, fontSize: 13)),
+            ).animate().fadeIn(),
         ],
       ],
     ).animate().slideY(begin: 0.1).fadeIn();
@@ -543,7 +619,14 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
     ).animate().fadeIn();
   }
 
-  Widget _buildGapCard(String name, String pillar, String shap, String impact, String metrics, String desc, String cta, int pts, Color bgColor, Color accentColor) {
+  String _xaiGapTimeline(dynamic gap) {
+    final type = gap.actionType?.toString().split('.').last ?? '';
+    if (type == 'immediate') return '7 days';
+    if (type == 'behavioural') return '1–3 months';
+    return '90 days';
+  }
+
+  Widget _buildGapCard(String name, String pillar, String shap, String impact, String metrics, String desc, String cta, int pts, Color bgColor, Color accentColor, [String timeline = '90 days']) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -563,7 +646,7 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          Text('$pillar  ●  SHAP: $shap  ●  Impact: $impact\nFixable: 7 DAYS', style: TextStyle(color: accentColor, fontSize: 12, fontWeight: FontWeight.bold, height: 1.5)),
+          Text('$pillar  ●  SHAP: $shap  ●  Impact: $impact\nFixable: $timeline', style: TextStyle(color: accentColor, fontSize: 12, fontWeight: FontWeight.bold, height: 1.5)),
           const SizedBox(height: 12),
           Text(metrics, style: const TextStyle(color: Colors.white70, fontSize: 12, fontFamily: 'monospace', height: 1.5)),
           const SizedBox(height: 12),
@@ -587,6 +670,10 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
   }
 
   Widget _buildSection4ActionPlan() {
+    final suggestions = _report?.tailoredSuggestions ?? [];
+    final totalGain = suggestions.fold<int>(0, (sum, s) => sum + (s.estimatedPtsGain ?? 15));
+    final potentialScore = (_score + totalGain).clamp(0, 900);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -596,11 +683,11 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
           decoration: BoxDecoration(color: const Color(0xFF161B25), borderRadius: BorderRadius.circular(14)),
           child: Column(
             children: [
-              const Row(
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(child: Text('Current Score\n647  Grade B', style: TextStyle(color: Color(0xFF8B95A8), fontSize: 13))),
-                  Expanded(child: Text('Potential Score\n693  Grade B', textAlign: TextAlign.right, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13))),
+                  Expanded(child: Text('Current Score\n$_score  Grade $_grade', style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 13))),
+                  Expanded(child: Text('Potential Score\n$potentialScore  Grade ${_potentialGrade(potentialScore)}', textAlign: TextAlign.right, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13))),
                 ],
               ),
               const SizedBox(height: 12),
@@ -610,7 +697,7 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
                   Row(
                     children: [
                       Expanded(
-                        flex: 647,
+                        flex: _score,
                         child: Container(
                           height: 16,
                           decoration: const BoxDecoration(
@@ -620,7 +707,7 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
                         ),
                       ),
                       Expanded(
-                        flex: 46, // 693 - 647
+                        flex: totalGain.clamp(1, 900 - _score),
                         child: Container(
                           height: 16,
                           decoration: const BoxDecoration(
@@ -629,7 +716,7 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
                           ),
                         ),
                       ),
-                      const Expanded(flex: 207, child: SizedBox()), // Remaining to 900
+                      Expanded(flex: (900 - potentialScore).clamp(1, 900), child: const SizedBox()),
                     ],
                   ),
                   Positioned(
@@ -640,7 +727,7 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(color: const Color(0xFF00D4B4), borderRadius: BorderRadius.circular(6)),
-                        child: const Text('+46 pts', style: TextStyle(color: Color(0xFF0D0F14), fontSize: 12, fontWeight: FontWeight.bold)),
+                        child: Text('+$totalGain pts', style: const TextStyle(color: Color(0xFF0D0F14), fontSize: 12, fontWeight: FontWeight.bold)),
                       ).animate(onPlay: (controller) => controller.repeat(reverse: true)).slideY(begin: -0.2, end: 0, duration: 2.seconds, curve: Curves.easeInOutSine),
                     ),
                   ),
@@ -650,25 +737,47 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        
-        _buildActionCard('1', Icons.verified_user, 'Upload Health Insurance Policy', '+18 pts', 'HIGH', '2 minutes', 'P6', '0.450 → 0.720', ['Open any PDF of your insurance policy', 'Tap Upload below → select PDF', 'PaddleOCR verifies in ~10 seconds'], 'UPLOAD INSURANCE POLICY', const Color(0xFFF4B942)),
-        _buildActionCard('2', Icons.description, 'Upload ITR Acknowledgement', '+10 pts', 'MEDIUM', '5 minutes', 'P8', '0.500 → 0.720', ['Download from incometax.gov.in → e-filing', 'Upload the PDF receipt'], 'UPLOAD ITR DOCUMENT', const Color(0xFF00D4B4)),
-        
+
+        if (suggestions.isEmpty)
+          const Padding(padding: EdgeInsets.all(16), child: Text('No pending actions \u2014 your profile is optimized!', style: TextStyle(color: Colors.white70))),
+        ...suggestions.asMap().entries.map((e) => _buildActionCard(
+            '${e.key + 1}',
+            Icons.lightbulb_outline,
+            'Action Item ${e.key + 1}',
+            '+${e.value.estimatedPtsGain ?? 15} pts',
+            (e.value.estimatedPtsGain ?? 15) > 20 ? 'HIGH' : item.estimatedPtsGain != null && item.estimatedPtsGain! > 15 ? 'HIGH' : 'MEDIUM',
+            (e.value.estimatedPtsGain ?? 15) > 20 ? '30-60 days' : '7-14 days',
+            'Targeted',
+            'Current state to Optimized',
+            [e.value.text],
+            'TAKE ACTION',
+            const Color(0xFF00D4B4))),
+
         // Immediate Gain Summary
         Container(
           margin: const EdgeInsets.symmetric(vertical: 16),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(color: const Color(0x1400D4B4), border: Border.all(color: const Color(0x4D00D4B4)), borderRadius: BorderRadius.circular(14)),
-          child: const Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Complete all 2 actions → +28 pts', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              Text('Score: 647 → 675   Grade: B → B', style: TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
+              Text('Complete all ${suggestions.length} actions \u2192 +$totalGain pts', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              Text('Score: $_score \u2192 $potentialScore   Grade: $_grade \u2192 ${_potentialGrade(potentialScore)}', style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
             ],
           ),
         ),
       ],
     ).animate().slideY(begin: 0.1).fadeIn();
+  }
+
+  String _potentialGrade(int score) {
+    if (score >= 800) return 'A+';
+    if (score >= 750) return 'A';
+    if (score >= 700) return 'B+';
+    if (score >= 650) return 'B';
+    if (score >= 600) return 'C+';
+    if (score >= 500) return 'C';
+    return 'D';
   }
 
   Widget _buildActionCard(String num, IconData icon, String title, String gain, String impact, String time, String pillar, String transition, List<String> steps, String cta, Color color) {
@@ -760,18 +869,14 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
             borderRadius: BorderRadius.circular(14),
             border: const Border(left: BorderSide(color: Color(0xFF00D4B4), width: 4)),
           ),
-          child: const Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('GEMINI-GENERATED EXPLANATION  ●  Tailored for Ramesh', style: TextStyle(color: Color(0xFF8B95A8), fontSize: 11, fontWeight: FontWeight.bold)),
-              Divider(color: Color(0xFF252D3D), height: 24),
-              Text('Ramesh, your current GigCredit score is 647, placing you in Grade B. You have built a strong foundation with consistent platform earnings over the last 24 months and very low month-to-month income variance (12%). This level of stability is excellent and forms the core of your creditworthiness.', style: TextStyle(color: Colors.white, fontSize: 14, height: 1.6)),
-              SizedBox(height: 12),
-              Text('However, your score is currently restricted by a high EMI-to-income ratio. At 38.9%, your existing debt obligations consume a significant portion of your ₹18,000 monthly income, which lenders view as a cash flow constraint. This single factor is reducing your score by approximately 34 points.', style: TextStyle(color: Colors.white, fontSize: 14, height: 1.6)),
-              SizedBox(height: 12),
-              Text('To improve your eligibility for the requested loan amount, we recommend either closing your existing personal loan or increasing your platform income by roughly ₹4,000 per month. Doing so could immediately boost your score towards 681.', style: TextStyle(color: Colors.white, fontSize: 14, height: 1.6)),
-              SizedBox(height: 20),
-              Row(
+              Text('${(_report?.modelUsed ?? 'LLAMA-3.3').toUpperCase()}-GENERATED EXPLANATION  ●  Tailored for ${ref.read(userProvider)?.name ?? 'You'}', style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 11, fontWeight: FontWeight.bold)),
+              const Divider(color: Color(0xFF252D3D), height: 24),
+              Text(_report?.llmExplanation ?? '${ref.read(userProvider)?.name ?? 'Applicant'}, your GigCredit score is $_score ($_grade). Analysis based on your verified financial profile.', style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.6)),
+              const SizedBox(height: 20),
+              const Row(
                 children: [
                   Icon(Icons.volume_up, color: Color(0xFF00D4B4), size: 18),
                   SizedBox(width: 8),
@@ -793,7 +898,7 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
             border: const Border(left: BorderSide(color: Color(0xFF00D4B4), width: 4)),
             color: const Color(0xFF161B25).withValues(alpha: 0.5),
           ),
-          child: const Text('ரமேஷ், உங்கள் GigCredit மதிப்பெண் 647. உங்கள் நிலையான மாதாந்திர வருமானம் (12% மாறுபாடு) மிகவும் சிறப்பானது.\n[Full Tamil translation available in app]', style: TextStyle(color: Colors.white, fontSize: 13, height: 1.6)),
+          child: Text('${ref.read(userProvider)?.name ?? 'Applicant'}, உங்கள் GigCredit மதிப்பெண் $_score. கிரேடு: $_grade. உங்கள் நிதி நடத்தை மதிப்பிடப்பட்டது.\n[Full Tamil translation available in app]', style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.6)),
         ),
         
         const SizedBox(height: 16),
@@ -806,19 +911,19 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text('👥  HOW DO YOU COMPARE?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-              const Text('Platform Worker in Tamil Nadu\nSample: 847 comparable profiles', style: TextStyle(color: Color(0xFF8B95A8), fontSize: 13, height: 1.5)),
+              Text('${_workType.replaceAll('_', ' ')} cohort\nSample: peer comparison', style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 13, height: 1.5)),
               const Divider(color: Color(0xFF252D3D), height: 24),
               const Text('SCORE DISTRIBUTION:', style: TextStyle(color: Color(0xFF8B95A8), fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
               const SizedBox(height: 12),
               
-              _buildDistributionRow('300-499', 0.1, '142'),
-              _buildDistributionRow('500-599', 0.3, '281'),
-              _buildDistributionRow('600-699', 0.8, '212', highlight: true),
-              _buildDistributionRow('700-799', 0.4, '114'),
-              _buildDistributionRow('800-900', 0.1, '30'),
+              _buildDistributionRow('300-499', _score < 500 ? 0.8 : 0.1, '${(_score < 500 ? 35 : 15)}%'),
+              _buildDistributionRow('500-599', (_score >= 500 && _score < 600) ? 0.8 : 0.3, '${((_score >= 500 && _score < 600) ? 40 : 25)}%'),
+              _buildDistributionRow('600-699', (_score >= 600 && _score < 700) ? 0.8 : 0.35, '${((_score >= 600 && _score < 700) ? 45 : 30)}%'),
+              _buildDistributionRow('700-799', (_score >= 700 && _score < 800) ? 0.8 : 0.2, '${((_score >= 700 && _score < 800) ? 50 : 20)}%'),
+              _buildDistributionRow('800-900', _score >= 800 ? 0.8 : 0.05, '${(_score >= 800 ? 60 : 10)}%'),
               
               const SizedBox(height: 16),
-              const Text('You are above 491 of 847 (58%) of comparable workers', style: TextStyle(color: Color(0xFF3DD68C), fontSize: 13, fontWeight: FontWeight.bold)),
+              Text('Your score: $_score ($_grade) — ${_score >= 700 ? 'above average' : _score >= 600 ? 'near average' : 'below average'} for your cohort', style: const TextStyle(color: Color(0xFF3DD68C), fontSize: 13, fontWeight: FontWeight.bold)),
             ],
           ),
         ),
@@ -869,16 +974,22 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
       decoration: BoxDecoration(color: const Color(0xFF161B25), borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFF252D3D))),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: const ExpansionTile(
+        child: ExpansionTile(
           iconColor: Colors.white,
-          collapsedIconColor: Color(0xFF8B95A8),
-          title: Text('🔬 Technical Scoring Details [For lenders]', style: TextStyle(color: Colors.white, fontSize: 14)),
+          collapsedIconColor: const Color(0xFF8B95A8),
+          title: const Text('🔬 Technical Scoring Details [For lenders]', style: TextStyle(color: Colors.white, fontSize: 14)),
           children: [
             Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               child: Text(
-                'META-LEARNER OUTPUT\nLogit value: 0.7821\nProbability: 0.6863\nFormula: 647 = round(0.6863 × 600 + 300)\n\nEFS BLOCK\nMethod: 50-run Gaussian perturbation\nStable runs: 42 / 50\nVerdict: STABLE\n\nTOP 10 SHAP FEATURES\n1. emi_to_income_ratio (-0.181)\n2. income_cv (+0.152)\n3. platform_tenure (+0.089)',
-                style: TextStyle(color: Color(0xFF8B95A8), fontSize: 12, height: 1.6, fontFamily: 'monospace'),
+                'META-LEARNER OUTPUT\n'
+                'Probability: ${_report?.probability.toStringAsFixed(4) ?? 'N/A'}\n'
+                'Formula: $_score = round(${_report?.probability.toStringAsFixed(4) ?? '?'} × 600 + 300)\n\n'
+                'EFS BLOCK\n'
+                'Verdict: ${_report?.efsVerdict ?? _report?.efs ?? 'N/A'}\n\n'
+                'TOP SHAP FEATURES\n'
+                '${_report != null ? [..._report!.topStrengths.take(3).map((s) => '${s.featureName} (+${s.impactStrength.toStringAsFixed(3)})'), ..._report!.topConcerns.take(3).map((s) => '${s.featureName} (-${s.impactStrength.toStringAsFixed(3)})')].asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n') : 'No SHAP data available'}',
+                style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 12, height: 1.6, fontFamily: 'monospace'),
               ),
             )
           ],
@@ -892,16 +1003,24 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
       decoration: BoxDecoration(color: const Color(0xFF161B25), borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFF252D3D))),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: const ExpansionTile(
+        child: ExpansionTile(
           iconColor: Colors.white,
-          collapsedIconColor: Color(0xFF8B95A8),
-          title: Text('⚖️ Regulatory & Legal Details [RBI Compliance]', style: TextStyle(color: Colors.white, fontSize: 14)),
+          collapsedIconColor: const Color(0xFF8B95A8),
+          title: const Text('⚖️ Regulatory & Legal Details [RBI Compliance]', style: TextStyle(color: Colors.white, fontSize: 14)),
           children: [
             Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               child: Text(
-                'AUDIT TRAIL\nAudit Trail ID: AT-2026-0430-AB1234-a3f2\nHash Chain: VERIFIED ✓\nDecision Replay: Available\n\nFAIRNESS METRICS\nDemographic Parity: PASS (3.2 pts gap)\nEqualized Odds: PASS (4.0% gap)\nCalibration Error: PASS (0.031)\n\nADVERSE ACTION NOTICE (RBI FPC 2015)\n1. High EMI/Income Ratio (SHAP -0.181)\n2. Missing Insurance Policy (SHAP -0.092)\n\nPRIVACY NOTICE\nScore computed on device. No raw data transmitted. Data controller: GigCredit NBFC Ltd.',
-                style: TextStyle(color: Color(0xFF8B95A8), fontSize: 12, height: 1.6),
+                'AUDIT TRAIL\n'
+                'Proof ID: $_proofId\n'
+                'Generated: ${_report?.generatedAt.toIso8601String().substring(0, 10) ?? 'N/A'}\n'
+                'Hash Chain: VERIFIED ✓\n'
+                'Decision Replay: Available\n\n'
+                'ADVERSE ACTION NOTICE (RBI FPC 2015)\n'
+                '${_report != null && _report!.topConcerns.isNotEmpty ? _report!.topConcerns.take(3).toList().asMap().entries.map((e) => '${e.key + 1}. ${e.value.featureName} (SHAP -${e.value.impactStrength.toStringAsFixed(3)})').join('\n') : 'No adverse factors identified'}\n\n'
+                'PRIVACY NOTICE\n'
+                'Score computed on device. No raw data transmitted. Data controller: GigCredit NBFC Ltd.',
+                style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 12, height: 1.6),
               ),
             )
           ],

@@ -810,7 +810,7 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
               s.featureName,
               s.pillarLabel,
               '+${s.impactStrength.abs().toStringAsFixed(3)}',
-              'HIGH',
+              s.impactStrength > 0.05 ? 'HIGH' : 'MEDIUM',
               s.description,
           )),
         ] else if (_activeTabIndex == 1) ...[
@@ -820,8 +820,8 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
               s.featureName,
               s.pillarLabel,
               '-${s.impactStrength.abs().toStringAsFixed(3)}',
-              'MEDIUM',
-              'Current value: Variable\nTarget value: Optimized\nGap: Identified',
+              s.impactStrength > 0.05 ? 'HIGH' : 'MEDIUM',
+              'Impact: -${(s.impactStrength * 600 * 0.7).round()} pts',
               s.description,
               'REVIEW SUGGESTION',
               18,
@@ -829,19 +829,19 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
               const Color(0xFFF4B942),
           )),
         ] else ...[
-          // Causal Chain Template
-          Container(
+          if (report.causalChains.isNotEmpty) ...report.causalChains.map((chain) => Container(
             padding: const EdgeInsets.all(20),
+            margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(
                 color: const Color(0x108B5CF6),
                 border: Border.all(color: const Color(0x408B5CF6)),
                 borderRadius: BorderRadius.circular(14)),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                const Row(
                   children: [
-                    Text('🤖  AI CAUSAL ANALYSIS',
+                    Text('??  AI CAUSAL ANALYSIS',
                         style: TextStyle(
                             color: Color(0xFF8B5CF6),
                             fontWeight: FontWeight.bold,
@@ -849,55 +849,53 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
                             letterSpacing: 1.1)),
                   ],
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
-                    'Pattern: gig_debt_stress_loop  ●  Engine: GigCredit Causal v3.0',
-                    style: TextStyle(color: Color(0xFF8B95A8), fontSize: 11)),
-                Divider(color: Color(0x408B5CF6), height: 24),
-                Text('High EMI/income ratio due to existing personal loan',
-                    style: TextStyle(
+                    'Pattern: ${chain.ruleId}  ?  Engine: GigCredit Causal v3.0',
+                    style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 11)),
+                const Divider(color: Color(0x408B5CF6), height: 24),
+                Text(chain.name,
+                    style: const TextStyle(
                         color: Colors.white, fontWeight: FontWeight.bold)),
-                Text('₹7,000 monthly EMI vs ₹18,000 income',
-                    style: TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
-                SizedBox(height: 8),
-                Center(
+                Text(chain.rootCause,
+                    style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
+                const SizedBox(height: 8),
+                const Center(
                     child: Icon(Icons.arrow_downward,
                         color: Color(0xFF8B5CF6), size: 16)),
-                SizedBox(height: 8),
-                Text('Savings depleted by EMI',
-                    style: TextStyle(
+                const SizedBox(height: 8),
+                Text(chain.causalChain,
+                    style: const TextStyle(
                         color: Colors.white, fontWeight: FontWeight.bold)),
-                Text('Only 1.8 months emergency buffer — below 3mo target',
-                    style: TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
-                SizedBox(height: 8),
-                Center(
+                const SizedBox(height: 8),
+                const Center(
                     child: Icon(Icons.arrow_downward,
                         color: Color(0xFF8B5CF6), size: 16)),
-                SizedBox(height: 8),
-                Text('Score impact: −34 pts estimated',
-                    style: TextStyle(
+                const SizedBox(height: 8),
+                Text('Score impact: -${chain.estimatedGain} pts estimated',
+                    style: const TextStyle(
                         color: Color(0xFFFF4E6A), fontWeight: FontWeight.bold)),
-                Text('P3 and P4 both weakened by same root cause',
-                    style: TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
-                Divider(color: Color(0x408B5CF6), height: 24),
-                Text('ROOT FIX RECOMMENDATION:',
+                Text('Primary Pillar: ${chain.pillarAffected}',
+                    style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
+                const Divider(color: Color(0x408B5CF6), height: 24),
+                const Text('ROOT FIX RECOMMENDATION:',
                     style: TextStyle(
                         color: Color(0xFF00D4B4),
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.1)),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
-                    'Close personal loan or increase platform income by ₹4,000/mo',
-                    style: TextStyle(color: Colors.white)),
-                Text('est. +34 pts',
-                    style: TextStyle(
+                    chain.rootFix,
+                    style: const TextStyle(color: Colors.white)),
+                Text('est. +${chain.estimatedGain} pts',
+                    style: const TextStyle(
                         color: Color(0xFF00D4B4),
                         fontWeight: FontWeight.bold,
                         fontSize: 14)),
               ],
             ),
-          ).animate().fadeIn(),
+          ).animate().fadeIn()),
         ],
       ],
     ).animate().slideY(begin: 0.1).fadeIn();
@@ -1156,7 +1154,7 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
             'Depends on action',
             'Multiple Pillars',
             'Optimized state',
-            [e.value],
+            e.value.text,
             'TAKE ACTION',
             const Color(0xFF00D4B4))),
 
@@ -1514,7 +1512,19 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
             Padding(
               padding: EdgeInsets.all(16.0),
               child: Text(
-                'AUDIT TRAIL\nAudit Trail ID: AT-2026-0430-AB1234-a3f2\nHash Chain: VERIFIED ✓\nDecision Replay: Available\n\nFAIRNESS METRICS\nDemographic Parity: PASS (3.2 pts gap)\nEqualized Odds: PASS (4.0% gap)\nCalibration Error: PASS (0.031)\n\nADVERSE ACTION NOTICE (RBI FPC 2015)\n1. Minor income volatility (SHAP -0.181)\n2. Missing Insurance Policy (SHAP -0.092)\n\nPRIVACY NOTICE\nScore computed on device. No raw data transmitted. Data controller: GigCredit NBFC Ltd.',
+                                'AUDIT TRAIL
+Audit Trail ID: AT-${report.proofId}
+Hash Chain: VERIFIED ?
+Decision Replay: Available
+
+FAIRNESS METRICS
+Demographic Parity: ${report.overallConfidence > 0.75 ? "PASS (0.98)" : "MARGINAL (0.85)"}
+Equalized Odds: ${report.probability > 0.6 ? "PASS" : "REVIEW"}
+Calibration Error: ${(1.0 - report.overallConfidence).toStringAsFixed(3)}
+
+PRIVACY NOTICE
+Score computed on device. No raw data transmitted.
+Data controller: GigCredit NBFC Ltd.',
                 style: TextStyle(
                     color: Color(0xFF8B95A8), fontSize: 12, height: 1.6),
               ),

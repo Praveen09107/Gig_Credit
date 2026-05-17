@@ -77,6 +77,7 @@ class Layer2ShapLookup {
 
       allFactors.add(ShapFactorModel(
         featureName: name,
+        featureKey: featureKey,
         description: _generateDescription(name, impact > 0),
         direction: impact > 0 ? 'positive' : 'negative',
         impactStrength: impact.abs(),

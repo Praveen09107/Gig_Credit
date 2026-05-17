@@ -12,7 +12,13 @@
     "actionable": "non_actionable"
   },
   "income_platform_verified_ratio": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve income platform verified ratio to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "income_seasonality_amplitude": {
     "actionable": "non_actionable"
@@ -21,10 +27,22 @@
     "actionable": "non_actionable"
   },
   "income_bank_deposit_match_ratio": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve income bank deposit match ratio to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "income_lowest_to_avg_ratio": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve income lowest to avg ratio to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "income_last_3_vs_prev_3": {
     "actionable": "non_actionable"
@@ -39,10 +57,22 @@
     "actionable": "non_actionable"
   },
   "utility_ontime_ratio": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve utility ontime ratio to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "emi_ontime_ratio": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve emi ontime ratio to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "bounce_count_norm": {
     "actionable": "non_actionable"
@@ -54,22 +84,46 @@
     "actionable": "non_actionable"
   },
   "rent_ontime_ratio": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve rent ontime ratio to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "credit_card_min_payment_rate": {
     "actionable": "non_actionable"
   },
   "p2p_repayment_ratio": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve p2p repayment ratio to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "utility_advance_payment_ratio": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve utility advance payment ratio to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "late_fee_incidence_norm": {
     "actionable": "non_actionable"
   },
   "payment_channel_digital_ratio": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve payment channel digital ratio to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "emi_prepayment_count_norm": {
     "actionable": "non_actionable"
@@ -84,28 +138,58 @@
     "actionable": "non_actionable"
   },
   "emi_to_income_ratio": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve emi to income ratio to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "debt_count_norm": {
     "actionable": "non_actionable"
   },
   "outstanding_debt_to_income_ratio": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve outstanding debt to income ratio to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "debt_repayment_progress_ratio": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve debt repayment progress ratio to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "mfi_loan_presence": {
     "actionable": "non_actionable"
   },
   "informal_debt_ratio": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve informal debt ratio to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "debt_stacking_indicator": {
     "actionable": "non_actionable"
   },
   "debt_service_coverage_ratio": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve debt service coverage ratio to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "debt_consolidation_behavior": {
     "actionable": "non_actionable"
@@ -120,7 +204,13 @@
     "actionable": "non_actionable"
   },
   "savings_consistency_score": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve savings consistency score to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "emergency_fund_months": {
     "actionable": "non_actionable"
@@ -135,46 +225,106 @@
     "actionable": "non_actionable"
   },
   "savings_to_debt_ratio": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve savings to debt ratio to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "digital_wallet_balance_norm": {
     "actionable": "non_actionable"
   },
   "surplus_after_obligations_ratio": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve surplus after obligations ratio to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "savings_goal_consistency": {
     "actionable": "non_actionable"
   },
   "aadhaar_verified": {
-    "actionable": "immediate"
+    "actionable": "immediate",
+    "action_text": "Improve aadhaar verified to boost score.",
+    "expected_gain_pts": 15,
+    "pillar": "P1",
+    "difficulty": "Low",
+    "horizon": "1 week",
+    "fix_category": "Optimization"
   },
   "pan_verified": {
-    "actionable": "immediate"
+    "actionable": "immediate",
+    "action_text": "Improve pan verified to boost score.",
+    "expected_gain_pts": 15,
+    "pillar": "P1",
+    "difficulty": "Low",
+    "horizon": "1 week",
+    "fix_category": "Optimization"
   },
   "face_match_score": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve face match score to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "address_match_score": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve address match score to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "dob_consistent": {
     "actionable": "non_actionable"
   },
   "name_consistency_score": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve name consistency score to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "work_proof_present": {
     "actionable": "non_actionable"
   },
   "work_proof_type_score": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve work proof type score to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "platform_onboarding_verified": {
-    "actionable": "immediate"
+    "actionable": "immediate",
+    "action_text": "Improve platform onboarding verified to boost score.",
+    "expected_gain_pts": 15,
+    "pillar": "P1",
+    "difficulty": "Low",
+    "horizon": "1 week",
+    "fix_category": "Optimization"
   },
   "employer_verification_score": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve employer verification score to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "work_type_income_consistency": {
     "actionable": "non_actionable"
@@ -189,13 +339,25 @@
     "actionable": "non_actionable"
   },
   "work_continuity_score": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve work continuity score to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "customer_rating_norm": {
     "actionable": "non_actionable"
   },
   "income_to_worktype_ratio": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve income to worktype ratio to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "alternate_id_present": {
     "actionable": "non_actionable"
@@ -225,7 +387,13 @@
     "actionable": "non_actionable"
   },
   "medical_expense_ratio": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve medical expense ratio to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "financial_shock_recovery": {
     "actionable": "non_actionable"
@@ -258,22 +426,58 @@
     "actionable": "non_actionable"
   },
   "social_reference_score": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve social reference score to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "civic_identity_score": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve civic identity score to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "itr_filed_this_year": {
-    "actionable": "immediate"
+    "actionable": "immediate",
+    "action_text": "Improve itr filed this year to boost score.",
+    "expected_gain_pts": 15,
+    "pillar": "P1",
+    "difficulty": "Low",
+    "horizon": "1 week",
+    "fix_category": "Optimization"
   },
   "itr_years_filed_norm": {
-    "actionable": "immediate"
+    "actionable": "immediate",
+    "action_text": "Improve itr years filed norm to boost score.",
+    "expected_gain_pts": 15,
+    "pillar": "P1",
+    "difficulty": "Low",
+    "horizon": "1 week",
+    "fix_category": "Optimization"
   },
   "itr_income_match_ratio": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve itr income match ratio to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "gst_registered": {
-    "actionable": "immediate"
+    "actionable": "immediate",
+    "action_text": "Improve gst registered to boost score.",
+    "expected_gain_pts": 15,
+    "pillar": "P1",
+    "difficulty": "Low",
+    "horizon": "1 week",
+    "fix_category": "Optimization"
   },
   "gst_return_regularity": {
     "actionable": "non_actionable"
@@ -288,7 +492,13 @@
     "actionable": "non_actionable"
   },
   "debt_vulnerability_score": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve debt vulnerability score to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "income_emi_coverage": {
     "actionable": "non_actionable"
@@ -330,7 +540,13 @@
     "actionable": "non_actionable"
   },
   "tax_income_consistency_ratio": {
-    "actionable": "behavioural"
+    "actionable": "behavioural",
+    "action_text": "Improve tax income consistency ratio to boost score.",
+    "expected_gain_pts": 25,
+    "pillar": "P1",
+    "difficulty": "Medium",
+    "horizon": "1-3 months",
+    "fix_category": "Optimization"
   },
   "scheme_income_combined": {
     "actionable": "non_actionable"
