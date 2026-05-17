@@ -503,7 +503,7 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
               s.featureName,
               s.pillarLabel.isNotEmpty ? s.pillarLabel : 'P1',
               '+${s.impactStrength.abs().toStringAsFixed(3)}',
-              s.impactStrength > 0.1 ? 'HIGH' : item.estimatedPtsGain != null && item.estimatedPtsGain! > 15 ? 'HIGH' : 'MEDIUM',
+              s.impactStrength > 0.1 ? 'HIGH' : 'MEDIUM',
               s.description,
             ))
           else
@@ -514,7 +514,7 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
               s.featureName,
               s.pillarLabel.isNotEmpty ? s.pillarLabel : 'P1',
               '-${s.impactStrength.abs().toStringAsFixed(3)}',
-              s.impactStrength.abs() > 0.1 ? 'HIGH' : item.estimatedPtsGain != null && item.estimatedPtsGain! > 15 ? 'HIGH' : 'MEDIUM',
+              s.impactStrength.abs() > 0.1 ? 'HIGH' : 'MEDIUM',
               'Score cost: est. -${(s.impactStrength.abs() * 100).toInt()} pts',
               s.description,
               'REVIEW SUGGESTION',
@@ -745,7 +745,7 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
             Icons.lightbulb_outline,
             'Action Item ${e.key + 1}',
             '+${e.value.estimatedPtsGain ?? 15} pts',
-            (e.value.estimatedPtsGain ?? 15) > 20 ? 'HIGH' : item.estimatedPtsGain != null && item.estimatedPtsGain! > 15 ? 'HIGH' : 'MEDIUM',
+            (e.value.estimatedPtsGain ?? 15) > 20 ? 'HIGH' : 'MEDIUM',
             (e.value.estimatedPtsGain ?? 15) > 20 ? '30-60 days' : '7-14 days',
             'Targeted',
             'Current state to Optimized',

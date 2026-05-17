@@ -1154,7 +1154,7 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
             'Depends on action',
             'Multiple Pillars',
             'Optimized state',
-            e.value.text,
+            [e.value.text],
             'TAKE ACTION',
             const Color(0xFF00D4B4))),
 
@@ -1512,19 +1512,19 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
             Padding(
               padding: EdgeInsets.all(16.0),
               child: Text(
-                                'AUDIT TRAIL
+                                '''AUDIT TRAIL
 Audit Trail ID: AT-${report.proofId}
 Hash Chain: VERIFIED ?
 Decision Replay: Available
 
 FAIRNESS METRICS
-Demographic Parity: ${report.overallConfidence > 0.75 ? "PASS (0.98)" : "MARGINAL (0.85)"}
-Equalized Odds: ${report.probability > 0.6 ? "PASS" : "REVIEW"}
+Demographic Parity: ${report.overallConfidence > 0.75 ? 'PASS (0.98)' : 'MARGINAL (0.85)'}
+Equalized Odds: ${report.probability > 0.6 ? 'PASS' : 'REVIEW'}
 Calibration Error: ${(1.0 - report.overallConfidence).toStringAsFixed(3)}
 
 PRIVACY NOTICE
 Score computed on device. No raw data transmitted.
-Data controller: GigCredit NBFC Ltd.',
+Data controller: GigCredit NBFC Ltd.''',
                 style: TextStyle(
                     color: Color(0xFF8B95A8), fontSize: 12, height: 1.6),
               ),
