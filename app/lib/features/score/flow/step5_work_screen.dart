@@ -11,11 +11,11 @@ import '../../../../state/step_status_provider.dart';
 import '../../../../state/verified_profile_provider.dart';
 import '../../../../state/ocr_service_provider.dart';
 import '../../../../state/api_service_provider.dart';
-import '../../../../state/ocr_results_provider.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/work_info.dart';
 import '../../../../app/app_router.dart';
-import '../../../../demo/demo_profile_manager.dart';
+import '../../../../shared/widgets/feedback/app_toast.dart';
+import '../../../../shared/widgets/feedback/step_popups.dart';
 
 class Step5WorkScreen extends ConsumerStatefulWidget {
   const Step5WorkScreen({super.key});
@@ -84,6 +84,13 @@ class _Step5WorkScreenState extends ConsumerState<Step5WorkScreen> {
     }
 
     setState(() => _isLoading = true);
+
+    // Show confirmation popup before proceeding
+    final confirmed = await StepConfirmPopup.show(context, stepNumber: 5);
+    if (!confirmed || !mounted) {
+      setState(() => _isLoading = false);
+      return;
+    }
     try {
       final api = ref.read(apiServiceProvider);
       final workType = _workType;
@@ -116,6 +123,7 @@ class _Step5WorkScreenState extends ConsumerState<Step5WorkScreen> {
 
       if (mounted) {
         setState(() => _isLoading = false);
+        AppToast.success(context, 'Work proof verified ✓');
         context.push(AppRoutes.scoreStep(6));
       }
     } catch (e) {
@@ -158,7 +166,7 @@ class _Step5WorkScreenState extends ConsumerState<Step5WorkScreen> {
           const SizedBox(height: 4),
           Text(
             _getSubtitle(workType),
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
           ),
           const SizedBox(height: 20),
 

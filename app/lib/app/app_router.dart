@@ -28,7 +28,6 @@ import '../features/score/flow/step8_tax_screen.dart';
 import '../features/score/flow/step9_emi_loans_screen.dart';
 import '../features/report/screens/score_report_screen.dart';
 import '../features/report/screens/certificate_screen.dart';
-import '../features/loans/screens/loans_screen.dart';
 import '../features/loans/screens/loan_detail_screen.dart';
 import '../features/loans/screens/loan_application_screen.dart';
 import '../features/loans/screens/xai_report_screen.dart';

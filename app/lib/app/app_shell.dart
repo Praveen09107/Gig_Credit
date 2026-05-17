@@ -7,7 +7,7 @@ import '../shared/theme/app_typography.dart';
 import '../state/nav_provider.dart';
 import 'app_router.dart';
 
-/// GigCredit App Shell — Bottom Navigation (5 tabs)
+/// GigCredit App Shell — Bottom Navigation (4 tabs)
 /// White bg, green active indicator, smooth tab transitions
 class AppShell extends ConsumerWidget {
   final Widget child;
@@ -25,15 +25,10 @@ class AppShell extends ConsumerWidget {
         activeIcon: Icons.bar_chart_rounded,
         route: AppRoutes.score),
     _NavItem(
-        label: 'Loans',
-        icon: Icons.account_balance_outlined,
-        activeIcon: Icons.account_balance_rounded,
-        route: AppRoutes.loans),
-    _NavItem(
-        label: 'Track',
-        icon: Icons.receipt_long_outlined,
-        activeIcon: Icons.receipt_long_rounded,
-        route: AppRoutes.applications),
+        label: 'History',
+        icon: Icons.history_rounded,
+        activeIcon: Icons.history_rounded,
+        route: AppRoutes.reportHistory),
     _NavItem(
         label: 'Profile',
         icon: Icons.person_outline_rounded,
@@ -44,9 +39,8 @@ class AppShell extends ConsumerWidget {
   int _activeIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
     if (location.startsWith('/app/score')) return 1;
-    if (location.startsWith('/app/loans')) return 2;
-    if (location.startsWith('/app/applications')) return 3;
-    if (location.startsWith('/app/profile')) return 4;
+    if (location.startsWith('/app/profile/reports')) return 2;
+    if (location.startsWith('/app/profile')) return 3;
     return 0;
   }
 

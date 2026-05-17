@@ -10,7 +10,6 @@ import '../../../state/score_provider.dart';
 import '../../../state/user_provider.dart';
 import '../../../state/loan_provider.dart';
 import '../../../models/loan_offer_model.dart';
-import '../../../scoring/score_pipeline.dart';
 import '../../../app/app_router.dart';
 import '../../../models/score_report_model.dart';
 import '../../../state/api_service_provider.dart';
@@ -151,7 +150,7 @@ class _ScoreGeneratingScreenState extends ConsumerState<ScoreGeneratingScreen>
                   Navigator.pop(ctx);
                   context.go(AppRoutes.home);
                 },
-                child: Text('Go Home',
+                child: const Text('Go Home',
                     style: TextStyle(color: AppColors.greenPrimary, fontWeight: FontWeight.w600)),
               )
             ],
@@ -274,7 +273,7 @@ class _ScoreGeneratingScreenState extends ConsumerState<ScoreGeneratingScreen>
                               margin: const EdgeInsets.symmetric(horizontal: 4),
                               width: 8,
                               height: 8,
-                              decoration: BoxDecoration(
+                              decoration: const BoxDecoration(
                                 color: AppColors.greenMint,
                                 shape: BoxShape.circle,
                               ),

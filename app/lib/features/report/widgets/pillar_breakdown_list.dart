@@ -141,7 +141,7 @@ class _PillarBreakdownListState extends State<PillarBreakdownList> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
+                      gradient: const LinearGradient(
                         colors: [AppColors.greenMuted, AppColors.bgCard],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -152,10 +152,10 @@ class _PillarBreakdownListState extends State<PillarBreakdownList> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
+                        const Row(
                           children: [
-                            const Icon(Icons.psychology, color: AppColors.greenPrimary, size: 18),
-                            const SizedBox(width: 8),
+                            Icon(Icons.psychology, color: AppColors.greenPrimary, size: 18),
+                            SizedBox(width: 8),
                             Text('Detailed AI Reason', style: TextStyle(color: AppColors.greenPrimary, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                           ],
                         ),

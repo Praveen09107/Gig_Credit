@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_typography.dart';
-import '../../../shared/theme/app_spacing.dart';
 import '../../../shared/widgets/inputs/phone_input_field.dart';
 import '../../../shared/widgets/buttons/primary_button.dart';
 import '../../../shared/widgets/status/inline_message_banner.dart';
-import '../../../shared/widgets/feedback/toast_service.dart';
-import '../../../shared/widgets/feedback/toast_types.dart';
+import '../../../shared/widgets/feedback/app_toast.dart';
 import '../controllers/auth_controller.dart';
 import '../../../app/app_router.dart';
 
@@ -92,7 +89,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       debugPrint('[GigCredit] OTP Generated: $responseStr');
 
       // Show premium toast notification
-      globalToastService.showById(ToastId.otpSent);
+      AppToast.success(context, 'OTP Sent', subtitle: 'Check your messages for the 6-digit code.');
 
       // Also show OTP in a subtle way for demo purposes
       if (mounted) {
@@ -110,12 +107,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     } else {
       // Show error toast based on response
       final errorMsg = responseStr ?? 'Failed to send OTP';
-      if (errorMsg.contains('not found') || errorMsg.contains('No account')) {
-        globalToastService.showById(ToastId.accountNotFound);
+      if (errorMsg.contains('Network Error')) {
+        AppToast.error(context, 'Network Error', subtitle: 'Please check your connection and try again.');
+      } else if (errorMsg.contains('not found') || errorMsg.contains('No account')) {
+        AppToast.error(context, 'Account not found', subtitle: 'Please check the number or sign up.');
       } else if (errorMsg.contains('too many') || errorMsg.contains('limit')) {
-        globalToastService.showById(ToastId.tooManyAttempts);
+        AppToast.error(context, 'Too many attempts', subtitle: 'Please try again later.');
       } else {
-        globalToastService.showById(ToastId.otpSendFailed);
+        AppToast.error(context, 'Failed to send OTP', subtitle: 'Please try again.');
       }
       setState(() {
         _errorMsg = errorMsg;
@@ -292,7 +291,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           // Divider
           Row(
             children: [
-              Expanded(child: Divider(color: AppColors.borderCard)),
+              const Expanded(child: Divider(color: AppColors.borderCard)),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
@@ -300,7 +299,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   style: AppTypography.caption.copyWith(fontSize: 12),
                 ),
               ),
-              Expanded(child: Divider(color: AppColors.borderCard)),
+              const Expanded(child: Divider(color: AppColors.borderCard)),
             ],
           ),
 

@@ -85,8 +85,8 @@ class _LlmExplanationCardState extends State<LlmExplanationCard> {
           // Header
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            decoration: const BoxDecoration(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
               gradient: LinearGradient(
                 colors: [
                   AppColors.greenMuted,

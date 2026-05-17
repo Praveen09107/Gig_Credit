@@ -204,13 +204,13 @@ class _XaiReportScreenState extends State<XaiReportScreen> {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                SizedBox(
+                const SizedBox(
                   width: 280, height: 280,
                   child: CircularProgressIndicator(
                     value: 0.65, // 647 out of 900
                     strokeWidth: 12,
-                    backgroundColor: const Color(0xFF1E2535),
-                    color: const Color(0xFF3DD68C),
+                    backgroundColor: Color(0xFF1E2535),
+                    color: Color(0xFF3DD68C),
                     strokeCap: StrokeCap.round,
                   ),
                 ).animate().scale(delay: 200.ms, duration: 800.ms, curve: Curves.easeOutBack),

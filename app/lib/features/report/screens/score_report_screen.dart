@@ -3,17 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 import '../../../shared/theme/app_colors.dart';
-import '../../../shared/widgets/buttons/primary_button.dart';
-import '../../../shared/widgets/buttons/secondary_button.dart';
 import '../../../state/score_provider.dart';
-import '../../../state/step_status_provider.dart';
-import '../../../state/verified_profile_provider.dart';
 import '../../../state/api_service_provider.dart';
 import '../../../app/app_router.dart';
 import '../../../models/score_report_model.dart';
+import '../../../shared/widgets/feedback/app_toast.dart';
 
 class ScoreReportScreen extends ConsumerStatefulWidget {
   const ScoreReportScreen({super.key});
@@ -26,6 +22,16 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
   int _activeTabIndex = 1; // 0=Strengths, 1=Gaps, 2=Causal
   String _activePill = '1 Score';
   String _selectedLang = 'EN English';
+
+  // GlobalKeys for section scroll navigation
+  final _keySection1 = GlobalKey();
+  final _keySection2 = GlobalKey();
+  final _keySection3 = GlobalKey();
+  final _keySection4 = GlobalKey();
+  final _keySection5 = GlobalKey();
+  final _keySection6 = GlobalKey();
+  final _keySection7 = GlobalKey();
+
   
   bool _isTranslating = false;
   final Map<String, String> _translations = {};
@@ -43,6 +49,44 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
         });
       }
     });
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!mounted) return;
+    final keys = [
+      MapEntry('1 Score', _keySection1),
+      MapEntry('2 Built', _keySection2),
+      MapEntry('3 Strengths', _keySection3),
+      MapEntry('4 Actions', _keySection4),
+      MapEntry('5 Story', _keySection5),
+      MapEntry('6 Tech', _keySection6),
+      MapEntry('7 Legal', _keySection7),
+    ];
+    
+    for (var i = keys.length - 1; i >= 0; i--) {
+      final keyContext = keys[i].value.currentContext;
+      if (keyContext != null) {
+        final box = keyContext.findRenderObject() as RenderBox;
+        final position = box.localToGlobal(Offset.zero);
+        // Using 300 as offset considering appbar and pills height
+        if (position.dy < 300) {
+          if (_activePill != keys[i].key) {
+            setState(() {
+              _activePill = keys[i].key;
+            });
+          }
+          break;
+        }
+      }
+    }
   }
 
   Future<void> _translateReport(String newLang) async {
@@ -94,6 +138,27 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
     }
   }
 
+  void _scrollToSection(String pill) {
+    GlobalKey? targetKey;
+    switch (pill) {
+      case '1 Score': targetKey = _keySection1; break;
+      case '2 Built': targetKey = _keySection2; break;
+      case '3 Strengths': targetKey = _keySection3; break;
+      case '4 Actions': targetKey = _keySection4; break;
+      case '5 Story': targetKey = _keySection5; break;
+      case '6 Tech': targetKey = _keySection6; break;
+      case '7 Legal': targetKey = _keySection7; break;
+    }
+    if (targetKey?.currentContext != null) {
+      Scrollable.ensureVisible(
+        targetKey!.currentContext!,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOutCubic,
+        alignment: 0.12, // Offset to account for sticky app bar and jump pills
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(scoreProvider);
@@ -127,27 +192,30 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
           _buildGlassmorphismAppBar(),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                _buildHeaderBlock(report),
-                const SizedBox(height: 16),
-                _buildSectionJumpPills(),
-                const SizedBox(height: 32),
-                _buildSection1Score(),
-                const SizedBox(height: 32),
-                _buildSection2ScoreBuilt(),
-                const SizedBox(height: 32),
-                _buildSection3HelpedHurt(),
-                const SizedBox(height: 32),
-                _buildSection4ActionPlan(),
-                const SizedBox(height: 32),
-                _buildSection5Story(),
-                const SizedBox(height: 32),
-                _buildSection6Technical(),
-                const SizedBox(height: 16),
-                _buildSection7Regulatory(),
-                const SizedBox(height: 100), // padding for bottom bar
-              ]),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildHeaderBlock(report),
+                  const SizedBox(height: 16),
+                  _buildSectionJumpPills(),
+                  const SizedBox(height: 32),
+                  Container(key: _keySection1, child: _buildSection1Score(report)),
+                  const SizedBox(height: 32),
+                  Container(key: _keySection2, child: _buildSection2ScoreBuilt(report)),
+                  const SizedBox(height: 32),
+                  Container(key: _keySection3, child: _buildSection3HelpedHurt(report)),
+                  const SizedBox(height: 32),
+                  Container(key: _keySection4, child: _buildSection4ActionPlan(report)),
+                  const SizedBox(height: 32),
+                  Container(key: _keySection5, child: _buildSection5Story(report)),
+                  const SizedBox(height: 32),
+                  Container(key: _keySection6, child: _buildSection6Technical()),
+                  const SizedBox(height: 16),
+                  Container(key: _keySection7, child: _buildSection7Regulatory()),
+                  const SizedBox(height: 100), // padding for bottom bar
+                ],
+              ),
             ),
           ),
         ],
@@ -258,7 +326,7 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
           return GestureDetector(
             onTap: () {
               setState(() => _activePill = pill);
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Jumping to $pill...'), duration: const Duration(milliseconds: 500)));
+              _scrollToSection(pill);
             },
             child: Container(
               margin: const EdgeInsets.only(right: 12),
@@ -288,7 +356,7 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
     ).animate().slideX(begin: 0.1).fadeIn();
   }
 
-  Widget _buildSection1Score() {
+  Widget _buildSection1Score(ScoreReportModel report) {
     return Container(
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
@@ -310,14 +378,17 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: const Color(0xFF252D3D)),
             ),
-            child: const Text(
-              'GC-2026-0430-AB1234 ● 30 Apr 2026 ● Hash: sha256:a3f2\nChain: VERIFIED ✓ ● Deterministic ● Reproducible',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontFamily: 'monospace',
-                  color: Color(0xFF8B95A8),
-                  fontSize: 10,
-                  height: 1.5),
+            child: const FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                'GC-2026-0430-AB1234 ● 30 Apr 2026 ● Hash: sha256:a3f2\nChain: VERIFIED ✓ ● Deterministic ● Reproducible',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontFamily: 'monospace',
+                    color: Color(0xFF8B95A8),
+                    fontSize: 10,
+                    height: 1.5),
+              ),
             ),
           ),
           const SizedBox(height: 40),
@@ -353,7 +424,7 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text('${report.finalScore}',
-                        style: TextStyle(
+                        style: const TextStyle(
                             color: Colors.white,
                             fontSize: 64,
                             fontWeight: FontWeight.w900,
@@ -363,7 +434,7 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
                         width: 60, height: 2, color: const Color(0xFF252D3D)),
                     const SizedBox(height: 8),
                     Text('Grade ${report.grade}',
-                        style: TextStyle(
+                        style: const TextStyle(
                             color: Color(0xFF3DD68C),
                             fontSize: 18,
                             fontWeight: FontWeight.bold)),
@@ -378,8 +449,8 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
           const SizedBox(height: 24),
 
           // Conformal Band
-          const Text('631 ─────────●───────── 663',
-              style: TextStyle(
+          Text('${report.finalScore - 16} ─────────●───────── ${report.finalScore + 16}',
+              style: const TextStyle(
                   color: Color(0xFF00D4B4),
                   fontWeight: FontWeight.bold,
                   letterSpacing: 2)),
@@ -412,19 +483,19 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
                     isHeader: true),
                 _buildGradeRow(
                     'S', '800–900', 'Exceptional', 'Premium eligibility',
-                    color: const Color(0xFFFFD700)),
+                    color: const Color(0xFFFFD700), isActive: report.grade == 'S'),
                 _buildGradeRow(
                     'A', '720–799', 'Excellent', 'Strong eligibility',
-                    color: const Color(0xFF00D4B4)),
+                    color: const Color(0xFF00D4B4), isActive: report.grade == 'A'),
                 _buildGradeRow('B', '640–719', 'Good', 'Standard access',
-                    color: const Color(0xFF3DD68C), isActive: true),
+                    color: const Color(0xFF3DD68C), isActive: report.grade == 'B'),
                 _buildGradeRow(
                     'C', '560–639', 'Medium Risk', 'Conditional access',
-                    color: const Color(0xFFF4B942)),
+                    color: const Color(0xFFF4B942), isActive: report.grade == 'C'),
                 _buildGradeRow('D', '480–559', 'Medium Risk', 'Limited options',
-                    color: const Color(0xFFFF8C42)),
+                    color: const Color(0xFFFF8C42), isActive: report.grade == 'D'),
                 _buildGradeRow('E', '300–479', 'High Risk', 'Not yet eligible',
-                    color: const Color(0xFFFF4E6A)),
+                    color: const Color(0xFFFF4E6A), isActive: report.grade == 'E'),
               ],
             ),
           ),
@@ -517,7 +588,44 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
     );
   }
 
-  Widget _buildSection2ScoreBuilt() {
+  Widget _buildSection2ScoreBuilt(ScoreReportModel report) {
+    int runningTotal = 300;
+    final List<String> equationParts = ['300'];
+    final List<Widget> pillarRows = [];
+
+    final activePillars = report.pillars.where((p) => (report.pillarContributions[p.code] ?? 0) != 0).toList();
+    activePillars.sort((a, b) => a.code.compareTo(b.code));
+
+    for (final p in activePillars) {
+      final contrib = report.pillarContributions[p.code] ?? 0;
+      final prevTotal = runningTotal;
+      runningTotal += contrib;
+      
+      equationParts.add(contrib > 0 ? '$contrib' : '($contrib)');
+      
+      Color pColor;
+      if (p.confidence >= 0.8) pColor = const Color(0xFF3DD68C);
+      else if (p.confidence >= 0.6) pColor = const Color(0xFFF4B942);
+      else pColor = const Color(0xFFFF8C42);
+      
+      String status = p.confidence >= 0.8 ? 'STRONG' : (p.confidence >= 0.6 ? 'MODERATE' : 'WEAK');
+      String dots = '●' * (p.confidence * 5).round() + '○' * (5 - (p.confidence * 5).round());
+      if (dots.length > 5) dots = '●●●●●';
+      
+      pillarRows.add(_buildPillarRow(
+        p.code,
+        p.title,
+        p.confidence,
+        '${contrib >= 0 ? '+' : ''}$contrib pts',
+        pColor,
+        '$dots  conf ${(p.confidence * 100).toInt()}%',
+        status,
+        '$prevTotal → $runningTotal',
+      ));
+    }
+
+    final equationStr = '${equationParts.join(' + ')} = ${report.finalScore} ✓';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -558,49 +666,20 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
           ),
           const Divider(color: Color(0xFF252D3D), height: 32),
 
-          _buildPillarRow(
-              'P1',
-              'Income Stability',
-              0.8,
-              '+142 pts',
-              const Color(0xFF3DD68C),
-              '●●●●○  conf 95%',
-              'STRONG',
-              '300 → 442'),
-          _buildPillarRow(
-              'P2',
-              'Platform Earnings',
-              0.6,
-              '+95 pts',
-              const Color(0xFF3DD68C),
-              '●●●○○  conf 82%',
-              'STRONG',
-              '442 → 537'),
-          _buildPillarRow(
-              'P3',
-              'Expense Patterns',
-              0.4,
-              '+64 pts',
-              const Color(0xFFF4B942),
-              '●●●○○  conf 75%',
-              'MODERATE',
-              '537 → 601'),
-          _buildPillarRow('P6', 'Insurance Coverage', 0.2, '+46 pts',
-              const Color(0xFFFF4E6A), '●○○○○  conf 45%', 'WEAK', '601 → 647',
-              warning: '⚠️ No insurance document uploaded'),
+          ...pillarRows,
 
           const Divider(color: Color(0xFF252D3D), height: 32),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('TOTAL',
+              const Text('TOTAL',
                   style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                       letterSpacing: 1.1)),
-              Text('647 pts  ✓',
-                  style: TextStyle(
+              Text('${report.finalScore} pts  ✓',
+                  style: const TextStyle(
                       color: Color(0xFF00D4B4),
                       fontWeight: FontWeight.bold,
                       fontSize: 16)),
@@ -615,8 +694,8 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
                 borderRadius: BorderRadius.circular(6)),
           ),
           const SizedBox(height: 16),
-          const Text('300 + 142 + 95 + 64 + 46 = 647 ✓',
-              style: TextStyle(
+          Text(equationStr,
+              style: const TextStyle(
                   color: Color(0xFF8B95A8),
                   fontFamily: 'monospace',
                   fontSize: 12)),
@@ -636,9 +715,14 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('$code  $name',
-                  style: const TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
+              Flexible(
+                child: Text('$code  $name',
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
               Text(pts,
                   style: TextStyle(color: color, fontWeight: FontWeight.bold)),
             ],
@@ -697,7 +781,7 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
     );
   }
 
-  Widget _buildSection3HelpedHurt() {
+  Widget _buildSection3HelpedHurt(ScoreReportModel report) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -720,39 +804,30 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
 
         // Content
         if (_activeTabIndex == 0) ...[
-          _buildStrengthCard(
-              'Consistent Monthly Income',
-              'P1',
-              '+0.152',
+          if (report.topStrengths.isEmpty)
+            const Padding(padding: EdgeInsets.all(16), child: Text('No key strengths found.', style: TextStyle(color: Colors.white70))),
+          ...report.topStrengths.map((s) => _buildStrengthCard(
+              s.featureName,
+              s.pillarLabel,
+              '+${s.impactStrength.abs().toStringAsFixed(3)}',
               'HIGH',
-              'Your month-to-month income variance is only 12%, which is lower than 85% of similar workers. This provides strong confidence in your ability to repay.'),
-          _buildStrengthCard('Platform Engagement', 'P2', '+0.089', 'HIGH',
-              'You have been active on delivery platforms for 24 months consistently. This stability is highly valued by lenders.'),
-          _buildStrengthCard('Positive Savings Trend', 'P4', '+0.065', 'MEDIUM',
-              'Your end-of-month balance has grown by 8% over the last 3 months, showing good financial discipline.'),
+              s.description,
+          )),
         ] else if (_activeTabIndex == 1) ...[
-          _buildGapCard(
-              'Minor income volatility',
-              'P3',
-              '-0.181',
-              'HIGH',
-              'Current value: 38.9%\nTarget value: < 25.0%\nGap: 13.9%\nScore cost: est. -34 pts',
-              'Your current monthly EMI obligations consume 38.9% of your income. Only 15% of approved workers have a ratio this high.',
-              'REDUCE EMI BURDEN',
-              24,
-              const Color(0x33FF4E6A),
-              const Color(0xFFFF4E6A)),
-          _buildGapCard(
-              'Missing Insurance Policy',
-              'P6',
-              '-0.092',
+          if (report.topConcerns.isEmpty)
+            const Padding(padding: EdgeInsets.all(16), child: Text('No major gaps found.', style: TextStyle(color: Colors.white70))),
+          ...report.topConcerns.map((s) => _buildGapCard(
+              s.featureName,
+              s.pillarLabel,
+              '-${s.impactStrength.abs().toStringAsFixed(3)}',
               'MEDIUM',
-              'Current value: Null\nTarget value: Verified Policy\nGap: 1 Document\nScore cost: est. -18 pts',
-              'We could not verify active health or life insurance. Uploading this document significantly improves your safety net rating.',
-              'UPLOAD INSURANCE POLICY',
+              'Current value: Variable\nTarget value: Optimized\nGap: Identified',
+              s.description,
+              'REVIEW SUGGESTION',
               18,
               const Color(0x33F4B942),
-              const Color(0xFFF4B942)),
+              const Color(0xFFF4B942),
+          )),
         ] else ...[
           // Causal Chain Template
           Container(
@@ -974,7 +1049,10 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
     ).animate().fadeIn();
   }
 
-  Widget _buildSection4ActionPlan() {
+  Widget _buildSection4ActionPlan(ScoreReportModel report) {
+    int potentialScore = report.finalScore + (report.tailoredSuggestions.length * 15);
+    if (potentialScore > 900) potentialScore = 900;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -986,13 +1064,13 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
               borderRadius: BorderRadius.circular(14)),
           child: Column(
             children: [
-              const Row(
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Current Score    647  Grade B',
-                      style: TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
-                  Text('Potential Score  693  Grade B',
-                      style: TextStyle(
+                  Text('Current Score    ${report.finalScore}  Grade ${report.grade}',
+                      style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
+                  Text('Potential Score  $potentialScore',
+                      style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 13)),
@@ -1005,7 +1083,7 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
                   Row(
                     children: [
                       Expanded(
-                        flex: 647,
+                        flex: report.finalScore,
                         child: Container(
                           height: 16,
                           decoration: const BoxDecoration(
@@ -1016,48 +1094,50 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
                           ),
                         ),
                       ),
-                      Expanded(
-                        flex: 46, // 693 - 647
-                        child: Container(
-                          height: 16,
-                          decoration: const BoxDecoration(
-                            color: Color(0x3300D4B4),
-                            borderRadius: BorderRadius.horizontal(
-                                right: Radius.circular(8)),
+                      if (potentialScore > report.finalScore)
+                        Expanded(
+                          flex: potentialScore - report.finalScore,
+                          child: Container(
+                            height: 16,
+                            decoration: const BoxDecoration(
+                              color: Color(0x3300D4B4),
+                              borderRadius: BorderRadius.horizontal(
+                                  right: Radius.circular(8)),
+                            ),
                           ),
                         ),
-                      ),
-                      const Expanded(
-                          flex: 207, child: SizedBox()), // Remaining to 900
+                      Expanded(
+                          flex: 900 - potentialScore, child: const SizedBox()),
                     ],
                   ),
-                  Positioned(
-                    top: -30,
-                    right: 0,
-                    left: 0,
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                            color: const Color(0xFF00D4B4),
-                            borderRadius: BorderRadius.circular(6)),
-                        child: const Text('+46 pts',
-                            style: TextStyle(
-                                color: Color(0xFF0D0F14),
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold)),
-                      )
-                          .animate(
-                              onPlay: (controller) =>
-                                  controller.repeat(reverse: true))
-                          .slideY(
-                              begin: -0.2,
-                              end: 0,
-                              duration: 2.seconds,
-                              curve: Curves.easeInOutSine),
+                  if (potentialScore > report.finalScore)
+                    Positioned(
+                      top: -30,
+                      right: 0,
+                      left: 0,
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                              color: const Color(0xFF00D4B4),
+                              borderRadius: BorderRadius.circular(6)),
+                          child: Text('+${potentialScore - report.finalScore} pts',
+                              style: const TextStyle(
+                                  color: Color(0xFF0D0F14),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold)),
+                        )
+                            .animate(
+                                onPlay: (controller) =>
+                                    controller.repeat(reverse: true))
+                            .slideY(
+                                begin: -0.2,
+                                end: 0,
+                                duration: 2.seconds,
+                                curve: Curves.easeInOutSine),
+                      ),
                     ),
-                  ),
                 ],
               ),
             ],
@@ -1065,37 +1145,20 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
         ),
         const SizedBox(height: 16),
 
-        _buildActionCard(
-            '1',
-            Icons.verified_user,
-            'Upload Health Insurance Policy',
-            '+18 pts',
-            'HIGH',
-            '2 minutes',
-            'P6',
-            '0.450 → 0.720',
-            [
-              'Open any PDF of your insurance policy',
-              'Tap Upload below → select PDF',
-              'PaddleOCR verifies in ~10 seconds'
-            ],
-            'UPLOAD INSURANCE POLICY',
-            const Color(0xFFF4B942)),
-        _buildActionCard(
-            '2',
-            Icons.description,
-            'Upload ITR Acknowledgement',
-            '+10 pts',
+        if (report.tailoredSuggestions.isEmpty)
+          const Padding(padding: EdgeInsets.all(16), child: Text('No actions required. Your profile is optimized!', style: TextStyle(color: Colors.white70))),
+        ...report.tailoredSuggestions.asMap().entries.map((e) => _buildActionCard(
+            '${e.key + 1}',
+            Icons.lightbulb_outline,
+            'Action Item ${e.key + 1}',
+            '+15 pts',
             'MEDIUM',
-            '5 minutes',
-            'P8',
-            '0.500 → 0.720',
-            [
-              'Download from incometax.gov.in → e-filing',
-              'Upload the PDF receipt'
-            ],
-            'UPLOAD ITR DOCUMENT',
-            const Color(0xFF00D4B4)),
+            'Depends on action',
+            'Multiple Pillars',
+            'Optimized state',
+            [e.value],
+            'TAKE ACTION',
+            const Color(0xFF00D4B4))),
 
         // Immediate Gain Summary
         Container(
@@ -1105,14 +1168,14 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
               color: const Color(0x1400D4B4),
               border: Border.all(color: const Color(0x4D00D4B4)),
               borderRadius: BorderRadius.circular(14)),
-          child: const Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Complete all 2 actions → +28 pts',
-                  style: TextStyle(
+              Text('Complete all ${report.tailoredSuggestions.length} actions → +${potentialScore - report.finalScore} pts',
+                  style: const TextStyle(
                       color: Colors.white, fontWeight: FontWeight.bold)),
-              Text('Score: 647 → 675   Grade: B → B',
-                  style: TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
+              Text('Score: ${report.finalScore} → $potentialScore',
+                  style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
             ],
           ),
         ),
@@ -1223,7 +1286,7 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
     );
   }
 
-  Widget _buildSection5Story() {
+  Widget _buildSection5Story(ScoreReportModel report) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1517,9 +1580,11 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
   Widget _buildGhostButton(BuildContext context, String label) {
     return InkWell(
       onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$label - Action Simulated', style: const TextStyle(color: Colors.white)), backgroundColor: AppColors.greenPrimary),
-        );
+        if (label.contains('Download') || label.contains('Save')) {
+          AppToast.success(context, 'Report Saved', subtitle: '$label - Action Simulated');
+        } else {
+          AppToast.success(context, 'Action Successful', subtitle: '$label - Simulated');
+        }
       },
       borderRadius: BorderRadius.circular(8),
       child: Padding(

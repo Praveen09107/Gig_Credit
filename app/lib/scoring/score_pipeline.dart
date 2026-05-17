@@ -1,4 +1,3 @@
-import 'dart:math';
 
 import '../models/verified_profile/verified_profile.dart';
 import '../models/score_report_model.dart';
@@ -22,11 +21,12 @@ class ScorePipeline {
     required Map<String, dynamic> displayNamesJson,
     required Map<String, dynamic> actionabilityJson,
     required List<dynamic> causalChainsJsonList,
+    Map<String, dynamic>? dummyFeatures,
   }) {
     // ---------------------------------------------------------
     // STAGE 1: Feature Extraction & Normalisation
     // ---------------------------------------------------------
-    List<double> features = FeatureEngineer.extract(profile);
+    List<double> features = FeatureEngineer.extract(profile, dummyFeatures: dummyFeatures);
 
     // ---------------------------------------------------------
     // STAGE 3: Scoring Pillars & Calibration

@@ -15,6 +15,8 @@ import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/utility_info.dart';
 import '../../../../app/app_router.dart';
 import '../../../../demo/demo_profile_manager.dart';
+import '../../../../shared/widgets/feedback/app_toast.dart';
+import '../../../../shared/widgets/feedback/step_popups.dart';
 
 class Step4UtilityScreen extends ConsumerStatefulWidget {
   const Step4UtilityScreen({super.key});
@@ -38,32 +40,32 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
   final _elecConsumerCtrl = TextEditingController();
   final _elecNameCtrl = TextEditingController();
   final _elecAmountCtrl = TextEditingController();
-  bool _elecUploaded = false;
+  final bool _elecUploaded = false;
 
   // Water
   final _waterConsumerCtrl = TextEditingController();
   final _waterNameCtrl = TextEditingController();
   final _waterAmountCtrl = TextEditingController();
-  bool _waterUploaded = false;
+  final bool _waterUploaded = false;
 
   // Gas
   final _gasConsumerCtrl = TextEditingController();
   final _gasNameCtrl = TextEditingController();
   final _gasAmountCtrl = TextEditingController();
-  bool _gasUploaded = false;
+  final bool _gasUploaded = false;
 
   // Mobile
   final _mobileMobileCtrl = TextEditingController();
   final _mobileAccountCtrl = TextEditingController();
   final _mobileNameCtrl = TextEditingController();
   final _mobileAmountCtrl = TextEditingController();
-  bool _mobileUploaded = false;
+  final bool _mobileUploaded = false;
 
   // Internet
   final _internetAccountCtrl = TextEditingController();
   final _internetNameCtrl = TextEditingController();
   final _internetAmountCtrl = TextEditingController();
-  bool _internetUploaded = false;
+  final bool _internetUploaded = false;
 
   // Rent
   final _rentTenantCtrl = TextEditingController();
@@ -113,6 +115,13 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
     }
 
     setState(() => _isLoading = true);
+
+    // Show confirmation popup before proceeding
+    final confirmed = await StepConfirmPopup.show(context, stepNumber: 4);
+    if (!confirmed || !mounted) {
+      setState(() => _isLoading = false);
+      return;
+    }
 
     try {
       final api = ref.read(apiServiceProvider);
@@ -166,6 +175,7 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
 
       if (mounted) {
         setState(() => _isLoading = false);
+        AppToast.success(context, 'Utility bills verified ✓');
         context.push(AppRoutes.scoreStep(5));
       }
     } catch (e) {
@@ -198,7 +208,7 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
             ],
           ),
           const SizedBox(height: 4),
-          Text('All modules optional. Toggle any bills you have.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          const Text('All modules optional. Toggle any bills you have.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
           const SizedBox(height: 20),
 
           // ── Electricity ──
@@ -225,8 +235,8 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
                       child: Column(
                         children: [
                           if (!isReady)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: 12),
                               child: Text('Fill all details above to enable document upload', style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold)),
                             ),
                           ...List.generate(_elecUploadCount, (index) => Padding(
@@ -274,8 +284,8 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
                       child: Column(
                         children: [
                           if (!isReady)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: 12),
                               child: Text('Fill all details above to enable document upload', style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold)),
                             ),
                           ...List.generate(_waterUploadCount, (index) => Padding(
@@ -323,8 +333,8 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
                       child: Column(
                         children: [
                           if (!isReady)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: 12),
                               child: Text('Fill all details above to enable document upload', style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold)),
                             ),
                           ...List.generate(_gasUploadCount, (index) => Padding(
@@ -374,8 +384,8 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
                       child: Column(
                         children: [
                           if (!isReady)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: 12),
                               child: Text('Fill all details above to enable document upload', style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold)),
                             ),
                           ...List.generate(_mobileUploadCount, (index) => Padding(
@@ -423,8 +433,8 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
                       child: Column(
                         children: [
                           if (!isReady)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: 12),
                               child: Text('Fill all details above to enable document upload', style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold)),
                             ),
                           ...List.generate(_internetUploadCount, (index) => Padding(
@@ -474,8 +484,8 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
                       child: Column(
                         children: [
                           if (!isReady)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: 12),
                               child: Text('Fill all details above to enable document upload', style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold)),
                             ),
                           ...List.generate(_rentUploadCount, (index) => Padding(
@@ -527,10 +537,10 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
         children: [
           SwitchListTile(
             title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            subtitle: Text(hint, style: TextStyle(fontSize: 11, color: AppColors.textTertiary)),
+            subtitle: Text(hint, style: const TextStyle(fontSize: 11, color: AppColors.textTertiary)),
             value: selected,
             onChanged: onToggle,
-            activeColor: AppColors.accent,
+            activeThumbColor: AppColors.accent,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           ),
           if (selected)

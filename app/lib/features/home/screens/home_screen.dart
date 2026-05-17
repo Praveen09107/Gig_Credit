@@ -6,9 +6,10 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_typography.dart';
-import '../../../shared/theme/app_spacing.dart';
 import '../../../state/user_provider.dart';
 import '../../../state/score_provider.dart';
+import '../../../state/step_status_provider.dart';
+import '../../../state/verified_profile_provider.dart';
 import '../../../app/app_router.dart';
 import '../controllers/dashboard_controller.dart';
 import '../widgets/hero_image_slider.dart';
@@ -104,7 +105,7 @@ class HomeScreen extends ConsumerWidget {
                             color: AppColors.greenPrimary, width: 1.5),
                       ),
                       alignment: Alignment.center,
-                      child: Icon(Icons.person_rounded,
+                      child: const Icon(Icons.person_rounded,
                           size: 18, color: AppColors.greenPrimary),
                     ),
                   ),
@@ -143,20 +144,52 @@ class HomeScreen extends ConsumerWidget {
 
                     const SizedBox(height: 32),
 
-                    // GET STARTED BUTTON
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: _GetStartedButton(
-                        hasScore: hasScore,
-                        onTap: () {
-                          if (hasScore) {
-                            context.push(AppRoutes.scoreReport);
-                          } else {
-                            _showGetStartedPopup(context);
-                          }
-                        },
-                      ),
-                    ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.05),
+                    // DYNAMIC CTA BUTTONS based on score state
+                    if (hasScore) ...[
+                      // PRIMARY: View Report (gradient CTA)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: _GetStartedButton(
+                          hasScore: true,
+                          onTap: () => context.push(AppRoutes.scoreReport),
+                        ),
+                      ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.05),
+                      const SizedBox(height: 12),
+                      // SECONDARY: Start New Score (outline)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: GestureDetector(
+                          onTap: () => _showGetStartedPopup(context),
+                          child: Container(
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: AppColors.greenPrimary, width: 1.5),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              '🚀  START NEW SCORE',
+                              style: AppTypography.labelLarge.copyWith(
+                                color: AppColors.greenPrimary,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.05),
+                    ] else ...[
+                      // Only GET STARTED for new users
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: _GetStartedButton(
+                          hasScore: false,
+                          onTap: () => _showGetStartedPopup(context),
+                        ),
+                      ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.05),
+                    ],
 
                     const SizedBox(height: 32),
 
@@ -184,7 +217,7 @@ class HomeScreen extends ConsumerWidget {
                             child: _QuickAccessCard(
                               icon: Icons.history_rounded,
                               label: 'History',
-                              onTap: () => context.go(AppRoutes.applications),
+                              onTap: () => context.push(AppRoutes.reportHistory),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -313,11 +346,11 @@ class _HeroBand extends StatelessWidget {
               // Stats row
               Row(
                 children: [
-                  _StatBlock(number: '15M+', label: 'Gig Workers'),
+                  const _StatBlock(number: '15M+', label: 'Gig Workers'),
                   _StatDivider(),
-                  _StatBlock(number: '₹82K', label: 'Avg Loan'),
+                  const _StatBlock(number: '₹82K', label: 'Avg Loan'),
                   _StatDivider(),
-                  _StatBlock(number: 'Grade B+', label: 'Avg Score'),
+                  const _StatBlock(number: 'Grade B+', label: 'Avg Score'),
                 ],
               ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
             ],
@@ -582,12 +615,12 @@ class _GetStartedButtonState extends State<_GetStartedButton>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    widget.hasScore ? '🎯' : '🚀',
+                    widget.hasScore ? '📊' : '🚀',
                     style: const TextStyle(fontSize: 18),
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    widget.hasScore ? 'VIEW SCORE' : 'GET STARTED',
+                    widget.hasScore ? 'VIEW REPORT' : 'GET STARTED',
                     style: AppTypography.button.copyWith(
                       fontSize: 16,
                       letterSpacing: 0.8,
@@ -698,11 +731,11 @@ class _NavPill extends StatelessWidget {
 // GET STARTED BOTTOM SHEET (Popup spec)
 // ═══════════════════════════════════════════════════════════════════════════
 
-class _GetStartedSheet extends StatelessWidget {
+class _GetStartedSheet extends ConsumerWidget {
   const _GetStartedSheet();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
       decoration: const BoxDecoration(
@@ -776,8 +809,8 @@ class _GetStartedSheet extends StatelessWidget {
                   fontWeight: FontWeight.w900,
                   height: 1.2,
                 ),
-                children: [
-                  const TextSpan(text: 'Ready to Start Your\n'),
+                children: const [
+                  TextSpan(text: 'Ready to Start Your\n'),
                   TextSpan(
                     text: 'Credit Journey?',
                     style: TextStyle(color: AppColors.greenPrimary),
@@ -801,7 +834,7 @@ class _GetStartedSheet extends StatelessWidget {
             const SizedBox(height: 20),
 
             // Feature chips
-            Wrap(
+            const Wrap(
               spacing: 8,
               runSpacing: 8,
               alignment: WrapAlignment.center,
@@ -821,8 +854,12 @@ class _GetStartedSheet extends StatelessWidget {
             // Continue button
             _PopupContinueButton(
               onTap: () {
+                // SESSION RESET: Clear all previous session data
+                ref.read(stepStatusProvider.notifier).reset();
+                ref.read(verifiedProfileProvider.notifier).reset();
+                ref.read(scoreProvider.notifier).reset();
                 Navigator.pop(context);
-                context.go(AppRoutes.score);
+                context.go(AppRoutes.scoreStep(1));
               },
             ).animate().fadeIn(delay: 380.ms).slideY(begin: 0.04),
 
@@ -1007,11 +1044,11 @@ class _AppFooter extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _FooterLink(label: 'Privacy Policy'),
+              const _FooterLink(label: 'Privacy Policy'),
               _FooterDot(),
-              _FooterLink(label: 'Terms'),
+              const _FooterLink(label: 'Terms'),
               _FooterDot(),
-              _FooterLink(label: 'Support'),
+              const _FooterLink(label: 'Support'),
             ],
           ),
           const SizedBox(height: 10),

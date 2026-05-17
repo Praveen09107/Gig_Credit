@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../theme/app_colors.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────────
 /// Coin Pulse Loader (Level 1A)

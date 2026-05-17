@@ -3,16 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
-import '../../../shared/theme/app_colors.dart';
-import '../../../shared/theme/app_typography.dart';
-import '../../../shared/widgets/cards/app_card.dart';
 import '../../../state/score_provider.dart';
 import '../../../state/loan_provider.dart';
 import '../../../models/score_report_model.dart';
 import '../../../services/scoring_service.dart';
 import '../../../state/user_provider.dart';
 import '../../../app/app_router.dart';
-import '../../../state/loan_applications_provider.dart';
 import '../../../models/loan_offer_model.dart';
 import '../../../services/loan_api_service.dart';
 

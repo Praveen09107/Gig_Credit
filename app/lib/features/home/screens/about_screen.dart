@@ -83,21 +83,21 @@ class AboutScreen extends StatelessWidget {
                       Text('CORE PHILOSOPHY',
                           style: AppTypography.sectionLabel),
                       const SizedBox(height: 16),
-                      _FeatureCard(
+                      const _FeatureCard(
                         icon: Icons.lock_rounded,
                         iconColor: AppColors.greenPrimary,
                         title: '100% Privacy',
                         desc: 'Your data never leaves your device. We use advanced on-device ML models to compute scores locally.',
                         delay: 300,
                       ),
-                      _FeatureCard(
+                      const _FeatureCard(
                         icon: Icons.auto_graph_rounded,
                         iconColor: AppColors.pillar5,
                         title: 'Alternative Data',
                         desc: 'We look beyond CIBIL. We evaluate utility payments, government schemes, and work history.',
                         delay: 380,
                       ),
-                      _FeatureCard(
+                      const _FeatureCard(
                         icon: Icons.lightbulb_rounded,
                         iconColor: AppColors.warning,
                         title: 'Explainable AI',
@@ -119,28 +119,28 @@ class AboutScreen extends StatelessWidget {
                       Text('HOW IT WORKS',
                           style: AppTypography.sectionLabel),
                       const SizedBox(height: 16),
-                      _FlowStep(
+                      const _FlowStep(
                         number: '1',
                         title: 'Data Collection',
                         desc: 'Upload Aadhaar, PAN, Bank Statements, and Work Proofs directly on your phone.',
                         delay: 540,
                       ),
-                      _FlowConnector(delay: 600),
-                      _FlowStep(
+                      const _FlowConnector(delay: 600),
+                      const _FlowStep(
                         number: '2',
                         title: 'On-Device Verification',
                         desc: 'Our Edge AI extracts and validates your documents instantly without cloud servers.',
                         delay: 660,
                       ),
-                      _FlowConnector(delay: 720),
-                      _FlowStep(
+                      const _FlowConnector(delay: 720),
+                      const _FlowStep(
                         number: '3',
                         title: '7-Pillar Scoring Engine',
                         desc: 'An XGBoost Meta-Learner evaluates income, debts, savings, and compliance.',
                         delay: 780,
                       ),
-                      _FlowConnector(delay: 840),
-                      _FlowStep(
+                      const _FlowConnector(delay: 840),
+                      const _FlowStep(
                         number: '4',
                         title: 'Credit Report & Offers',
                         desc: 'Instantly receive your Grade and tailored micro-loan offers from partner lenders.',

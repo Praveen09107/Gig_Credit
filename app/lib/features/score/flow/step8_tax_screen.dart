@@ -16,6 +16,8 @@ import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/tax_info.dart';
 import '../../../../app/app_router.dart';
 import '../../../../demo/demo_profile_manager.dart';
+import '../../../../shared/widgets/feedback/app_toast.dart';
+import '../../../../shared/widgets/feedback/step_popups.dart';
 
 class Step8TaxScreen extends ConsumerStatefulWidget {
   const Step8TaxScreen({super.key});
@@ -80,6 +82,13 @@ class _Step8TaxScreenState extends ConsumerState<Step8TaxScreen> {
     }
 
     setState(() => _isLoading = true);
+
+    // Show confirmation popup before proceeding
+    final confirmed = await StepConfirmPopup.show(context, stepNumber: 8);
+    if (!confirmed || !mounted) {
+      setState(() => _isLoading = false);
+      return;
+    }
     try {
       final api = ref.read(apiServiceProvider);
 
@@ -117,6 +126,7 @@ class _Step8TaxScreenState extends ConsumerState<Step8TaxScreen> {
       ref.read(stepStatusProvider.notifier).setStatus(8, StepStatus.verified);
       if (mounted) {
         setState(() => _isLoading = false);
+        AppToast.success(context, 'Tax records verified ✓');
         context.push(AppRoutes.scoreStep(9));
       }
     } catch (e) {
@@ -153,7 +163,7 @@ class _Step8TaxScreenState extends ConsumerState<Step8TaxScreen> {
             ],
           ),
           const SizedBox(height: 4),
-          Text('ITR and GST are optional but significantly boost your score.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          const Text('ITR and GST are optional but significantly boost your score.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
           const SizedBox(height: 20),
 
           // ── ITR Module ──
@@ -169,8 +179,8 @@ class _Step8TaxScreenState extends ConsumerState<Step8TaxScreen> {
               const SizedBox(height: 12),
               // Assessment Year dropdown
               DropdownButtonFormField<String>(
-                value: _assessmentYear,
-                decoration: InputDecoration(
+                initialValue: _assessmentYear,
+                decoration: const InputDecoration(
                   labelText: 'Assessment Year *',
                   labelStyle: TextStyle(color: AppColors.textSecondary),
                 ),
@@ -237,10 +247,10 @@ class _Step8TaxScreenState extends ConsumerState<Step8TaxScreen> {
         children: [
           SwitchListTile(
             title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            subtitle: Text(hint, style: TextStyle(fontSize: 11, color: AppColors.textTertiary)),
+            subtitle: Text(hint, style: const TextStyle(fontSize: 11, color: AppColors.textTertiary)),
             value: selected,
             onChanged: onToggle,
-            activeColor: AppColors.accent,
+            activeThumbColor: AppColors.accent,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           ),
           if (selected)

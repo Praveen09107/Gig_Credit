@@ -19,6 +19,8 @@ import '../../../../scoring/placeholders/demo_face_verifier.dart';
 import '../../../../scoring/validation/cross_step_validator.dart';
 import '../widgets/mismatch_warning_banner.dart';
 import '../../../../shared/widgets/loaders/coin_pulse_loader.dart';
+import '../../../../shared/widgets/feedback/app_toast.dart';
+import '../../../../shared/widgets/feedback/step_popups.dart';
 
 class Step2KycScreen extends ConsumerStatefulWidget {
   const Step2KycScreen({super.key});
@@ -324,6 +326,10 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
       return;
     }
 
+    // Show confirmation popup before proceeding
+    final confirmed = await StepConfirmPopup.show(context, stepNumber: 2);
+    if (!confirmed || !mounted) return;
+
     setState(() => _isLoading = true);
 
     try {
@@ -338,6 +344,7 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
 
       if (mounted) {
         setState(() => _isLoading = false);
+        AppToast.success(context, 'KYC documents verified ✓');
         context.push(AppRoutes.scoreStep(3));
       }
     } catch (e) {
@@ -351,7 +358,14 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
     final ocrService = ref.watch(ocrServiceProvider);
     final isVerified = statusMap[2] == StepStatus.verified;
 
-    return ScrollableStepLayout(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final goBack = await StepBackPopup.show(context, stepNumber: 2);
+        if (goBack && mounted) Navigator.of(context).pop();
+      },
+      child: ScrollableStepLayout(
       currentStep: 2,
       stepCompletionMap: statusMap.map((key, value) => MapEntry(key, value == StepStatus.verified)),
       onStepTapped: (step) => context.push(AppRoutes.scoreStep(step)),
@@ -534,7 +548,7 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
         isDisabled: !_isFormValid && !isVerified,
         onPressed: _submit,
       ),
-    );
+    ));
   }
 
   // ── Section Header (A, B, C badges) ──

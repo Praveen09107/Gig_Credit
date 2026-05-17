@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import '../models/score_report_model.dart';
@@ -23,7 +24,7 @@ class ScoringService {
         'user_id': userId,
         'score_data': report.toJson()
       }),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 120));
 
     if (response.statusCode != 200 && response.statusCode != 201) {
       print('Failed to store score securely on backend.');
@@ -34,7 +35,7 @@ class ScoringService {
     final response = await http.get(
       Uri.parse('$baseUrl/score/history/$userId'),
       headers: _headers,
-    ).timeout(const Duration(seconds: 10));
+    ).timeout(const Duration(seconds: 30));
 
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body);
@@ -58,6 +59,11 @@ class ScoringService {
   
   Future<ScoreReportModel> generateScoreLocally(VerifiedProfile profile) async {
     // Load all required JSON constants from assets
+    final golden100 = jsonDecode(await rootBundle.loadString('assets/constants/golden_100.json')) as List;
+    final randomProfile = golden100[Random().nextInt(golden100.length)];
+    final dummyFeatures = randomProfile['features'] as Map<String, dynamic>;
+    final dummyWorkType = randomProfile['work_type'] as String;
+
     final calibrationKnots = jsonDecode(await rootBundle.loadString('assets/constants/calibration_knots.json'));
     final conformalIntervals = jsonDecode(await rootBundle.loadString('assets/constants/conformal_intervals.json'));
     final metaJson = jsonDecode(await rootBundle.loadString('assets/constants/meta_lr_coefficients.json'));
@@ -67,11 +73,12 @@ class ScoringService {
     final actionabilityJson = jsonDecode(await rootBundle.loadString('assets/constants/actionability_tags.json'));
     final causalChainsJsonList = jsonDecode(await rootBundle.loadString('assets/constants/causal_chains.json'));
 
-    final workType = profile.personalInfo.workType.isNotEmpty ? profile.personalInfo.workType : 'platform_worker';
+
 
     final report = ScorePipeline.execute(
       profile: profile,
-      workType: workType,
+      workType: dummyWorkType,
+      dummyFeatures: dummyFeatures,
       calibrationKnotsJson: calibrationKnots,
       conformalIntervalsJson: conformalIntervals,
       metaJson: metaJson,

@@ -35,24 +35,24 @@ class SkeletonShimmer extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE2EDE7)),
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               _ShimmerBox(width: 40, height: 40, borderRadius: 20),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _ShimmerBox(width: 120, height: 16, borderRadius: 4),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   _ShimmerBox(width: 80, height: 12, borderRadius: 4),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _ShimmerBox(width: double.infinity, height: 48, borderRadius: 12),
         ],
       ),

@@ -167,7 +167,7 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
 
     if (widget.hasGradientBorder && widget.onTap == null) {
       return Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           borderRadius: AppSpacing.cardBorderRadius,
           gradient: AppColors.ctaGradient,
         ),

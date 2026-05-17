@@ -15,6 +15,8 @@ import '../../../../models/verified_profile/bank_info.dart';
 import '../../../../app/app_router.dart';
 import '../../../../demo/demo_profile_manager.dart';
 import '../../../../shared/widgets/loaders/coin_pulse_loader.dart';
+import '../../../../shared/widgets/feedback/app_toast.dart';
+import '../../../../shared/widgets/feedback/step_popups.dart';
 
 class Step3BankScreen extends ConsumerStatefulWidget {
   const Step3BankScreen({super.key});
@@ -138,13 +140,18 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
     }
     
     if (!_ifscVerified || !_accVerified) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please verify IFSC and Account Number first.'), backgroundColor: Colors.red),
-      );
+      AppToast.error(context, 'Verification Required', subtitle: 'Please verify IFSC and Account Number first.');
       return;
     }
 
     setState(() => _isLoading = true);
+
+    // Show confirmation popup before proceeding
+    final confirmed = await StepConfirmPopup.show(context, stepNumber: 3);
+    if (!confirmed || !mounted) {
+      setState(() => _isLoading = false);
+      return;
+    }
     
     try {
       // Final processing simulation
@@ -164,6 +171,7 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
       
       if (mounted) {
         setState(() => _isLoading = false);
+        AppToast.success(context, 'Bank details verified ✓');
         context.push(AppRoutes.scoreStep(4));
       }
     } catch (e) {
@@ -174,9 +182,7 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
   Future<void> _verifyIfsc() async {
     final text = _ifscCtrl.text.trim().toUpperCase();
     if (text.length != 11) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('IFSC must be 11 characters'), backgroundColor: Colors.red),
-      );
+      AppToast.error(context, 'Invalid IFSC', subtitle: 'Must be exactly 11 characters.');
       return;
     }
     
@@ -196,9 +202,7 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
           _bankNameCtrl.text = result['bank_name'] ?? '';
           _branchCtrl.text = result['branch_name'] ?? '';
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('IFSC Verified!'), backgroundColor: Colors.green),
-        );
+        AppToast.success(context, 'IFSC Verified!', subtitle: 'Bank details auto-filled.');
       }
     } catch (e) {
       if (mounted) {
@@ -208,9 +212,7 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
           _bankNameCtrl.text = 'Demo Bank';
           _branchCtrl.text = 'Hackathon Branch';
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('API Fallback: Mock IFSC Verified for Demo'), backgroundColor: Colors.orange),
-        );
+        AppToast.warning(context, 'Demo Mode', subtitle: 'Mock IFSC Verified for Demo');
       }
     }
   }
@@ -220,9 +222,7 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
     final ifsc = _ifscCtrl.text.trim().toUpperCase();
     
     if (acc.isEmpty || !_ifscVerified) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please verify IFSC and enter Account Number first'), backgroundColor: Colors.red),
-      );
+      AppToast.error(context, 'Missing Details', subtitle: 'Please verify IFSC and enter Account Number first.');
       return;
     }
 
@@ -241,9 +241,7 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
           // Auto-fill holder name from API
           _holderNameCtrl.text = result['account_holder'] ?? '';
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Account Verified!'), backgroundColor: Colors.green),
-        );
+        AppToast.success(context, 'Account Verified!', subtitle: 'Account holder auto-filled.');
       }
     } catch (e) {
       if (mounted) {
@@ -252,9 +250,7 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
           _isAccVerifying = false;
           _holderNameCtrl.text = 'Demo User';
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('API Fallback: Mock Account Verified for Demo'), backgroundColor: Colors.orange),
-        );
+        AppToast.warning(context, 'Demo Mode', subtitle: 'Mock Account Verified for Demo');
       }
     }
   }
@@ -382,24 +378,17 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
               onExtracted: (data) {
                 setState(() {
                   _pdfUploaded = true;
-                  if (data != null) {
-                    if (data['monthly_credits'] != null) {
-                      _monthlyCredits = (data['monthly_credits'] as List).map((e) => (e as num).toDouble()).toList();
-                    }
-                    if (data['monthly_debits'] != null) {
-                      _monthlyDebits = (data['monthly_debits'] as List).map((e) => (e as num).toDouble()).toList();
-                    }
-                    if (data['transactions'] != null) {
-                      _transactions = data['transactions'] as List;
-                    }
+                  if (data['monthly_credits'] != null) {
+                    _monthlyCredits = (data['monthly_credits'] as List).map((e) => (e as num).toDouble()).toList();
                   }
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Bank Statement verified successfully!'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+                  if (data['monthly_debits'] != null) {
+                    _monthlyDebits = (data['monthly_debits'] as List).map((e) => (e as num).toDouble()).toList();
+                  }
+                  if (data['transactions'] != null) {
+                    _transactions = data['transactions'] as List;
+                  }
+                                });
+                AppToast.success(context, 'Statement Verified', subtitle: 'Bank Statement processed successfully!');
               },
             ),
           
@@ -490,14 +479,15 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
     TextCapitalization textCapitalization = TextCapitalization.none,
   }) {
     return Container(
+      margin: const EdgeInsets.only(top: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E), // AppColors.card fallback
+        color: const Color(0xFFF5FAF7), // Light green-tinted white — same as AppTextField
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isVerified
-              ? const Color(0xFF4CAF50).withValues(alpha: 0.5) // AppColors.verified
-              : const Color(0xFF2C2C2E), // AppColors.surfaceVariant
+              ? const Color(0xFF4CAF50).withValues(alpha: 0.5)
+              : const Color(0xFFD0E8D9), // Light green border — matches other fields
           width: isVerified ? 1.5 : 1,
         ),
       ),
@@ -513,14 +503,27 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
                   textCapitalization: textCapitalization,
                   maxLength: maxLength,
                   enabled: !isVerified && !isStepVerified,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 1.5, color: Colors.white),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 1.5, color: Color(0xFF1A2E23)),
                   decoration: InputDecoration(
                     labelText: label,
                     hintText: hint,
-                    labelStyle: const TextStyle(color: Colors.white70),
-                    hintStyle: const TextStyle(color: Colors.white38),
+                    labelStyle: const TextStyle(color: Color(0xFF4A6E57)),
+                    hintStyle: const TextStyle(color: Color(0xFF8BA99A)),
                     counterText: '',
-                    border: const OutlineInputBorder(),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFD0E8D9)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFD0E8D9)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFF2E7D32), width: 2),
+                    ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                   ),
                 ),
@@ -555,7 +558,7 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
                             style: ElevatedButton.styleFrom(
                               padding: EdgeInsets.zero,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              backgroundColor: const Color(0xFF2196F3), // AppColors.primary
+                              backgroundColor: const Color(0xFF2E7D32), // Green — matches app theme
                             ),
                             child: isVerifying
                                 ? const CoinPulseLoader(size: 6.0)

@@ -52,7 +52,9 @@ class FincareParser extends BaseBankParser {
       while (i + 1 < lines.length) {
         final next = lines[i + 1].trim();
         if (next.isEmpty || dateRegex.hasMatch(next) ||
-            next.contains('STATEMENT') || next.contains('All values')) break;
+            next.contains('STATEMENT') || next.contains('All values')) {
+          break;
+        }
         rest += ' $next';
         i++;
       }

@@ -7,8 +7,7 @@ import '../../../shared/widgets/inputs/phone_input_field.dart';
 import '../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../shared/widgets/buttons/primary_button.dart';
 import '../../../shared/widgets/status/inline_message_banner.dart';
-import '../../../shared/widgets/feedback/toast_service.dart';
-import '../../../shared/widgets/feedback/toast_types.dart';
+import '../../../shared/widgets/feedback/app_toast.dart';
 import '../controllers/auth_controller.dart';
 import '../../../app/app_router.dart';
 
@@ -97,7 +96,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
       debugPrint('[GigCredit] OTP Generated: $responseStr');
 
       // Show premium toast notification
-      globalToastService.showById(ToastId.otpSent);
+      AppToast.success(context, 'OTP Sent', subtitle: 'Check your messages for the 6-digit code.');
 
       // Show OTP for demo
       if (mounted) {
@@ -114,10 +113,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
       context.push('${AppRoutes.otp}?mobile=$mobile&isSignup=true');
     } else {
       final errorMsg = responseStr ?? 'Registration failed';
-      if (errorMsg.contains('exists') || errorMsg.contains('already')) {
-        globalToastService.showById(ToastId.accountExists);
+      if (errorMsg.contains('Network Error')) {
+        AppToast.error(context, 'Network Error', subtitle: 'Please check your connection and try again.');
+      } else if (errorMsg.contains('exists') || errorMsg.contains('already')) {
+        AppToast.error(context, 'Account exists', subtitle: 'Please sign in instead.');
       } else {
-        globalToastService.showById(ToastId.otpSendFailed);
+        AppToast.error(context, 'Failed to send OTP', subtitle: 'Please try again.');
       }
       setState(() {
         _errorMsg = errorMsg;
@@ -282,8 +283,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
             hint: 'Enter your full name',
             controller: _nameController,
             onChanged: (_) => _validate(),
-            prefixIcon: Padding(
-              padding: const EdgeInsets.only(left: 14, right: 10),
+            prefixIcon: const Padding(
+              padding: EdgeInsets.only(left: 14, right: 10),
               child: Icon(Icons.person_outline_rounded,
                   size: 20, color: AppColors.textMuted),
             ),

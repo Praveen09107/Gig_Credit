@@ -413,7 +413,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
           ),
         ),
         SliderTheme(
-          data: SliderThemeData(trackHeight: 6, thumbColor: _accentTeal, activeTrackColor: _accentTeal, inactiveTrackColor: const Color(0xFF1E2535)),
+          data: const SliderThemeData(trackHeight: 6, thumbColor: _accentTeal, activeTrackColor: _accentTeal, inactiveTrackColor: Color(0xFF1E2535)),
           child: Slider(
             value: _loanAmount.clamp(_sliderMin, _sliderMax),
             min: _sliderMin,

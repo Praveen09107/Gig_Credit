@@ -7,10 +7,10 @@ import '../../../shared/widgets/inputs/otp_input_widget.dart';
 import '../../../shared/widgets/inputs/otp_resend_timer.dart';
 import '../../../shared/widgets/buttons/primary_button.dart';
 import '../../../shared/widgets/status/inline_message_banner.dart';
-import '../../../shared/widgets/feedback/toast_service.dart';
-import '../../../shared/widgets/feedback/toast_types.dart';
-import '../controllers/auth_controller.dart';
 import '../../../state/auth_provider.dart';
+import '../../../state/user_provider.dart';
+import '../../../shared/widgets/feedback/app_toast.dart';
+import '../controllers/auth_controller.dart';
 
 /// GigCredit OTP Verification Screen
 /// Green-accent header with shield icon, 6-box OTP input, verify CTA
@@ -83,21 +83,24 @@ class _OtpVerificationScreenState
         .read(authControllerProvider.notifier)
         .verifyOtp(widget.mobile, _otp);
     if (success && mounted) {
+      final user = ref.read(userProvider);
       // Show success toast
       if (widget.isSignup) {
-        globalToastService.showById(ToastId.accountCreated);
+        AppToast.success(context, 'Account created successfully ✓', subtitle: 'Welcome to GigCredit!');
       } else {
-        globalToastService.showById(ToastId.signinSuccess);
+        AppToast.success(context, 'Welcome back, ${user?.name ?? ''}! 👋', subtitle: 'Signed in successfully.');
       }
       context.go('/app/home');
     } else if (mounted) {
-      // Show error toast
       final authState = ref.read(authProvider);
+      // Show error toast
       final error = authState.errorMessage ?? '';
-      if (error.contains('expired')) {
-        globalToastService.showById(ToastId.otpExpired);
+      if (error.contains('Network Error')) {
+        AppToast.error(context, 'Network Error', subtitle: 'Please check your connection and try again.');
+      } else if (error.contains('expired')) {
+        AppToast.error(context, 'OTP Expired', subtitle: 'Please request a new code.');
       } else {
-        globalToastService.showById(ToastId.otpIncorrect);
+        AppToast.error(context, 'Invalid OTP', subtitle: 'The code you entered is incorrect.');
       }
     }
   }
@@ -106,7 +109,7 @@ class _OtpVerificationScreenState
     ref
         .read(authControllerProvider.notifier)
         .sendOtp(widget.mobile, isSignup: widget.isSignup);
-    globalToastService.showById(ToastId.otpResent);
+    AppToast.info(context, 'OTP Resent', subtitle: 'Please check your messages.');
   }
 
   @override

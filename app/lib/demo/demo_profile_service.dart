@@ -8,7 +8,6 @@ import '../../models/verified_profile/emi_loans_info.dart';
 import '../../models/verified_profile/insurance_info.dart';
 import '../../models/verified_profile/tax_info.dart';
 import '../../models/verified_profile/gov_schemes_info.dart';
-import '../../models/verified_profile/work_info.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────────
 /// DEMO MODE FLAG — flip to false before production submission

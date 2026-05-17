@@ -16,6 +16,8 @@ import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/gov_schemes_info.dart';
 import '../../../../app/app_router.dart';
 import '../../../../demo/demo_profile_manager.dart';
+import '../../../../shared/widgets/feedback/app_toast.dart';
+import '../../../../shared/widgets/feedback/step_popups.dart';
 
 class Step6GovSchemesScreen extends ConsumerStatefulWidget {
   const Step6GovSchemesScreen({super.key});
@@ -92,6 +94,13 @@ class _Step6GovSchemesScreenState extends ConsumerState<Step6GovSchemesScreen> {
     
     setState(() => _isLoading = true);
     
+    // Show confirmation popup before proceeding
+    final confirmed = await StepConfirmPopup.show(context, stepNumber: 6);
+    if (!confirmed || !mounted) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
     try {
       final api = ref.read(apiServiceProvider);
 
@@ -125,6 +134,7 @@ class _Step6GovSchemesScreenState extends ConsumerState<Step6GovSchemesScreen> {
       
       if (mounted) {
         setState(() => _isLoading = false);
+        AppToast.success(context, 'Government schemes verified ✓');
         context.push(AppRoutes.scoreStep(7));
       }
     } catch (e) {
@@ -161,7 +171,7 @@ class _Step6GovSchemesScreenState extends ConsumerState<Step6GovSchemesScreen> {
             ],
           ),
           const SizedBox(height: 4),
-          Text('All optional. Toggle schemes you are enrolled in.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          const Text('All optional. Toggle schemes you are enrolled in.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
           const SizedBox(height: 20),
 
           _buildSchemeModule(title: '🛒 PM SVANidhi', hint: 'Street Vendor Scheme', selected: _hasSvanidhi, onToggle: (v) => setState(() => _hasSvanidhi = v), children: [
@@ -238,10 +248,10 @@ class _Step6GovSchemesScreenState extends ConsumerState<Step6GovSchemesScreen> {
         children: [
           SwitchListTile(
             title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            subtitle: Text(hint, style: TextStyle(fontSize: 11, color: AppColors.textTertiary)),
+            subtitle: Text(hint, style: const TextStyle(fontSize: 11, color: AppColors.textTertiary)),
             value: selected,
             onChanged: onToggle,
-            activeColor: AppColors.accent,
+            activeThumbColor: AppColors.accent,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           ),
           if (selected)

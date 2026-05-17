@@ -1,5 +1,3 @@
-import '../../models/verified_profile/verified_profile.dart';
-import '../../models/verified_profile/bank_info.dart';
 import '../parsing/parsed_transaction.dart';
 
 /// Enhanced cross-step validator that matches utility bills, EMI payments,
@@ -114,7 +112,7 @@ class BankTransactionMatcher {
       }
     }
 
-    return MatchResult(
+    return const MatchResult(
       matched: false,
       confidence: 0.0,
       reason: 'No matching insurance premium debit found',

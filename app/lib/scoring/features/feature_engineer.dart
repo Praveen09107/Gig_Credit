@@ -41,7 +41,10 @@ class FeatureEngineer {
     'declared_income_consistency': 0.70,
   };
 
-  static double _get(String key, VerifiedProfile p) {
+  static double _get(String key, VerifiedProfile p, [Map<String, dynamic>? dummyFeatures]) {
+    if (dummyFeatures != null && dummyFeatures.containsKey(key)) {
+      return (dummyFeatures[key] as num).toDouble();
+    }
     final raw = p.extractFeature(key);
     if (raw != null && raw.isFinite && raw >= 0.0 && raw <= 1.0) return raw;
     return _medians[key] ?? 0.50;
@@ -49,46 +52,46 @@ class FeatureEngineer {
 
   /// Extracts the 115-feature vector.
   /// Slot mapping mirrors the exported m2cgen scorer's expected feature order.
-  static List<double> extract(VerifiedProfile profile) {
+  static List<double> extract(VerifiedProfile profile, {Map<String, dynamic>? dummyFeatures}) {
     final f = List<double>.filled(115, 0.0);
 
     // ── PILLAR 1: Income Reliability (f[0..12]) ──────────────────────────
-    f[0]  = _get('avg_monthly_income_norm',  profile);
-    f[1]  = _get('income_stability_cv',      profile);
-    f[2]  = _get('income_growth_slope',      profile);
+    f[0]  = _get('avg_monthly_income_norm',  profile, dummyFeatures);
+    f[1]  = _get('income_stability_cv',      profile, dummyFeatures);
+    f[2]  = _get('income_growth_slope',      profile, dummyFeatures);
     f[3]  = f[0] * f[1];                // income × stability cross
     f[4]  = f[1] * f[2];                // stability × growth cross
-    f[5]  = _get('gov_scheme_enrolled',       profile);
-    f[6]  = _get('eshram_registered',         profile);
-    f[7]  = _get('pm_scheme_enrolled',        profile);
+    f[5]  = _get('gov_scheme_enrolled',       profile, dummyFeatures);
+    f[6]  = _get('eshram_registered',         profile, dummyFeatures);
+    f[7]  = _get('pm_scheme_enrolled',        profile, dummyFeatures);
     f[8]  = f[5] * f[6];                // social accountability cross
-    f[9]  = _get('age_norm',                  profile);
+    f[9]  = _get('age_norm',                  profile, dummyFeatures);
     f[10] = f[0] * f[9];                // income × age
-    f[11] = _get('kyc_name_match_score',      profile);
-    f[12] = _get('declared_income_consistency', profile);
+    f[11] = _get('kyc_name_match_score',      profile, dummyFeatures);
+    f[12] = _get('declared_income_consistency', profile, dummyFeatures);
 
     // ── PILLAR 2: Spending & Obligations (f[13..27]) ──────────────────────
-    f[13] = _get('avg_monthly_expenses_norm', profile);
-    f[14] = _get('expense_to_income_ratio',   profile);
-    f[15] = _get('utility_payment_ratio',     profile);
-    f[16] = _get('utility_spend_norm',        profile);
+    f[13] = _get('avg_monthly_expenses_norm', profile, dummyFeatures);
+    f[14] = _get('expense_to_income_ratio',   profile, dummyFeatures);
+    f[15] = _get('utility_payment_ratio',     profile, dummyFeatures);
+    f[16] = _get('utility_spend_norm',        profile, dummyFeatures);
     f[17] = 1.0 - f[14];               // inverted expense ratio (more savings = better)
     f[18] = f[15] * (1.0 - f[16]);     // high payment ratio but low spend = good
     f[19] = f[0] * (1.0 - f[14]);      // income scaled by low expense ratio
-    f[20] = _get('aadhaar_verified',          profile);
-    f[21] = _get('pan_verified',              profile);
+    f[20] = _get('aadhaar_verified',          profile, dummyFeatures);
+    f[21] = _get('pan_verified',              profile, dummyFeatures);
     f[22] = f[20] * f[21];              // both KYC verified
     f[23] = f[0] * f[22];              // income × KYC
-    f[24] = _get('itr_filed_binary',          profile);
+    f[24] = _get('itr_filed_binary',          profile, dummyFeatures);
     f[25] = f[24] * f[0];              // ITR × income
-    f[26] = _get('tax_compliance_score',      profile);
+    f[26] = _get('tax_compliance_score',      profile, dummyFeatures);
     f[27] = f[26] * f[12];             // compliance × declared consistency
 
     // ── PILLAR 3: Debt Servicing (f[28..36]) ──────────────────────────────
-    f[28] = _get('emi_to_income_ratio',       profile);
-    f[29] = _get('total_debt_norm',           profile);
-    f[30] = _get('emi_regular_payment_ratio', profile);
-    f[31] = _get('num_active_loans_norm',     profile);
+    f[28] = _get('emi_to_income_ratio',       profile, dummyFeatures);
+    f[29] = _get('total_debt_norm',           profile, dummyFeatures);
+    f[30] = _get('emi_regular_payment_ratio', profile, dummyFeatures);
+    f[31] = _get('num_active_loans_norm',     profile, dummyFeatures);
     f[32] = 1.0 - f[28];              // inverted EMI ratio (lower burden = better)
     f[33] = f[30] * (1.0 - f[28]);    // regular × low EMI
     f[34] = f[30] * f[32];            // payment regularity vs leverage
@@ -96,8 +99,8 @@ class FeatureEngineer {
     f[36] = 1.0 - f[29];             // inverted debt norm
 
     // ── PILLAR 4: Savings Trajectory (f[37..48]) ──────────────────────────
-    f[37] = _get('savings_rate_norm',         profile);
-    f[38] = _get('net_monthly_savings_norm',  profile);
+    f[37] = _get('savings_rate_norm',         profile, dummyFeatures);
+    f[38] = _get('net_monthly_savings_norm',  profile, dummyFeatures);
     f[39] = f[37] * f[0];             // savings rate × income
     f[40] = f[38] * f[1];             // net savings × stability
     f[41] = (1.0 - f[28]) * f[37];   // low EMI × high savings
@@ -110,18 +113,18 @@ class FeatureEngineer {
     f[48] = f[24] * f[37];            // ITR filed × savings (responsible saver)
 
     // ── PILLAR 5: Identity & KYC (f[49..66]) ─────────────────────────────
-    f[49] = _get('aadhaar_verified',          profile);
-    f[50] = _get('pan_verified',              profile);
-    f[51] = _get('kyc_name_match_score',      profile);
+    f[49] = _get('aadhaar_verified',          profile, dummyFeatures);
+    f[50] = _get('pan_verified',              profile, dummyFeatures);
+    f[51] = _get('kyc_name_match_score',      profile, dummyFeatures);
     f[52] = f[49] * f[50];             // both verified
     f[53] = f[51] * f[52];             // name match × dual KYC
-    f[54] = _get('age_norm',                  profile);
+    f[54] = _get('age_norm',                  profile, dummyFeatures);
     f[55] = f[54] * f[52];             // age × KYC
-    f[56] = _get('gov_scheme_enrolled',       profile);
+    f[56] = _get('gov_scheme_enrolled',       profile, dummyFeatures);
     f[57] = f[56] * f[52];             // social identity × KYC
-    f[58] = _get('eshram_registered',         profile);
+    f[58] = _get('eshram_registered',         profile, dummyFeatures);
     f[59] = f[58] * f[52];             // eShram × KYC
-    f[60] = _get('pm_scheme_enrolled',        profile);
+    f[60] = _get('pm_scheme_enrolled',        profile, dummyFeatures);
     f[61] = f[60] * f[52];             // PM scheme × KYC
     f[62] = f[52] * f[24];             // KYC × ITR
     f[63] = f[52] * f[26];             // KYC × tax compliance
@@ -130,10 +133,10 @@ class FeatureEngineer {
     f[66] = f[53] * f[37];             // strong KYC × savings
 
     // ── PILLAR 6: Safety Nets (f[67..77]) ────────────────────────────────
-    f[67] = _get('health_insurance_active',   profile);
-    f[68] = _get('life_insurance_active',     profile);
-    f[69] = _get('insurance_coverage_score',  profile);
-    f[70] = _get('insurance_premium_to_income', profile);
+    f[67] = _get('health_insurance_active',   profile, dummyFeatures);
+    f[68] = _get('life_insurance_active',     profile, dummyFeatures);
+    f[69] = _get('insurance_coverage_score',  profile, dummyFeatures);
+    f[70] = _get('insurance_premium_to_income', profile, dummyFeatures);
     f[71] = f[67] * f[68];             // both health + life
     f[72] = f[69] * f[0];             // coverage × income
     f[73] = f[69] * f[37];            // coverage × savings
@@ -143,9 +146,9 @@ class FeatureEngineer {
     f[77] = f[67] * f[37];            // health insurance × savings habit
 
     // ── PILLAR 7: Social Accountability (f[78..87]) ───────────────────────
-    f[78] = _get('gov_scheme_enrolled',       profile);
-    f[79] = _get('eshram_registered',         profile);
-    f[80] = _get('pm_scheme_enrolled',        profile);
+    f[78] = _get('gov_scheme_enrolled',       profile, dummyFeatures);
+    f[79] = _get('eshram_registered',         profile, dummyFeatures);
+    f[80] = _get('pm_scheme_enrolled',        profile, dummyFeatures);
     f[81] = f[78] * f[79];             // multiple schemes
     f[82] = f[81] * f[80];             // all 3 schemes
     f[83] = f[78] * f[0];             // scheme × income
@@ -155,10 +158,10 @@ class FeatureEngineer {
     f[87] = f[80] * f[37];            // PM scheme × savings
 
     // ── PILLAR 8: Tax & Compliance (f[88..94]) ────────────────────────────
-    f[88] = _get('itr_filed_binary',          profile);
-    f[89] = _get('tax_compliance_score',      profile);
-    f[90] = _get('gst_registered',            profile);
-    f[91] = _get('declared_income_consistency', profile);
+    f[88] = _get('itr_filed_binary',          profile, dummyFeatures);
+    f[89] = _get('tax_compliance_score',      profile, dummyFeatures);
+    f[90] = _get('gst_registered',            profile, dummyFeatures);
+    f[91] = _get('declared_income_consistency', profile, dummyFeatures);
     f[92] = f[88] * f[91];             // ITR × consistency
     f[93] = f[89] * f[0];             // compliance × income
     f[94] = f[88] * f[37];            // ITR × savings

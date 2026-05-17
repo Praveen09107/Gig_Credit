@@ -5,7 +5,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_typography.dart';
 import '../../../shared/widgets/buttons/primary_button.dart';
-import '../../../shared/widgets/cards/app_card.dart';
 import '../../../app/app_router.dart';
 
 /// GigCredit Input Guidance Screen
@@ -383,11 +382,11 @@ class _UploadItemTileState extends State<_UploadItemTile> {
                               color: AppColors.greenPrimary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Row(
+                            child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(Icons.open_in_new_rounded, color: AppColors.greenPrimary, size: 16),
-                                const SizedBox(width: 6),
+                                SizedBox(width: 6),
                                 Text('Apply Now',
                                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.greenPrimary)),
                               ],

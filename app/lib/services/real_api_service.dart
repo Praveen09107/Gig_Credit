@@ -11,13 +11,24 @@ class RealApiService implements ApiService {
     'X-API-Key': AppConfig.apiKey,
   };
 
+  Future<http.Response> _post(String url, {required Map<String, String> headers, required String body, Duration timeout = const Duration(seconds: 120)}) async {
+    try {
+      return await http.post(Uri.parse(url), headers: headers, body: body).timeout(timeout);
+    } catch (e) {
+      if (e.toString().contains('SocketException') || e.toString().contains('ClientException') || e.toString().contains('TimeoutException')) {
+        throw Exception('Network Error: Please check your connection and try again.');
+      }
+      rethrow;
+    }
+  }
+
   @override
   Future<Map<String, dynamic>> sendOtp(String mobile, {bool isSignup = false, String? name}) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/otp/send'),
+    final response = await _post(
+      '$baseUrl/auth/otp/send',
       headers: _headers,
       body: jsonEncode({'mobile': mobile, 'isSignup': isSignup, 'name': name}),
-    ).timeout(const Duration(seconds: 120));
+    );
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
@@ -28,11 +39,11 @@ class RealApiService implements ApiService {
 
   @override
   Future<Map<String, dynamic>> verifyOtp(String mobile, String otp) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/otp/verify'),
+    final response = await _post(
+      '$baseUrl/auth/otp/verify',
       headers: _headers,
       body: jsonEncode({'mobile': mobile, 'otp': otp}),
-    ).timeout(const Duration(seconds: 120));
+    );
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
@@ -43,8 +54,8 @@ class RealApiService implements ApiService {
 
   @override
   Future<Map<String, dynamic>> verifyAadhaar(String aadhaarNumber) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/gov/aadhaar/verify'),
+    final response = await _post(
+      '$baseUrl/gov/aadhaar/verify',
       headers: _headers,
       body: jsonEncode({'aadhaar': aadhaarNumber}),
     );
@@ -57,8 +68,8 @@ class RealApiService implements ApiService {
 
   @override
   Future<Map<String, dynamic>> verifyPan(String panNumber) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/gov/pan/verify'),
+    final response = await _post(
+      '$baseUrl/gov/pan/verify',
       headers: _headers,
       body: jsonEncode({'pan': panNumber}),
     );
@@ -71,8 +82,8 @@ class RealApiService implements ApiService {
 
   @override
   Future<Map<String, dynamic>> verifyAccount(String accountNo, String ifsc) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/bank/account/verify'),
+    final response = await _post(
+      '$baseUrl/bank/account/verify',
       headers: _headers,
       body: jsonEncode({'account_number': accountNo, 'ifsc': ifsc}),
     );
@@ -85,8 +96,8 @@ class RealApiService implements ApiService {
 
   @override
   Future<Map<String, dynamic>> verifyIfsc(String ifsc) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/bank/ifsc/verify'),
+    final response = await _post(
+      '$baseUrl/bank/ifsc/verify',
       headers: _headers,
       body: jsonEncode({'ifsc': ifsc}),
     );
@@ -99,8 +110,8 @@ class RealApiService implements ApiService {
 
   @override
   Future<Map<String, dynamic>> uploadBankStatement(String base64Pdf) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/bank/statement/upload'),
+    final response = await _post(
+      '$baseUrl/bank/statement/upload',
       headers: _headers,
       body: jsonEncode({'pdf_base64': base64Pdf}),
     );
@@ -110,8 +121,8 @@ class RealApiService implements ApiService {
 
   @override
   Future<Map<String, dynamic>> verifyUtility(String consumerNumber, String provider) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/utility/verify'),
+    final response = await _post(
+      '$baseUrl/utility/verify',
       headers: _headers,
       body: jsonEncode({'consumer_number': consumerNumber, 'provider': provider}),
     );
@@ -121,8 +132,8 @@ class RealApiService implements ApiService {
 
   @override
   Future<Map<String, dynamic>> verifyUan(String uanNumber) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/gov/uan/verify'),
+    final response = await _post(
+      '$baseUrl/gov/uan/verify',
       headers: _headers,
       body: jsonEncode({'uan': uanNumber}),
     );
@@ -132,8 +143,8 @@ class RealApiService implements ApiService {
 
   @override
   Future<Map<String, dynamic>> getGigHistory(String platformId) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/work/gig-history'),
+    final response = await _post(
+      '$baseUrl/work/gig-history',
       headers: _headers,
       body: jsonEncode({'platform_id': platformId}),
     );
@@ -143,8 +154,8 @@ class RealApiService implements ApiService {
 
   @override
   Future<Map<String, dynamic>> verifyEshram(String eshramNumber) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/gov/eshram/verify'),
+    final response = await _post(
+      '$baseUrl/gov/eshram/verify',
       headers: _headers,
       body: jsonEncode({'uan': eshramNumber}),
     );
@@ -154,8 +165,8 @@ class RealApiService implements ApiService {
 
   @override
   Future<Map<String, dynamic>> verifyRationCard(String cardNumber) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/gov/ration/verify'),
+    final response = await _post(
+      '$baseUrl/gov/ration/verify',
       headers: _headers,
       body: jsonEncode({'card_number': cardNumber}),
     );
@@ -165,8 +176,8 @@ class RealApiService implements ApiService {
 
   @override
   Future<Map<String, dynamic>> verifyAybha(String aybhaId) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/gov/aybha/verify'),
+    final response = await _post(
+      '$baseUrl/gov/aybha/verify',
       headers: _headers,
       body: jsonEncode({'aybha_id': aybhaId}),
     );
@@ -176,8 +187,8 @@ class RealApiService implements ApiService {
 
   @override
   Future<Map<String, dynamic>> verifyGst(String gstNumber) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/gov/gst/verify'),
+    final response = await _post(
+      '$baseUrl/gov/gst/verify',
       headers: _headers,
       body: jsonEncode({'gst': gstNumber}),
     );
@@ -187,8 +198,8 @@ class RealApiService implements ApiService {
 
   @override
   Future<Map<String, dynamic>> uploadItr(String base64Itr) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/tax/itr/upload'),
+    final response = await _post(
+      '$baseUrl/tax/itr/upload',
       headers: _headers,
       body: jsonEncode({'itr_base64': base64Itr}),
     );
@@ -198,11 +209,11 @@ class RealApiService implements ApiService {
 
   @override
   Future<Map<String, dynamic>> generateReportScore(Map<String, dynamic> verifiedProfileData) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/api/report/generate'),
+    final response = await _post(
+      '$baseUrl/api/report/generate',
       headers: _headers,
       body: jsonEncode(verifiedProfileData),
-    ).timeout(const Duration(seconds: 120));
+    );
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     }
@@ -211,8 +222,8 @@ class RealApiService implements ApiService {
 
   @override
   Future<Map<String, dynamic>> getLlmExplanation(Map<String, dynamic> limitsData) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/explain/full'),
+    final response = await _post(
+      '$baseUrl/explain/full',
       headers: _headers,
       body: jsonEncode(limitsData),
     );
@@ -222,8 +233,8 @@ class RealApiService implements ApiService {
 
   @override
   Future<Map<String, dynamic>> checkLoans(String accountNumber) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/bank/loan/check'),
+    final response = await _post(
+      '$baseUrl/bank/loan/check',
       headers: _headers,
       body: jsonEncode({'account_number': accountNumber}),
     );
@@ -233,8 +244,8 @@ class RealApiService implements ApiService {
 
   @override
   Future<Map<String, dynamic>> verifyVehicle(String vehicleNumber) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/gov/vehicle/rc/verify'),
+    final response = await _post(
+      '$baseUrl/gov/vehicle/rc/verify',
       headers: _headers,
       body: jsonEncode({'vehicle_number': vehicleNumber}),
     );
@@ -244,8 +255,8 @@ class RealApiService implements ApiService {
 
   @override
   Future<Map<String, dynamic>> verifyInsurance(String policyNumber, String type) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/gov/insurance/policy/verify'),
+    final response = await _post(
+      '$baseUrl/gov/insurance/policy/verify',
       headers: _headers,
       body: jsonEncode({'policy_number': policyNumber, 'policy_type': type}),
     );
@@ -255,8 +266,8 @@ class RealApiService implements ApiService {
 
   @override
   Future<Map<String, dynamic>> verifyPmsym(String pmsymUan) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/gov/pmsym/verify'),
+    final response = await _post(
+      '$baseUrl/gov/pmsym/verify',
       headers: _headers,
       body: jsonEncode({'uan': pmsymUan}),
     );
@@ -266,8 +277,8 @@ class RealApiService implements ApiService {
 
   @override
   Future<Map<String, dynamic>> verifyItr(String pan, String assessmentYear) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/gov/income-tax/itr/verify'),
+    final response = await _post(
+      '$baseUrl/gov/income-tax/itr/verify',
       headers: _headers,
       body: jsonEncode({'pan': pan, 'assessment_year': assessmentYear}),
     );

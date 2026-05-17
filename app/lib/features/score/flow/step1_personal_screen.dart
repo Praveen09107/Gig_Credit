@@ -6,8 +6,11 @@ import '../../../../shared/widgets/layout/scrollable_step_layout.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/buttons/primary_button.dart';
 import '../../../../shared/widgets/status/verification_badge.dart';
+import '../../../../shared/widgets/feedback/app_toast.dart';
+import '../../../../shared/widgets/feedback/step_popups.dart';
 import '../../../../state/step_status_provider.dart';
 import '../../../../state/verified_profile_provider.dart';
+import '../../../../state/score_provider.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/personal_info.dart';
 import '../../../../app/app_router.dart';
@@ -148,6 +151,10 @@ class _Step1PersonalScreenState extends ConsumerState<Step1PersonalScreen> {
        return;
     }
 
+    // Show confirmation popup before proceeding
+    final confirmed = await StepConfirmPopup.show(context, stepNumber: 1);
+    if (!confirmed || !mounted) return;
+
     setState(() => _isLoading = true);
     await Future.delayed(const Duration(seconds: 1));
 
@@ -175,8 +182,22 @@ class _Step1PersonalScreenState extends ConsumerState<Step1PersonalScreen> {
 
     if (mounted) {
       setState(() => _isLoading = false);
+      AppToast.success(context, 'Personal details verified ✓');
       context.push(AppRoutes.scoreStep(2));
     }
+  }
+
+  Future<bool> _onWillPop() async {
+    // Step 1 back = abandon session
+    final abandon = await AbandonSessionPopup.show(context);
+    if (abandon && mounted) {
+      ref.read(stepStatusProvider.notifier).reset();
+      ref.read(verifiedProfileProvider.notifier).reset();
+      ref.read(scoreProvider.notifier).reset();
+      AppToast.warning(context, 'Session cancelled. All data cleared.');
+      context.go(AppRoutes.home);
+    }
+    return false; // We handle navigation ourselves
   }
 
   @override
@@ -203,7 +224,12 @@ class _Step1PersonalScreenState extends ConsumerState<Step1PersonalScreen> {
     final statusMap = ref.watch(stepStatusProvider);
     final isVerified = statusMap[1] == StepStatus.verified;
 
-    return ScrollableStepLayout(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _onWillPop();
+      },
+      child: ScrollableStepLayout(
       currentStep: 1,
       stepCompletionMap: statusMap.map((key, value) => MapEntry(key, value == StepStatus.verified)),
       onStepTapped: (step) => context.push(AppRoutes.scoreStep(step)),
@@ -402,6 +428,7 @@ class _Step1PersonalScreenState extends ConsumerState<Step1PersonalScreen> {
         isDisabled: !_isFormValid && !isVerified,
         onPressed: _submit,
       ),
+    ),
     );
   }
 

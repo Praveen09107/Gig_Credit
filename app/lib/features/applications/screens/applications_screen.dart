@@ -111,7 +111,7 @@ class ApplicationsScreen extends ConsumerWidget {
             Container(
               width: 72,
               height: 72,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.greenMuted,
                 shape: BoxShape.circle,
               ),
@@ -253,7 +253,7 @@ class _ApplicationCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text('Ref: $refId',
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.textMuted,
                 fontSize: 10,
                 fontFamily: 'monospace',

@@ -1,6 +1,6 @@
 import '../../models/trajectory_result.dart';
 import '../../models/actionable_item.dart';
-import '../score_pipeline.dart'; // To get score_to_grade mapping if needed, or we implement a simple one
+// To get score_to_grade mapping if needed, or we implement a simple one
 
 class Layer4Trajectory {
   static TrajectoryResult simulate(int currentScore, List<ActionableItem> actionableList) {

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/physics.dart';
 
 /// GigCredit Design Token System — Animation Constants
 /// All animation durations, curves, and spring configs from the Frontend Specification

@@ -4,12 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_typography.dart';
-import '../../../shared/theme/app_spacing.dart';
 import '../../../features/auth/controllers/auth_controller.dart';
 import '../../../state/user_provider.dart';
 import '../../../shared/widgets/cards/app_card.dart';
-import '../../../shared/widgets/feedback/toast_service.dart';
-import '../../../shared/widgets/feedback/toast_types.dart';
+import '../../../shared/widgets/feedback/app_toast.dart';
 
 /// GigCredit Profile Screen
 /// Green avatar hero → detail card → preferences → logout confirm sheet
@@ -142,7 +140,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           value: '+91 $mobile',
                         ),
                         const Divider(color: AppColors.borderCard, height: 24),
-                        _DetailRow(
+                        const _DetailRow(
                           icon: Icons.calendar_today_rounded,
                           label: 'Member Since',
                           value: 'May 2026',
@@ -254,7 +252,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         onConfirm: () {
           Navigator.pop(context);
           ref.read(authControllerProvider.notifier).logout();
-          globalToastService.showById(ToastId.logoutSuccess);
+          AppToast.info(context, 'Logged Out', subtitle: 'See you next time!');
         },
       ),
     );

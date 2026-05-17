@@ -33,7 +33,9 @@ class Layer1PillarDecomp {
     
     if (sumRaw == 0.0 || targetPoints <= 0) {
       // Fallback if something is 0
-      pillars.forEach((p) => finalContributions[p] = 0);
+      for (var p in pillars) {
+        finalContributions[p] = 0;
+      }
       return finalContributions;
     }
 

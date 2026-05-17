@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_typography.dart';
 
 /// Score Status Message — cycling text during score generation

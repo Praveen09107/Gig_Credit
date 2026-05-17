@@ -93,7 +93,7 @@ class HeroScoreCard extends ConsumerWidget {
                               children: [
                                 Container(
                                   padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
+                                  decoration: const BoxDecoration(
                                     gradient: LinearGradient(colors: [AppColors.accent, AppColors.accentLight]),
                                     shape: BoxShape.circle,
                                   ),

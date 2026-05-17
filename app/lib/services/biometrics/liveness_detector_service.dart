@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 
 /// Implements Active Liveness Detection using MediaPipe Face Mesh / ML Kit.
 /// Handles spoofing attacks (e.g. holding up a printed photo) by requesting

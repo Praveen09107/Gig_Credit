@@ -41,7 +41,7 @@ class Layer2ShapLookup {
       
       if (workTypeData == null || workTypeData is! List) return;
 
-      List<double> shapVals = List<double>.from((workTypeData as List).map((x) => (x as num).toDouble()));
+      List<double> shapVals = List<double>.from((workTypeData).map((x) => (x as num).toDouble()));
       if (shapVals.isEmpty) return;
 
       int binIdx = 0;

@@ -12,6 +12,8 @@ import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/emi_loans_info.dart';
 import '../../../../app/app_router.dart';
 import '../../../../demo/demo_profile_manager.dart';
+import '../../../../shared/widgets/feedback/app_toast.dart';
+import '../../../../shared/widgets/feedback/step_popups.dart';
 
 class Step9EmiLoansScreen extends ConsumerStatefulWidget {
   const Step9EmiLoansScreen({super.key});
@@ -105,6 +107,13 @@ class _Step9EmiLoansScreenState extends ConsumerState<Step9EmiLoansScreen> {
 
     setState(() => _isLoading = true);
 
+    // Show confirmation popup before generating score
+    final confirmed = await StepConfirmPopup.show(context, stepNumber: 9);
+    if (!confirmed || !mounted) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
     // Real backend loan check using bank account from Step 3
     try {
       final profile = ref.read(verifiedProfileProvider);
@@ -142,6 +151,7 @@ class _Step9EmiLoansScreenState extends ConsumerState<Step9EmiLoansScreen> {
 
     if (mounted) {
       setState(() => _isLoading = false);
+      AppToast.success(context, 'All steps complete! Generating your score...');
       context.push(AppRoutes.scoreGenerating);
     }
   }
@@ -162,7 +172,7 @@ class _Step9EmiLoansScreenState extends ConsumerState<Step9EmiLoansScreen> {
             child: const Text('EMI & Loans', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(height: 4),
-          Text('Declare active loan and EMI obligations.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          const Text('Declare active loan and EMI obligations.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
           const SizedBox(height: 20),
 
           // Top-level toggle
@@ -175,10 +185,10 @@ class _Step9EmiLoansScreenState extends ConsumerState<Step9EmiLoansScreen> {
             child: SwitchListTile(
               title: const Text('Do you have active EMIs or loans?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
               subtitle: Text(_hasActiveLoans ? 'Fill in your loan details below' : 'Skip if you have no active loans',
-                  style: TextStyle(fontSize: 11, color: AppColors.textTertiary)),
+                  style: const TextStyle(fontSize: 11, color: AppColors.textTertiary)),
               value: _hasActiveLoans,
               onChanged: (v) => setState(() => _hasActiveLoans = v),
-              activeColor: AppColors.accent,
+              activeThumbColor: AppColors.accent,
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             ),
           ),

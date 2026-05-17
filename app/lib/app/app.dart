@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../shared/theme/app_colors.dart';
 import '../shared/theme/app_typography.dart';
 import '../shared/theme/app_spacing.dart';
-import '../shared/widgets/feedback/toast_service.dart';
 import 'app_router.dart';
 
 class GigCreditApp extends StatelessWidget {
@@ -12,13 +11,11 @@ class GigCreditApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ToastOverlay(
-      child: MaterialApp.router(
-        title: 'GigCredit',
-        debugShowCheckedModeBanner: false,
-        routerConfig: AppRouter.router,
-        theme: _buildTheme(),
-      ),
+    return MaterialApp.router(
+      title: 'GigCredit',
+      debugShowCheckedModeBanner: false,
+      routerConfig: AppRouter.router,
+      theme: _buildTheme(),
     );
   }
 
@@ -87,25 +84,25 @@ class GigCreditApp extends StatelessWidget {
         filled: true,
         fillColor: AppColors.bgCard,
         contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        border: OutlineInputBorder(
+        border: const OutlineInputBorder(
           borderRadius: AppSpacing.inputBorderRadius,
-          borderSide: const BorderSide(color: AppColors.borderCard),
+          borderSide: BorderSide(color: AppColors.borderCard),
         ),
-        enabledBorder: OutlineInputBorder(
+        enabledBorder: const OutlineInputBorder(
           borderRadius: AppSpacing.inputBorderRadius,
-          borderSide: const BorderSide(color: AppColors.borderCard, width: 1.5),
+          borderSide: BorderSide(color: AppColors.borderCard, width: 1.5),
         ),
-        focusedBorder: OutlineInputBorder(
+        focusedBorder: const OutlineInputBorder(
           borderRadius: AppSpacing.inputBorderRadius,
-          borderSide: const BorderSide(color: AppColors.greenPrimary, width: 2.0),
+          borderSide: BorderSide(color: AppColors.greenPrimary, width: 2.0),
         ),
-        errorBorder: OutlineInputBorder(
+        errorBorder: const OutlineInputBorder(
           borderRadius: AppSpacing.inputBorderRadius,
-          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+          borderSide: BorderSide(color: AppColors.error, width: 1.5),
         ),
-        focusedErrorBorder: OutlineInputBorder(
+        focusedErrorBorder: const OutlineInputBorder(
           borderRadius: AppSpacing.inputBorderRadius,
-          borderSide: const BorderSide(color: AppColors.error, width: 2.0),
+          borderSide: BorderSide(color: AppColors.error, width: 2.0),
         ),
         labelStyle: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
         hintStyle: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
@@ -163,10 +160,10 @@ class GigCreditApp extends StatelessWidget {
       ),
 
       // ── Cards ─────────────────────────────────────────────────────
-      cardTheme: CardThemeData(
+      cardTheme: const CardThemeData(
         color: AppColors.bgCard,
         elevation: 0,
-        shape: const RoundedRectangleBorder(borderRadius: AppSpacing.cardBorderRadius),
+        shape: RoundedRectangleBorder(borderRadius: AppSpacing.cardBorderRadius),
         margin: EdgeInsets.zero,
       ),
 
@@ -236,7 +233,7 @@ class GigCreditApp extends StatelessWidget {
         unselectedLabelColor: AppColors.textMuted,
         labelStyle: AppTypography.labelLarge,
         unselectedLabelStyle: AppTypography.labelMedium,
-        indicator: BoxDecoration(
+        indicator: const BoxDecoration(
           borderRadius: AppSpacing.pillBorderRadius,
           color: AppColors.greenMuted,
         ),

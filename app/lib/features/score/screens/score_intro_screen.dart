@@ -98,7 +98,7 @@ class ScoreIntroScreen extends ConsumerWidget {
                       Text('WHY GIGCREDIT?',
                           style: AppTypography.sectionLabel),
                       const SizedBox(height: 14),
-                      _BenefitCard(
+                      const _BenefitCard(
                         icon: Icons.shield_outlined,
                         iconColor: AppColors.greenPrimary,
                         title: '100% Private',
@@ -106,7 +106,7 @@ class ScoreIntroScreen extends ConsumerWidget {
                             'Data never leaves your device. No cloud storage.',
                         delay: 280,
                       ),
-                      _BenefitCard(
+                      const _BenefitCard(
                         icon: Icons.account_balance_wallet_outlined,
                         iconColor: AppColors.pillar2,
                         title: 'Unlock Loan Offers',
@@ -114,7 +114,7 @@ class ScoreIntroScreen extends ConsumerWidget {
                             'Qualify for micro-loans from top lending partners.',
                         delay: 360,
                       ),
-                      _BenefitCard(
+                      const _BenefitCard(
                         icon: Icons.flash_on_rounded,
                         iconColor: AppColors.warning,
                         title: 'Instant Generation',

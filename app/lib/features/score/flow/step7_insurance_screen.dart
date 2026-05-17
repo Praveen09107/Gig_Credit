@@ -16,6 +16,8 @@ import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/insurance_info.dart';
 import '../../../../app/app_router.dart';
 import '../../../../demo/demo_profile_manager.dart';
+import '../../../../shared/widgets/feedback/app_toast.dart';
+import '../../../../shared/widgets/feedback/step_popups.dart';
 
 class Step7InsuranceScreen extends ConsumerStatefulWidget {
   const Step7InsuranceScreen({super.key});
@@ -84,6 +86,13 @@ class _Step7InsuranceScreenState extends ConsumerState<Step7InsuranceScreen> {
     }
 
     setState(() => _isLoading = true);
+
+    // Show confirmation popup before proceeding
+    final confirmed = await StepConfirmPopup.show(context, stepNumber: 7);
+    if (!confirmed || !mounted) {
+      setState(() => _isLoading = false);
+      return;
+    }
     try {
       final api = ref.read(apiServiceProvider);
 
@@ -124,6 +133,7 @@ class _Step7InsuranceScreenState extends ConsumerState<Step7InsuranceScreen> {
       ref.read(stepStatusProvider.notifier).setStatus(7, StepStatus.verified);
       if (mounted) {
         setState(() => _isLoading = false);
+        AppToast.success(context, 'Insurance policies verified ✓');
         context.push(AppRoutes.scoreStep(8));
       }
     } catch (e) {
@@ -160,7 +170,7 @@ class _Step7InsuranceScreenState extends ConsumerState<Step7InsuranceScreen> {
             ],
           ),
           const SizedBox(height: 4),
-          Text('Active insurance lowers your risk profile.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          const Text('Active insurance lowers your risk profile.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
           const SizedBox(height: 20),
 
           // ── Health Insurance ──
@@ -241,10 +251,10 @@ class _Step7InsuranceScreenState extends ConsumerState<Step7InsuranceScreen> {
         children: [
           SwitchListTile(
             title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            subtitle: Text(hint, style: TextStyle(fontSize: 11, color: AppColors.textTertiary)),
+            subtitle: Text(hint, style: const TextStyle(fontSize: 11, color: AppColors.textTertiary)),
             value: selected,
             onChanged: onToggle,
-            activeColor: AppColors.accent,
+            activeThumbColor: AppColors.accent,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           ),
           if (selected)

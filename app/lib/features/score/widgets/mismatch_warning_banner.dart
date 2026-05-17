@@ -59,7 +59,7 @@ class MismatchWarningBanner extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         issue.description,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 12,
                           height: 1.4,
@@ -147,7 +147,7 @@ class _ComparisonRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label1, style: TextStyle(fontSize: 9, color: AppColors.textSecondary)),
+                Text(label1, style: const TextStyle(fontSize: 9, color: AppColors.textSecondary)),
                 const SizedBox(height: 2),
                 Text(
                   value1,
@@ -174,7 +174,7 @@ class _ComparisonRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label2, style: TextStyle(fontSize: 9, color: AppColors.textSecondary)),
+                Text(label2, style: const TextStyle(fontSize: 9, color: AppColors.textSecondary)),
                 const SizedBox(height: 2),
                 Text(
                   value2,

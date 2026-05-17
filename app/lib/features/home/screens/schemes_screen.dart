@@ -3,7 +3,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_typography.dart';
-import '../../../shared/theme/app_spacing.dart';
 import '../../../shared/widgets/cards/app_card.dart';
 
 /// GigCredit Schemes Discovery Screen
@@ -22,7 +21,7 @@ class _SchemesScreenState extends State<SchemesScreen> {
   static const _categories = ['All', 'Loans', 'Insurance', 'Pension', 'Registration'];
 
   static final _schemes = [
-    _SchemeData(
+    const _SchemeData(
       title: 'PM SVANidhi',
       subtitle: 'Street Vendor Micro-Credit',
       description:
@@ -34,7 +33,7 @@ class _SchemesScreenState extends State<SchemesScreen> {
       chipLabel: 'Micro-Credit',
       eligibility: '• Street vendors with valid ID\n• Must be in urban areas\n• Age 18+ years',
     ),
-    _SchemeData(
+    const _SchemeData(
       title: 'PM Shram Yogi Maan-dhan',
       subtitle: 'Worker Pension Scheme',
       description:
@@ -46,7 +45,7 @@ class _SchemesScreenState extends State<SchemesScreen> {
       chipLabel: 'Pension',
       eligibility: '• Monthly income < ₹15,000\n• Age 18-40 years\n• Not in EPFO/ESIC/NPS',
     ),
-    _SchemeData(
+    const _SchemeData(
       title: 'PM Mudra Yojana',
       subtitle: 'Business Loans up to ₹10L',
       description:
@@ -58,7 +57,7 @@ class _SchemesScreenState extends State<SchemesScreen> {
       chipLabel: 'Business Loan',
       eligibility: '• Any Indian citizen\n• Non-farm income activity\n• No collateral required',
     ),
-    _SchemeData(
+    const _SchemeData(
       title: 'PM Jeevan Jyoti Bima',
       subtitle: 'Life Insurance Cover',
       description:
@@ -70,7 +69,7 @@ class _SchemesScreenState extends State<SchemesScreen> {
       chipLabel: 'Insurance',
       eligibility: '• Age 18-50 years\n• Savings bank account\n• Aadhaar linked to bank',
     ),
-    _SchemeData(
+    const _SchemeData(
       title: 'Udyam Registration',
       subtitle: 'MSME Certificate',
       description:
@@ -139,12 +138,12 @@ class _SchemesScreenState extends State<SchemesScreen> {
                   ),
                   const SizedBox(height: 20),
                   // Stats
-                  Row(
+                  const Row(
                     children: [
                       _MiniStat(value: '5', label: 'Schemes'),
-                      const SizedBox(width: 20),
+                      SizedBox(width: 20),
                       _MiniStat(value: '₹10L', label: 'Max Loan'),
-                      const SizedBox(width: 20),
+                      SizedBox(width: 20),
                       _MiniStat(value: '0%', label: 'Registration'),
                     ],
                   ),
@@ -235,7 +234,7 @@ class _SchemesScreenState extends State<SchemesScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.phone_in_talk_rounded,
+                  const Icon(Icons.phone_in_talk_rounded,
                       color: AppColors.greenPrimary, size: 20),
                   const SizedBox(width: 12),
                   Expanded(
@@ -395,7 +394,7 @@ class _SchemeCardWidget extends StatelessWidget {
                   AnimatedRotation(
                     turns: isExpanded ? 0.5 : 0,
                     duration: const Duration(milliseconds: 280),
-                    child: Icon(Icons.keyboard_arrow_down_rounded,
+                    child: const Icon(Icons.keyboard_arrow_down_rounded,
                         color: AppColors.textMuted),
                   ),
                 ],

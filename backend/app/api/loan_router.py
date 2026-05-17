@@ -5,6 +5,7 @@ from app.utils.loan_products import LOAN_PRODUCTS
 from app.services.hard_rules import HardRulesEngine
 from app.services.affordability import AffordabilityEngine
 from app.services.audit_trail import audit_trail_service
+from app.db.connection import get_db
 import uuid
 import datetime
 
@@ -132,6 +133,28 @@ async def apply_loan(req: Dict[str, Any]):
             }
         }
         audit_trail_service.append_record(loan_id, decision_payload, score_report, application)
+        
+        try:
+            db = get_db()
+            if db is not None:
+                user_id = req.get("user_id", "anonymous")
+                if "user_id" in application:
+                    user_id = application["user_id"]
+                elif "proofId" in score_report:
+                    user_id = score_report["proofId"]
+                    
+                import asyncio
+                asyncio.create_task(db.loan_applications.insert_one({
+                    "loan_id": loan_id,
+                    "user_id": user_id,
+                    "application": safe_vars(application),
+                    "score_report": safe_vars(score_report),
+                    "decision": safe_vars(decision_payload),
+                    "created_at": datetime.datetime.utcnow()
+                }))
+        except Exception as dbe:
+            print(f"Failed to store loan app in Mongo: {dbe}")
+
         return decision_payload
     except Exception as e:
         import traceback
