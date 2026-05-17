@@ -1503,10 +1503,10 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
           border: Border.all(color: const Color(0xFF252D3D))),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: const ExpansionTile(
+        child: ExpansionTile(
           iconColor: Colors.white,
-          collapsedIconColor: Color(0xFF8B95A8),
-          title: Text('⚖️ Regulatory & Legal Details [RBI Compliance]',
+          collapsedIconColor: const Color(0xFF8B95A8),
+          title: const Text('⚖️ Regulatory & Legal Details [RBI Compliance]',
               style: TextStyle(color: Colors.white, fontSize: 14)),
           children: [
             Padding(
