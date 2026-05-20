@@ -266,12 +266,13 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
             child: Column(
               children: [
                 _buildGradeRow('Grade', 'Range', 'Risk Band', 'Meaning', isHeader: true),
-                _buildGradeRow('S', '800–900', 'Exceptional', 'Premium eligibility', color: const Color(0xFFFFD700), isActive: _grade == 'S'),
-                _buildGradeRow('A', '720–799', 'Excellent', 'Strong eligibility', color: const Color(0xFF00D4B4), isActive: _grade == 'A'),
-                _buildGradeRow('B', '640–719', 'Good', 'Standard access', color: const Color(0xFF3DD68C), isActive: _grade == 'B'),
-                _buildGradeRow('C', '560–639', 'Medium Risk', 'Conditional access', color: const Color(0xFFF4B942), isActive: _grade == 'C'),
-                _buildGradeRow('D', '480–559', 'Medium Risk', 'Limited options', color: const Color(0xFFFF8C42), isActive: _grade == 'D'),
-                _buildGradeRow('E', '300–479', 'High Risk', 'Not yet eligible', color: const Color(0xFFFF4E6A), isActive: _grade == 'E'),
+                _buildGradeRow('A+', '800–900', 'Exceptional', 'Premium eligibility', color: const Color(0xFFFFD700), isActive: _grade == 'A+'),
+                _buildGradeRow('A', '750–799', 'Excellent', 'Strong eligibility', color: const Color(0xFF00D4B4), isActive: _grade == 'A'),
+                _buildGradeRow('B+', '700–749', 'Very Good', 'Enhanced access', color: const Color(0xFF3DD68C), isActive: _grade == 'B+'),
+                _buildGradeRow('B', '650–699', 'Good', 'Standard access', color: const Color(0xFF4CAF50), isActive: _grade == 'B'),
+                _buildGradeRow('C+', '600–649', 'Fair', 'Conditional access', color: const Color(0xFFF4B942), isActive: _grade == 'C+'),
+                _buildGradeRow('C', '550–599', 'Medium Risk', 'Limited options', color: const Color(0xFFFF8C42), isActive: _grade == 'C'),
+                _buildGradeRow('D', '300–549', 'High Risk', 'Not yet eligible', color: const Color(0xFFFF4E6A), isActive: _grade == 'D'),
               ],
             ),
           ),
@@ -776,7 +777,7 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
     if (score >= 700) return 'B+';
     if (score >= 650) return 'B';
     if (score >= 600) return 'C+';
-    if (score >= 500) return 'C';
+    if (score >= 550) return 'C';
     return 'D';
   }
 
@@ -1040,7 +1041,7 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('GC-2026-0430-AB1234  ●  Hash: sha256:a3f2...  ●  Verified ✓', style: TextStyle(color: Color(0xFF8B95A8), fontSize: 10, fontFamily: 'monospace')),
+            Text('$_proofId  ●  Hash: sha256:${_proofId.hashCode.toRadixString(16).padLeft(8, '0')}...  ●  Verified ✓', style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 10, fontFamily: 'monospace')),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,

@@ -8,12 +8,14 @@ class AuthState {
   final String? userId;
   final String? token;
   final String? errorMessage;
+  final DateTime? createdAt;
 
   const AuthState({
     this.status = AuthStatus.unauthenticated,
     this.userId,
     this.token,
     this.errorMessage,
+    this.createdAt,
   });
 
   bool get isAuthenticated => status == AuthStatus.authenticated;
@@ -24,12 +26,14 @@ class AuthState {
     String? userId,
     String? token,
     String? errorMessage,
+    DateTime? createdAt,
   }) =>
       AuthState(
         status: status ?? this.status,
         userId: userId ?? this.userId,
         token: token ?? this.token,
         errorMessage: errorMessage ?? this.errorMessage,
+        createdAt: createdAt ?? this.createdAt,
       );
 }
 
@@ -41,6 +45,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       status: AuthStatus.authenticated,
       userId: userId,
       token: token,
+      createdAt: state.createdAt ?? DateTime.now(),
     );
   }
 

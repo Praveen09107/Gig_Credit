@@ -5,16 +5,19 @@ import '../shared/theme/app_colors.dart';
 import '../shared/theme/app_typography.dart';
 import '../shared/theme/app_spacing.dart';
 import 'app_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class GigCreditApp extends StatelessWidget {
+class GigCreditApp extends ConsumerWidget {
   const GigCreditApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+    
     return MaterialApp.router(
       title: 'GigCredit',
       debugShowCheckedModeBanner: false,
-      routerConfig: AppRouter.router,
+      routerConfig: router,
       theme: _buildTheme(),
     );
   }

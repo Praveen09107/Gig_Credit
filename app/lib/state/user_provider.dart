@@ -38,13 +38,14 @@ class UserNotifier extends StateNotifier<UserModel?> {
 }
 
 final userProvider = StateNotifierProvider<UserNotifier, UserModel?>((ref) {
-  final auth = ref.watch(authProvider);
   final notifier = UserNotifier();
   
-  if (auth.status == AuthStatus.unauthenticated) {
-    // We don't call clearUser here because we might just be listening,
-    // but the actual logout process should clear the user.
-  }
+  ref.listen(authProvider, (prev, next) {
+    if (next.status == AuthStatus.unauthenticated && 
+        prev?.status == AuthStatus.authenticated) {
+      notifier.clearUser();
+    }
+  });
   
   return notifier;
 });

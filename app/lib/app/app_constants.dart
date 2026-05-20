@@ -28,12 +28,14 @@ class AppConstants {
   static const String fallbackGrade = 'B';
   static const String fallbackRiskBand = 'Medium';
 
-  // Grade Thresholds
-  static const int gradeS = 800;
-  static const int gradeA = 720;
-  static const int gradeB = 640;
-  static const int gradeC = 560;
-  static const int gradeD = 480;
+  // Grade Thresholds (aligned with score_pipeline.dart)
+  static const int gradeAPlus = 800;
+  static const int gradeA = 750;
+  static const int gradeBPlus = 700;
+  static const int gradeB = 650;
+  static const int gradeCPlus = 600;
+  static const int gradeC = 550;
+  // D = below 550
 
   // Animation Durations (ms)
   static const int animFast = 200;

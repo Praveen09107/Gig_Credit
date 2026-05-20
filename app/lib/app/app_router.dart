@@ -67,38 +67,34 @@ class AppRoutes {
   static String scoreStep(int step) => '/app/score/flow/$step';
 }
 
-// ── Router provider (reads auth state for redirect) ──────────
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
-  return AppRouter._buildRouter(authState.isAuthenticated);
+  final authNotifier = ValueNotifier<bool>(ref.read(authProvider).isAuthenticated);
+  
+  ref.listen(authProvider, (_, next) {
+    authNotifier.value = next.isAuthenticated;
+  });
+
+  return GoRouter(
+    initialLocation: AppRoutes.splash,
+    refreshListenable: authNotifier,
+    debugLogDiagnostics: false,
+    routes: AppRouter._routes,
+    redirect: (context, state) {
+      final isAuthenticated = ref.read(authProvider).isAuthenticated;
+      final onAuthRoute = state.fullPath?.startsWith('/auth') ?? false;
+      final onSplash = state.fullPath == '/';
+
+      if (onSplash) return null;
+      if (!isAuthenticated && !onAuthRoute) return AppRoutes.login;
+      if (isAuthenticated && onAuthRoute) return AppRoutes.home;
+      return null;
+    },
+    errorBuilder: (context, state) => const _NotFoundScreen(),
+  );
 });
 
 class AppRouter {
   AppRouter._();
-
-  static final GoRouter router = GoRouter(
-    initialLocation: AppRoutes.splash,
-    debugLogDiagnostics: false,
-    routes: _routes,
-    redirect: (context, state) => null, // Guard handled per phase
-    errorBuilder: (context, state) => const _NotFoundScreen(),
-  );
-
-  static GoRouter _buildRouter(bool isAuthenticated) {
-    return GoRouter(
-      initialLocation: AppRoutes.splash,
-      routes: _routes,
-      redirect: (context, state) {
-        final onAuthRoute = state.fullPath?.startsWith('/auth') ?? false;
-        final onSplash = state.fullPath == '/';
-        if (onSplash) return null;
-        if (!isAuthenticated && !onAuthRoute) return AppRoutes.login;
-        if (isAuthenticated && onAuthRoute) return AppRoutes.home;
-        return null;
-      },
-      errorBuilder: (context, state) => const _NotFoundScreen(),
-    );
-  }
 
   static final List<RouteBase> _routes = [
     // ── Pre-auth ─────────────────────────────────────────────

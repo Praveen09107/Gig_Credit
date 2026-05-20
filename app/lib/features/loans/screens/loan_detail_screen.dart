@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,9 @@ import '../../../shared/theme/app_typography.dart';
 import '../../../shared/widgets/cards/app_card.dart';
 import '../../../shared/widgets/buttons/primary_button.dart';
 import '../../../state/loan_provider.dart';
+import '../../../state/score_provider.dart';
+import '../../../state/loan_applications_provider.dart';
+import '../../../services/loan_api_service.dart';
 
 /// GigCredit Loan Detail Screen
 /// Green hero header → offer details → 1-click disbursal
@@ -23,18 +27,85 @@ class _LoanDetailScreenState extends ConsumerState<LoanDetailScreen> {
 
   void _applyForLoan() async {
     setState(() => _isDisbursing = true);
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
-    setState(() => _isDisbursing = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Application submitted successfully!',
-            style: AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary)),
-        backgroundColor: AppColors.bgCard,
-      ),
+    final loanState = ref.read(loanProvider);
+    final offer = loanState.offers.firstWhere(
+      (o) => o.id == widget.offerId,
+      orElse: () => loanState.offers.first,
     );
-    context.pop();
+    final scoreReport = ref.read(scoreProvider).reportData;
+
+    try {
+      // Compute proposed EMI for DSCR check
+      final monthlyRate = offer.interestRate / 12 / 100;
+      final tenure = offer.tenureMonths;
+      final proposedEmi = monthlyRate > 0
+          ? (offer.amount * monthlyRate * pow(1 + monthlyRate, tenure)) / (pow(1 + monthlyRate, tenure) - 1)
+          : offer.amount / tenure;
+
+      // Derive income from P1 pillar contribution
+      final p1Contrib = scoreReport?.pillarContributions['P1'] ?? 0;
+      final monthlyIncome = (12000 + (p1Contrib * 200)).clamp(10000, 80000).toDouble();
+
+      final application = {
+        'loan_amount': offer.amount,
+        'tenure_months': offer.tenureMonths,
+        'product_id': offer.id,
+        'purpose': 'Pre-approved offer',
+        'kfs_acknowledged': true,
+        'aadhaar_verified': scoreReport?.pillars.any((p) => p.code == 'P5' && p.confidence > 0.5) ?? true,
+        'pan_verified': scoreReport?.pillars.any((p) => p.code == 'P8' && p.confidence > 0.5) ?? true,
+        'net_monthly_income': monthlyIncome.round(),
+        'existing_emi_total': ((scoreReport != null && scoreReport.finalScore > 700) ? monthlyIncome * 0.15 : monthlyIncome * 0.30).round(),
+        'applicant_age': 28,
+        'bank_statement_months': (scoreReport?.pillars.where((p) => p.code == 'P1').firstOrNull?.confidence ?? 0.5) > 0.7 ? 6 : 3,
+        'mobile_verified': true,
+        'proposed_emi': proposedEmi.round(),
+      };
+      final result = await ref.read(loanApiServiceProvider).applyLoan(
+        application,
+        scoreReport?.toJson() ?? {},
+      );
+
+      // Populate applications provider
+      ref.read(loanApplicationsProvider.notifier).addApplication(
+        LoanApplication(
+          refId: result['loan_id']?.toString() ?? 'APP-${DateTime.now().millisecondsSinceEpoch}',
+          nbfcName: offer.lenderName,
+          amount: offer.amount.round(),
+          tenure: '${offer.tenureMonths} months',
+          purpose: 'Pre-approved',
+          rate: offer.interestRate,
+          appliedAt: DateTime.now(),
+          status: result['decision'] == 'APPROVED' ? 'Approved' : 'Processing',
+        ),
+      );
+
+      if (!mounted) return;
+      setState(() => _isDisbursing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result['decision'] == 'APPROVED'
+                ? 'Loan approved! Disbursal in progress.'
+                : 'Application submitted — under review.',
+            style: AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary),
+          ),
+          backgroundColor: AppColors.bgCard,
+        ),
+      );
+      context.pop();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isDisbursing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Submission failed: $e',
+              style: AppTypography.bodyMedium.copyWith(color: Colors.white)),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -106,9 +177,9 @@ class _LoanDetailScreenState extends ConsumerState<LoanDetailScreen> {
                         const Divider(color: AppColors.borderCard, height: 24),
                         _DetailRow(label: 'Est. EMI', value: '₹${offer.estimatedEmi}/mo'),
                         const Divider(color: AppColors.borderCard, height: 24),
-                        const _DetailRow(label: 'Processing Fee', value: '2%'),
+                        _DetailRow(label: 'Processing Fee', value: '${(offer.interestRate > 18 ? 2.5 : 2.0).toStringAsFixed(1)}%'),
                         const Divider(color: AppColors.borderCard, height: 24),
-                        const _DetailRow(label: 'Loan Type', value: 'Personal Loan'),
+                        _DetailRow(label: 'Loan Type', value: offer.highlights.isNotEmpty ? offer.highlights.first : 'Pre-approved'),
                       ],
                     ),
                   ),

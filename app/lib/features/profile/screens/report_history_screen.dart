@@ -67,6 +67,10 @@ class _ReportHistoryScreenState extends ConsumerState<ReportHistoryScreen> {
       cleanJson.remove('user_id');
       cleanJson.remove('stored_at');
 
+      // Recompute grade from score — stored grade may be wrong (test data)
+      final rawScore = cleanJson['finalScore'] as int? ?? 0;
+      cleanJson['finalScore'] = rawScore.clamp(300, 900);
+
       final report = ScoreReportModel.fromJson(cleanJson);
 
       // Load into score provider so ScoreReportScreen can read it
@@ -230,8 +234,9 @@ class _ReportHistoryScreenState extends ConsumerState<ReportHistoryScreen> {
                           }
 
                           final item = _history[index - 1];
-                          final score = item['finalScore'] as int? ?? 0;
-                          final grade = item['grade'] as String? ?? 'B';
+                          final rawScore = item['finalScore'] as int? ?? 0;
+                          final score = rawScore.clamp(300, 900); // Pipeline minimum
+                          final grade = ScoreReportModel.computeGrade(score); // Recompute — never trust stored grade
                           final riskBand = item['riskBand'] as String? ?? 'Medium';
                           final proofId = item['proofId'] as String? ?? 'N/A';
                           final workType = item['workType'] as String? ?? 'unknown';
@@ -286,9 +291,9 @@ class _HistoryReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gradeColor = (grade == 'S' || grade == 'A')
+    final gradeColor = (grade == 'A+' || grade == 'A' || grade == 'S')
         ? const Color(0xFF3DD68C)
-        : grade == 'B'
+        : (grade == 'B+' || grade == 'B')
             ? const Color(0xFFF4B942)
             : const Color(0xFFFF4E6A);
 

@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:intl/intl.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_typography.dart';
 import '../../../features/auth/controllers/auth_controller.dart';
 import '../../../state/user_provider.dart';
+import '../../../state/auth_provider.dart';
 import '../../../shared/widgets/cards/app_card.dart';
 import '../../../shared/widgets/feedback/app_toast.dart';
 
@@ -140,10 +142,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           value: '+91 $mobile',
                         ),
                         const Divider(color: AppColors.borderCard, height: 24),
-                        const _DetailRow(
+                        _DetailRow(
                           icon: Icons.calendar_today_rounded,
                           label: 'Member Since',
-                          value: 'May 2026',
+                          value: _memberSinceDate(ref),
                         ),
                       ],
                     ),
@@ -256,6 +258,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         },
       ),
     );
+  }
+
+  String _memberSinceDate(WidgetRef ref) {
+    final authState = ref.read(authProvider);
+    // Use auth creation timestamp if available, otherwise current date
+    final createdAt = authState.createdAt;
+    if (createdAt != null) {
+      return DateFormat('MMM yyyy').format(createdAt);
+    }
+    // Fallback: use current month
+    return DateFormat('MMM yyyy').format(DateTime.now());
   }
 }
 

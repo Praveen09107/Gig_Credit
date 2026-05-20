@@ -2,6 +2,7 @@ from fastapi import APIRouter, BackgroundTasks
 from typing import Dict, Any
 import os
 import google.generativeai as genai
+from app.db.connection import get_db
 
 router = APIRouter()
 
@@ -12,6 +13,20 @@ async def explain_full(req: Dict[str, Any], background_tasks: BackgroundTasks):
     
     # Compute dynamic SHAP based on score
     base_score = score_data.get("score", 600)
+    
+    # Compute platform average from DB (fallback to 620)
+    platform_avg = 620
+    try:
+        db = get_db()
+        if db is not None:
+            pipeline = [{"$group": {"_id": None, "avg": {"$avg": "$score_data.finalScore"}}}]
+            cursor = db["score_history"].aggregate(pipeline)
+            async for doc in cursor:
+                if doc.get("avg"):
+                    platform_avg = round(doc["avg"])
+                break
+    except Exception:
+        pass  # Fallback to 620
     
     # L5: Live SHAP
     live_shap = {
@@ -25,13 +40,13 @@ async def explain_full(req: Dict[str, Any], background_tasks: BackgroundTasks):
     
     # L7: Peer cohort
     peer_cohort = {
-        "avg_score": 620,
+        "avg_score": platform_avg,
         "percentile": min(99, max(1, int(((base_score - 300) / 550.0) * 100))),
-        "top_difference_feature": "payment_regularity_streak" if base_score > 620 else "debt_to_income"
+        "top_difference_feature": "payment_regularity_streak" if base_score > platform_avg else "debt_to_income"
     }
     
     # L9: Delta-SHAP (if returning user)
-    diff = base_score - 620
+    diff = base_score - platform_avg
     delta_shap = {"score_change": f"{'+' if diff >= 0 else ''}{diff} pts relative to platform average"}
     
     # L10: LLM translation (Layer 9 in some docs)

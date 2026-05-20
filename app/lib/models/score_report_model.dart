@@ -60,9 +60,11 @@ class ScoreReportModel {
     this.efsVerdict,
   });
 
-  factory ScoreReportModel.fromJson(Map<String, dynamic> json) => ScoreReportModel(
-    finalScore: json['finalScore'] as int? ?? 0,
-    grade: json['grade'] as String? ?? 'C',
+  factory ScoreReportModel.fromJson(Map<String, dynamic> json) {
+    final score = (json['finalScore'] as int? ?? 0).clamp(300, 900);
+    return ScoreReportModel(
+    finalScore: score,
+    grade: _scoreToGrade(score),  // Always recompute — never trust stored grade
     riskBand: json['riskBand'] as String? ?? 'Unknown',
     proofId: json['proofId'] as String? ?? 'N/A',
     generatedAt: json['generatedAt'] != null ? DateTime.parse(json['generatedAt'] as String) : DateTime.now(),
@@ -87,6 +89,22 @@ class ScoreReportModel {
     modelUsed: json['modelUsed'] as String?,
     efsVerdict: json['efsVerdict'] as String?,
   );
+  }
+
+  /// Single source of truth for score→grade mapping.
+  /// Matches score_pipeline.dart exactly.
+  static String _scoreToGrade(int score) {
+    if (score >= 800) return 'A+';
+    if (score >= 750) return 'A';
+    if (score >= 700) return 'B+';
+    if (score >= 650) return 'B';
+    if (score >= 600) return 'C+';
+    if (score >= 550) return 'C';
+    return 'D';
+  }
+
+  /// Public accessor for grade computation (used by history screen, etc.)
+  static String computeGrade(int score) => _scoreToGrade(score.clamp(300, 900));
 
   Map<String, dynamic> toJson() => {
     'finalScore': finalScore,

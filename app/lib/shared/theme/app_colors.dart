@@ -50,14 +50,19 @@ class AppColors {
   static const Color verifiedLight = Color(0xFFE8F5E9);
 
   // ═══════════════════════════════════════════════════════════════════════
-  // GRADE COLORS (S→E)
+  // GRADE COLORS (A+→D, aligned with score_pipeline.dart)
   // ═══════════════════════════════════════════════════════════════════════
-  static const Color gradeS = Color(0xFF00C853);  // 800-900 Exceptional
-  static const Color gradeA = Color(0xFF4CAF50);  // 720-799 Excellent
-  static const Color gradeB = Color(0xFF8BC34A);  // 640-719 Good
-  static const Color gradeC = Color(0xFFFFC107);  // 560-639 Fair
-  static const Color gradeD = Color(0xFFFF9800);  // 480-559 Needs Improvement
-  static const Color gradeE = Color(0xFFE53935);  // 300-479 Poor
+  static const Color gradeAPlus = Color(0xFF00C853);  // 800-900 Exceptional
+  static const Color gradeA = Color(0xFF4CAF50);  // 750-799 Excellent
+  static const Color gradeBPlus = Color(0xFF66BB6A); // 700-749 Very Good
+  static const Color gradeB = Color(0xFF8BC34A);  // 650-699 Good
+  static const Color gradeCPlus = Color(0xFFFFC107); // 600-649 Fair
+  static const Color gradeC = Color(0xFFFF9800);  // 550-599 Medium Risk
+  static const Color gradeD = Color(0xFFE53935);  // 300-549 High Risk
+
+  // Legacy aliases for backward compat
+  static const Color gradeS = gradeAPlus;
+  static const Color gradeE = gradeD;
 
   // ═══════════════════════════════════════════════════════════════════════
   // PILLAR COLORS (P1-P7)
@@ -144,12 +149,15 @@ class AppColors {
   // ═══════════════════════════════════════════════════════════════════════
   static Color gradeColor(String grade) {
     switch (grade.toUpperCase()) {
-      case 'S': return gradeS;
+      case 'A+': return gradeAPlus;
+      case 'S': return gradeAPlus; // Legacy alias
       case 'A': return gradeA;
+      case 'B+': return gradeBPlus;
       case 'B': return gradeB;
+      case 'C+': return gradeCPlus;
       case 'C': return gradeC;
       case 'D': return gradeD;
-      default: return gradeE;
+      default: return gradeD;
     }
   }
 

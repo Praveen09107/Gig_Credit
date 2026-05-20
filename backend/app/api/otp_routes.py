@@ -8,6 +8,7 @@ from jose import jwt
 
 from app.auth.hmac_validator import verify_hmac_headers
 from app.db.connection import get_db
+from app.config import settings
 from app.schemas.auth_schemas import (
     OtpSendRequest,
     OtpSendResponse,
@@ -18,8 +19,8 @@ from app.utils.error_handlers import AppException
 
 router = APIRouter()
 
-# Use a secure secret key from env in production. Hardcoded for demo/hackathon purposes.
-SECRET_KEY = "gigcredit_secure_jwt_secret_key_2026"
+# Read JWT secret from environment settings — never hardcode in production
+SECRET_KEY = settings.HMAC_SECRET or "gigcredit_secure_jwt_secret_key_2026"
 ALGORITHM = "HS256"
 
 

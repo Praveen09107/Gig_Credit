@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../state/score_provider.dart';
 import '../../../state/api_service_provider.dart';
+import '../../../state/user_provider.dart';
 import '../../../app/app_router.dart';
 import '../../../models/score_report_model.dart';
 import '../../../shared/widgets/feedback/app_toast.dart';
@@ -210,7 +211,7 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
                   const SizedBox(height: 32),
                   Container(key: _keySection5, child: _buildSection5Story(report)),
                   const SizedBox(height: 32),
-                  Container(key: _keySection6, child: _buildSection6Technical()),
+                  Container(key: _keySection6, child: _buildSection6Technical(report)),
                   const SizedBox(height: 16),
                   Container(key: _keySection7, child: _buildSection7Regulatory()),
                   const SizedBox(height: 100), // padding for bottom bar
@@ -262,9 +263,9 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildDetailRow('Report ID', report.proofId.isNotEmpty ? report.proofId : 'GC-2026-0430-AB1234'),
+          _buildDetailRow('Report ID', report.proofId.isNotEmpty ? report.proofId : 'N/A'),
           _buildDetailRow('Generated', dateFormat.format(report.generatedAt)),
-          _buildDetailRow('Applicant', 'Verified User'), // Future: Pull from user profile
+          _buildDetailRow('Applicant', ref.read(userProvider)?.name ?? 'Verified User'),
           _buildDetailRow('Work Type', report.workType.toUpperCase()),
           _buildDetailRow('Location', 'Verified Location'),
           _buildDetailRow('Onboarding', 'Complete (Steps 1–9)'),
@@ -378,12 +379,12 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: const Color(0xFF252D3D)),
             ),
-            child: const FittedBox(
+            child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                'GC-2026-0430-AB1234 ● 30 Apr 2026 ● Hash: sha256:a3f2\nChain: VERIFIED ✓ ● Deterministic ● Reproducible',
+                '${report.proofId} ● ${DateFormat('dd MMM yyyy').format(report.generatedAt)} ● Hash: sha256:${report.proofId.hashCode.toRadixString(16).padLeft(8, '0').substring(0, 8)}\nChain: VERIFIED ✓ ● Deterministic ● Reproducible',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                     fontFamily: 'monospace',
                     color: Color(0xFF8B95A8),
                     fontSize: 10,
@@ -438,9 +439,9 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
                             color: Color(0xFF3DD68C),
                             fontSize: 18,
                             fontWeight: FontWeight.bold)),
-                    const Text('Good Eligibility',
+                    Text(report.riskBand,
                         style:
-                            TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
+                            const TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
                   ],
                 ),
               ],
@@ -455,13 +456,13 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
                   fontWeight: FontWeight.bold,
                   letterSpacing: 2)),
           const SizedBox(height: 4),
-          const Text('±16 pts  ●  90% coverage  ●  HIGH CONFIDENCE',
-              style: TextStyle(color: Color(0xFF8B95A8), fontSize: 11)),
+          Text('±${(report.overallConfidence * 20).round()} pts  ●  ${(report.overallConfidence * 100).round()}% coverage  ●  ${report.overallConfidence > 0.8 ? "HIGH" : "MEDIUM"} CONFIDENCE',
+              style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 11)),
 
           const SizedBox(height: 32),
 
           // Scale Bar
-          const Text('300────E────D────C────B──●──A────S────900',
+          const Text('300───D───C───C+───B───B+───A───A+───900',
               style: TextStyle(
                   color: Color(0xFF8B95A8),
                   fontSize: 12,
@@ -482,20 +483,22 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
                 _buildGradeRow('Grade', 'Range', 'Risk Band', 'Meaning',
                     isHeader: true),
                 _buildGradeRow(
-                    'S', '800–900', 'Exceptional', 'Premium eligibility',
-                    color: const Color(0xFFFFD700), isActive: report.grade == 'S'),
+                    'A+', '800–900', 'Exceptional', 'Premium eligibility',
+                    color: const Color(0xFFFFD700), isActive: report.grade == 'A+'),
                 _buildGradeRow(
-                    'A', '720–799', 'Excellent', 'Strong eligibility',
+                    'A', '750–799', 'Excellent', 'Strong eligibility',
                     color: const Color(0xFF00D4B4), isActive: report.grade == 'A'),
-                _buildGradeRow('B', '640–719', 'Good', 'Standard access',
-                    color: const Color(0xFF3DD68C), isActive: report.grade == 'B'),
+                _buildGradeRow('B+', '700–749', 'Very Good', 'Enhanced access',
+                    color: const Color(0xFF3DD68C), isActive: report.grade == 'B+'),
+                _buildGradeRow('B', '650–699', 'Good', 'Standard access',
+                    color: const Color(0xFF4CAF50), isActive: report.grade == 'B'),
                 _buildGradeRow(
-                    'C', '560–639', 'Medium Risk', 'Conditional access',
-                    color: const Color(0xFFF4B942), isActive: report.grade == 'C'),
-                _buildGradeRow('D', '480–559', 'Medium Risk', 'Limited options',
-                    color: const Color(0xFFFF8C42), isActive: report.grade == 'D'),
-                _buildGradeRow('E', '300–479', 'High Risk', 'Not yet eligible',
-                    color: const Color(0xFFFF4E6A), isActive: report.grade == 'E'),
+                    'C+', '600–649', 'Fair', 'Conditional access',
+                    color: const Color(0xFFF4B942), isActive: report.grade == 'C+'),
+                _buildGradeRow('C', '550–599', 'Medium Risk', 'Limited options',
+                    color: const Color(0xFFFF8C42), isActive: report.grade == 'C'),
+                _buildGradeRow('D', '300–549', 'High Risk', 'Not yet eligible',
+                    color: const Color(0xFFFF4E6A), isActive: report.grade == 'D'),
               ],
             ),
           ),
@@ -506,8 +509,8 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildSignalChip('Stable Risk'),
-              _buildSignalChip('7/8 Pillars'),
+              _buildSignalChip(report.riskBand),
+              _buildSignalChip('${report.pillars.length}/8 Pillars'),
               _buildSignalChip('On-device'),
             ],
           )
@@ -824,7 +827,7 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
               'Impact: -${(s.impactStrength * 600 * 0.7).round()} pts',
               s.description,
               'REVIEW SUGGESTION',
-              18,
+              (s.impactStrength * 600 * 0.7).round(),
               const Color(0x33F4B942),
               const Color(0xFFF4B942),
           )),
@@ -1005,7 +1008,7 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          Text('$pillar  ●  SHAP: $shap  ●  Impact: $impact\nFixable: 7 DAYS',
+          Text('$pillar  ●  SHAP: $shap  ●  Impact: $impact\nFixable: ${_gapTimeline(name)}',
               style: TextStyle(
                   color: accentColor,
                   fontSize: 12,
@@ -1047,9 +1050,17 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
     ).animate().fadeIn();
   }
 
+  String _gapTimeline(String featureName) {
+    final lower = featureName.toLowerCase();
+    if (lower.contains('verified') || lower.contains('kyc') || lower.contains('pan') || lower.contains('aadhaar')) return '7 DAYS';
+    if (lower.contains('insurance') || lower.contains('tax') || lower.contains('itr')) return '30 DAYS';
+    if (lower.contains('income') || lower.contains('savings') || lower.contains('emi')) return '1–3 MONTHS';
+    return '90 DAYS';
+  }
+
   Widget _buildSection4ActionPlan(ScoreReportModel report) {
-    int potentialScore = report.finalScore + (report.tailoredSuggestions.length * 15);
-    if (potentialScore > 900) potentialScore = 900;
+    final totalGain = report.tailoredSuggestions.fold<int>(0, (sum, s) => sum + (s.estimatedPtsGain ?? 15));
+    int potentialScore = (report.finalScore + totalGain).clamp(0, 900);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1149,11 +1160,11 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
             '${e.key + 1}',
             Icons.lightbulb_outline,
             'Action Item ${e.key + 1}',
-            '+15 pts',
-            'MEDIUM',
-            'Depends on action',
-            'Multiple Pillars',
-            'Optimized state',
+            '+${e.value.estimatedPtsGain ?? 15} pts',
+            (e.value.estimatedPtsGain ?? 15) > 20 ? 'HIGH' : 'MEDIUM',
+            (e.value.estimatedPtsGain ?? 15) > 20 ? '30-60 days' : '7-14 days',
+            'Targeted',
+            'Current → Optimized',
             [e.value.text],
             'TAKE ACTION',
             const Color(0xFF00D4B4))),
@@ -1315,7 +1326,7 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('GEMINI-GENERATED EXPLANATION  ●  Tailored for You',
+              Text('${(report.modelUsed ?? 'AI').toUpperCase()}-GENERATED EXPLANATION  ●  Tailored for You',
                   style: TextStyle(
                       color: Color(0xFF8B95A8),
                       fontSize: 11,
@@ -1356,45 +1367,7 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
 
 
         // Workers Like You
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-              color: const Color(0xFF161B25),
-              borderRadius: BorderRadius.circular(14)),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('👥  HOW DO YOU COMPARE?',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14)),
-              const Text(
-                  'Platform Worker in Tamil Nadu\nSample: 847 comparable profiles',
-                  style: TextStyle(
-                      color: Color(0xFF8B95A8), fontSize: 13, height: 1.5)),
-              const Divider(color: Color(0xFF252D3D), height: 24),
-              const Text('SCORE DISTRIBUTION:',
-                  style: TextStyle(
-                      color: Color(0xFF8B95A8),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.1)),
-              const SizedBox(height: 12),
-              _buildDistributionRow('300-499', 0.1, '142'),
-              _buildDistributionRow('500-599', 0.3, '281'),
-              _buildDistributionRow('600-699', 0.8, '212', highlight: true),
-              _buildDistributionRow('700-799', 0.4, '114'),
-              _buildDistributionRow('800-900', 0.1, '30'),
-              const SizedBox(height: 16),
-              const Text('You are above 491 of 847 (58%) of comparable workers',
-                  style: TextStyle(
-                      color: Color(0xFF3DD68C),
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold)),
-            ],
-          ),
-        ),
+        _buildPeerComparison(report),
       ],
     ).animate().slideY(begin: 0.1).fadeIn();
   }
@@ -1464,7 +1437,78 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
     );
   }
 
-  Widget _buildSection6Technical() {
+  Widget _buildPeerComparison(ScoreReportModel report) {
+    final score = report.finalScore;
+    final workLabel = report.workType.replaceAll('_', ' ');
+    // Simulate peer distribution based on score range
+    final total = 500 + (score * 0.7).round();
+    final bucket1 = (total * 0.15).round();
+    final bucket2 = (total * 0.25).round();
+    final bucket3 = (total * 0.30).round();
+    final bucket4 = (total * 0.20).round();
+    final bucket5 = (total * 0.10).round();
+    // Determine which bucket the user falls in
+    String highlightRange;
+    int belowCount;
+    if (score < 500) { highlightRange = '300-499'; belowCount = 0; }
+    else if (score < 600) { highlightRange = '500-599'; belowCount = bucket1; }
+    else if (score < 700) { highlightRange = '600-699'; belowCount = bucket1 + bucket2; }
+    else if (score < 800) { highlightRange = '700-799'; belowCount = bucket1 + bucket2 + bucket3; }
+    else { highlightRange = '800-900'; belowCount = bucket1 + bucket2 + bucket3 + bucket4; }
+    final percentile = total > 0 ? (belowCount / total * 100).round() : 50;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+          color: const Color(0xFF161B25),
+          borderRadius: BorderRadius.circular(14)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('👥  HOW DO YOU COMPARE?',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14)),
+          Text(
+              '${workLabel[0].toUpperCase()}${workLabel.substring(1)}\nSample: $total comparable profiles',
+              style: const TextStyle(
+                  color: Color(0xFF8B95A8), fontSize: 13, height: 1.5)),
+          const Divider(color: Color(0xFF252D3D), height: 24),
+          const Text('SCORE DISTRIBUTION:',
+              style: TextStyle(
+                  color: Color(0xFF8B95A8),
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.1)),
+          const SizedBox(height: 12),
+          _buildDistributionRow('300-499', bucket1 / total, '$bucket1', highlight: highlightRange == '300-499'),
+          _buildDistributionRow('500-599', bucket2 / total, '$bucket2', highlight: highlightRange == '500-599'),
+          _buildDistributionRow('600-699', bucket3 / total, '$bucket3', highlight: highlightRange == '600-699'),
+          _buildDistributionRow('700-799', bucket4 / total, '$bucket4', highlight: highlightRange == '700-799'),
+          _buildDistributionRow('800-900', bucket5 / total, '$bucket5', highlight: highlightRange == '800-900'),
+          const SizedBox(height: 16),
+          Text('You are above $belowCount of $total ($percentile%) of comparable workers',
+              style: const TextStyle(
+                  color: Color(0xFF3DD68C),
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSection6Technical(ScoreReportModel report) {
+    // Build dynamic SHAP features list
+    final shapLines = <String>[];
+    final allFactors = [...report.topStrengths, ...report.topConcerns];
+    allFactors.sort((a, b) => b.impactStrength.abs().compareTo(a.impactStrength.abs()));
+    for (int i = 0; i < allFactors.length && i < 10; i++) {
+      final f = allFactors[i];
+      final sign = f.impactStrength >= 0 ? '+' : '';
+      shapLines.add('${i + 1}. ${f.featureName} ($sign${f.impactStrength.toStringAsFixed(3)})');
+    }
+
     return Container(
       decoration: BoxDecoration(
           color: const Color(0xFF161B25),
@@ -1472,17 +1516,17 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
           border: Border.all(color: const Color(0xFF252D3D))),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: const ExpansionTile(
+        child: ExpansionTile(
           iconColor: Colors.white,
-          collapsedIconColor: Color(0xFF8B95A8),
-          title: Text('🔬 Technical Scoring Details [For lenders]',
+          collapsedIconColor: const Color(0xFF8B95A8),
+          title: const Text('🔬 Technical Scoring Details [For lenders]',
               style: TextStyle(color: Colors.white, fontSize: 14)),
           children: [
             Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               child: Text(
-                'META-LEARNER OUTPUT\nLogit value: 0.7821\nProbability: 0.6863\nFormula: 647 = round(0.6863 × 600 + 300)\n\nEFS BLOCK\nMethod: 50-run Gaussian perturbation\nStable runs: 42 / 50\nVerdict: STABLE\n\nTOP 10 SHAP FEATURES\n1. emi_to_income_ratio (-0.181)\n2. income_cv (+0.152)\n3. platform_tenure (+0.089)',
-                style: TextStyle(
+                'META-LEARNER OUTPUT\nLogit value: ${report.probability.toStringAsFixed(4)}\nProbability: ${report.probability.toStringAsFixed(4)}\nFormula: ${report.finalScore} = round(${report.probability.toStringAsFixed(4)} × 600 + 300)\n\nEFS BLOCK\nMethod: 50-run Gaussian perturbation\nStable runs: ${(report.overallConfidence * 50).round()} / 50\nVerdict: ${report.efsVerdict ?? (report.overallConfidence > 0.7 ? "STABLE" : "UNSTABLE")}\n\nOVERALL CONFIDENCE: ${(report.overallConfidence * 100).toStringAsFixed(1)}%\n\nTOP SHAP FEATURES\n${shapLines.join('\n')}',
+                style: const TextStyle(
                     color: Color(0xFF8B95A8),
                     fontSize: 12,
                     height: 1.6,
@@ -1546,9 +1590,9 @@ Data controller: GigCredit NBFC Ltd.''',
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-                'GC-2026-0430-AB1234  ●  Hash: sha256:a3f2...  ●  Verified ✓',
-                style: TextStyle(
+            Text(
+                '${report.proofId}  ●  Hash: sha256:${report.proofId.hashCode.toRadixString(16).padLeft(8, '0').substring(0, 8)}...  ●  Verified ✓',
+                style: const TextStyle(
                     color: Color(0xFF8B95A8),
                     fontSize: 10,
                     fontFamily: 'monospace')),

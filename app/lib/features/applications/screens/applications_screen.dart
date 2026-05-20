@@ -80,7 +80,7 @@ class ApplicationsScreen extends ConsumerWidget {
                         refId: app.refId,
                         icon: Icons.account_balance_rounded,
                         delayMs: 200 + i * 80,
-                        onTap: () {},
+                        onTap: () => _showApplicationDetail(context, app),
                       ),
                     );
                   },
@@ -135,6 +135,71 @@ class ApplicationsScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showApplicationDetail(BuildContext context, LoanApplication app) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => Container(
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+        decoration: const BoxDecoration(
+          color: AppColors.bgCard,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4, margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(color: AppColors.borderCard, borderRadius: BorderRadius.circular(999)),
+                ),
+              ),
+              Text('Application Details', style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.w800)),
+              const SizedBox(height: 16),
+              _detailRow('Lender', app.nbfcName),
+              _detailRow('Amount', '₹${app.amount}'),
+              _detailRow('Tenure', app.tenure),
+              _detailRow('Purpose', app.purpose),
+              _detailRow('Interest Rate', '${app.rate}% p.a'),
+              _detailRow('Status', app.status),
+              _detailRow('Reference ID', app.refId),
+              _detailRow('Applied On', _formatDate(app.appliedAt)),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity, height: 48,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.greenPrimary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: const Text('Close', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted)),
+          Text(value, style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w600)),
+        ],
       ),
     );
   }
