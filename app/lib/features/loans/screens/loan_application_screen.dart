@@ -63,6 +63,36 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
     if (score >= 500) return 0.22;
     return 0.24;
   }
+
+  /// APR for emergency_advance product (one tier higher risk than income_bridge)
+  String get _emergencyAprLabel {
+    final score = _dynamicScore;
+    if (score >= 720) return '14%';
+    if (score >= 640) return '16%';
+    if (score >= 600) return '19%';
+    return '22%';
+  }
+
+  /// APR for income_bridge product
+  String get _incomeBridgeAprLabel {
+    final score = _dynamicScore;
+    if (score >= 640) return '16%';
+    if (score >= 600) return '18%';
+    if (score >= 540) return '21%';
+    return '24%';
+  }
+
+  /// Max eligible for emergency_advance (capped at ₹25,000)
+  String get _emergencyMaxLabel {
+    final max = _dynamicMaxLoan.clamp(0, 25000).round();
+    return '₹${NumberFormat('#,##0').format(max)}';
+  }
+
+  /// Max eligible for income_bridge (capped at ₹1,00,000)
+  String get _incomeBridgeMaxLabel {
+    final max = _dynamicMaxLoan.clamp(0, 100000).round();
+    return '₹${NumberFormat('#,##0').format(max)}';
+  }
   
   double get _computedEMI {
     double monthlyRate = _dynamicAPR / 12;
@@ -123,9 +153,11 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
   
   String get _productDisplayName {
     switch (_selectedProduct) {
-      case 'emergency_micro': return 'Emergency Micro Loan';
+      case 'emergency_advance': return 'Emergency Cash Advance';
       case 'income_bridge': return 'Income Bridge Loan';
-      case 'growth': return 'Growth Loan';
+      case 'tool_equipment_loan': return 'Tools & Equipment Loan';
+      case 'working_capital': return 'Working Capital Loan';
+      case 'micro_enterprise': return 'Micro Enterprise Loan';
       default: return 'Credit Product';
     }
   }
@@ -333,19 +365,20 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
         
         // Product 1
         _buildProductCard(
-          title: '🚨  EMERGENCY MICRO LOAN',
-          badge: 'Score 450+ ✅', badgeColor: _accentGreen,
+          title: '🚨  EMERGENCY CASH ADVANCE',
+          badge: 'Score 520+ ✅', badgeColor: _accentGreen,
           bg: _accentRedDim, borderColor: _accentRedGlow, leftBorder: _accentRed,
-          amount: '₹5,000 – ₹25,000', tenure: '3 – 12 months', apr: '24%',
+          amount: '₹10,000 – ₹25,000', tenure: '1 – 3 months', apr: _emergencyAprLabel,
           purpose: 'Bike repair, medical, phone damage — today',
-          precalc: 'Max eligible: ₹22,000 · pre-calculated from your income',
+          precalc: 'Max eligible: $_emergencyMaxLabel · from your income & score',
           btnText: 'SELECT →', btnColor: _accentRed,
           onTap: () {
             setState(() {
-              _selectedProduct = 'emergency_micro';
-              _sliderMin = 5000;
+              _selectedProduct = 'emergency_advance';
+              _sliderMin = 10000;
               _sliderMax = 25000;
               _loanAmount = 15000;
+              _tenure = 3;
               _currentScreen = 2;
             });
           }
@@ -357,16 +390,17 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
           title: '🌉  INCOME BRIDGE LOAN',
           badge: '★ RECOMMENDED', badgeColor: _bgPrimary, badgeBg: _accentTeal,
           bg: _accentTealDim, borderColor: _accentTealGlow, leftBorder: _accentTeal,
-          amount: '₹25,000 – ₹1,00,000', tenure: '6 – 24 months', apr: '18%',
+          amount: '₹5,000 – ₹50,000', tenure: '7 – 30 days', apr: _incomeBridgeAprLabel,
           purpose: 'Stock purchase, seasonal income gap bridging',
-          precalc: 'Max eligible: ₹82,000 · pre-calculated from your income',
+          precalc: 'Max eligible: $_incomeBridgeMaxLabel · from your income & score',
           btnText: 'SELECT →', btnColor: _accentTeal,
           onTap: () {
             setState(() {
               _selectedProduct = 'income_bridge';
-              _sliderMin = 25000;
-              _sliderMax = 82000;
-              _loanAmount = 50000;
+              _sliderMin = 5000;
+              _sliderMax = _dynamicMaxLoan.clamp(5000, 50000);
+              _loanAmount = (_sliderMax * 0.6).roundToDouble();
+              _tenure = 14;
               _currentScreen = 2;
             });
           }
@@ -470,13 +504,13 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(color: _accentRedDim, borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0x30FF4E6A))),
-            child: Text('⚠️  Your score: $_dynamicScore · Required: 650 · Gap: ${650 - _dynamicScore > 0 ? 650 - _dynamicScore : 0} pts', style: const TextStyle(color: _textPrimary, fontSize: 13, fontWeight: FontWeight.w500)),
+            child: Text('⚠️  Your score: $_dynamicScore · Required: 640 · Gap: ${640 - _dynamicScore > 0 ? 640 - _dynamicScore : 0} pts', style: const TextStyle(color: _textPrimary, fontSize: 13, fontWeight: FontWeight.w500)),
           ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(color: _accentGreenDim, borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0x303DD68C))),
-            child: const Text('💡 Upload ITR → estimated +8 pts · unlocks in minutes', style: TextStyle(color: _accentGreen, fontSize: 13)),
+            child: Text('💡 ${640 - _dynamicScore > 20 ? "Upload ITR → estimated +8 pts · ${((640 - _dynamicScore) / 8).ceil()} steps to unlock" : "You\'re close! Upload ITR to unlock instantly"}', style: const TextStyle(color: _accentGreen, fontSize: 13)),
           ),
           const SizedBox(height: 16),
           SizedBox(
