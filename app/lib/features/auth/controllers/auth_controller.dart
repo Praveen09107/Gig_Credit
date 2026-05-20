@@ -3,6 +3,7 @@ import '../../../../state/auth_provider.dart';
 import '../../../../state/user_provider.dart';
 import '../../../../state/api_service_provider.dart';
 import '../../../../models/user_model.dart';
+import '../../../../services/session_service.dart';
 
 class AuthController extends StateNotifier<bool> {
   final Ref ref;
@@ -29,21 +30,27 @@ class AuthController extends StateNotifier<bool> {
     try {
       final api = ref.read(apiServiceProvider);
       final response = await api.verifyOtp(mobile, otp);
-      
+
       if (response['status'] == 'success') {
-        final token = response['token'];
-        final userData = response['user'];
-        
+        final token    = response['token'] as String? ?? '';
+        final userData = response['user']  as Map<String, dynamic>? ?? {};
+
         final user = UserModel(
-          id: 'USR_$mobile',
-          name: userData['name'],
-          mobile: mobile,
+          id:         'USR_$mobile',
+          name:       userData['name'] as String? ?? '',
+          mobile:     mobile,
           isVerified: false,
         );
 
+        // ── Persist session to secure storage ──────────────────
+        await SessionService.saveSession(token: token, user: user);
+
         ref.read(userProvider.notifier).setUser(user);
-        ref.read(authProvider.notifier).setAuthenticated(userId: user.id, token: token);
-        
+        ref.read(authProvider.notifier).setAuthenticated(
+          userId: user.id,
+          token:  token,
+        );
+
         state = false;
         return true;
       }
@@ -57,7 +64,9 @@ class AuthController extends StateNotifier<bool> {
     }
   }
 
-  void logout() {
+  /// Real logout: clears secure storage + in-memory state
+  Future<void> logout() async {
+    await SessionService.clearSession();
     ref.read(authProvider.notifier).logout();
     ref.read(userProvider.notifier).clearUser();
   }

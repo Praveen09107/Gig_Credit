@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_typography.dart';
@@ -10,6 +11,7 @@ import '../../../state/user_provider.dart';
 import '../../../state/auth_provider.dart';
 import '../../../shared/widgets/cards/app_card.dart';
 import '../../../shared/widgets/feedback/app_toast.dart';
+import '../../../app/app_router.dart';
 
 /// GigCredit Profile Screen
 /// Green avatar hero → detail card → preferences → logout confirm sheet
@@ -251,10 +253,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       backgroundColor: Colors.transparent,
       barrierColor: const Color(0xA60D1F15),
       builder: (_) => _LogoutConfirmSheet(
-        onConfirm: () {
+        onConfirm: () async {
           Navigator.pop(context);
-          ref.read(authControllerProvider.notifier).logout();
-          AppToast.info(context, 'Logged Out', subtitle: 'See you next time!');
+          // Clear secure storage + in-memory state
+          await ref.read(authControllerProvider.notifier).logout();
+          if (!context.mounted) return;
+          // Navigate to login — router redirect will also enforce this
+          context.go(AppRoutes.login);
         },
       ),
     );

@@ -1076,13 +1076,25 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Current Score    ${report.finalScore}  Grade ${report.grade}',
-                      style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
-                  Text('Potential Score  $potentialScore',
+                  Flexible(
+                    child: Text(
+                      'Current Score  ${report.finalScore}  ${report.grade}',
+                      style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 13),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      'Potential  $potentialScore',
                       style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 13)),
+                          fontSize: 13),
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 12),

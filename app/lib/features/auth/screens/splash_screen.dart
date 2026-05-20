@@ -6,6 +6,9 @@ import '../../../app/app_router.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_typography.dart';
 import '../../../state/auth_provider.dart';
+import '../../../state/user_provider.dart';
+import '../../../models/user_model.dart';
+import '../../../services/session_service.dart';
 
 /// GigCredit Splash Screen — Loader 3D from spec
 /// Full green gradient bg, animated G icon, loading bar, tagline
@@ -109,9 +112,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     await Future.delayed(const Duration(milliseconds: 400));
     if (!mounted) return;
 
-    // Navigate
-    final authState = ref.read(authProvider);
-    if (authState.isAuthenticated) {
+    // Try to restore session from secure storage
+    final session = await SessionService.loadSession();
+    if (!mounted) return;
+
+    if (session != null) {
+      // Restore user into providers
+      final user = UserModel(
+        id:         session['userId'] ?? '',
+        name:       session['name']   ?? '',
+        mobile:     session['mobile'] ?? '',
+        isVerified: true,
+      );
+      ref.read(userProvider.notifier).setUser(user);
+      ref.read(authProvider.notifier).setAuthenticated(
+        userId: user.id,
+        token:  session['token'] ?? '',
+      );
       context.go(AppRoutes.home);
     } else {
       context.go(AppRoutes.login);
