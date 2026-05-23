@@ -15,6 +15,7 @@ import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/personal_info.dart';
 import '../../../../app/app_router.dart';
 import '../../../../demo/demo_profile_manager.dart';
+import '../../../../scoring/validation/step1_validator.dart';
 
 /// COMP_24 Step 1 — Basic Profile (12 mandatory + 1 optional)
 class Step1PersonalScreen extends ConsumerStatefulWidget {
@@ -151,17 +152,97 @@ class _Step1PersonalScreenState extends ConsumerState<Step1PersonalScreen> {
        return;
     }
 
+    final income = double.tryParse(_incomeCtrl.text.replaceAll(',', '')) ?? 0;
+    final secondaryIncome = _secondaryIncomeCtrl.text.isNotEmpty
+        ? double.tryParse(_secondaryIncomeCtrl.text.replaceAll(',', ''))
+        : null;
+
+    // ═══════════════════════════════════════════════════════════════
+    // REAL VALIDATION — Step1Validator (per spec)
+    // ═══════════════════════════════════════════════════════════════
+    final validation = Step1Validator.validate(
+      fullName: _nameCtrl.text.trim(),
+      dateOfBirth: _dobCtrl.text.trim(),
+      mobileNumber: _mobileCtrl.text.trim(),
+      currentAddress: _currentAddrCtrl.text.trim(),
+      permanentAddress: _sameAddress ? _currentAddrCtrl.text.trim() : _permAddrCtrl.text.trim(),
+      stateOfResidence: _selectedState,
+      workType: _selectedWorkType,
+      selfDeclaredIncome: income,
+      yearsInProfession: _yearsInProfession,
+      dependents: _dependents,
+      vehicleOwnership: _vehicleOwnership,
+      secondaryIncome: secondaryIncome,
+      sameAddress: _sameAddress,
+    );
+
+    // Log validation results
+    print('\n════════════════════════════════════════════');
+    print('STEP 1 VALIDATION RESULT: ${validation.passed ? "PASSED" : "FAILED"}');
+    print('Age computed: ${validation.age}');
+    print('Hard fails: ${validation.hardFails.length}');
+    print('Soft flags: ${validation.softFlags.length}');
+    for (final issue in validation.issues) {
+      print('  [${issue.severity.name}] ${issue.code}: ${issue.message}');
+    }
+    print('════════════════════════════════════════════\n');
+
+    // HARD FAIL — block submission with details
+    if (!validation.passed) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Validation Failed', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('The following issues must be fixed before proceeding:', style: TextStyle(fontSize: 13)),
+              const SizedBox(height: 12),
+              ...validation.hardFails.map((issue) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.close, color: Colors.red, size: 16),
+                    const SizedBox(width: 6),
+                    Expanded(child: Text(issue.message, style: const TextStyle(fontSize: 12))),
+                  ],
+                ),
+              )),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Fix Issues'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // Show soft flag warnings (non-blocking)
+    if (validation.softFlags.isNotEmpty && mounted) {
+      for (final flag in validation.softFlags) {
+        AppToast.warning(context, flag.message);
+      }
+    }
+
     // Show confirmation popup before proceeding
     final confirmed = await StepConfirmPopup.show(context, stepNumber: 1);
     if (!confirmed || !mounted) return;
 
     setState(() => _isLoading = true);
     await Future.delayed(const Duration(seconds: 1));
-
-    final income = double.tryParse(_incomeCtrl.text.replaceAll(',', '')) ?? 0;
-    final secondaryIncome = _secondaryIncomeCtrl.text.isNotEmpty
-        ? double.tryParse(_secondaryIncomeCtrl.text.replaceAll(',', ''))
-        : null;
 
     ref.read(verifiedProfileProvider.notifier).updateStep1(PersonalInfo(
       isVerified: true,
@@ -179,6 +260,7 @@ class _Step1PersonalScreenState extends ConsumerState<Step1PersonalScreen> {
       secondaryIncome: secondaryIncome,
     ));
     ref.read(stepStatusProvider.notifier).setStatus(1, StepStatus.verified);
+    ref.read(stepStatusProvider.notifier).resetStepsAfter(1); // GAP 3: Reset downstream steps on re-submit
 
     if (mounted) {
       setState(() => _isLoading = false);
@@ -224,15 +306,17 @@ class _Step1PersonalScreenState extends ConsumerState<Step1PersonalScreen> {
     final statusMap = ref.watch(stepStatusProvider);
     final isVerified = statusMap[1] == StepStatus.verified;
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _onWillPop();
-      },
-      child: ScrollableStepLayout(
+    return ScrollableStepLayout(
       currentStep: 1,
       stepCompletionMap: statusMap.map((key, value) => MapEntry(key, value == StepStatus.verified)),
       onStepTapped: (step) => context.push(AppRoutes.scoreStep(step)),
+      onAbandon: () {
+        // Reset all session data when user abandons from Step 1
+        ref.read(stepStatusProvider.notifier).reset();
+        ref.read(verifiedProfileProvider.notifier).reset();
+        ref.read(scoreProvider.notifier).reset();
+        AppToast.warning(context, 'Session cancelled. All data cleared.');
+      },
       content: Form(
         key: _formKey,
         child: Column(
@@ -428,7 +512,6 @@ class _Step1PersonalScreenState extends ConsumerState<Step1PersonalScreen> {
         isDisabled: !_isFormValid && !isVerified,
         onPressed: _submit,
       ),
-    ),
     );
   }
 

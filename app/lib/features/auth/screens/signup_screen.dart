@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/theme/app_colors.dart';
@@ -112,17 +112,30 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
       }
       context.push('${AppRoutes.otp}?mobile=$mobile&isSignup=true');
     } else {
-      final errorMsg = responseStr ?? 'Registration failed';
-      if (errorMsg.contains('Network Error')) {
-        AppToast.error(context, 'Network Error', subtitle: 'Please check your connection and try again.');
-      } else if (errorMsg.contains('exists') || errorMsg.contains('already')) {
-        AppToast.error(context, 'Account exists', subtitle: 'Please sign in instead.');
+      // Strip ERROR: prefix returned by AuthController on exception
+      final errorMsg = responseStr?.startsWith('ERROR:') == true
+          ? responseStr!.substring(6)
+          : (responseStr ?? 'Registration failed');
+
+      if (errorMsg.contains('already_exists') ||
+          errorMsg.contains('exists') ||
+          errorMsg.contains('already') ||
+          errorMsg.contains('in use')) {
+        AppToast.error(context, 'Account already exists',
+            subtitle: 'This number is already registered. Please sign in.');
+      } else if (errorMsg.contains('Network') ||
+          errorMsg.contains('SocketException') ||
+          errorMsg.contains('Connection refused')) {
+        AppToast.error(context, 'Network Error',
+            subtitle: 'Please check your connection and try again.');
+      } else if (errorMsg.contains('invalid_format')) {
+        AppToast.error(context, 'Invalid number',
+            subtitle: 'Enter a valid 10-digit Indian mobile number.');
       } else {
-        AppToast.error(context, 'Failed to send OTP', subtitle: 'Please try again.');
+        AppToast.error(context, 'Registration failed',
+            subtitle: 'Please try again.');
       }
-      setState(() {
-        _errorMsg = errorMsg;
-      });
+      setState(() => _errorMsg = errorMsg);
     }
   }
 

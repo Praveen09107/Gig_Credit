@@ -19,9 +19,10 @@ class AuthController extends StateNotifier<bool> {
       return response['otp'];
     } catch (e) {
       state = false;
+      // Return the error message string so the screen can show a specific toast
       final errorMsg = e.toString().replaceAll('Exception: ', '');
       ref.read(authProvider.notifier).setError(errorMsg);
-      return null;
+      return 'ERROR:$errorMsg';
     }
   }
 

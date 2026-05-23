@@ -8,12 +8,16 @@ import '../../../../shared/widgets/buttons/primary_button.dart';
 import '../../../../state/step_status_provider.dart';
 import '../../../../state/verified_profile_provider.dart';
 import '../../../../state/api_service_provider.dart';
+import '../../../../state/ocr_results_provider.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/emi_loans_info.dart';
 import '../../../../app/app_router.dart';
 import '../../../../demo/demo_profile_manager.dart';
 import '../../../../shared/widgets/feedback/app_toast.dart';
 import '../../../../shared/widgets/feedback/step_popups.dart';
+import '../../../../scoring/validation/bank_transaction_matcher.dart';
+import '../../../../scoring/validation/step3_validator.dart';
+import '../../../../shared/widgets/feedback/verification_phase_overlay.dart';
 
 class Step9EmiLoansScreen extends ConsumerStatefulWidget {
   const Step9EmiLoansScreen({super.key});
@@ -42,7 +46,7 @@ class _LoanEntry {
   }
 }
 
-class _Step9EmiLoansScreenState extends ConsumerState<Step9EmiLoansScreen> {
+class _Step9EmiLoansScreenState extends ConsumerState<Step9EmiLoansScreen> with VerificationPhaseMixin {
   bool _hasActiveLoans = false;
   bool _isLoading = false;
   final List<_LoanEntry> _loanEntries = [_LoanEntry()];
@@ -105,54 +109,157 @@ class _Step9EmiLoansScreenState extends ConsumerState<Step9EmiLoansScreen> {
        return;
     }
 
-    setState(() => _isLoading = true);
-
-    // Show confirmation popup before generating score
     final confirmed = await StepConfirmPopup.show(context, stepNumber: 9);
-    if (!confirmed || !mounted) {
-      setState(() => _isLoading = false);
-      return;
-    }
+    if (!confirmed || !mounted) return;
 
-    // Real backend loan check using bank account from Step 3
+    setState(() => _isLoading = true);
+    showVerificationPhase();
+
     try {
       final profile = ref.read(verifiedProfileProvider);
-      final bankAccNo = profile.bankInfo.accountNumber;
-      if (bankAccNo.isNotEmpty) {
-        final api = ref.read(apiServiceProvider);
+      final ocrResults = ref.read(ocrResultsProvider);
+      final bankOcr = ocrResults['bank_statement'];
+
+      // ═══════════════════════════════════════════════════════════════
+      // Build declared EMIs from form
+      // ═══════════════════════════════════════════════════════════════
+      List<Map<String, dynamic>> declaredEmis = [];
+      List<EmiEntry> extractedLoans = [];
+
+      if (_hasActiveLoans) {
+        for (final entry in _loanEntries) {
+          final amount = double.tryParse(entry.emiCtrl.text.replaceAll(',', '')) ?? 0.0;
+          if (amount > 0) {
+            declaredEmis.add({
+              'type': entry.lenderCtrl.text.trim(),
+              'amount': amount,
+              'date': entry.latestDateCtrl.text.trim(),
+            });
+          }
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // REAL CROSS-VERIFICATION: EMI vs bank recurring debits
+      // ═══════════════════════════════════════════════════════════════
+      List<CategorizedTransaction> categorized = [];
+      if (bankOcr != null && bankOcr['categorized_transactions'] != null) {
+        for (final item in (bankOcr['categorized_transactions'] as List)) {
+          if (item is Map<String, dynamic>) {
+            categorized.add(CategorizedTransaction(
+              date: item['date'] as String? ?? '',
+              amount: (item['amount'] as num?)?.toDouble() ?? 0.0,
+              type: item['type'] as String? ?? 'debit',
+              description: item['description'] as String? ?? '',
+              category: TxnCategory.values.firstWhere(
+                (c) => c.name == (item['category'] as String? ?? ''), orElse: () => TxnCategory.other),
+            ));
+          }
+        }
+      }
+      if (categorized.isEmpty && profile.bankInfo.transactions.isNotEmpty) {
+        categorized = TransactionCategorizer.categorize(
+          profile.bankInfo.transactions.map((t) => t.toJson()).toList(),
+        );
+      }
+
+      final matcher = BankTransactionMatcher(categorized);
+      final verifyResult = matcher.verifyEmiPayments(declaredEmis);
+
+      // Debt-to-income ratio
+      final totalMonthlyEmi = declaredEmis.fold(0.0, (sum, e) => sum + ((e['amount'] as num?)?.toDouble() ?? 0.0));
+      final monthlyIncome = profile.personalInfo.selfDeclaredIncome;
+      final dti = monthlyIncome > 0 ? totalMonthlyEmi / monthlyIncome : 0.0;
+
+      print('\n════════════════════════════════════════════');
+      print('STEP 9 EMI/LOANS CROSS-VERIFICATION');
+      print('Has active loans: $_hasActiveLoans');
+      print('Declared EMIs: ${declaredEmis.length}');
+      print('Matched: ${verifyResult.matchedItems}/${verifyResult.totalItems}');
+      print('Monthly EMI total: ₹${totalMonthlyEmi.toStringAsFixed(0)}');
+      print('Declared income: ₹${monthlyIncome.toStringAsFixed(0)}');
+      print('Debt-to-Income ratio: ${(dti * 100).toStringAsFixed(1)}%');
+      for (final item in verifyResult.items) {
+        print('  [${item.status}] ${item.label}: ₹${item.declaredAmount} → ${item.matchResult.matchType} (${(item.matchResult.confidence * 100).toStringAsFixed(0)}%)');
+      }
+      for (final w in verifyResult.warnings) {
+        print('  $w');
+      }
+
+      // DTI threshold warning
+      if (dti > 0.50) {
+        print('⚠ HIGH DTI: Debt-to-Income ratio exceeds 50%');
+        if (mounted) AppToast.warning(context, 'High debt-to-income ratio: ${(dti * 100).toStringAsFixed(0)}%');
+      }
+      print('════════════════════════════════════════════\n');
+
+      // Show undisclosed EMI warnings
+      for (final w in verifyResult.warnings) {
+        if (w.contains('Undisclosed') && mounted) {
+          AppToast.warning(context, w);
+        }
+      }
+
+      // Build verified entries
+      if (_hasActiveLoans) {
+        for (final entry in _loanEntries) {
+          final amount = double.tryParse(entry.emiCtrl.text.replaceAll(',', '')) ?? 0.0;
+          if (amount > 0) {
+            extractedLoans.add(EmiEntry(
+              loanType: entry.lenderCtrl.text,
+              monthlyEmi: amount,
+              regularPayment: true,
+            ));
+          }
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // GAP 6 FIX: Backend API calls for loan verification
+      // Non-blocking — failures are soft-flagged, flow continues
+      // ═══════════════════════════════════════════════════════════════
+      final api = ref.read(apiServiceProvider);
+      // Verify each declared loan via backend
+      for (final emi in declaredEmis) {
+        final lender = emi['type'] as String? ?? '';
+        final amount = (emi['amount'] as num?)?.toDouble() ?? 0.0;
+        final date = emi['date'] as String? ?? '';
+        if (lender.isNotEmpty && amount > 0) {
+          try {
+            final result = await api.verifyLoan(lender, amount, date);
+            print('[Step9 API] Loan verify ($lender): ${result['status'] ?? 'ok'}');
+          } catch (e) {
+            print('[Step9 API] Loan verify ($lender) failed (non-blocking): $e');
+          }
+        }
+      }
+      // Check for undisclosed loans via backend
+      if (profile.bankInfo.accountNumber.isNotEmpty) {
         try {
-          final loanCheck = await api.checkLoans(bankAccNo);
-          debugPrint('[Step9] Backend loan check: has_active=${loanCheck['has_active_loans']}, count=${loanCheck['loan_count']}');
+          final loansResult = await api.checkLoans(profile.bankInfo.accountNumber);
+          print('[Step9 API] Loan check: ${loansResult['status'] ?? 'ok'}');
         } catch (e) {
-          debugPrint('[Step9] Backend loan check failed: $e');
+          print('[Step9 API] Loan check failed (non-blocking): $e');
         }
       }
-    } catch (_) {}
 
-    List<EmiEntry> extractedLoans = [];
-    if (_hasActiveLoans) {
-      for (final entry in _loanEntries) {
-        final amount = double.tryParse(entry.emiCtrl.text) ?? 0.0;
-        if (amount > 0) {
-          extractedLoans.add(EmiEntry(
-            loanType: entry.lenderCtrl.text,
-            monthlyEmi: amount,
-            regularPayment: true,
-          ));
-        }
+      dismissVerificationPhase();
+
+      ref.read(verifiedProfileProvider.notifier).updateStep9(EmiLoansInfo(
+        isVerified: true,
+        loans: extractedLoans,
+      ));
+      ref.read(stepStatusProvider.notifier).setStatus(9, StepStatus.verified);
+
+      if (mounted) {
+        setState(() => _isLoading = false);
+        final dtiStr = dti > 0 ? ', DTI: ${(dti * 100).toStringAsFixed(0)}%' : '';
+        AppToast.success(context, 'All steps complete! Generating score...$dtiStr');
+        context.push(AppRoutes.scoreGenerating);
       }
-    }
-
-    ref.read(verifiedProfileProvider.notifier).updateStep9(EmiLoansInfo(
-      isVerified: true,
-      loans: extractedLoans,
-    ));
-    ref.read(stepStatusProvider.notifier).setStatus(9, StepStatus.verified);
-
-    if (mounted) {
-      setState(() => _isLoading = false);
-      AppToast.success(context, 'All steps complete! Generating your score...');
-      context.push(AppRoutes.scoreGenerating);
+    } catch (e) {
+      debugPrint('[Step9] Error: $e');
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

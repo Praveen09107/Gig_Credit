@@ -10,6 +10,7 @@ import '../../../../state/step_status_provider.dart';
 import '../../../../state/verified_profile_provider.dart';
 import '../../../../state/ocr_service_provider.dart';
 import '../../../../state/api_service_provider.dart';
+import '../../../../state/ocr_results_provider.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/bank_info.dart';
 import '../../../../app/app_router.dart';
@@ -17,6 +18,7 @@ import '../../../../demo/demo_profile_manager.dart';
 import '../../../../shared/widgets/loaders/coin_pulse_loader.dart';
 import '../../../../shared/widgets/feedback/app_toast.dart';
 import '../../../../shared/widgets/feedback/step_popups.dart';
+import '../../../../scoring/validation/step3_validator.dart';
 
 class Step3BankScreen extends ConsumerStatefulWidget {
   const Step3BankScreen({super.key});
@@ -51,6 +53,8 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
   List<double> _monthlyCredits = [];
   List<double> _monthlyDebits = [];
   List<dynamic> _transactions = [];
+  Map<String, dynamic>? _statementOcrData; // OCR data for cross-checks
+  List<CategorizedTransaction> _categorizedTransactions = [];
 
   bool _ifscVerified = false;
   bool _isIfscVerifying = false;
@@ -58,11 +62,14 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
   bool _isAccVerifying = false;
 
   bool get _isFormValid {
+    // All text fields + both verifications + PDF upload are required
     final primaryOk = _bankNameCtrl.text.isNotEmpty &&
         _holderNameCtrl.text.isNotEmpty &&
         _branchCtrl.text.isNotEmpty &&
         _accCtrl.text.isNotEmpty &&
         _ifscCtrl.text.isNotEmpty &&
+        _ifscVerified &&
+        _accVerified &&
         _pdfUploaded;
     if (!primaryOk) return false;
     if (_hasSecondaryBank) {
@@ -144,6 +151,99 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
       return;
     }
 
+    if (!_pdfUploaded) {
+      AppToast.error(context, 'Bank Statement Required', subtitle: 'Please upload your bank statement PDF to continue.');
+      return;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // REAL VALIDATION — Step3Validator (per spec)
+    // ═══════════════════════════════════════════════════════════════
+    final profile = ref.read(verifiedProfileProvider);
+    final ocrResults = ref.read(ocrResultsProvider);
+    final aadhaarName = (ocrResults['aadhaar_front']?['name'] as String?) ?? '';
+
+    final validation = Step3Validator.validateFull(
+      bankName: _bankNameCtrl.text.trim(),
+      holderName: _holderNameCtrl.text.trim(),
+      ifsc: _ifscCtrl.text.trim(),
+      account: _accCtrl.text.trim(),
+      pdfUploaded: _pdfUploaded,
+      transactionCount: _transactions.length,
+      monthlyCredits: _monthlyCredits,
+      aadhaarName: aadhaarName,
+      step1Income: profile.personalInfo.selfDeclaredIncome,
+      statementOcr: _statementOcrData,
+    );
+
+    // Categorize transactions for Steps 4-9
+    _categorizedTransactions = TransactionCategorizer.categorize(
+      _transactions.map((e) => e is Map<String, dynamic> ? e : <String, dynamic>{}).toList(),
+    );
+
+    // Log validation results
+    print('\n════════════════════════════════════════════');
+    print('STEP 3 VALIDATION RESULT: ${validation.passed ? "PASSED" : "FAILED"}');
+    print('Hard fails: ${validation.hardFails.length}');
+    print('Soft flags: ${validation.softFlags.length}');
+    print('Transactions parsed: ${_transactions.length}');
+    print('Categorized transactions: ${_categorizedTransactions.length}');
+    for (final issue in validation.issues) {
+      print('  [${issue.severity.name}] ${issue.code}: ${issue.message}');
+    }
+    // Log category breakdown
+    final catCounts = <String, int>{};
+    for (final t in _categorizedTransactions) {
+      catCounts[t.category.name] = (catCounts[t.category.name] ?? 0) + 1;
+    }
+    print('Transaction categories: $catCounts');
+    print('════════════════════════════════════════════\n');
+
+    // HARD FAIL — block submission
+    if (!validation.passed) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Bank Validation Failed', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ...validation.hardFails.map((issue) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.close, color: Colors.red, size: 16),
+                    const SizedBox(width: 6),
+                    Expanded(child: Text(issue.message, style: const TextStyle(fontSize: 12))),
+                  ],
+                ),
+              )),
+            ],
+          ),
+          actions: [
+            ElevatedButton(onPressed: () => Navigator.pop(ctx), child: const Text('Fix Issues')),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // Soft flags — show warnings
+    if (validation.softFlags.isNotEmpty && mounted) {
+      for (final flag in validation.softFlags) {
+        AppToast.warning(context, flag.message);
+      }
+    }
+
     setState(() => _isLoading = true);
 
     // Show confirmation popup before proceeding
@@ -154,8 +254,13 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
     }
     
     try {
-      // Final processing simulation
       await Future.delayed(const Duration(seconds: 2));
+
+      // Store categorized transactions in OCR results for Steps 4-9
+      ref.read(ocrResultsProvider.notifier).addResult('bank_statement', {
+        ..._statementOcrData ?? {},
+        'categorized_transactions': _categorizedTransactions.map((t) => t.toJson()).toList(),
+      });
 
       ref.read(verifiedProfileProvider.notifier).updateStep3(BankInfo(
         isVerified: true,
@@ -165,13 +270,14 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
         accountHolderName: _holderNameCtrl.text,
         monthlyCredits: _monthlyCredits,
         monthlyDebits: _monthlyDebits,
-        transactions: _transactions.map((e) => BankTransaction.fromJson(e)).toList(),
+        transactions: _transactions.map((e) => BankTransaction.fromJson(e is Map<String, dynamic> ? e : {})).toList(),
       ));
       ref.read(stepStatusProvider.notifier).setStatus(3, StepStatus.verified);
+      ref.read(stepStatusProvider.notifier).resetStepsAfter(3); // GAP 3: Reset downstream on re-submit
       
       if (mounted) {
         setState(() => _isLoading = false);
-        AppToast.success(context, 'Bank details verified ✓');
+        AppToast.success(context, 'Bank verified ✓ (${_transactions.length} txns categorized)');
         context.push(AppRoutes.scoreStep(4));
       }
     } catch (e) {
@@ -181,14 +287,17 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
 
   Future<void> _verifyIfsc() async {
     final text = _ifscCtrl.text.trim().toUpperCase();
-    if (text.length != 11) {
-      AppToast.error(context, 'Invalid IFSC', subtitle: 'Must be exactly 11 characters.');
+
+    // ── REAL FORMAT VALIDATION (per spec) ──
+    final formatIssue = Step3Validator.validateIfscFormat(text);
+    if (formatIssue != null) {
+      AppToast.error(context, formatIssue.message);
+      print('[Step3 Validation] IFSC format FAILED: ${formatIssue.code}');
       return;
     }
+    print('[Step3 Validation] IFSC format PASSED for $text');
     
     setState(() => _isIfscVerifying = true);
-    
-    // Simulate realistic network/processing delay for hackathon demo
     await Future.delayed(const Duration(seconds: 2));
     
     try {
@@ -198,7 +307,6 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
         setState(() {
           _ifscVerified = true;
           _isIfscVerifying = false;
-          // Auto-fill bank details from API
           _bankNameCtrl.text = result['bank_name'] ?? '';
           _branchCtrl.text = result['branch_name'] ?? '';
         });
@@ -221,14 +329,21 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
     final acc = _accCtrl.text.trim();
     final ifsc = _ifscCtrl.text.trim().toUpperCase();
     
-    if (acc.isEmpty || !_ifscVerified) {
-      AppToast.error(context, 'Missing Details', subtitle: 'Please verify IFSC and enter Account Number first.');
+    // ── REAL FORMAT VALIDATION (per spec) ──
+    final formatIssue = Step3Validator.validateAccountFormat(acc);
+    if (formatIssue != null) {
+      AppToast.error(context, formatIssue.message);
+      print('[Step3 Validation] Account format FAILED: ${formatIssue.code}');
       return;
     }
 
+    if (!_ifscVerified) {
+      AppToast.error(context, 'Missing Details', subtitle: 'Please verify IFSC first.');
+      return;
+    }
+    print('[Step3 Validation] Account format PASSED for $acc');
+
     setState(() => _isAccVerifying = true);
-    
-    // Simulate realistic core-banking system delay for hackathon demo
     await Future.delayed(const Duration(milliseconds: 2500));
     
     try {
@@ -238,7 +353,6 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
         setState(() {
           _accVerified = true;
           _isAccVerifying = false;
-          // Auto-fill holder name from API
           _holderNameCtrl.text = result['account_holder'] ?? '';
         });
         AppToast.success(context, 'Account Verified!', subtitle: 'Account holder auto-filled.');
@@ -370,7 +484,7 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
               ),
             )
           else
-            DocumentUploadCard(
+          DocumentUploadCard(
               title: 'Bank Statement (Primary Bank) *',
               subtitle: 'PDF only — statement must match your verified account',
               docType: 'bank_statement',
@@ -378,17 +492,64 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
               onExtracted: (data) {
                 setState(() {
                   _pdfUploaded = true;
+                  // ═══════════════════════════════════════════════════════
+                  // GAP 4 FIX: MERGE bank statement uploads instead of
+                  // replacing. If user uploads a second statement, its
+                  // transactions are appended and aggregates are combined.
+                  // ═══════════════════════════════════════════════════════
                   if (data['monthly_credits'] != null) {
-                    _monthlyCredits = (data['monthly_credits'] as List).map((e) => (e as num).toDouble()).toList();
+                    final newCredits = (data['monthly_credits'] as List).map((e) => (e as num).toDouble()).toList();
+                    if (_monthlyCredits.isEmpty) {
+                      _monthlyCredits = newCredits;
+                    } else {
+                      // Merge: extend with new months or sum overlapping
+                      for (int i = 0; i < newCredits.length; i++) {
+                        if (i < _monthlyCredits.length) {
+                          _monthlyCredits[i] += newCredits[i];
+                        } else {
+                          _monthlyCredits.add(newCredits[i]);
+                        }
+                      }
+                    }
                   }
                   if (data['monthly_debits'] != null) {
-                    _monthlyDebits = (data['monthly_debits'] as List).map((e) => (e as num).toDouble()).toList();
+                    final newDebits = (data['monthly_debits'] as List).map((e) => (e as num).toDouble()).toList();
+                    if (_monthlyDebits.isEmpty) {
+                      _monthlyDebits = newDebits;
+                    } else {
+                      for (int i = 0; i < newDebits.length; i++) {
+                        if (i < _monthlyDebits.length) {
+                          _monthlyDebits[i] += newDebits[i];
+                        } else {
+                          _monthlyDebits.add(newDebits[i]);
+                        }
+                      }
+                    }
                   }
                   if (data['transactions'] != null) {
-                    _transactions = data['transactions'] as List;
+                    final newTxns = data['transactions'] as List;
+                    if (_transactions.isEmpty) {
+                      _transactions = newTxns;
+                    } else {
+                      // Merge: append new transactions to existing list
+                      _transactions = [..._transactions, ...newTxns];
+                    }
                   }
-                                });
-                AppToast.success(context, 'Statement Verified', subtitle: 'Bank Statement processed successfully!');
+                  // Merge OCR data — keep latest metadata, merge transactions
+                  if (_statementOcrData == null) {
+                    _statementOcrData = data;
+                  } else {
+                    _statementOcrData = {
+                      ..._statementOcrData!,
+                      ...data,
+                      'transactions': _transactions,
+                      'monthly_credits': _monthlyCredits,
+                      'monthly_debits': _monthlyDebits,
+                    };
+                  }
+                  ref.read(ocrResultsProvider.notifier).addResult('bank_statement', _statementOcrData!);
+                });
+                AppToast.success(context, 'Statement Merged', subtitle: '${_transactions.length} total transactions across all statements');
               },
             ),
           
@@ -458,9 +619,11 @@ class _Step3BankScreenState extends ConsumerState<Step3BankScreen> {
         ],
       ),
       bottomBar: PrimaryButton(
-        label: isVerified ? 'Continue to Next Step' : 'Verify Account',
+        label: isVerified
+            ? 'Continue to Next Step'
+            : (_ifscVerified && _accVerified ? 'Continue' : 'Verify Account'),
         isLoading: _isLoading,
-        isDisabled: !_isFormValid && !isVerified,
+        isDisabled: !isVerified && !_isFormValid,
         onPressed: _submit,
       ),
     );

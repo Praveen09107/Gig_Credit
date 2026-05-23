@@ -12,12 +12,16 @@ import '../../../../state/step_status_provider.dart';
 import '../../../../state/verified_profile_provider.dart';
 import '../../../../state/ocr_service_provider.dart';
 import '../../../../state/api_service_provider.dart';
+import '../../../../state/ocr_results_provider.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/tax_info.dart';
 import '../../../../app/app_router.dart';
 import '../../../../demo/demo_profile_manager.dart';
 import '../../../../shared/widgets/feedback/app_toast.dart';
 import '../../../../shared/widgets/feedback/step_popups.dart';
+import '../../../../scoring/validation/bank_transaction_matcher.dart';
+import '../../../../scoring/validation/step3_validator.dart';
+import '../../../../shared/widgets/feedback/verification_phase_overlay.dart';
 
 class Step8TaxScreen extends ConsumerStatefulWidget {
   const Step8TaxScreen({super.key});
@@ -26,7 +30,7 @@ class Step8TaxScreen extends ConsumerStatefulWidget {
   ConsumerState<Step8TaxScreen> createState() => _Step8TaxScreenState();
 }
 
-class _Step8TaxScreenState extends ConsumerState<Step8TaxScreen> {
+class _Step8TaxScreenState extends ConsumerState<Step8TaxScreen> with VerificationPhaseMixin {
   bool _isLoading = false;
   bool _hasItr = false;
   bool _hasGst = false;
@@ -81,40 +85,110 @@ class _Step8TaxScreenState extends ConsumerState<Step8TaxScreen> {
        return;
     }
 
-    setState(() => _isLoading = true);
-
-    // Show confirmation popup before proceeding
     final confirmed = await StepConfirmPopup.show(context, stepNumber: 8);
-    if (!confirmed || !mounted) {
-      setState(() => _isLoading = false);
-      return;
-    }
-    try {
-      final api = ref.read(apiServiceProvider);
+    if (!confirmed || !mounted) return;
 
-      // Real backend ITR verification
+    setState(() => _isLoading = true);
+    showVerificationPhase();
+
+    try {
+      final profile = ref.read(verifiedProfileProvider);
+      final ocrResults = ref.read(ocrResultsProvider);
+
+      // ═══════════════════════════════════════════════════════════════
+      // PAN IDENTITY CHAIN: ITR PAN ↔ Step 2 KYC PAN
+      // ═══════════════════════════════════════════════════════════════
+      bool panMismatch = false;
       if (_hasItr && _itrPanCtrl.text.trim().isNotEmpty) {
-        try {
-          final itrResult = await api.verifyItr(_itrPanCtrl.text.trim(), _assessmentYear);
-          debugPrint('[Step8] ITR verified: AY ${itrResult['assessment_year']} — income ₹${itrResult['gross_income']}');
-        } catch (e) {
-          debugPrint('[Step8] ITR verification failed: $e');
+        // PAN format validation
+        // We will skip step 2 validator import, use a simple regex for pan format
+        final panIssue = !RegExp(r'^[A-Z]{5}[0-9]{4}[A-Z]$').hasMatch(_itrPanCtrl.text.trim()) 
+          ? true : false;
+        if (panIssue) {
+          if (mounted) AppToast.error(context, 'ITR PAN Invalid', subtitle: 'Invalid PAN format');
+          setState(() => _isLoading = false);
+          return;
+        }
+
+        // Cross-check against KYC PAN (Step 2 OCR)
+        final kycPan = (ocrResults['pan']?['pan_number'] as String? ?? 
+                        ocrResults['pan']?['id_number'] as String?)?.trim().toUpperCase() ?? '';
+        final itrPan = _itrPanCtrl.text.trim().toUpperCase();
+        if (kycPan.isNotEmpty && itrPan != kycPan) {
+          panMismatch = true;
+          print('[Step8] HARD FLAG: ITR PAN ($itrPan) != KYC PAN ($kycPan)');
+          if (mounted) AppToast.error(context, 'PAN Mismatch', subtitle: 'ITR PAN does not match KYC PAN from Step 2');
         }
       }
 
-      // Real backend GST verification
+      // ═══════════════════════════════════════════════════════════════
+      // ITR INCOME vs BANK INCOME cross-verification
+      // ═══════════════════════════════════════════════════════════════
+      final declaredIncome = double.tryParse(_itrIncomeCtrl.text.replaceAll(',', '')) ?? 0.0;
+      final bankAvgMonthly = profile.bankInfo.avgMonthlyIncome;
+
+      Map<String, dynamic> incomeCheck = {};
+      if (_hasItr && declaredIncome > 0) {
+        final matcher = BankTransactionMatcher([]);
+        incomeCheck = matcher.verifyItrIncome(
+          itrAnnualIncome: declaredIncome,
+          bankAvgMonthlyCredit: bankAvgMonthly,
+        );
+      }
+
+      // GSTIN format validation
+      if (_hasGst && _gstinCtrl.text.trim().isNotEmpty) {
+        final gstin = _gstinCtrl.text.trim().toUpperCase();
+        if (!RegExp(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]Z[0-9A-Z]$').hasMatch(gstin)) {
+          print('[Step8] SOFT FLAG: GSTIN format invalid: $gstin');
+          if (mounted) AppToast.warning(context, 'GSTIN format may be incorrect');
+        }
+      }
+
+      // Log results
+      print('\n════════════════════════════════════════════');
+      print('STEP 8 TAX CROSS-VERIFICATION');
+      print('ITR filed: $_hasItr, GST: $_hasGst');
+      print('PAN mismatch: $panMismatch');
+      if (incomeCheck.isNotEmpty) {
+        print('ITR monthly: ₹${(incomeCheck['itr_monthly'] as double).toStringAsFixed(0)}');
+        print('Bank monthly: ₹${(incomeCheck['bank_monthly'] as double).toStringAsFixed(0)}');
+        print('Ratio: ${((incomeCheck['ratio'] as double) * 100).toStringAsFixed(1)}%');
+        print('Within range (60%-140%): ${incomeCheck['within_range']}');
+        print('Status: ${incomeCheck['status']}');
+        if (!(incomeCheck['within_range'] as bool)) {
+          print('⚠ SOFT FLAG: ITR income deviates ${(incomeCheck['deviation_pct'] as double).toStringAsFixed(1)}% from bank average');
+          if (mounted) AppToast.warning(context, 'ITR income deviates from bank average by ${(incomeCheck['deviation_pct'] as double).toStringAsFixed(0)}%');
+        }
+      }
+      print('════════════════════════════════════════════\n');
+
+      // ═══════════════════════════════════════════════════════════════
+      // GAP 6 FIX: Backend API calls for tax verification
+      // Non-blocking — failures are soft-flagged, flow continues
+      // ═══════════════════════════════════════════════════════════════
+      final api = ref.read(apiServiceProvider);
       if (_hasGst && _gstinCtrl.text.trim().isNotEmpty) {
         try {
-          final gstResult = await api.verifyGst(_gstinCtrl.text.trim());
-          debugPrint('[Step8] GST verified: ${gstResult['status']}');
+          final gstResult = await api.getGstFilingHistory(_gstinCtrl.text.trim().toUpperCase());
+          print('[Step8 API] GST filing history: ${gstResult['status'] ?? 'ok'}');
         } catch (e) {
-          debugPrint('[Step8] GST verification failed: $e');
+          print('[Step8 API] GST filing failed (non-blocking): $e');
         }
       }
-      
-      final declaredIncome = double.tryParse(_itrIncomeCtrl.text) ?? 0.0;
+      if (_hasItr && _itrPanCtrl.text.trim().isNotEmpty) {
+        try {
+          final itrResult = await api.verifyItr(_itrPanCtrl.text.trim().toUpperCase(), _assessmentYear);
+          print('[Step8 API] ITR verify: ${itrResult['status'] ?? 'ok'}');
+        } catch (e) {
+          print('[Step8 API] ITR verify failed (non-blocking): $e');
+        }
+      }
+
+      dismissVerificationPhase();
+
       final yearInt = int.tryParse(_assessmentYear.split('-')[0]) ?? 2024;
-      
+
       ref.read(verifiedProfileProvider.notifier).updateStep8(TaxInfo(
         isVerified: true,
         itrFiled: _hasItr,
@@ -126,7 +200,10 @@ class _Step8TaxScreenState extends ConsumerState<Step8TaxScreen> {
       ref.read(stepStatusProvider.notifier).setStatus(8, StepStatus.verified);
       if (mounted) {
         setState(() => _isLoading = false);
-        AppToast.success(context, 'Tax records verified ✓');
+        final incomeStatus = incomeCheck.isNotEmpty 
+          ? (incomeCheck['within_range'] as bool ? 'income matched' : 'income deviated')
+          : 'no ITR';
+        AppToast.success(context, 'Tax verified ✓ ($incomeStatus)');
         context.push(AppRoutes.scoreStep(9));
       }
     } catch (e) {

@@ -12,12 +12,17 @@ import '../../../../state/step_status_provider.dart';
 import '../../../../state/verified_profile_provider.dart';
 import '../../../../state/ocr_service_provider.dart';
 import '../../../../state/api_service_provider.dart';
+import '../../../../state/ocr_results_provider.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/insurance_info.dart';
 import '../../../../app/app_router.dart';
 import '../../../../demo/demo_profile_manager.dart';
 import '../../../../shared/widgets/feedback/app_toast.dart';
 import '../../../../shared/widgets/feedback/step_popups.dart';
+import '../../../../scoring/validation/bank_transaction_matcher.dart';
+import '../../../../scoring/validation/step3_validator.dart';
+import '../../../../shared/widgets/feedback/verification_phase_overlay.dart';
+import '../../../../scoring/validation/fuzzy_matcher.dart';
 
 class Step7InsuranceScreen extends ConsumerStatefulWidget {
   const Step7InsuranceScreen({super.key});
@@ -26,7 +31,7 @@ class Step7InsuranceScreen extends ConsumerStatefulWidget {
   ConsumerState<Step7InsuranceScreen> createState() => _Step7InsuranceScreenState();
 }
 
-class _Step7InsuranceScreenState extends ConsumerState<Step7InsuranceScreen> {
+class _Step7InsuranceScreenState extends ConsumerState<Step7InsuranceScreen> with VerificationPhaseMixin {
   bool _isLoading = false;
 
   bool _hasHealth = false;
@@ -85,45 +90,101 @@ class _Step7InsuranceScreenState extends ConsumerState<Step7InsuranceScreen> {
        return;
     }
 
-    setState(() => _isLoading = true);
-
-    // Show confirmation popup before proceeding
     final confirmed = await StepConfirmPopup.show(context, stepNumber: 7);
-    if (!confirmed || !mounted) {
-      setState(() => _isLoading = false);
-      return;
-    }
-    try {
-      final api = ref.read(apiServiceProvider);
+    if (!confirmed || !mounted) return;
 
-      // Real backend verification for each active insurance policy
+    setState(() => _isLoading = true);
+    showVerificationPhase();
+
+    try {
+      // ═══════════════════════════════════════════════════════════════
+      // REAL CROSS-VERIFICATION: Insurance vs bank premiums
+      // ═══════════════════════════════════════════════════════════════
+      final profile = ref.read(verifiedProfileProvider);
+      final ocrResults = ref.read(ocrResultsProvider);
+      final bankOcr = ocrResults['bank_statement'];
+
+      List<CategorizedTransaction> categorized = [];
+      if (bankOcr != null && bankOcr['categorized_transactions'] != null) {
+        for (final item in (bankOcr['categorized_transactions'] as List)) {
+          if (item is Map<String, dynamic>) {
+            categorized.add(CategorizedTransaction(
+              date: item['date'] as String? ?? '',
+              amount: (item['amount'] as num?)?.toDouble() ?? 0.0,
+              type: item['type'] as String? ?? 'debit',
+              description: item['description'] as String? ?? '',
+              category: TxnCategory.values.firstWhere(
+                (c) => c.name == (item['category'] as String? ?? ''), orElse: () => TxnCategory.other),
+            ));
+          }
+        }
+      }
+      if (categorized.isEmpty && profile.bankInfo.transactions.isNotEmpty) {
+        categorized = TransactionCategorizer.categorize(
+          profile.bankInfo.transactions.map((t) => t.toJson()).toList(),
+        );
+      }
+
+      final matcher = BankTransactionMatcher(categorized);
+      final insuranceTxns = matcher.findByCategory(TxnCategory.insurance);
+
+      // Identity cross-check: policy holder names vs Step 1 name
+      final step1Name = profile.personalInfo.fullName;
+      final holderNames = [_healthHolderCtrl.text, _vehicleHolderCtrl.text, _lifeHolderCtrl.text];
+      for (final name in holderNames) {
+        if (name.trim().isEmpty || step1Name.isEmpty) continue;
+        final match = FuzzyMatcher.matchNames(step1Name, name.trim());
+        if (match.severity == MatchSeverity.hardFail) {
+          print('[Step7 Identity] HARD FAIL: "$step1Name" vs policy holder "${name.trim()}" (${(match.score * 100).toStringAsFixed(1)}%)');
+        } else if (match.severity == MatchSeverity.softFlag) {
+          print('[Step7 Identity] SOFT FLAG: "$step1Name" vs policy holder "${name.trim()}" (${(match.score * 100).toStringAsFixed(1)}%)');
+        }
+      }
+
+      // Vehicle ownership consistency (Step 1 -> Step 7)
+      if (profile.personalInfo.vehicleOwnership && !_hasVehicle) {
+        print('[Step7] SOFT FLAG: Vehicle owner (Step 1) but no vehicle insurance declared');
+        if (mounted) AppToast.warning(context, 'Vehicle owner but no vehicle insurance declared');
+      }
+
+      print('\n════════════════════════════════════════════');
+      print('STEP 7 INSURANCE CROSS-VERIFICATION');
+      print('Insurance debits found in bank: ${insuranceTxns.length}');
+      print('Health: $_hasHealth, Vehicle: $_hasVehicle, Life: $_hasLife');
+      print('════════════════════════════════════════════\n');
+
+      // ═══════════════════════════════════════════════════════════════
+      // GAP 6 FIX: Backend API calls for insurance verification
+      // Non-blocking — failures are soft-flagged, flow continues
+      // ═══════════════════════════════════════════════════════════════
+      final api = ref.read(apiServiceProvider);
       if (_hasHealth && _healthPolicyCtrl.text.trim().isNotEmpty) {
         try {
           final result = await api.verifyInsurance(_healthPolicyCtrl.text.trim(), 'health');
-          debugPrint('[Step7] Health insurance verified: ${result['policy_holder']} — ${result['insurer']}');
+          print('[Step7 API] Health insurance: ${result['status'] ?? 'ok'}');
         } catch (e) {
-          debugPrint('[Step7] Health insurance verification failed: $e');
+          print('[Step7 API] Health insurance failed (non-blocking): $e');
         }
       }
-
       if (_hasVehicle && _vehiclePolicyCtrl.text.trim().isNotEmpty) {
         try {
           final result = await api.verifyInsurance(_vehiclePolicyCtrl.text.trim(), 'vehicle');
-          debugPrint('[Step7] Vehicle insurance verified: ${result['policy_holder']}');
+          print('[Step7 API] Vehicle insurance: ${result['status'] ?? 'ok'}');
         } catch (e) {
-          debugPrint('[Step7] Vehicle insurance verification failed: $e');
+          print('[Step7 API] Vehicle insurance failed (non-blocking): $e');
         }
       }
-
       if (_hasLife && _lifePolicyCtrl.text.trim().isNotEmpty) {
         try {
           final result = await api.verifyInsurance(_lifePolicyCtrl.text.trim(), 'life');
-          debugPrint('[Step7] Life insurance verified: ${result['policy_holder']}');
+          print('[Step7 API] Life insurance: ${result['status'] ?? 'ok'}');
         } catch (e) {
-          debugPrint('[Step7] Life insurance verification failed: $e');
+          print('[Step7 API] Life insurance failed (non-blocking): $e');
         }
       }
-      
+
+      dismissVerificationPhase();
+
       ref.read(verifiedProfileProvider.notifier).updateStep7(InsuranceInfo(
         isVerified: true,
         hasHealthInsurance: _hasHealth,
@@ -133,7 +194,7 @@ class _Step7InsuranceScreenState extends ConsumerState<Step7InsuranceScreen> {
       ref.read(stepStatusProvider.notifier).setStatus(7, StepStatus.verified);
       if (mounted) {
         setState(() => _isLoading = false);
-        AppToast.success(context, 'Insurance policies verified ✓');
+        AppToast.success(context, 'Insurance verified ✓ (${insuranceTxns.length} premium payments found)');
         context.push(AppRoutes.scoreStep(8));
       }
     } catch (e) {

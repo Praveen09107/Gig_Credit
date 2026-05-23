@@ -120,7 +120,7 @@ class HomeScreen extends ConsumerWidget {
                     // HERO BAND
                     _HeroBand().animate().fadeIn(duration: 500.ms),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
 
                     // SECTION: Trusted by gig workers
                     Padding(
@@ -133,16 +133,16 @@ class HomeScreen extends ConsumerWidget {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ).animate().fadeIn(delay: 200.ms),
+                    ).animate().fadeIn(delay: 300.ms),
 
                     const SizedBox(height: 12),
 
                     // Image carousel
                     const HeroImageSlider()
                         .animate()
-                        .fadeIn(delay: 300.ms),
+                        .fadeIn(delay: 400.ms),
 
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 28),
 
                     // DYNAMIC CTA BUTTONS based on score state
                     if (hasScore) ...[
@@ -153,7 +153,7 @@ class HomeScreen extends ConsumerWidget {
                           hasScore: true,
                           onTap: () => context.push(AppRoutes.scoreReport),
                         ),
-                      ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.05),
+                      ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.05),
                       const SizedBox(height: 12),
                       // SECONDARY: Start New Score (outline)
                       Padding(
@@ -179,7 +179,7 @@ class HomeScreen extends ConsumerWidget {
                             ),
                           ),
                         ),
-                      ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.05),
+                      ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.05),
                     ] else ...[
                       // Only GET STARTED for new users
                       Padding(
@@ -188,7 +188,7 @@ class HomeScreen extends ConsumerWidget {
                           hasScore: false,
                           onTap: () => _showGetStartedPopup(context),
                         ),
-                      ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.05),
+                      ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.05),
                     ],
 
                     const SizedBox(height: 32),
@@ -395,7 +395,7 @@ class _StatDivider extends StatelessWidget {
 // ANIMATED ORBS & PARTICLES
 // ═══════════════════════════════════════════════════════════════════════════
 
-class _AnimatedOrb extends StatefulWidget {
+class _AnimatedOrb extends StatelessWidget {
   final double size;
   final Color color;
   final Duration duration;
@@ -409,47 +409,12 @@ class _AnimatedOrb extends StatefulWidget {
   });
 
   @override
-  State<_AnimatedOrb> createState() => _AnimatedOrbState();
-}
-
-class _AnimatedOrbState extends State<_AnimatedOrb>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this, duration: widget.duration)
-      ..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final scale = 1.0 + (_controller.value * 0.15);
-        final dx = _controller.value * widget.offset.dx;
-        final dy = _controller.value * widget.offset.dy;
-        return Transform.translate(
-          offset: Offset(dx, dy),
-          child: Transform.scale(
-            scale: scale,
-            child: child,
-          ),
-        );
-      },
-      child: Container(
-        width: widget.size,
-        height: widget.size,
-        decoration: BoxDecoration(shape: BoxShape.circle, color: widget.color),
-      ),
+    // Simple static orb — no animation controller needed
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
     );
   }
 }
@@ -560,78 +525,268 @@ class _GetStartedButton extends StatefulWidget {
   State<_GetStartedButton> createState() => _GetStartedButtonState();
 }
 
-class _GetStartedButtonState extends State<_GetStartedButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _pulseController;
+class _GetStartedButtonState extends State<_GetStartedButton> {
   bool _pressed = false;
+  bool _glowHigh = false;
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
+    _startGlowCycle();
   }
 
-  @override
-  void dispose() {
-    _pulseController.dispose();
-    super.dispose();
+  void _startGlowCycle() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (!mounted) return;
+      setState(() => _glowHigh = true);
+      Future.delayed(const Duration(milliseconds: 1800), () {
+        if (!mounted) return;
+        setState(() => _glowHigh = false);
+        _startGlowCycle();
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _pulseController,
-      builder: (context, child) {
-        return AnimatedScale(
-          scale: _pressed ? 0.97 : 1.0,
-          duration: const Duration(milliseconds: 120),
-          child: GestureDetector(
-            onTapDown: (_) => setState(() => _pressed = true),
-            onTapUp: (_) {
-              setState(() => _pressed = false);
-              HapticFeedback.mediumImpact();
-              widget.onTap();
-            },
-            onTapCancel: () => setState(() => _pressed = false),
-            child: Container(
-              height: 60,
-              decoration: BoxDecoration(
-                gradient: AppColors.ctaGradient,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.greenBright.withValues(
-                        alpha: 0.35 + (_pulseController.value * 0.2)),
-                    blurRadius: 20 + (_pulseController.value * 12),
-                    offset: const Offset(0, 6),
-                  ),
-                ],
+    return AnimatedScale(
+      scale: _pressed ? 0.97 : 1.0,
+      duration: const Duration(milliseconds: 120),
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapUp: (_) {
+          setState(() => _pressed = false);
+          HapticFeedback.mediumImpact();
+          widget.onTap();
+        },
+        onTapCancel: () => setState(() => _pressed = false),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 1800),
+          curve: Curves.easeInOut,
+          height: 60,
+          decoration: BoxDecoration(
+            gradient: AppColors.ctaGradient,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.greenBright.withValues(alpha: _glowHigh ? 0.55 : 0.30),
+                blurRadius: _glowHigh ? 28 : 16,
+                offset: const Offset(0, 6),
               ),
-              alignment: Alignment.center,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    widget.hasScore ? '📊' : '🚀',
-                    style: const TextStyle(fontSize: 18),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    widget.hasScore ? 'VIEW REPORT' : 'GET STARTED',
-                    style: AppTypography.button.copyWith(
-                      fontSize: 16,
-                      letterSpacing: 0.8,
+            ],
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(widget.hasScore ? '📊' : '🚀', style: const TextStyle(fontSize: 18)),
+              const SizedBox(width: 10),
+              Text(
+                widget.hasScore ? 'VIEW REPORT' : 'GET STARTED',
+                style: AppTypography.button.copyWith(fontSize: 16, letterSpacing: 0.8),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SCORE STATUS CARD
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _ScoreStatusCard extends StatelessWidget {
+  final bool hasScore;
+  final dynamic scoreState;
+  final Map<int, dynamic> stepCompletionMap;
+  final VoidCallback onGetStarted;
+  final VoidCallback onViewReport;
+
+  const _ScoreStatusCard({
+    required this.hasScore,
+    required this.scoreState,
+    required this.stepCompletionMap,
+    required this.onGetStarted,
+    required this.onViewReport,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (hasScore) {
+      return _buildScoreReadyCard(context);
+    }
+    return _buildScoreLockedCard(context);
+  }
+
+  Widget _buildScoreLockedCard(BuildContext context) {
+    // Count completed steps
+    final completedSteps = stepCompletionMap.values
+        .where((v) => v.toString().contains('verified'))
+        .length;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.borderCard),
+        boxShadow: AppColors.cardShadow,
+      ),
+      child: Column(
+        children: [
+          // Lock icon + heading
+          Row(
+            children: [
+              Container(
+                width: 48, height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.greenMuted,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                alignment: Alignment.center,
+                child: const Text('🔒', style: TextStyle(fontSize: 22)),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Score Locked',
+                        style: AppTypography.titleSmall.copyWith(
+                            color: AppColors.textPrimary, fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 2),
+                    Text('Complete all 9 steps to unlock your GigCredit score',
+                        style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          // Progress dots row
+          Row(
+            children: List.generate(9, (i) {
+              final step = i + 1;
+              final isCompleted = stepCompletionMap[step]?.toString().contains('verified') ?? false;
+              final isCurrent = step == completedSteps + 1;
+              return Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: isCompleted
+                              ? AppColors.greenPrimary
+                              : isCurrent
+                                  ? AppColors.greenBright.withValues(alpha: 0.50)
+                                  : AppColors.borderCard,
+                          borderRadius: BorderRadius.circular(999),
+                          boxShadow: isCurrent ? [
+                            BoxShadow(color: AppColors.greenBright.withValues(alpha: 0.40), blurRadius: 6),
+                          ] : null,
+                        ),
+                      ),
                     ),
+                    if (i < 8) const SizedBox(width: 3),
+                  ],
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('$completedSteps of 9 steps done',
+                  style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
+              Text('${((completedSteps / 9) * 100).round()}% complete',
+                  style: AppTypography.caption.copyWith(
+                      color: AppColors.greenPrimary, fontWeight: FontWeight.w700)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScoreReadyCard(BuildContext context) {
+    final report = scoreState.reportData;
+    final score = report?.finalScore ?? 0;
+    final grade = report?.grade ?? 'B';
+    final gradeColor = AppColors.gradeColor(grade);
+
+    return GestureDetector(
+      onTap: onViewReport,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppColors.greenPrimary, AppColors.greenMid],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(color: AppColors.greenPrimary.withValues(alpha: 0.30), blurRadius: 20, offset: const Offset(0, 8)),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Score ring
+            SizedBox(
+              width: 72, height: 72,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    value: score / 900,
+                    strokeWidth: 6,
+                    backgroundColor: Colors.white.withValues(alpha: 0.20),
+                    color: Colors.white,
+                    strokeCap: StrokeCap.round,
+                  ),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('$score',
+                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900, height: 1.0)),
+                      Text(grade,
+                          style: TextStyle(color: Colors.white.withValues(alpha: 0.80), fontSize: 10, fontWeight: FontWeight.w700)),
+                    ],
                   ),
                 ],
               ),
             ),
-          ),
-        );
-      },
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Your GigCredit Score',
+                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 4),
+                  Text('Grade $grade — ${report?.riskBand ?? "Good Standing"}',
+                      style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.20),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: const Text('View Full Report →',
+                        style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

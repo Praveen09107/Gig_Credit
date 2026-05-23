@@ -7,8 +7,18 @@ class AadhaarVerifyRequest(BaseModel):
     aadhaar: str
 
 
+class AadhaarOtpValidateRequest(BaseModel):
+    aadhaar: str
+    otp: str
+
+
 class PanVerifyRequest(BaseModel):
     pan: str
+
+
+class PanOtpValidateRequest(BaseModel):
+    pan: str
+    otp: str
 
 
 class IfscVerifyRequest(BaseModel):
@@ -50,6 +60,31 @@ class LoanItem(BaseModel):
     type: str
     emi_amount: int
     remaining_months: int
+
+
+# ── New schemas for Steps 4-9 ─────────────────────────────────────────────────
+
+class EbVerifyRequest(BaseModel):
+    service_number: str
+
+
+class LpgVerifyRequest(BaseModel):
+    consumer_number: str
+    provider: str
+
+
+class UdyamVerifyRequest(BaseModel):
+    udyam_number: str
+
+
+class LoanVerifyRequest(BaseModel):
+    lender_name: str
+    emi_amount: float
+    latest_debit_date: str
+
+
+class GstFilingHistoryRequest(BaseModel):
+    gstin: str
 
 
 class LoanCheckResponse(BaseModel):

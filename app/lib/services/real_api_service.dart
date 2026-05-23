@@ -67,6 +67,20 @@ class RealApiService implements ApiService {
   }
 
   @override
+  Future<Map<String, dynamic>> verifyAadhaarOtp(String aadhaarNumber, String otp) async {
+    final response = await _post(
+      '$baseUrl/gov/aadhaar/otp/validate',
+      headers: _headers,
+      body: jsonEncode({'aadhaar': aadhaarNumber, 'otp': otp}),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    final body = jsonDecode(response.body);
+    throw Exception(body['detail'] ?? body['message'] ?? 'OTP verification failed');
+  }
+
+  @override
   Future<Map<String, dynamic>> verifyPan(String panNumber) async {
     final response = await _post(
       '$baseUrl/gov/pan/verify',
@@ -78,6 +92,106 @@ class RealApiService implements ApiService {
     }
     final errorMsg = jsonDecode(response.body)['detail'] ?? 'Failed to verify PAN';
     throw Exception(errorMsg);
+  }
+
+  @override
+  Future<Map<String, dynamic>> verifyPanOtp(String panNumber, String otp) async {
+    final response = await _post(
+      '$baseUrl/gov/pan/otp/validate',
+      headers: _headers,
+      body: jsonEncode({'pan': panNumber, 'otp': otp}),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    final body = jsonDecode(response.body);
+    throw Exception(body['detail'] ?? body['message'] ?? 'OTP verification failed');
+  }
+
+  // ── Step 4: Utility ──────────────────────────────────────────────────────
+
+  @override
+  Future<Map<String, dynamic>> verifyEb(String serviceNumber) async {
+    final response = await _post(
+      '$baseUrl/gov/eb/verify',
+      headers: _headers,
+      body: jsonEncode({'service_number': serviceNumber}),
+    );
+    if (response.statusCode == 200) return jsonDecode(response.body);
+    final body = jsonDecode(response.body);
+    throw Exception(body['detail'] ?? 'EB verification failed');
+  }
+
+  @override
+  Future<Map<String, dynamic>> verifyLpg(String consumerNumber, String provider) async {
+    final response = await _post(
+      '$baseUrl/gov/lpg/verify',
+      headers: _headers,
+      body: jsonEncode({'consumer_number': consumerNumber, 'provider': provider}),
+    );
+    if (response.statusCode == 200) return jsonDecode(response.body);
+    final body = jsonDecode(response.body);
+    throw Exception(body['detail'] ?? 'LPG verification failed');
+  }
+
+  // ── Step 5: Work ─────────────────────────────────────────────────────────
+
+  @override
+  Future<Map<String, dynamic>> verifyVehicleInsurance(String vehicleNumber) async {
+    final response = await _post(
+      '$baseUrl/gov/vehicle/insurance/verify',
+      headers: _headers,
+      body: jsonEncode({'vehicle_number': vehicleNumber}),
+    );
+    if (response.statusCode == 200) return jsonDecode(response.body);
+    final body = jsonDecode(response.body);
+    throw Exception(body['detail'] ?? 'Vehicle insurance verification failed');
+  }
+
+  // ── Step 6: Schemes ──────────────────────────────────────────────────────
+
+  @override
+  Future<Map<String, dynamic>> verifyUdyam(String udyamNumber) async {
+    final response = await _post(
+      '$baseUrl/gov/msme/udyam-verify',
+      headers: _headers,
+      body: jsonEncode({'udyam_number': udyamNumber}),
+    );
+    if (response.statusCode == 200) return jsonDecode(response.body);
+    final body = jsonDecode(response.body);
+    throw Exception(body['detail'] ?? 'Udyam verification failed');
+  }
+
+  // ── Step 8: Tax ──────────────────────────────────────────────────────────
+
+  @override
+  Future<Map<String, dynamic>> getGstFilingHistory(String gstin) async {
+    final response = await _post(
+      '$baseUrl/gov/gst/filing-history',
+      headers: _headers,
+      body: jsonEncode({'gstin': gstin}),
+    );
+    if (response.statusCode == 200) return jsonDecode(response.body);
+    final body = jsonDecode(response.body);
+    throw Exception(body['detail'] ?? 'GST filing history failed');
+  }
+
+  // ── Step 9: Loans ────────────────────────────────────────────────────────
+
+  @override
+  Future<Map<String, dynamic>> verifyLoan(String lenderName, double emiAmount, String latestDebitDate) async {
+    final response = await _post(
+      '$baseUrl/gov/loan/verify',
+      headers: _headers,
+      body: jsonEncode({
+        'lender_name': lenderName,
+        'emi_amount': emiAmount,
+        'latest_debit_date': latestDebitDate,
+      }),
+    );
+    if (response.statusCode == 200) return jsonDecode(response.body);
+    final body = jsonDecode(response.body);
+    throw Exception(body['detail'] ?? 'Loan verification failed');
   }
 
   @override

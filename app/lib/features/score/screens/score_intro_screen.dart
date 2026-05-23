@@ -42,6 +42,10 @@ class ScoreIntroScreen extends ConsumerWidget {
             snap: true,
             backgroundColor: AppColors.bgCard,
             elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_rounded, color: AppColors.greenPrimary),
+              onPressed: () => context.go(AppRoutes.home),
+            ),
             title: Text(
               'Credit Score',
               style: AppTypography.titleMedium.copyWith(
@@ -244,6 +248,10 @@ class _ActiveScoreView extends StatelessWidget {
       backgroundColor: AppColors.bgScreen,
       appBar: AppBar(
         backgroundColor: AppColors.bgCard,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.greenPrimary),
+          onPressed: () => context.go(AppRoutes.home),
+        ),
         title: Text('Credit Score',
             style: AppTypography.titleMedium
                 .copyWith(fontWeight: FontWeight.w600)),

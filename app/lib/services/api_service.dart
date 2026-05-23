@@ -6,7 +6,25 @@ abstract class ApiService {
   // Verification (13 Endpoints matching planning doc)
   // KYC
   Future<Map<String, dynamic>> verifyAadhaar(String aadhaarNumber);
+  Future<Map<String, dynamic>> verifyAadhaarOtp(String aadhaarNumber, String otp);
   Future<Map<String, dynamic>> verifyPan(String panNumber);
+  Future<Map<String, dynamic>> verifyPanOtp(String panNumber, String otp);
+
+  // Step 4 — Utility
+  Future<Map<String, dynamic>> verifyEb(String serviceNumber);
+  Future<Map<String, dynamic>> verifyLpg(String consumerNumber, String provider);
+
+  // Step 5 — Work
+  Future<Map<String, dynamic>> verifyVehicleInsurance(String vehicleNumber);
+
+  // Step 6 — Schemes
+  Future<Map<String, dynamic>> verifyUdyam(String udyamNumber);
+
+  // Step 8 — Tax
+  Future<Map<String, dynamic>> getGstFilingHistory(String gstin);
+
+  // Step 9 — Loans
+  Future<Map<String, dynamic>> verifyLoan(String lenderName, double emiAmount, String latestDebitDate);
   
   // Bank
   Future<Map<String, dynamic>> verifyAccount(String accountNo, String ifsc);

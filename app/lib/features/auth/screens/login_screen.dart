@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/theme/app_colors.dart';
@@ -105,20 +105,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       }
       context.push('${AppRoutes.otp}?mobile=$mobile&isSignup=false');
     } else {
-      // Show error toast based on response
-      final errorMsg = responseStr ?? 'Failed to send OTP';
-      if (errorMsg.contains('Network Error')) {
-        AppToast.error(context, 'Network Error', subtitle: 'Please check your connection and try again.');
-      } else if (errorMsg.contains('not found') || errorMsg.contains('No account')) {
-        AppToast.error(context, 'Account not found', subtitle: 'Please check the number or sign up.');
-      } else if (errorMsg.contains('too many') || errorMsg.contains('limit')) {
-        AppToast.error(context, 'Too many attempts', subtitle: 'Please try again later.');
+      // Strip ERROR: prefix returned by AuthController on exception
+      final errorMsg = responseStr?.startsWith('ERROR:') == true
+          ? responseStr!.substring(6)
+          : (responseStr ?? 'Failed to send OTP');
+
+      // Map backend error codes to user-friendly messages
+      if (errorMsg.contains('not_found') ||
+          errorMsg.contains('No account') ||
+          errorMsg.contains('sign up first')) {
+        AppToast.error(context, 'No account found',
+            subtitle: 'This number is not registered. Please sign up first.');
+      } else if (errorMsg.contains('Network') ||
+          errorMsg.contains('SocketException') ||
+          errorMsg.contains('Connection refused')) {
+        AppToast.error(context, 'Network Error',
+            subtitle: 'Please check your connection and try again.');
+      } else if (errorMsg.contains('too many') ||
+          errorMsg.contains('limit') ||
+          errorMsg.contains('max_attempts')) {
+        AppToast.error(context, 'Too many attempts',
+            subtitle: 'Please wait a moment and try again.');
+      } else if (errorMsg.contains('invalid_format')) {
+        AppToast.error(context, 'Invalid number',
+            subtitle: 'Enter a valid 10-digit Indian mobile number.');
       } else {
-        AppToast.error(context, 'Failed to send OTP', subtitle: 'Please try again.');
+        AppToast.error(context, 'Failed to send OTP',
+            subtitle: 'Please try again.');
       }
-      setState(() {
-        _errorMsg = errorMsg;
-      });
+      setState(() => _errorMsg = errorMsg);
     }
   }
 

@@ -118,150 +118,156 @@ class _ReportHistoryScreenState extends ConsumerState<ReportHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0D0F14),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF161B25),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white, size: 20),
-          onPressed: () => context.pop(),
-        ),
-        title: const Text('Score History',
-            style: TextStyle(
-                color: Colors.white,
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w700,
-                fontSize: 18)),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF00D4B4), size: 22),
-            onPressed: () {
-              setState(() => _isLoading = true);
-              _fetchHistory();
-            },
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) context.go(AppRoutes.home);
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF0D0F14),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF161B25),
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white, size: 20),
+            onPressed: () => context.go(AppRoutes.home),
           ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: Color(0xFF00D4B4)),
-                  SizedBox(height: 16),
-                  Text('Loading your reports from server...',
-                      style: TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
-                ],
-              ),
-            )
-          : _errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.cloud_off_rounded, size: 64, color: Color(0xFF8B95A8)),
-                      const SizedBox(height: 16),
-                      Text(_errorMessage!, style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 14)),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() { _isLoading = true; _errorMessage = null; });
-                          _fetchHistory();
-                        },
-                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00D4B4)),
-                        child: const Text('Retry', style: TextStyle(color: Color(0xFF0D0F14))),
-                      ),
-                    ],
-                  ),
-                )
-              : _history.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.history_rounded, size: 80, color: Color(0xFF4A5568)),
-                          const SizedBox(height: 16),
-                          const Text('No Reports Yet', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 12),
-                          const Text('Complete the verification to\ngenerate your first credit report.', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF8B95A8), fontSize: 15, height: 1.5)),
-                          const SizedBox(height: 32),
-                          ElevatedButton.icon(
-                            onPressed: () => context.go(AppRoutes.score),
-                            icon: const Icon(Icons.add_rounded, color: Color(0xFF0D0F14)),
-                            label: const Text('Generate First Score',
-                                style: TextStyle(color: Color(0xFF0D0F14), fontWeight: FontWeight.bold)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF00D4B4),
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _fetchHistory,
-                      color: const Color(0xFF00D4B4),
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(20),
-                        itemCount: _history.length + 1, // +1 for header
-                        itemBuilder: (context, index) {
-                          if (index == 0) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF00D4B4).withValues(alpha: 0.15),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text('${_history.length} Report${_history.length > 1 ? 's' : ''}',
-                                        style: const TextStyle(
-                                            color: Color(0xFF00D4B4),
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold)),
-                                  ),
-                                  const Spacer(),
-                                  const Text('Tap any report to view full details',
-                                      style: TextStyle(color: Color(0xFF8B95A8), fontSize: 11)),
-                                ],
-                              ),
-                            ).animate().fadeIn();
-                          }
-
-                          final item = _history[index - 1];
-                          final rawScore = item['finalScore'] as int? ?? 0;
-                          final score = rawScore.clamp(300, 900); // Pipeline minimum
-                          final grade = ScoreReportModel.computeGrade(score); // Recompute — never trust stored grade
-                          final riskBand = item['riskBand'] as String? ?? 'Medium';
-                          final proofId = item['proofId'] as String? ?? 'N/A';
-                          final workType = item['workType'] as String? ?? 'unknown';
-                          final llm = item['llmExplanation'] as String?;
-                          final dateStr = item['generatedAt'] as String? ?? item['stored_at'] as String?;
-                          DateTime date = DateTime.now();
-                          if (dateStr != null) {
-                            try { date = DateTime.parse(dateStr); } catch (_) {}
-                          }
-                          final isLatest = index == 1;
-
-                          return _HistoryReportCard(
-                            score: score,
-                            grade: grade,
-                            riskBand: riskBand,
-                            proofId: proofId,
-                            workType: workType,
-                            hasLlm: llm != null && llm.isNotEmpty,
-                            date: date,
-                            isLatest: isLatest,
-                            onTap: () => _viewReport(item),
-                          ).animate(delay: Duration(milliseconds: index * 80)).fadeIn().slideY(begin: 0.05);
-                        },
-                      ),
+          title: const Text('Score History',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18)),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded, color: Color(0xFF00D4B4), size: 22),
+              onPressed: () {
+                setState(() => _isLoading = true);
+                _fetchHistory();
+              },
+            ),
+          ],
+        ),
+        body: _isLoading
+            ? const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(color: Color(0xFF00D4B4)),
+                    SizedBox(height: 16),
+                    Text('Loading your reports from server...',
+                        style: TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
+                  ],
+                ),
+              )
+            : _errorMessage != null
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.cloud_off_rounded, size: 64, color: Color(0xFF8B95A8)),
+                        const SizedBox(height: 16),
+                        Text(_errorMessage!, style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 14)),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            setState(() { _isLoading = true; _errorMessage = null; });
+                            _fetchHistory();
+                          },
+                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00D4B4)),
+                          child: const Text('Retry', style: TextStyle(color: Color(0xFF0D0F14))),
+                        ),
+                      ],
                     ),
+                  )
+                : _history.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.history_rounded, size: 80, color: Color(0xFF4A5568)),
+                            const SizedBox(height: 16),
+                            const Text('No Reports Yet', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 12),
+                            const Text('Complete the verification to\ngenerate your first credit report.', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF8B95A8), fontSize: 15, height: 1.5)),
+                            const SizedBox(height: 32),
+                            ElevatedButton.icon(
+                              onPressed: () => context.go(AppRoutes.score),
+                              icon: const Icon(Icons.add_rounded, color: Color(0xFF0D0F14)),
+                              label: const Text('Generate First Score',
+                                  style: TextStyle(color: Color(0xFF0D0F14), fontWeight: FontWeight.bold)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF00D4B4),
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _fetchHistory,
+                        color: const Color(0xFF00D4B4),
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(20),
+                          itemCount: _history.length + 1, // +1 for header
+                          itemBuilder: (context, index) {
+                            if (index == 0) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF00D4B4).withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text('${_history.length} Report${_history.length > 1 ? 's' : ''}',
+                                          style: const TextStyle(
+                                              color: Color(0xFF00D4B4),
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold)),
+                                    ),
+                                    const Spacer(),
+                                    const Text('Tap any report to view full details',
+                                        style: TextStyle(color: Color(0xFF8B95A8), fontSize: 11)),
+                                  ],
+                                ),
+                              ).animate().fadeIn();
+                            }
+
+                            final item = _history[index - 1];
+                            final rawScore = item['finalScore'] as int? ?? 0;
+                            final score = rawScore.clamp(300, 900); // Pipeline minimum
+                            final grade = ScoreReportModel.computeGrade(score); // Recompute — never trust stored grade
+                            final riskBand = item['riskBand'] as String? ?? 'Medium';
+                            final proofId = item['proofId'] as String? ?? 'N/A';
+                            final workType = item['workType'] as String? ?? 'unknown';
+                            final llm = item['llmExplanation'] as String?;
+                            final dateStr = item['generatedAt'] as String? ?? item['stored_at'] as String?;
+                            DateTime date = DateTime.now();
+                            if (dateStr != null) {
+                              try { date = DateTime.parse(dateStr); } catch (_) {}
+                            }
+                            final isLatest = index == 1;
+
+                            return _HistoryReportCard(
+                              score: score,
+                              grade: grade,
+                              riskBand: riskBand,
+                              proofId: proofId,
+                              workType: workType,
+                              hasLlm: llm != null && llm.isNotEmpty,
+                              date: date,
+                              isLatest: isLatest,
+                              onTap: () => _viewReport(item),
+                            ).animate(delay: Duration(milliseconds: index * 80)).fadeIn().slideY(begin: 0.05);
+                          },
+                        ),
+                      ),
+      ),
     );
   }
 }

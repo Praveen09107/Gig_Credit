@@ -12,12 +12,16 @@ import '../../../../state/step_status_provider.dart';
 import '../../../../state/verified_profile_provider.dart';
 import '../../../../state/ocr_service_provider.dart';
 import '../../../../state/api_service_provider.dart';
+import '../../../../state/ocr_results_provider.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/gov_schemes_info.dart';
 import '../../../../app/app_router.dart';
 import '../../../../demo/demo_profile_manager.dart';
 import '../../../../shared/widgets/feedback/app_toast.dart';
 import '../../../../shared/widgets/feedback/step_popups.dart';
+import '../../../../scoring/validation/bank_transaction_matcher.dart';
+import '../../../../scoring/validation/step3_validator.dart';
+import '../../../../shared/widgets/feedback/verification_phase_overlay.dart';
 
 class Step6GovSchemesScreen extends ConsumerStatefulWidget {
   const Step6GovSchemesScreen({super.key});
@@ -26,7 +30,7 @@ class Step6GovSchemesScreen extends ConsumerStatefulWidget {
   ConsumerState<Step6GovSchemesScreen> createState() => _Step6GovSchemesScreenState();
 }
 
-class _Step6GovSchemesScreenState extends ConsumerState<Step6GovSchemesScreen> {
+class _Step6GovSchemesScreenState extends ConsumerState<Step6GovSchemesScreen> with VerificationPhaseMixin {
   bool _isLoading = false;
 
   // Scheme toggles
@@ -92,39 +96,105 @@ class _Step6GovSchemesScreenState extends ConsumerState<Step6GovSchemesScreen> {
        return;
     }
     
-    setState(() => _isLoading = true);
-    
-    // Show confirmation popup before proceeding
     final confirmed = await StepConfirmPopup.show(context, stepNumber: 6);
-    if (!confirmed || !mounted) {
-      setState(() => _isLoading = false);
-      return;
-    }
+    if (!confirmed || !mounted) return;
+
+    setState(() => _isLoading = true);
+    showVerificationPhase();
 
     try {
-      final api = ref.read(apiServiceProvider);
+      // ═══════════════════════════════════════════════════════════════
+      // REAL CROSS-VERIFICATION: Gov scheme credits in bank
+      // ═══════════════════════════════════════════════════════════════
+      final profile = ref.read(verifiedProfileProvider);
+      final ocrResults = ref.read(ocrResultsProvider);
+      final bankOcr = ocrResults['bank_statement'];
 
-      // Real backend verification for eShram
+      List<CategorizedTransaction> categorized = [];
+      if (bankOcr != null && bankOcr['categorized_transactions'] != null) {
+        for (final item in (bankOcr['categorized_transactions'] as List)) {
+          if (item is Map<String, dynamic>) {
+            categorized.add(CategorizedTransaction(
+              date: item['date'] as String? ?? '',
+              amount: (item['amount'] as num?)?.toDouble() ?? 0.0,
+              type: item['type'] as String? ?? 'debit',
+              description: item['description'] as String? ?? '',
+              category: TxnCategory.values.firstWhere(
+                (c) => c.name == (item['category'] as String? ?? ''), orElse: () => TxnCategory.other),
+            ));
+          }
+        }
+      }
+      if (categorized.isEmpty && profile.bankInfo.transactions.isNotEmpty) {
+        categorized = TransactionCategorizer.categorize(
+          profile.bankInfo.transactions.map((t) => t.toJson()).toList(),
+        );
+      }
+
+      final matcher = BankTransactionMatcher(categorized);
+      final govCredits = matcher.findByCategory(TxnCategory.govScheme);
+      final totalGovIncome = govCredits.fold(0.0, (sum, t) => sum + t.amount);
+
+      // eShram UAN format validation
+      if (_hasEshram && _eshramUanCtrl.text.trim().isNotEmpty) {
+        final uan = _eshramUanCtrl.text.trim();
+        if (uan.length != 12 || !RegExp(r'^\d{12}$').hasMatch(uan)) {
+          print('[Step6] SOFT FLAG: eShram UAN format invalid: $uan (expected 12 digits)');
+          if (mounted) AppToast.warning(context, 'eShram UAN should be 12 digits');
+        }
+      }
+
+      // Udyam registration format validation
+      if (_hasUdyam && _udyamRegCtrl.text.trim().isNotEmpty) {
+        final udyam = _udyamRegCtrl.text.trim().toUpperCase();
+        if (!RegExp(r'^UDYAM-[A-Z]{2}-\d{2}-\d{7}$').hasMatch(udyam)) {
+          print('[Step6] SOFT FLAG: Udyam format may be invalid: $udyam');
+          if (mounted) AppToast.warning(context, 'Udyam format: UDYAM-XX-00-0000000');
+        }
+      }
+
+      print('\n════════════════════════════════════════════');
+      print('STEP 6 GOV SCHEMES CROSS-VERIFICATION');
+      print('Schemes toggled: SVANidhi=$_hasSvanidhi, eShram=$_hasEshram, PM-SYM=$_hasPmsym, PMJJBY=$_hasPmjjby, Mudra=$_hasMudra, PPF=$_hasPpf, Udyam=$_hasUdyam');
+      print('Gov scheme credits found in bank: ${govCredits.length}');
+      print('Total gov scheme income: ₹${totalGovIncome.toStringAsFixed(0)}');
+      for (final c in govCredits) {
+        print('  ₹${c.amount.toStringAsFixed(0)} on ${c.date}: ${c.description}');
+      }
+      print('════════════════════════════════════════════\n');
+
+      // ═══════════════════════════════════════════════════════════════
+      // GAP 6 FIX: Backend API calls for government scheme verification
+      // Non-blocking — failures are soft-flagged, flow continues
+      // ═══════════════════════════════════════════════════════════════
+      final api = ref.read(apiServiceProvider);
       if (_hasEshram && _eshramUanCtrl.text.trim().isNotEmpty) {
         try {
-          final eshramResult = await api.verifyEshram(_eshramUanCtrl.text.trim());
-          debugPrint('[Step6] eShram verified: ${eshramResult['name']} — ${eshramResult['worker_category']}');
+          final result = await api.verifyEshram(_eshramUanCtrl.text.trim());
+          print('[Step6 API] eShram: ${result['status'] ?? 'ok'}');
         } catch (e) {
-          debugPrint('[Step6] eShram verification failed: $e');
-          // Non-blocking — scheme verification is supplementary
+          print('[Step6 API] eShram failed (non-blocking): $e');
+        }
+      }
+      if (_hasUdyam && _udyamRegCtrl.text.trim().isNotEmpty) {
+        try {
+          final result = await api.verifyUdyam(_udyamRegCtrl.text.trim().toUpperCase());
+          print('[Step6 API] Udyam: ${result['status'] ?? 'ok'}');
+        } catch (e) {
+          print('[Step6 API] Udyam failed (non-blocking): $e');
+        }
+      }
+      if (_hasPmsym && _pmsymAccCtrl.text.trim().isNotEmpty) {
+        try {
+          final result = await api.verifyPmsym(_pmsymAccCtrl.text.trim());
+          print('[Step6 API] PM-SYM: ${result['status'] ?? 'ok'}');
+        } catch (e) {
+          print('[Step6 API] PM-SYM failed (non-blocking): $e');
         }
       }
 
-      // Real backend verification for PM-SYM
-      if (_hasPmsym && _pmsymAccCtrl.text.trim().isNotEmpty) {
-        try {
-          final pmsymResult = await api.verifyPmsym(_pmsymAccCtrl.text.trim());
-          debugPrint('[Step6] PM-SYM verified: ${pmsymResult['months_contributed']} months contributed');
-        } catch (e) {
-          debugPrint('[Step6] PM-SYM verification failed: $e');
-        }
-      }
-      
+      dismissVerificationPhase();
+
       ref.read(verifiedProfileProvider.notifier).updateStep6(GovSchemesInfo(
         isVerified: true,
         hasEshram: _hasEshram,
@@ -134,7 +204,7 @@ class _Step6GovSchemesScreenState extends ConsumerState<Step6GovSchemesScreen> {
       
       if (mounted) {
         setState(() => _isLoading = false);
-        AppToast.success(context, 'Government schemes verified ✓');
+        AppToast.success(context, 'Gov schemes verified ✓ (${govCredits.length} DBT credits found)');
         context.push(AppRoutes.scoreStep(7));
       }
     } catch (e) {

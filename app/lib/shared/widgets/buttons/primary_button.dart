@@ -7,7 +7,6 @@ import '../loaders/coin_pulse_loader.dart';
 
 /// GigCredit Primary CTA Button
 /// Gradient green background with pulse glow shadow
-/// Spec: 56px height, 16px radius, gradient #1A6B3C→#3CC068
 class PrimaryButton extends StatefulWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -30,29 +29,26 @@ class PrimaryButton extends StatefulWidget {
   State<PrimaryButton> createState() => _PrimaryButtonState();
 }
 
-class _PrimaryButtonState extends State<PrimaryButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnim;
+class _PrimaryButtonState extends State<PrimaryButton> {
   bool _isPressed = false;
+  bool _glowHigh = false;
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
-
-    _pulseAnim = Tween<double>(begin: 0.35, end: 0.55).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
+    _startGlowCycle();
   }
 
-  @override
-  void dispose() {
-    _pulseController.dispose();
-    super.dispose();
+  void _startGlowCycle() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (!mounted) return;
+      setState(() => _glowHigh = true);
+      Future.delayed(const Duration(milliseconds: 1800), () {
+        if (!mounted) return;
+        setState(() => _glowHigh = false);
+        _startGlowCycle();
+      });
+    });
   }
 
   bool get _effectiveDisabled =>
@@ -60,51 +56,46 @@ class _PrimaryButtonState extends State<PrimaryButton>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _pulseAnim,
-      builder: (context, child) {
-        return AnimatedScale(
-          scale: _isPressed ? 0.97 : 1.0,
-          duration: const Duration(milliseconds: 120),
-          curve: Curves.easeOut,
-          child: Container(
-            width: double.infinity,
-            height: AppSpacing.buttonHeight,
-            decoration: BoxDecoration(
-              gradient: _effectiveDisabled ? null : AppColors.ctaGradient,
-              color: _effectiveDisabled ? AppColors.borderCard : null,
-              borderRadius: AppSpacing.buttonBorderRadius,
-              boxShadow: _effectiveDisabled
-                  ? []
-                  : [
-                      BoxShadow(
-                        color: AppColors.greenBright
-                            .withValues(alpha: _pulseAnim.value),
-                        blurRadius: 20,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: _effectiveDisabled ? null : _handleTap,
-                onTapDown: (_) => setState(() => _isPressed = true),
-                onTapUp: (_) => setState(() => _isPressed = false),
-                onTapCancel: () => setState(() => _isPressed = false),
-                borderRadius: AppSpacing.buttonBorderRadius,
-                splashColor: Colors.white.withValues(alpha: 0.15),
-                highlightColor: Colors.white.withValues(alpha: 0.08),
-                child: Center(
-                  child: widget.isLoading
-                      ? _buildLoader()
-                      : _buildLabel(),
-                ),
-              ),
+    return AnimatedScale(
+      scale: _isPressed ? 0.97 : 1.0,
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOut,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 1800),
+        curve: Curves.easeInOut,
+        width: double.infinity,
+        height: AppSpacing.buttonHeight,
+        decoration: BoxDecoration(
+          gradient: _effectiveDisabled ? null : AppColors.ctaGradient,
+          color: _effectiveDisabled ? AppColors.borderCard : null,
+          borderRadius: AppSpacing.buttonBorderRadius,
+          boxShadow: _effectiveDisabled
+              ? []
+              : [
+                  BoxShadow(
+                    color: AppColors.greenBright.withValues(
+                        alpha: _glowHigh ? 0.55 : 0.30),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _effectiveDisabled ? null : _handleTap,
+            onTapDown: (_) => setState(() => _isPressed = true),
+            onTapUp: (_) => setState(() => _isPressed = false),
+            onTapCancel: () => setState(() => _isPressed = false),
+            borderRadius: AppSpacing.buttonBorderRadius,
+            splashColor: Colors.white.withValues(alpha: 0.15),
+            highlightColor: Colors.white.withValues(alpha: 0.08),
+            child: Center(
+              child: widget.isLoading ? _buildLoader() : _buildLabel(),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -113,34 +104,24 @@ class _PrimaryButtonState extends State<PrimaryButton>
     widget.onPressed?.call();
   }
 
-  Widget _buildLoader() {
-    return const CoinPulseLoader(color: Colors.white, size: 8.0);
-  }
+  Widget _buildLoader() => const CoinPulseLoader(color: Colors.white, size: 8.0);
 
   Widget _buildLabel() {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (widget.icon != null) ...[
-          widget.icon!,
-          const SizedBox(width: 10),
-        ],
+        if (widget.icon != null) ...[widget.icon!, const SizedBox(width: 10)],
         Flexible(
           child: Text(
             widget.label,
             textAlign: TextAlign.center,
             style: AppTypography.button.copyWith(
-              color: _effectiveDisabled
-                  ? AppColors.textMuted
-                  : Colors.white,
+              color: _effectiveDisabled ? AppColors.textMuted : Colors.white,
               letterSpacing: 0.6,
             ),
           ),
         ),
-        if (widget.suffixIcon != null) ...[
-          const SizedBox(width: 10),
-          widget.suffixIcon!,
-        ],
+        if (widget.suffixIcon != null) ...[const SizedBox(width: 10), widget.suffixIcon!],
       ],
     );
   }

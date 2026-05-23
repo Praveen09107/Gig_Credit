@@ -51,7 +51,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       TweenSequenceItem(tween: Tween(begin: 1.1, end: 1.0), weight: 30),
     ]).animate(CurvedAnimation(
       parent: _iconController,
-      curve: Curves.easeOutBack,
+      curve: Curves.easeOut,
     ));
 
     // Title fade + slide
@@ -113,7 +113,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (!mounted) return;
 
     // Try to restore session from secure storage
-    final session = await SessionService.loadSession();
+    // Wrapped in try-catch: flutter_secure_storage may throw on web
+    Map<String, String>? session;
+    try {
+      session = await SessionService.loadSession();
+    } catch (e) {
+      debugPrint('[Session] Could not load session: $e');
+      session = null;
+    }
+    if (!mounted) return;
+
+    // Navigate after a short delay to fully escape build/dispose cycles.
+    // This avoids _dependents.isEmpty assertion from GoRouter redirect
+    // firing while the splash widget tree is still being torn down.
+    await Future.delayed(const Duration(milliseconds: 50));
     if (!mounted) return;
 
     if (session != null) {
@@ -129,7 +142,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         userId: user.id,
         token:  session['token'] ?? '',
       );
-      context.go(AppRoutes.home);
+      if (mounted) context.go(AppRoutes.home);
     } else {
       context.go(AppRoutes.login);
     }

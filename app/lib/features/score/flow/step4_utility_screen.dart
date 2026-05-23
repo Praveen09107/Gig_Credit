@@ -11,12 +11,17 @@ import '../../../../state/step_status_provider.dart';
 import '../../../../state/verified_profile_provider.dart';
 import '../../../../state/ocr_service_provider.dart';
 import '../../../../state/api_service_provider.dart';
+import '../../../../state/ocr_results_provider.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../models/verified_profile/utility_info.dart';
 import '../../../../app/app_router.dart';
 import '../../../../demo/demo_profile_manager.dart';
 import '../../../../shared/widgets/feedback/app_toast.dart';
 import '../../../../shared/widgets/feedback/step_popups.dart';
+import '../../../../scoring/validation/bank_transaction_matcher.dart';
+import '../../../../scoring/validation/step3_validator.dart';
+import '../../../../scoring/validation/fuzzy_matcher.dart';
+import '../../../../shared/widgets/feedback/verification_phase_overlay.dart';
 
 class Step4UtilityScreen extends ConsumerStatefulWidget {
   const Step4UtilityScreen({super.key});
@@ -25,7 +30,7 @@ class Step4UtilityScreen extends ConsumerStatefulWidget {
   ConsumerState<Step4UtilityScreen> createState() => _Step4UtilityScreenState();
 }
 
-class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
+class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> with VerificationPhaseMixin {
   bool _isLoading = false;
 
   // Module toggles
@@ -40,38 +45,39 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
   final _elecConsumerCtrl = TextEditingController();
   final _elecNameCtrl = TextEditingController();
   final _elecAmountCtrl = TextEditingController();
-  final bool _elecUploaded = false;
+  bool _elecUploaded = false;
 
   // Water
   final _waterConsumerCtrl = TextEditingController();
   final _waterNameCtrl = TextEditingController();
   final _waterAmountCtrl = TextEditingController();
-  final bool _waterUploaded = false;
+  bool _waterUploaded = false;
 
   // Gas
   final _gasConsumerCtrl = TextEditingController();
   final _gasNameCtrl = TextEditingController();
   final _gasAmountCtrl = TextEditingController();
-  final bool _gasUploaded = false;
+  bool _gasUploaded = false;
 
   // Mobile
   final _mobileMobileCtrl = TextEditingController();
   final _mobileAccountCtrl = TextEditingController();
   final _mobileNameCtrl = TextEditingController();
   final _mobileAmountCtrl = TextEditingController();
-  final bool _mobileUploaded = false;
+  bool _mobileUploaded = false;
 
   // Internet
   final _internetAccountCtrl = TextEditingController();
   final _internetNameCtrl = TextEditingController();
   final _internetAmountCtrl = TextEditingController();
-  final bool _internetUploaded = false;
+  bool _internetUploaded = false;
 
   // Rent
   final _rentTenantCtrl = TextEditingController();
   final _rentLandlordCtrl = TextEditingController();
   final _rentAddressCtrl = TextEditingController();
   final _rentAmountCtrl = TextEditingController();
+  bool _rentUploaded = false;
   // Counters for allowing up to 6 consecutive bills
   int _elecUploadCount = 1;
   int _waterUploadCount = 1;
@@ -96,17 +102,39 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
     final bills = DemoProfileManager().profile.utilityInfo.bills;
     for (final bill in bills) {
       switch (bill.billType) {
-        case 'electricity': _hasElectricity = true; _elecAmountCtrl.text = bill.amount.toStringAsFixed(0); break;
-        case 'water': _hasWater = true; _waterAmountCtrl.text = bill.amount.toStringAsFixed(0); break;
-        case 'gas': _hasGas = true; _gasAmountCtrl.text = bill.amount.toStringAsFixed(0); break;
-        case 'mobile': _hasMobile = true; _mobileAmountCtrl.text = bill.amount.toStringAsFixed(0); break;
-        case 'internet': case 'wifi': _hasInternet = true; _internetAmountCtrl.text = bill.amount.toStringAsFixed(0); break;
-        case 'rent': _hasRent = true; _rentAmountCtrl.text = bill.amount.toStringAsFixed(0); break;
+        case 'electricity': _hasElectricity = true; _elecAmountCtrl.text = bill.amount.toStringAsFixed(0); _elecUploaded = true; _elecUploadCount = 6; break;
+        case 'water': _hasWater = true; _waterAmountCtrl.text = bill.amount.toStringAsFixed(0); _waterUploaded = true; _waterUploadCount = 6; break;
+        case 'gas': _hasGas = true; _gasAmountCtrl.text = bill.amount.toStringAsFixed(0); _gasUploaded = true; _gasUploadCount = 6; break;
+        case 'mobile': _hasMobile = true; _mobileAmountCtrl.text = bill.amount.toStringAsFixed(0); _mobileUploaded = true; _mobileUploadCount = 6; break;
+        case 'internet': case 'wifi': _hasInternet = true; _internetAmountCtrl.text = bill.amount.toStringAsFixed(0); _internetUploaded = true; _internetUploadCount = 6; break;
+        case 'rent': _hasRent = true; _rentAmountCtrl.text = bill.amount.toStringAsFixed(0); _rentUploaded = true; _rentUploadCount = 6; break;
       }
     }
     setState(() {});
   }
 
+  /// Step 4 is optional — user can proceed without any bills.
+  /// But if a bill is toggled, its required fields must be filled.
+  bool get _hasAnyBillToggled =>
+      _hasElectricity || _hasWater || _hasGas ||
+      _hasMobile || _hasInternet || _hasRent;
+
+  /// Returns true if all toggled bills have their required fields filled.
+  bool get _toggledBillsValid {
+    if (_hasElectricity &&
+        (_elecConsumerCtrl.text.isEmpty || _elecNameCtrl.text.isEmpty || _elecAmountCtrl.text.isEmpty)) return false;
+    if (_hasWater &&
+        (_waterConsumerCtrl.text.isEmpty || _waterNameCtrl.text.isEmpty || _waterAmountCtrl.text.isEmpty)) return false;
+    if (_hasGas &&
+        (_gasConsumerCtrl.text.isEmpty || _gasNameCtrl.text.isEmpty || _gasAmountCtrl.text.isEmpty)) return false;
+    if (_hasMobile &&
+        (_mobileMobileCtrl.text.isEmpty || _mobileNameCtrl.text.isEmpty || _mobileAmountCtrl.text.isEmpty)) return false;
+    if (_hasInternet &&
+        (_internetAccountCtrl.text.isEmpty || _internetNameCtrl.text.isEmpty || _internetAmountCtrl.text.isEmpty)) return false;
+    if (_hasRent &&
+        (_rentTenantCtrl.text.isEmpty || _rentAmountCtrl.text.isEmpty)) return false;
+    return true;
+  }
   Future<void> _submit() async {
     final statusMap = ref.read(stepStatusProvider);
     if (statusMap[4] == StepStatus.verified) {
@@ -114,58 +142,236 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
        return;
     }
 
-    setState(() => _isLoading = true);
-
-    // Show confirmation popup before proceeding
-    final confirmed = await StepConfirmPopup.show(context, stepNumber: 4);
-    if (!confirmed || !mounted) {
-      setState(() => _isLoading = false);
+    // ═══════════════════════════════════════════════════════════════
+    // GAP 5 FIX: Validate that toggled bills have at least 1 upload
+    // and warn if fewer than 6 bills uploaded (consecutive months spec)
+    // ═══════════════════════════════════════════════════════════════
+    if (_hasElectricity && !_elecUploaded) {
+      AppToast.error(context, 'Electricity Bill Required', subtitle: 'Please upload at least 1 electricity bill document.');
+      return;
+    }
+    if (_hasWater && !_waterUploaded) {
+      AppToast.error(context, 'WiFi Bill Required', subtitle: 'Please upload at least 1 WiFi/broadband bill document.');
+      return;
+    }
+    if (_hasGas && !_gasUploaded) {
+      AppToast.error(context, 'Gas Bill Required', subtitle: 'Please upload at least 1 gas/LPG bill document.');
+      return;
+    }
+    if (_hasMobile && !_mobileUploaded) {
+      AppToast.error(context, 'Mobile Bill Required', subtitle: 'Please upload at least 1 mobile bill document.');
+      return;
+    }
+    if (_hasInternet && !_internetUploaded) {
+      AppToast.error(context, 'Internet Bill Required', subtitle: 'Please upload at least 1 internet bill document.');
+      return;
+    }
+    if (_hasRent && !_rentUploaded) {
+      AppToast.error(context, 'Rent Document Required', subtitle: 'Please upload at least 1 rent receipt/agreement.');
       return;
     }
 
-    try {
-      final api = ref.read(apiServiceProvider);
+    // Warn if fewer than 6 bills uploaded (spec requires 6 consecutive months)
+    final insufficientBills = <String>[];
+    if (_hasElectricity && _elecUploadCount < 6) insufficientBills.add('Electricity (${_elecUploadCount - 1}/6)');
+    if (_hasWater && _waterUploadCount < 6) insufficientBills.add('WiFi (${_waterUploadCount - 1}/6)');
+    if (_hasGas && _gasUploadCount < 6) insufficientBills.add('Gas (${_gasUploadCount - 1}/6)');
+    if (_hasMobile && _mobileUploadCount < 6) insufficientBills.add('Mobile (${_mobileUploadCount - 1}/6)');
+    if (_hasInternet && _internetUploadCount < 6) insufficientBills.add('Internet (${_internetUploadCount - 1}/6)');
+    if (_hasRent && _rentUploadCount < 6) insufficientBills.add('Rent (${_rentUploadCount - 1}/6)');
 
-      // Real backend utility verification for each active bill
-      Future<void> verifyBill(bool hasBill, String provider, TextEditingController consumerCtrl) async {
-        if (hasBill && consumerCtrl.text.trim().isNotEmpty) {
-          try {
-            final result = await api.verifyUtility(consumerCtrl.text.trim(), provider);
-            debugPrint('[Step4] $provider verified: ${result['consumer_name']} — ${result['payment_status']}');
-          } catch (e) {
-            debugPrint('[Step4] $provider verification skipped: $e');
-            // Non-blocking — utility verification is supplementary
+    if (insufficientBills.isNotEmpty) {
+      // Soft warning — spec says 6 consecutive months but we don't hard-block
+      // since OCR can't verify dates. Show warning and let user proceed.
+      AppToast.warning(context, 'Fewer than 6 months uploaded: ${insufficientBills.join(', ')}. Upload 6 consecutive months for best score.');
+    }
+
+    // Show confirmation popup before proceeding
+    final confirmed = await StepConfirmPopup.show(context, stepNumber: 4);
+    if (!confirmed || !mounted) return;
+
+    setState(() => _isLoading = true);
+    showVerificationPhase();
+
+    try {
+      final profile = ref.read(verifiedProfileProvider);
+      // ═══════════════════════════════════════════════════════════════
+      // SPEC: Mobile bill number MUST match Step-1 registered mobile
+      // This is a HARD FAIL per spec Section 5.3 — identity lock
+      // ═══════════════════════════════════════════════════════════════
+      if (_hasMobile && _mobileMobileCtrl.text.trim().isNotEmpty) {
+        final billMobile = _mobileMobileCtrl.text.trim();
+        final step1Mobile = profile.personalInfo.mobileNumber;
+        if (step1Mobile.isNotEmpty && billMobile != step1Mobile) {
+          if (mounted) {
+            AppToast.error(context, 'Mobile number on bill does not match your registered mobile number.',
+                subtitle: 'Bill: $billMobile vs Registered: $step1Mobile');
+            setState(() => _isLoading = false);
+          }
+          return;
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // Build bill entries from form data
+      // ═══════════════════════════════════════════════════════════════
+      List<Map<String, dynamic>> billsForVerification = [];
+      List<UtilityBillEntry> extractedBills = [];
+
+      void collectBill(bool hasBill, String type, TextEditingController amtCtrl) {
+        if (hasBill) {
+          final amt = double.tryParse(amtCtrl.text.replaceAll(',', '')) ?? 0.0;
+          if (amt > 0) {
+            billsForVerification.add({'type': type, 'amount': amt});
           }
         }
       }
 
-      await verifyBill(_hasElectricity, 'electricity', _elecConsumerCtrl);
-      await verifyBill(_hasWater, 'water', _waterConsumerCtrl);
-      await verifyBill(_hasGas, 'gas', _gasConsumerCtrl);
-      await verifyBill(_hasMobile, 'mobile', _mobileMobileCtrl);
-      await verifyBill(_hasInternet, 'internet', _internetAccountCtrl);
+      collectBill(_hasElectricity, 'electricity', _elecAmountCtrl);
+      collectBill(_hasWater, 'water', _waterAmountCtrl);
+      collectBill(_hasGas, 'gas', _gasAmountCtrl);
+      collectBill(_hasMobile, 'mobile', _mobileAmountCtrl);
+      collectBill(_hasInternet, 'internet', _internetAmountCtrl);
+      collectBill(_hasRent, 'rent', _rentAmountCtrl);
 
-      List<UtilityBillEntry> extractedBills = [];
+      // ═══════════════════════════════════════════════════════════════
+      // REAL CROSS-VERIFICATION against bank CSV (per spec)
+      // ═══════════════════════════════════════════════════════════════
+      final ocrResults = ref.read(ocrResultsProvider);
+      final bankOcr = ocrResults['bank_statement'];
 
-      void addBill(bool hasBill, String type, TextEditingController amtCtrl) {
-        if (hasBill) {
-          final amt = double.tryParse(amtCtrl.text) ?? 0.0;
-          if (amt > 0) {
-            extractedBills.add(UtilityBillEntry(
-              billType: type,
-              amount: amt,
-              verified: true,
+      // Get categorized transactions from Step 3
+      List<CategorizedTransaction> categorized = [];
+      if (bankOcr != null && bankOcr['categorized_transactions'] != null) {
+        final rawList = bankOcr['categorized_transactions'] as List;
+        for (final item in rawList) {
+          if (item is Map<String, dynamic>) {
+            final cat = TxnCategory.values.firstWhere(
+              (c) => c.name == (item['category'] as String? ?? ''),
+              orElse: () => TxnCategory.other,
+            );
+            categorized.add(CategorizedTransaction(
+              date: item['date'] as String? ?? '',
+              amount: (item['amount'] as num?)?.toDouble() ?? 0.0,
+              type: item['type'] as String? ?? 'debit',
+              description: item['description'] as String? ?? '',
+              category: cat,
+              merchantRaw: item['merchant_raw'] as String?,
+              refId: item['ref_id'] as String?,
             ));
           }
         }
       }
+      // Fallback: use raw bank transactions if categorized not available
+      if (categorized.isEmpty && profile.bankInfo.transactions.isNotEmpty) {
+        categorized = TransactionCategorizer.categorize(
+          profile.bankInfo.transactions.map((t) => t.toJson()).toList(),
+        );
+      }
 
-      addBill(_hasElectricity, 'electricity', _elecAmountCtrl);
-      addBill(_hasWater, 'water', _waterAmountCtrl);
-      addBill(_hasGas, 'gas', _gasAmountCtrl);
-      addBill(_hasMobile, 'mobile', _mobileAmountCtrl);
-      addBill(_hasInternet, 'internet', _internetAmountCtrl);
-      addBill(_hasRent, 'rent', _rentAmountCtrl);
+      final matcher = BankTransactionMatcher(categorized);
+      final verifyResult = matcher.verifyUtilityBills(billsForVerification);
+
+      // Log results
+      print('\n════════════════════════════════════════════');
+      print('STEP 4 UTILITY CROSS-VERIFICATION RESULT');
+      print('Total bills: ${verifyResult.totalItems}');
+      print('Matched: ${verifyResult.matchedItems}');
+      print('Soft flags: ${verifyResult.softFlagItems}');
+      print('Not found: ${verifyResult.failedItems}');
+      print('Match ratio: ${(verifyResult.matchRatio * 100).toStringAsFixed(1)}%');
+      for (final item in verifyResult.items) {
+        print('  [${item.status}] ${item.label}: ₹${item.declaredAmount} → ${item.matchResult.matchType} (${(item.matchResult.confidence * 100).toStringAsFixed(0)}% confidence)');
+      }
+      for (final w in verifyResult.warnings) {
+        print('  ⚠ $w');
+      }
+      print('════════════════════════════════════════════\n');
+
+      // ═══════════════════════════════════════════════════════════════
+      // IDENTITY CROSS-CHECK: bill names vs Step 1/2 name
+      // ═══════════════════════════════════════════════════════════════
+      final step1Name = profile.personalInfo.fullName;
+      final namesForCheck = [
+        _elecNameCtrl.text.trim(),
+        _waterNameCtrl.text.trim(),
+        _gasNameCtrl.text.trim(),
+        _mobileNameCtrl.text.trim(),
+        _internetNameCtrl.text.trim(),
+        _rentTenantCtrl.text.trim(),
+      ];
+
+      for (final billName in namesForCheck) {
+        if (billName.isEmpty || step1Name.isEmpty) continue;
+        final match = FuzzyMatcher.matchNames(step1Name, billName);
+        if (match.severity == MatchSeverity.hardFail) {
+          print('[Step4 Identity] HARD FAIL: Step1 "$step1Name" vs bill "$billName" (${(match.score * 100).toStringAsFixed(1)}%)');
+        } else if (match.severity == MatchSeverity.softFlag) {
+          print('[Step4 Identity] SOFT FLAG: Step1 "$step1Name" vs bill "$billName" (${(match.score * 100).toStringAsFixed(1)}%)');
+        }
+      }
+
+      // Show warnings for unmatched bills
+      if (verifyResult.warnings.isNotEmpty && mounted) {
+        for (final w in verifyResult.warnings) {
+          AppToast.warning(context, w);
+        }
+      }
+
+      // Build verified bill entries with match status
+      for (final item in verifyResult.items) {
+        extractedBills.add(UtilityBillEntry(
+          billType: item.label,
+          amount: item.declaredAmount,
+          verified: item.status == 'matched',
+          transactionRef: item.matchResult.matchedTransaction?.refId,
+        ));
+      }
+
+      // Also add bills that weren't in verification (e.g., zero-amount)
+      if (extractedBills.isEmpty) {
+        // Fallback: add all toggled bills as unverified
+        void addFallback(bool has, String type, TextEditingController ctrl) {
+          if (has) {
+            extractedBills.add(UtilityBillEntry(
+              billType: type,
+              amount: double.tryParse(ctrl.text.replaceAll(',', '')) ?? 0.0,
+              verified: false,
+            ));
+          }
+        }
+        addFallback(_hasElectricity, 'electricity', _elecAmountCtrl);
+        addFallback(_hasWater, 'water', _waterAmountCtrl);
+        addFallback(_hasGas, 'gas', _gasAmountCtrl);
+        addFallback(_hasMobile, 'mobile', _mobileAmountCtrl);
+        addFallback(_hasInternet, 'internet', _internetAmountCtrl);
+        addFallback(_hasRent, 'rent', _rentAmountCtrl);
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // GAP 6 FIX: Backend API calls for utility verification
+      // Non-blocking — failures are soft-flagged, flow continues
+      // ═══════════════════════════════════════════════════════════════
+      final api = ref.read(apiServiceProvider);
+      if (_hasElectricity && _elecConsumerCtrl.text.trim().isNotEmpty) {
+        try {
+          final result = await api.verifyEb(_elecConsumerCtrl.text.trim());
+          print('[Step4 API] EB verify: ${result['status'] ?? 'ok'}');
+        } catch (e) {
+          print('[Step4 API] EB verify failed (non-blocking): $e');
+        }
+      }
+      if (_hasGas && _gasConsumerCtrl.text.trim().isNotEmpty) {
+        try {
+          // Assume provider is typed in name field for now
+          final result = await api.verifyLpg(_gasConsumerCtrl.text.trim(), _gasNameCtrl.text.trim());
+          print('[Step4 API] LPG verify: ${result['status'] ?? 'ok'}');
+        } catch (e) {
+          print('[Step4 API] LPG verify failed (non-blocking): $e');
+        }
+      }
+
+      dismissVerificationPhase();
 
       ref.read(verifiedProfileProvider.notifier).updateStep4(UtilityInfo(
         isVerified: true,
@@ -175,7 +381,8 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
 
       if (mounted) {
         setState(() => _isLoading = false);
-        AppToast.success(context, 'Utility bills verified ✓');
+        final matchPct = (verifyResult.matchRatio * 100).toStringAsFixed(0);
+        AppToast.success(context, 'Utility verified ✓ ($matchPct% bank-matched)');
         context.push(AppRoutes.scoreStep(5));
       }
     } catch (e) {
@@ -247,7 +454,7 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
                               docType: 'utility_electricity', 
                               ocrService: ocrService, 
                               onExtracted: (_) {
-                                if (_elecUploadCount < 6) setState(() => _elecUploadCount++);
+                                if (_elecUploadCount < 6) setState(() { _elecUploadCount++; _elecUploaded = true; });
                               }
                             ),
                           )),
@@ -296,7 +503,7 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
                               docType: 'utility_wifi', 
                               ocrService: ocrService, 
                               onExtracted: (_) {
-                                if (_waterUploadCount < 6) setState(() => _waterUploadCount++);
+                                if (_waterUploadCount < 6) setState(() { _waterUploadCount++; _waterUploaded = true; });
                               }
                             ),
                           )),
@@ -345,7 +552,7 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
                               docType: 'utility_gas', 
                               ocrService: ocrService, 
                               onExtracted: (_) {
-                                if (_gasUploadCount < 6) setState(() => _gasUploadCount++);
+                                if (_gasUploadCount < 6) setState(() { _gasUploadCount++; _gasUploaded = true; });
                               }
                             ),
                           )),
@@ -396,7 +603,7 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
                               docType: 'utility_mobile', 
                               ocrService: ocrService, 
                               onExtracted: (_) {
-                                if (_mobileUploadCount < 6) setState(() => _mobileUploadCount++);
+                                if (_mobileUploadCount < 6) setState(() { _mobileUploadCount++; _mobileUploaded = true; });
                               }
                             ),
                           )),
@@ -445,7 +652,7 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
                               docType: 'utility_internet', 
                               ocrService: ocrService, 
                               onExtracted: (_) {
-                                if (_internetUploadCount < 6) setState(() => _internetUploadCount++);
+                                if (_internetUploadCount < 6) setState(() { _internetUploadCount++; _internetUploaded = true; });
                               }
                             ),
                           )),
@@ -496,7 +703,7 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
                               docType: 'utility_rent', 
                               ocrService: ocrService, 
                               onExtracted: (_) {
-                                if (_rentUploadCount < 6) setState(() => _rentUploadCount++);
+                                if (_rentUploadCount < 6) setState(() { _rentUploadCount++; _rentUploaded = true; });
                               }
                             ),
                           )),
@@ -513,7 +720,7 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> {
       bottomBar: PrimaryButton(
         label: isVerified ? 'Continue to Next Step' : 'Save & Continue',
         isLoading: _isLoading,
-        isDisabled: false,
+        isDisabled: !isVerified && !_toggledBillsValid,
         onPressed: _submit,
       ),
     );

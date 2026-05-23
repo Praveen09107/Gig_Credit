@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../../state/user_provider.dart';
 import '../../../../state/score_provider.dart';
 import '../../../../models/score_report_model.dart';
+import '../../../shared/theme/app_colors.dart';
 
 class XaiReportScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic> decisionData;
@@ -37,7 +38,7 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0F14),
+      backgroundColor: const Color(0xFFF5F7F5),
       body: CustomScrollView(
         controller: _scrollController,
         slivers: [
@@ -75,16 +76,31 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
 
   Widget _buildGlassmorphismAppBar() {
     return SliverAppBar(
-      backgroundColor: const Color(0xCC1E2535),
+      backgroundColor: AppColors.bgCard.withValues(alpha: 0.96),
       pinned: true,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        icon: Icon(Icons.arrow_back, color: AppColors.greenPrimary),
         onPressed: widget.onBack,
       ),
-      title: const Text(
-        'GIGCREDIT CREDIT REPORT',
-        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 26, height: 26,
+            decoration: BoxDecoration(gradient: AppColors.ctaGradient, borderRadius: BorderRadius.circular(7)),
+            alignment: Alignment.center,
+            child: const Text('G', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13)),
+          ),
+          const SizedBox(width: 8),
+          Text('LOAN DECISION REPORT',
+              style: TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
+        ],
+      ),
+      centerTitle: true,
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(1),
+        child: Container(height: 1, color: AppColors.borderCard),
       ),
       flexibleSpace: ClipRect(
         child: BackdropFilter(
@@ -115,7 +131,7 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
           const SizedBox(height: 12),
           const Divider(color: Color(0xFF252D3D), height: 1),
           const SizedBox(height: 12),
-          _buildDetailRow('Hash', 'sha256:${_proofId.hashCode.toRadixString(16).substring(0, 8)}...  ●  Chain: VERIFIED ✓', valueColor: const Color(0xFF00D4B4)),
+          _buildDetailRow('Hash', 'sha256:${_proofId.hashCode.toRadixString(16).padLeft(8, '0').substring(0, 8)}...  ●  Chain: VERIFIED ✓', valueColor: AppColors.greenPrimary),
           _buildDetailRow('Engine', 'GigCredit Scoring Engine v4.2.1-stable'),
         ],
       ),
@@ -196,7 +212,7 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
               border: Border.all(color: const Color(0xFF252D3D)),
             ),
             child: Text(
-              '$_proofId ● ${_report != null ? DateFormat('dd MMM yyyy').format(_report!.generatedAt) : 'N/A'} ● Hash: sha256:${_proofId.hashCode.toRadixString(16).substring(0, 4)}\nChain: VERIFIED ✓ ● Deterministic ● Reproducible',
+              '$_proofId ● ${_report != null ? DateFormat('dd MMM yyyy').format(_report!.generatedAt) : 'N/A'} ● Hash: sha256:${_proofId.hashCode.toRadixString(16).padLeft(8, '0').substring(0, 4)}\nChain: VERIFIED ✓ ● Deterministic ● Reproducible',
               textAlign: TextAlign.center,
               style: const TextStyle(fontFamily: 'monospace', color: Color(0xFF8B95A8), fontSize: 10, height: 1.5),
             ),
@@ -725,11 +741,23 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
                     right: 0,
                     left: 0,
                     child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(color: const Color(0xFF00D4B4), borderRadius: BorderRadius.circular(6)),
-                        child: Text('+$totalGain pts', style: const TextStyle(color: Color(0xFF0D0F14), fontSize: 12, fontWeight: FontWeight.bold)),
-                      ).animate(onPlay: (controller) => controller.repeat(reverse: true)).slideY(begin: -0.2, end: 0, duration: 2.seconds, curve: Curves.easeInOutSine),
+                      child: TweenAnimationBuilder<double>(
+                        tween: Tween(begin: -4.0, end: 0.0),
+                        duration: const Duration(milliseconds: 800),
+                        curve: Curves.easeInOutSine,
+                        builder: (context, value, child) => Transform.translate(
+                          offset: Offset(0, value),
+                          child: child,
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                              color: AppColors.greenPrimary,
+                              borderRadius: BorderRadius.circular(6)),
+                          child: Text('+$totalGain pts',
+                              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
                     ),
                   ),
                 ],

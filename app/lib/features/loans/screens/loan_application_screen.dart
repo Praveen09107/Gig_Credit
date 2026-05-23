@@ -11,27 +11,28 @@ import '../../../state/score_provider.dart';
 import '../../../shared/widgets/loaders/coin_pulse_loader.dart';
 import '../../../state/user_provider.dart';
 import '../../../state/loan_applications_provider.dart';
+import '../../../shared/theme/app_colors.dart';
 
-// Constants from Prompt
-const _bgPrimary = Color(0xFF0D0F14);
-const _bgCard = Color(0xFF161B25);
-const _bgGlass = Color(0xCC1E2535);
-const _borderSubtle = Color(0xFF252D3D);
-const _accentTeal = Color(0xFF00D4B4);
-const _accentTealDim = Color(0x1500D4B4);
-const _accentTealGlow = Color(0x4000D4B4);
-const _accentGreen = Color(0xFF3DD68C);
-const _accentGreenDim = Color(0x153DD68C);
-const _accentGold = Color(0xFFF4B942);
-const _accentGoldDim = Color(0x15F4B942);
-const _accentRed = Color(0xFFFF4E6A);
-const _accentRedDim = Color(0x15FF4E6A);
-const _accentRedGlow = Color(0x40FF4E6A);
+// Unified theme constants — aligned with app-wide design system
+const _bgPrimary = Color(0xFFF5F7F5);       // AppColors.bgScreen
+const _bgCard = Color(0xFFFFFFFF);           // AppColors.bgCard
+const _bgGlass = Color(0xF0FFFFFF);          // white glass
+const _borderSubtle = Color(0xFFE0E8E0);     // AppColors.borderCard
+const _accentTeal = Color(0xFF1A6B3C);       // AppColors.greenPrimary
+const _accentTealDim = Color(0x151A6B3C);
+const _accentTealGlow = Color(0x401A6B3C);
+const _accentGreen = Color(0xFF3CC068);      // AppColors.greenBright
+const _accentGreenDim = Color(0x153CC068);
+const _accentGold = Color(0xFFFFA726);       // AppColors.warning
+const _accentGoldDim = Color(0x15FFA726);
+const _accentRed = Color(0xFFE53935);        // AppColors.error
+const _accentRedDim = Color(0x15E53935);
+const _accentRedGlow = Color(0x40E53935);
 const _accentPurple = Color(0xFF8B5CF6);
 const _accentPurpleDim = Color(0x158B5CF6);
-const _textPrimary = Color(0xFFF0F4FF);
-const _textSecondary = Color(0xFF8B95A8);
-const _textMuted = Color(0xFF4A5568);
+const _textPrimary = Color(0xFF1A1F1A);      // AppColors.textPrimary
+const _textSecondary = Color(0xFF5A6B5A);    // AppColors.textSecondary
+const _textMuted = Color(0xFF8A9B8A);        // AppColors.textMuted
 
 class LoanApplicationScreen extends ConsumerStatefulWidget {
   const LoanApplicationScreen({super.key});
@@ -549,7 +550,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          decoration: BoxDecoration(color: const Color(0xFF1E2535), borderRadius: BorderRadius.circular(12), border: Border.all(color: _borderSubtle)),
+          decoration: BoxDecoration(color: AppColors.bgScreen, borderRadius: BorderRadius.circular(12), border: Border.all(color: _borderSubtle)),
           child: Row(
             children: [
               const Text('₹', style: TextStyle(color: _textSecondary, fontSize: 24, fontWeight: FontWeight.w900)),
@@ -559,7 +560,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
           ),
         ),
         SliderTheme(
-          data: const SliderThemeData(trackHeight: 6, thumbColor: _accentTeal, activeTrackColor: _accentTeal, inactiveTrackColor: Color(0xFF1E2535)),
+          data: SliderThemeData(trackHeight: 6, thumbColor: AppColors.greenPrimary, activeTrackColor: AppColors.greenPrimary, inactiveTrackColor: AppColors.borderCard),
           child: Slider(
             value: _loanAmount.clamp(_sliderMin, _sliderMax),
             min: _sliderMin,
@@ -609,12 +610,12 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: BoxDecoration(color: const Color(0xFF1E2535), borderRadius: BorderRadius.circular(12), border: Border.all(color: _borderSubtle)),
+            decoration: BoxDecoration(color: AppColors.bgScreen, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.borderCard)),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(_purpose ?? 'Select Purpose', style: TextStyle(color: _purpose == null ? _textSecondary : _textPrimary, fontSize: 15, fontWeight: FontWeight.w500)),
-                const Icon(Icons.arrow_drop_down, color: _textSecondary),
+                Text(_purpose ?? 'Select Purpose', style: TextStyle(color: _purpose == null ? AppColors.textMuted : AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w500)),
+                Icon(Icons.arrow_drop_down, color: AppColors.textMuted),
               ],
             ),
           ),
@@ -710,7 +711,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
             children: [
               Container(
                 width: 22, height: 22,
-                decoration: BoxDecoration(color: _kfsAcknowledged ? _accentTeal : const Color(0xFF1E2535), borderRadius: BorderRadius.circular(6), border: Border.all(color: _kfsAcknowledged ? _accentTeal : _borderSubtle, width: 2)),
+                decoration: BoxDecoration(color: _kfsAcknowledged ? _accentTeal : AppColors.bgScreen, borderRadius: BorderRadius.circular(6), border: Border.all(color: _kfsAcknowledged ? _accentTeal : _borderSubtle, width: 2)),
                 child: _kfsAcknowledged ? const Icon(Icons.check, size: 16, color: Colors.white) : null,
               ),
               const SizedBox(width: 12),
@@ -757,7 +758,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
       key: const ValueKey(4),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        LinearProgressIndicator(valueColor: const AlwaysStoppedAnimation(_accentTeal), backgroundColor: const Color(0xFF1E2535), minHeight: 6, borderRadius: BorderRadius.circular(999)).animate().custom(duration: 6500.ms, builder: (ctx, val, child) => LinearProgressIndicator(value: val, valueColor: const AlwaysStoppedAnimation(_accentTeal), backgroundColor: const Color(0xFF1E2535), minHeight: 6, borderRadius: BorderRadius.circular(999))),
+        LinearProgressIndicator(valueColor: const AlwaysStoppedAnimation(_accentTeal), backgroundColor: AppColors.bgScreen, minHeight: 6, borderRadius: BorderRadius.circular(999)).animate().custom(duration: 6500.ms, builder: (ctx, val, child) => LinearProgressIndicator(value: val, valueColor: const AlwaysStoppedAnimation(_accentTeal), backgroundColor: AppColors.bgScreen, minHeight: 6, borderRadius: BorderRadius.circular(999))),
         const SizedBox(height: 24),
         Container(
           padding: const EdgeInsets.all(20),
@@ -875,7 +876,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
           children: [
             const Text('Repayment Probability Score', style: TextStyle(color: _textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
             const SizedBox(height: 12),
-            Container(height: 12, decoration: BoxDecoration(color: const Color(0xFF1E2535), borderRadius: BorderRadius.circular(999)), alignment: Alignment.centerLeft, child: LayoutBuilder(builder: (ctx, constraints) {
+            Container(height: 12, decoration: BoxDecoration(color: AppColors.bgScreen, borderRadius: BorderRadius.circular(999)), alignment: Alignment.centerLeft, child: LayoutBuilder(builder: (ctx, constraints) {
               return Container(width: constraints.maxWidth * finalScore, height: 12, decoration: BoxDecoration(color: finalScore > 0.68 ? _accentGreen : _accentGold, borderRadius: BorderRadius.circular(999))).animate().custom(duration: 1500.ms, builder: (ctx, val, child) => Container(width: constraints.maxWidth * finalScore * val, height: 12, decoration: BoxDecoration(color: finalScore > 0.68 ? _accentGreen : _accentGold, borderRadius: BorderRadius.circular(999))));
             })),
             const SizedBox(height: 8),
@@ -994,7 +995,7 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
           onTap: () => setState(() => _declarationChecked = !_declarationChecked),
           child: Row(
             children: [
-              Container(width: 22, height: 22, decoration: BoxDecoration(color: _declarationChecked ? _accentTeal : const Color(0xFF1E2535), borderRadius: BorderRadius.circular(6), border: Border.all(color: _declarationChecked ? _accentTeal : _borderSubtle, width: 2)), child: _declarationChecked ? const Icon(Icons.check, size: 16, color: Colors.white) : null),
+              Container(width: 22, height: 22, decoration: BoxDecoration(color: _declarationChecked ? _accentTeal : AppColors.bgScreen, borderRadius: BorderRadius.circular(6), border: Border.all(color: _declarationChecked ? _accentTeal : _borderSubtle, width: 2)), child: _declarationChecked ? const Icon(Icons.check, size: 16, color: Colors.white) : null),
               const SizedBox(width: 12),
               Expanded(child: Text('I confirm that I have read and accept the loan agreement. I authorise disbusral of ₹$_formattedAmount.', style: const TextStyle(color: _textPrimary, fontSize: 14))),
             ],

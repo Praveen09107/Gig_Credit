@@ -1,11 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_typography.dart';
 import '../../../state/verified_profile_provider.dart';
+import '../../../state/ocr_results_provider.dart';
+import '../../../state/step_status_provider.dart';
 import '../../../state/score_provider.dart';
 import '../../../state/user_provider.dart';
 import '../../../state/loan_provider.dart';
@@ -17,7 +21,7 @@ import '../../../state/api_service_provider.dart';
 import '../../../services/loan_api_service.dart';
 import '../widgets/score_status_message.dart';
 import '../../../shared/widgets/loaders/delivery_bike_loader.dart';
-
+import '../../../core/session/secure_storage.dart';
 import '../../../services/scoring_service.dart';
 
 /// GigCredit Score Generating Screen
@@ -113,24 +117,31 @@ class _ScoreGeneratingScreenState extends ConsumerState<ScoreGeneratingScreen>
 
       if (!mounted) return;
 
-      // 4. Delete sensitive PII data post-evaluation for privacy
-      ref.read(verifiedProfileProvider.notifier).reset();
-
-      // Store result in provider
+      // ── STEP A: Store the score FIRST (feature engineering already done) ──
+      // The score report contains only anonymized features, not raw PII.
       ref.read(scoreProvider.notifier).setSuccess(report);
 
-      // Store in backend
+      // Store in backend MongoDB
       final user = ref.read(userProvider);
       if (user?.id.isNotEmpty == true) {
         try {
           await ScoringService().storeScore(report, user!.id);
         } catch (e) {
-          print('Failed to push score to backend: $e');
+          debugPrint('[ScoreGen] Failed to push score to backend: $e');
         }
       }
 
-      // Seed personalized loan offers based on the generated score
+      // Seed personalized loan offers
       await _seedLoanOffers(report.finalScore);
+
+      // ═══════════════════════════════════════════════════════════════
+      // STEP B: DELETE ALL RAW PII DATA
+      // Only runs AFTER feature engineering is complete AND score is
+      // safely stored. Raw inputs (Aadhaar, PAN, bank statement,
+      // uploaded images/PDFs, OCR results) are wiped from all storage.
+      // The score report contains only anonymized ML features — no PII.
+      // ═══════════════════════════════════════════════════════════════
+      await _deleteAllRawData();
 
       // Haptic celebration
       HapticFeedback.heavyImpact();
@@ -167,6 +178,88 @@ class _ScoreGeneratingScreenState extends ConsumerState<ScoreGeneratingScreen>
         );
       }
     }
+  }
+
+  /// Delete all raw PII data after feature engineering + score storage succeeds.
+  /// Called ONLY after score is safely stored — never before.
+  Future<void> _deleteAllRawData() async {
+    debugPrint('[Privacy] Starting raw data deletion...');
+
+    // 1. Clear in-memory verified profile
+    //    Contains: name, DOB, Aadhaar, PAN, bank transactions, OCR data
+    ref.read(verifiedProfileProvider.notifier).reset();
+    debugPrint('[Privacy] ✓ In-memory verified profile cleared');
+
+    // 2. Clear all OCR extraction results
+    //    Contains: extracted text from Aadhaar, PAN, bank statement, utility bills
+    ref.read(ocrResultsProvider.notifier).clear();
+    debugPrint('[Privacy] ✓ OCR results cleared');
+
+    // 3. Clear step completion status
+    //    No longer needed — score is generated and stored
+    ref.read(stepStatusProvider.notifier).reset();
+    debugPrint('[Privacy] ✓ Step status cleared');
+
+    // 4. Delete from encrypted secure storage
+    //    Contains: serialized verified_profile + step_progress (persisted across app restarts)
+    try {
+      await SecureStorage.clearAll();
+      debugPrint('[Privacy] ✓ Encrypted secure storage cleared');
+    } catch (e) {
+      debugPrint('[Privacy] Secure storage clear: $e (non-critical)');
+    }
+
+    // 5. Delete temp files from device storage
+    //    Contains: uploaded PDFs (bank statement), JPEGs (Aadhaar, PAN, utility bills)
+    //    These are written by FilePicker/ImagePicker to the temp directory
+    try {
+      final tempDir = await getTemporaryDirectory();
+      int deletedCount = 0;
+      final entities = tempDir.listSync(recursive: true);
+      for (final entity in entities) {
+        if (entity is File) {
+          final ext = entity.path.toLowerCase();
+          if (ext.endsWith('.pdf') || ext.endsWith('.jpg') ||
+              ext.endsWith('.jpeg') || ext.endsWith('.png') ||
+              ext.endsWith('.webp') || ext.endsWith('.heic')) {
+            try {
+              await entity.delete();
+              deletedCount++;
+            } catch (_) {}
+          }
+        }
+      }
+      debugPrint('[Privacy] ✓ Temp files deleted: $deletedCount document files removed');
+    } catch (e) {
+      debugPrint('[Privacy] Temp file cleanup: $e (non-critical)');
+    }
+
+    // 6. Delete app documents directory uploads (some pickers write here)
+    try {
+      final docsDir = await getApplicationDocumentsDirectory();
+      int deletedCount = 0;
+      final entities = docsDir.listSync(recursive: false);
+      for (final entity in entities) {
+        if (entity is File) {
+          final ext = entity.path.toLowerCase();
+          if (ext.endsWith('.pdf') || ext.endsWith('.jpg') ||
+              ext.endsWith('.jpeg') || ext.endsWith('.png')) {
+            try {
+              await entity.delete();
+              deletedCount++;
+            } catch (_) {}
+          }
+        }
+      }
+      if (deletedCount > 0) {
+        debugPrint('[Privacy] ✓ App docs directory: $deletedCount files removed');
+      }
+    } catch (e) {
+      debugPrint('[Privacy] App docs cleanup: $e (non-critical)');
+    }
+
+    debugPrint('[Privacy] ✅ COMPLETE: All raw PII data deleted. '
+        'Only anonymized score report (no raw inputs) retained in memory.');
   }
 
   Future<void> _seedLoanOffers(int score) async {

@@ -16,6 +16,7 @@ import '../../../../models/verified_profile/work_info.dart';
 import '../../../../app/app_router.dart';
 import '../../../../shared/widgets/feedback/app_toast.dart';
 import '../../../../shared/widgets/feedback/step_popups.dart';
+import '../../../../shared/widgets/feedback/verification_phase_overlay.dart';
 
 class Step5WorkScreen extends ConsumerStatefulWidget {
   const Step5WorkScreen({super.key});
@@ -24,7 +25,7 @@ class Step5WorkScreen extends ConsumerStatefulWidget {
   ConsumerState<Step5WorkScreen> createState() => _Step5WorkScreenState();
 }
 
-class _Step5WorkScreenState extends ConsumerState<Step5WorkScreen> {
+class _Step5WorkScreenState extends ConsumerState<Step5WorkScreen> with VerificationPhaseMixin {
   bool _isLoading = false;
 
   // Type A: Platform Worker
@@ -91,6 +92,8 @@ class _Step5WorkScreenState extends ConsumerState<Step5WorkScreen> {
       setState(() => _isLoading = false);
       return;
     }
+
+    showVerificationPhase();
     try {
       final api = ref.read(apiServiceProvider);
       final workType = _workType;
@@ -105,6 +108,18 @@ class _Step5WorkScreenState extends ConsumerState<Step5WorkScreen> {
           // Non-blocking — vehicle verification is supplementary
         }
       }
+
+      // Backend API call for Gig History (already have vehicle check above)
+      if ((workType == 'platform_worker' || workType == 'gig_worker') && _platformIdCtrl.text.trim().isNotEmpty) {
+        try {
+          final gigResult = await api.getGigHistory(_platformIdCtrl.text.trim());
+          debugPrint('[Step5 API] Gig history: ${gigResult['status'] ?? 'ok'}');
+        } catch (e) {
+          debugPrint('[Step5 API] Gig history skipped: $e');
+        }
+      }
+
+      dismissVerificationPhase();
 
       ref.read(verifiedProfileProvider.notifier).updateStep5(WorkInfo(
         isVerified: true,

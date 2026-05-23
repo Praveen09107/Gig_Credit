@@ -8,19 +8,22 @@ class StepProgressBar extends StatelessWidget {
   final int currentStep; // 1 to 9
   final ValueChanged<int>? onStepTapped;
   final Map<int, bool> stepCompletionMap;
+  /// When true, renders on a dark/green background (white dots/lines)
+  final bool lightMode;
 
   const StepProgressBar({
     super.key,
     required this.currentStep,
     this.onStepTapped,
     this.stepCompletionMap = const {},
+    this.lightMode = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      color: AppColors.bgCard,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: Colors.transparent,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final totalWidth = constraints.maxWidth;
@@ -48,8 +51,8 @@ class StepProgressBar extends StatelessWidget {
                           width: lineSpacing,
                           decoration: BoxDecoration(
                             color: isLineActive
-                                ? AppColors.greenBright
-                                : AppColors.borderCard,
+                                ? (lightMode ? Colors.white : AppColors.greenBright)
+                                : (lightMode ? Colors.white.withValues(alpha: 0.30) : AppColors.borderCard),
                             borderRadius: BorderRadius.circular(999),
                           ),
                         );
@@ -77,6 +80,7 @@ class StepProgressBar extends StatelessWidget {
                         isActive: isActive,
                         isCompleted: isCompleted,
                         size: dotSize,
+                        lightMode: lightMode,
                       ),
                     );
                   }),
@@ -95,27 +99,34 @@ class _StepDot extends StatelessWidget {
   final bool isActive;
   final bool isCompleted;
   final double size;
+  final bool lightMode;
 
   const _StepDot({
     required this.stepNumber,
     required this.isActive,
     required this.isCompleted,
     required this.size,
+    this.lightMode = false,
   });
 
   @override
   Widget build(BuildContext context) {
     Color bgColor;
     Color textColor;
+    Color borderColor;
+
     if (isActive) {
-      bgColor = AppColors.greenPrimary;
-      textColor = Colors.white;
+      bgColor = lightMode ? Colors.white : AppColors.greenPrimary;
+      textColor = lightMode ? AppColors.greenPrimary : Colors.white;
+      borderColor = lightMode ? Colors.white : AppColors.greenMint;
     } else if (isCompleted) {
-      bgColor = AppColors.greenBright;
-      textColor = Colors.white;
+      bgColor = lightMode ? Colors.white.withValues(alpha: 0.85) : AppColors.greenBright;
+      textColor = lightMode ? AppColors.greenPrimary : Colors.white;
+      borderColor = lightMode ? Colors.white : AppColors.greenBright;
     } else {
-      bgColor = AppColors.bgScreen;
-      textColor = AppColors.textMuted;
+      bgColor = lightMode ? Colors.white.withValues(alpha: 0.15) : AppColors.bgScreen;
+      textColor = lightMode ? Colors.white.withValues(alpha: 0.60) : AppColors.textMuted;
+      borderColor = lightMode ? Colors.white.withValues(alpha: 0.30) : AppColors.borderCard;
     }
 
     Widget dot = AnimatedContainer(
@@ -125,21 +136,14 @@ class _StepDot extends StatelessWidget {
       decoration: BoxDecoration(
         color: bgColor,
         shape: BoxShape.circle,
-        border: isActive
-            ? Border.all(color: AppColors.greenMint, width: 2)
-            : Border.all(
-                color: isCompleted
-                    ? AppColors.greenBright
-                    : AppColors.borderCard,
-                width: 1.5,
-              ),
+        border: Border.all(color: borderColor, width: isActive ? 2 : 1.5),
         boxShadow: isActive
-            ? [
-                BoxShadow(
-                  color: AppColors.greenBright.withValues(alpha: 0.40),
-                  blurRadius: 8,
-                )
-              ]
+            ? [BoxShadow(
+                color: lightMode
+                    ? Colors.white.withValues(alpha: 0.40)
+                    : AppColors.greenBright.withValues(alpha: 0.40),
+                blurRadius: 8,
+              )]
             : null,
       ),
       child: Center(
@@ -147,11 +151,7 @@ class _StepDot extends StatelessWidget {
             ? Icon(Icons.check_rounded, size: 11, color: textColor)
             : Text(
                 '$stepNumber',
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  color: textColor,
-                ),
+                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: textColor),
               ),
       ),
     );
@@ -159,11 +159,7 @@ class _StepDot extends StatelessWidget {
     if (isActive) {
       dot = dot
           .animate(onPlay: (c) => c.repeat(reverse: true))
-          .scaleXY(
-              begin: 1.0,
-              end: 1.12,
-              duration: 800.ms,
-              curve: Curves.easeInOut);
+          .scaleXY(begin: 1.0, end: 1.12, duration: 800.ms, curve: Curves.easeInOut);
     }
 
     return dot;
