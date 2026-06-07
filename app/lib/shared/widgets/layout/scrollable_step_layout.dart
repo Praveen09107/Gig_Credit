@@ -64,7 +64,13 @@ class ScrollableStepLayout extends StatelessWidget {
         } else {
           final goBack = await StepBackPopup.show(context, stepNumber: currentStep);
           if (goBack && context.mounted) {
-            context.go(AppRoutes.scoreStep(currentStep - 1));
+            // Use pop() to go back — preserves the previous step's widget state
+            // (entered fields, verified status, uploaded docs all remain intact)
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              context.go(AppRoutes.scoreStep(currentStep - 1));
+            }
           }
         }
       },

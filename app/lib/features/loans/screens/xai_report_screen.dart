@@ -90,7 +90,7 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
             width: 26, height: 26,
             decoration: BoxDecoration(gradient: AppColors.ctaGradient, borderRadius: BorderRadius.circular(7)),
             alignment: Alignment.center,
-            child: const Text('G', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13)),
+            child: const Text('G', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w900, fontSize: 13)),
           ),
           const SizedBox(width: 8),
           Text('LOAN DECISION REPORT',
@@ -115,8 +115,8 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: const BoxDecoration(
-        color: Color(0xFF0D0F14),
-        border: Border(bottom: BorderSide(color: Color(0xFF252D3D))),
+        color: AppColors.bgScreen,
+        border: Border(bottom: BorderSide(color: AppColors.borderCard)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -129,7 +129,7 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
           _buildDetailRow('Onboarding', 'Complete (Steps 1–9)'),
           _buildDetailRow('Language', 'English [EN]'),
           const SizedBox(height: 12),
-          const Divider(color: Color(0xFF252D3D), height: 1),
+          const Divider(color: AppColors.borderCard, height: 1),
           const SizedBox(height: 12),
           _buildDetailRow('Hash', 'sha256:${_proofId.hashCode.toRadixString(16).padLeft(8, '0').substring(0, 8)}...  ●  Chain: VERIFIED ✓', valueColor: AppColors.greenPrimary),
           _buildDetailRow('Engine', 'GigCredit Scoring Engine v4.2.1-stable'),
@@ -138,7 +138,7 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
     ).animate().fadeIn();
   }
 
-  Widget _buildDetailRow(String label, String value, {Color valueColor = Colors.white}) {
+  Widget _buildDetailRow(String label, String value, {Color valueColor = AppColors.textPrimary}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
@@ -146,9 +146,9 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
         children: [
           SizedBox(
             width: 100,
-            child: Text(label, style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
+            child: Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
           ),
-          const Text(':', style: TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
+          const Text(':', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
           const SizedBox(width: 8),
           Expanded(
             child: Text(value, style: TextStyle(color: valueColor, fontSize: 13, fontWeight: FontWeight.w500)),
@@ -170,14 +170,14 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
             margin: const EdgeInsets.only(right: 12),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: isActive ? const Color(0xFF00D4B4) : const Color(0xFF161B25),
+              color: isActive ? AppColors.greenPrimary : AppColors.bgCard,
               borderRadius: BorderRadius.circular(8),
-              border: isActive ? null : Border.all(color: const Color(0xFF252D3D)),
+              border: isActive ? null : Border.all(color: AppColors.borderCard),
             ),
             child: Text(
               pill,
               style: TextStyle(
-                color: isActive ? const Color(0xFF0D0F14) : const Color(0xFF8B95A8),
+                color: isActive ? AppColors.bgScreen : AppColors.textMuted,
                 fontSize: 13,
                 fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
                 fontFamily: 'Inter',
@@ -195,11 +195,11 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
       decoration: BoxDecoration(
         gradient: const RadialGradient(
           center: Alignment(0, -0.2),
-          colors: [Color(0x1400D4B4), Color(0xFF161B25)],
+          colors: [AppColors.greenMuted, AppColors.bgCard],
           stops: [0.0, 0.7],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF252D3D)),
+        border: Border.all(color: AppColors.borderCard),
       ),
       child: Column(
         children: [
@@ -207,14 +207,14 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFF0D0F14),
+              color: AppColors.bgScreen,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF252D3D)),
+              border: Border.all(color: AppColors.borderCard),
             ),
             child: Text(
               '$_proofId ● ${_report != null ? DateFormat('dd MMM yyyy').format(_report!.generatedAt) : 'N/A'} ● Hash: sha256:${_proofId.hashCode.toRadixString(16).padLeft(8, '0').substring(0, 4)}\nChain: VERIFIED ✓ ● Deterministic ● Reproducible',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontFamily: 'monospace', color: Color(0xFF8B95A8), fontSize: 10, height: 1.5),
+              style: const TextStyle(fontFamily: 'monospace', color: AppColors.textMuted, fontSize: 10, height: 1.5),
             ),
           ),
           const SizedBox(height: 40),
@@ -239,20 +239,20 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
                   child: CircularProgressIndicator(
                     value: _score / 900.0,
                     strokeWidth: 12,
-                    backgroundColor: const Color(0xFF1E2535),
-                    color: const Color(0xFF3DD68C),
+                    backgroundColor: AppColors.borderCard,
+                    color: AppColors.greenBright,
                     strokeCap: StrokeCap.round,
                   ),
                 ).animate().scale(delay: 200.ms, duration: 800.ms, curve: Curves.easeOutBack),
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('$_score', style: const TextStyle(color: Colors.white, fontSize: 64, fontWeight: FontWeight.w900, height: 1.0)),
+                    Text('$_score', style: const TextStyle(color: AppColors.textPrimary, fontSize: 64, fontWeight: FontWeight.w900, height: 1.0)),
                     const SizedBox(height: 8),
-                    Container(width: 60, height: 2, color: const Color(0xFF252D3D)),
+                    Container(width: 60, height: 2, color: AppColors.borderCard),
                     const SizedBox(height: 8),
-                    Text('Grade $_grade', style: const TextStyle(color: Color(0xFF3DD68C), fontSize: 18, fontWeight: FontWeight.bold)),
-                    Text(_riskBand, style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
+                    Text('Grade $_grade', style: const TextStyle(color: AppColors.greenBright, fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(_riskBand, style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
                   ],
                 ),
               ],
@@ -261,30 +261,30 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
           const SizedBox(height: 24),
           
           // Conformal Band
-          Text('${_score - 16} ─────────●───────── ${_score + 16}', style: const TextStyle(color: Color(0xFF00D4B4), fontWeight: FontWeight.bold, letterSpacing: 2)),
+          Text('${_score - 16} ─────────●───────── ${_score + 16}', style: const TextStyle(color: AppColors.greenPrimary, fontWeight: FontWeight.bold, letterSpacing: 2)),
           const SizedBox(height: 4),
-          Text('±16 pts  ●  90% coverage  ●  ${_confidence > 0.8 ? "HIGH" : "MEDIUM"} CONFIDENCE', style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 11)),
+          Text('±16 pts  ●  90% coverage  ●  ${_confidence > 0.8 ? "HIGH" : "MEDIUM"} CONFIDENCE', style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
           
           const SizedBox(height: 32),
           
           // Scale Bar
-          const Text('300────E────D────C────B──●──A────S────900', style: TextStyle(color: Color(0xFF8B95A8), fontSize: 12, letterSpacing: 2, fontFamily: 'monospace')),
+          const Text('300────E────D────C────B──●──A────S────900', style: TextStyle(color: AppColors.textMuted, fontSize: 12, letterSpacing: 2, fontFamily: 'monospace')),
           
           const SizedBox(height: 32),
           
           // Grade Table
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF0D0F14),
+              color: AppColors.bgScreen,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF252D3D)),
+              border: Border.all(color: AppColors.borderCard),
             ),
             child: Column(
               children: [
                 _buildGradeRow('Grade', 'Range', 'Risk Band', 'Meaning', isHeader: true),
                 _buildGradeRow('A+', '800–900', 'Exceptional', 'Premium eligibility', color: const Color(0xFFFFD700), isActive: _grade == 'A+'),
-                _buildGradeRow('A', '750–799', 'Excellent', 'Strong eligibility', color: const Color(0xFF00D4B4), isActive: _grade == 'A'),
-                _buildGradeRow('B+', '700–749', 'Very Good', 'Enhanced access', color: const Color(0xFF3DD68C), isActive: _grade == 'B+'),
+                _buildGradeRow('A', '750–799', 'Excellent', 'Strong eligibility', color: AppColors.greenPrimary, isActive: _grade == 'A'),
+                _buildGradeRow('B+', '700–749', 'Very Good', 'Enhanced access', color: AppColors.greenBright, isActive: _grade == 'B+'),
                 _buildGradeRow('B', '650–699', 'Good', 'Standard access', color: const Color(0xFF4CAF50), isActive: _grade == 'B'),
                 _buildGradeRow('C+', '600–649', 'Fair', 'Conditional access', color: const Color(0xFFF4B942), isActive: _grade == 'C+'),
                 _buildGradeRow('C', '550–599', 'Medium Risk', 'Limited options', color: const Color(0xFFFF8C42), isActive: _grade == 'C'),
@@ -309,22 +309,22 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
     ).animate().slideY(begin: 0.1, duration: 400.ms).fadeIn();
   }
 
-  Widget _buildGradeRow(String g, String r, String risk, String m, {bool isHeader = false, bool isActive = false, Color color = Colors.white}) {
+  Widget _buildGradeRow(String g, String r, String risk, String m, {bool isHeader = false, bool isActive = false, Color color = AppColors.textPrimary}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: isActive ? color.withValues(alpha: 0.15) : Colors.transparent,
         border: Border(
           left: BorderSide(color: isActive ? color : Colors.transparent, width: 3),
-          bottom: BorderSide(color: isHeader ? const Color(0xFF252D3D) : Colors.transparent, width: 1),
+          bottom: BorderSide(color: isHeader ? AppColors.borderCard : Colors.transparent, width: 1),
         ),
       ),
       child: Row(
         children: [
-          SizedBox(width: 40, child: Text(isHeader ? g : '● $g', style: TextStyle(color: isHeader ? const Color(0xFF8B95A8) : color, fontWeight: isHeader || isActive ? FontWeight.bold : FontWeight.normal, fontSize: 12))),
-          SizedBox(width: 80, child: Text(r, style: TextStyle(color: isHeader ? const Color(0xFF8B95A8) : Colors.white, fontSize: 12))),
-          SizedBox(width: 90, child: Text(risk, style: TextStyle(color: isHeader ? const Color(0xFF8B95A8) : Colors.white, fontSize: 12))),
-          Expanded(child: Text(m, style: TextStyle(color: isHeader ? const Color(0xFF8B95A8) : Colors.white, fontSize: 12))),
+          SizedBox(width: 40, child: Text(isHeader ? g : '● $g', style: TextStyle(color: isHeader ? AppColors.textMuted : color, fontWeight: isHeader || isActive ? FontWeight.bold : FontWeight.normal, fontSize: 12))),
+          SizedBox(width: 80, child: Text(r, style: TextStyle(color: isHeader ? AppColors.textMuted : AppColors.textPrimary, fontSize: 12))),
+          SizedBox(width: 90, child: Text(risk, style: TextStyle(color: isHeader ? AppColors.textMuted : AppColors.textPrimary, fontSize: 12))),
+          Expanded(child: Text(m, style: TextStyle(color: isHeader ? AppColors.textMuted : AppColors.textSecondary, fontSize: 12))),
         ],
       ),
     );
@@ -341,9 +341,9 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.check_circle, color: Color(0xFF3DD68C), size: 14),
+          const Icon(Icons.check_circle, color: AppColors.greenBright, size: 14),
           const SizedBox(width: 4),
-          Text(label, style: const TextStyle(color: Color(0xFF3DD68C), fontSize: 11, fontWeight: FontWeight.bold)),
+          Text(label, style: const TextStyle(color: AppColors.greenBright, fontSize: 11, fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -366,7 +366,7 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
         equationParts.add(contrib > 0 ? '$contrib' : '($contrib)');
 
         Color pColor;
-        if (p.confidence >= 0.8) pColor = const Color(0xFF3DD68C);
+        if (p.confidence >= 0.8) pColor = AppColors.greenBright;
         else if (p.confidence >= 0.6) pColor = const Color(0xFFF4B942);
         else pColor = const Color(0xFFFF4E6A);
 
@@ -392,8 +392,8 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF161B25),
-        border: Border.all(color: const Color(0xFF252D3D)),
+        color: AppColors.bgCard,
+        border: Border.all(color: AppColors.borderCard),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -403,40 +403,40 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: const BoxDecoration(
-              color: Color(0xFF161B25),
-              border: Border(left: BorderSide(color: Color(0xFF00D4B4), width: 4)),
+              color: AppColors.bgCard,
+              border: Border(left: BorderSide(color: AppColors.greenPrimary, width: 4)),
             ),
-            child: const Text('2  HOW YOUR SCORE WAS BUILT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+            child: const Text('2  HOW YOUR SCORE WAS BUILT', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
           ),
           const SizedBox(height: 24),
           
           const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Starting point (floor)', style: TextStyle(color: Color(0xFF8B95A8), fontSize: 14)),
-              Text('300 pts', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+              Text('Starting point (floor)', style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
+              Text('300 pts', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14)),
             ],
           ),
-          const Divider(color: Color(0xFF252D3D), height: 32),
+          const Divider(color: AppColors.borderCard, height: 32),
           
           ...pillarRows,
           
-          const Divider(color: Color(0xFF252D3D), height: 32),
+          const Divider(color: AppColors.borderCard, height: 32),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('TOTAL', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.1)),
-              Text('$_score pts  ✓', style: const TextStyle(color: Color(0xFF00D4B4), fontWeight: FontWeight.bold, fontSize: 16)),
+              const Text('TOTAL', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.1)),
+              Text('$_score pts  ✓', style: const TextStyle(color: AppColors.greenPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
             ],
           ),
           const SizedBox(height: 8),
           Container(
             height: 12,
             width: double.infinity,
-            decoration: BoxDecoration(color: const Color(0xFF00D4B4), borderRadius: BorderRadius.circular(6)),
+            decoration: BoxDecoration(color: AppColors.greenPrimary, borderRadius: BorderRadius.circular(6)),
           ),
           const SizedBox(height: 16),
-          Text(equationStr, style: const TextStyle(color: Color(0xFF8B95A8), fontFamily: 'monospace', fontSize: 12)),
+          Text(equationStr, style: const TextStyle(color: AppColors.textMuted, fontFamily: 'monospace', fontSize: 12)),
         ],
       ),
     ).animate().slideY(begin: 0.1).fadeIn();
@@ -451,14 +451,14 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(child: Text('$code  $name', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
+              Expanded(child: Text('$code  $name', style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
               Text(pts, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 8),
           LinearProgressIndicator(
             value: progress,
-            backgroundColor: const Color(0xFF1E2535),
+            backgroundColor: AppColors.borderCard,
             color: color,
             minHeight: 8,
             borderRadius: BorderRadius.circular(4),
@@ -467,12 +467,12 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(conf, style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 12)),
+              Text(conf, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
               Text('$status ↑', style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 4),
-          Text('Running total: $total', style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 12)),
+          Text('Running total: $total', style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
           if (warning != null) ...[
             const SizedBox(height: 4),
             Text(warning, style: const TextStyle(color: Color(0xFFFF4E6A), fontSize: 12)),
@@ -482,12 +482,12 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                 content: Text('Detailed view for $name coming soon.'),
-                backgroundColor: const Color(0xFF00D4B4),
+                backgroundColor: AppColors.greenPrimary,
               ));
             },
             child: const Padding(
               padding: EdgeInsets.symmetric(vertical: 4.0),
-              child: Text('tap for detail ▾', style: TextStyle(color: Color(0xFF00D4B4), fontSize: 11)),
+              child: Text('tap for detail ▾', style: TextStyle(color: AppColors.greenPrimary, fontSize: 11)),
             ),
           ),
         ],
@@ -502,7 +502,7 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
         // Tab Bar
         Container(
           padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(color: const Color(0xFF161B25), borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFF252D3D))),
+          decoration: BoxDecoration(color: AppColors.bgCard, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.borderCard)),
           child: Row(
             children: [
               _buildTab('✅ Strengths', 0),
@@ -558,7 +558,7 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text('Pattern: ${chain.patternId}  ●  Engine: GigCredit Causal v3.0', style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 11)),
+                  Text('Pattern: ${chain.patternId}  ●  Engine: GigCredit Causal v3.0', style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
                   const Divider(color: Color(0x408B5CF6), height: 24),
                   ...chain.steps.asMap().entries.expand((entry) => [
                     if (entry.key > 0) ...[
@@ -566,14 +566,14 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
                       const Center(child: Icon(Icons.arrow_downward, color: Color(0xFF8B5CF6), size: 16)),
                       const SizedBox(height: 8),
                     ],
-                    Text(entry.value.label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    Text(entry.value.detail, style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
+                    Text(entry.value.label, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+                    Text(entry.value.detail, style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
                   ]),
                   const Divider(color: Color(0x408B5CF6), height: 24),
-                  const Text('ROOT FIX RECOMMENDATION:', style: TextStyle(color: Color(0xFF00D4B4), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+                  const Text('ROOT FIX RECOMMENDATION:', style: TextStyle(color: AppColors.greenPrimary, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
                   const SizedBox(height: 4),
-                  Text(chain.rootFix, style: const TextStyle(color: Colors.white)),
-                  Text('est. +${chain.estimatedGain} pts', style: const TextStyle(color: Color(0xFF00D4B4), fontWeight: FontWeight.bold, fontSize: 14)),
+                  Text(chain.rootFix, style: const TextStyle(color: AppColors.textPrimary)),
+                  Text('est. +${chain.estimatedGain} pts', style: const TextStyle(color: AppColors.greenPrimary, fontWeight: FontWeight.bold, fontSize: 14)),
                 ],
               ),
             ).animate().fadeIn())
@@ -581,7 +581,7 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(color: const Color(0x108B5CF6), border: Border.all(color: const Color(0x408B5CF6)), borderRadius: BorderRadius.circular(14)),
-              child: const Text('No causal patterns detected — your profile is well balanced.', style: TextStyle(color: Colors.white70, fontSize: 13)),
+              child: const Text('No causal patterns detected — your profile is well balanced.', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
             ).animate().fadeIn(),
         ],
       ],
@@ -596,12 +596,12 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: isActive ? const Color(0xFF00D4B4) : Colors.transparent, width: 2)),
+            border: Border(bottom: BorderSide(color: isActive ? AppColors.greenPrimary : Colors.transparent, width: 2)),
           ),
           child: Text(
             label,
             textAlign: TextAlign.center,
-            style: TextStyle(color: isActive ? Colors.white : const Color(0xFF8B95A8), fontWeight: isActive ? FontWeight.bold : FontWeight.normal, fontSize: 13),
+            style: TextStyle(color: isActive ? AppColors.greenPrimary : AppColors.textMuted, fontWeight: isActive ? FontWeight.bold : FontWeight.normal, fontSize: 13),
           ),
         ),
       ),
@@ -614,7 +614,7 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0x1A3DD68C),
-        border: const Border(left: BorderSide(color: Color(0xFF3DD68C), width: 4)),
+        border: const Border(left: BorderSide(color: AppColors.greenBright, width: 4)),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -622,15 +622,15 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.check_circle, color: Color(0xFF3DD68C), size: 16),
+              const Icon(Icons.check_circle, color: AppColors.greenBright, size: 16),
               const SizedBox(width: 8),
-              Expanded(child: Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14))),
+              Expanded(child: Text(name, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14))),
             ],
           ),
           const SizedBox(height: 8),
-          Text('$pillar  ●  SHAP: $shap  ●  Impact: $impact', style: const TextStyle(color: Color(0xFF3DD68C), fontSize: 12, fontWeight: FontWeight.bold)),
+          Text('$pillar  ●  SHAP: $shap  ●  Impact: $impact', style: const TextStyle(color: AppColors.greenBright, fontSize: 12, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          Text(desc, style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.5)),
+          Text(desc, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, height: 1.5)),
         ],
       ),
     ).animate().fadeIn();
@@ -659,25 +659,25 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
             children: [
               Icon(Icons.warning_amber_rounded, color: accentColor, size: 18),
               const SizedBox(width: 8),
-              Expanded(child: Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14))),
+              Expanded(child: Text(name, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14))),
             ],
           ),
           const SizedBox(height: 8),
           Text('$pillar  ●  SHAP: $shap  ●  Impact: $impact\nFixable: $timeline', style: TextStyle(color: accentColor, fontSize: 12, fontWeight: FontWeight.bold, height: 1.5)),
           const SizedBox(height: 12),
-          Text(metrics, style: const TextStyle(color: Colors.white70, fontSize: 12, fontFamily: 'monospace', height: 1.5)),
+          Text(metrics, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontFamily: 'monospace', height: 1.5)),
           const SizedBox(height: 12),
-          Text(desc, style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.5)),
+          Text(desc, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, height: 1.5)),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: const Color(0xFF00D4B4), borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(color: AppColors.greenPrimary, borderRadius: BorderRadius.circular(14)),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.arrow_forward, color: Color(0xFF0D0F14), size: 16),
+                const Icon(Icons.arrow_forward, color: AppColors.bgScreen, size: 16),
                 const SizedBox(width: 8),
-                Text('$cta  →   est. +$pts pts', style: const TextStyle(color: Color(0xFF0D0F14), fontWeight: FontWeight.bold, fontSize: 13)),
+                Text('$cta  →   est. +$pts pts', style: const TextStyle(color: AppColors.bgScreen, fontWeight: FontWeight.bold, fontSize: 13)),
               ],
             ),
           )
@@ -697,14 +697,14 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
         // Potential Score Meter
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: const Color(0xFF161B25), borderRadius: BorderRadius.circular(14)),
+          decoration: BoxDecoration(color: AppColors.bgCard, borderRadius: BorderRadius.circular(14)),
           child: Column(
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(child: Text('Current Score\n$_score  Grade $_grade', style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 13))),
-                  Expanded(child: Text('Potential Score\n$potentialScore  Grade ${_potentialGrade(potentialScore)}', textAlign: TextAlign.right, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13))),
+                  Expanded(child: Text('Current Score\n$_score  Grade $_grade', style: const TextStyle(color: AppColors.textMuted, fontSize: 13))),
+                  Expanded(child: Text('Potential Score\n$potentialScore  Grade ${_potentialGrade(potentialScore)}', textAlign: TextAlign.right, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13))),
                 ],
               ),
               const SizedBox(height: 12),
@@ -718,7 +718,7 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
                         child: Container(
                           height: 16,
                           decoration: const BoxDecoration(
-                            gradient: LinearGradient(colors: [Color(0xFF3DD68C), Color(0xFF00D4B4)]),
+                            gradient: LinearGradient(colors: [AppColors.greenBright, AppColors.greenPrimary]),
                             borderRadius: BorderRadius.horizontal(left: Radius.circular(8)),
                           ),
                         ),
@@ -755,7 +755,7 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
                               color: AppColors.greenPrimary,
                               borderRadius: BorderRadius.circular(6)),
                           child: Text('+$totalGain pts',
-                              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                              style: const TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.bold)),
                         ),
                       ),
                     ),
@@ -768,7 +768,7 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
         const SizedBox(height: 16),
 
         if (suggestions.isEmpty)
-          const Padding(padding: EdgeInsets.all(16), child: Text('No pending actions \u2014 your profile is optimized!', style: TextStyle(color: Colors.white70))),
+          const Padding(padding: EdgeInsets.all(16), child: Text('No pending actions \u2014 your profile is optimized!', style: TextStyle(color: AppColors.textSecondary))),
         ...suggestions.asMap().entries.map((e) => _buildActionCard(
             '${e.key + 1}',
             Icons.lightbulb_outline,
@@ -780,18 +780,18 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
             'Current state to Optimized',
             [e.value.text],
             'TAKE ACTION',
-            const Color(0xFF00D4B4))),
+            AppColors.greenPrimary)),
 
         // Immediate Gain Summary
         Container(
           margin: const EdgeInsets.symmetric(vertical: 16),
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: const Color(0x1400D4B4), border: Border.all(color: const Color(0x4D00D4B4)), borderRadius: BorderRadius.circular(14)),
+          decoration: BoxDecoration(color: AppColors.greenMuted, border: Border.all(color: const Color(0x4D00D4B4)), borderRadius: BorderRadius.circular(14)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Complete all ${suggestions.length} actions \u2192 +$totalGain pts', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              Text('Score: $_score \u2192 $potentialScore   Grade: $_grade \u2192 ${_potentialGrade(potentialScore)}', style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
+              Text('Complete all ${suggestions.length} actions \u2192 +$totalGain pts', style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+              Text('Score: $_score \u2192 $potentialScore   Grade: $_grade \u2192 ${_potentialGrade(potentialScore)}', style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
             ],
           ),
         ),
@@ -826,43 +826,43 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
               Container(
                 width: 24, height: 24,
                 decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-                child: Center(child: Text(num, style: const TextStyle(color: Color(0xFF0D0F14), fontWeight: FontWeight.bold, fontSize: 12))),
+                child: Center(child: Text(num, style: const TextStyle(color: AppColors.bgScreen, fontWeight: FontWeight.bold, fontSize: 12))),
               ),
               const SizedBox(width: 8),
               Icon(icon, color: color, size: 18),
               const SizedBox(width: 8),
-              Expanded(child: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14))),
+              Expanded(child: Text(title, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14))),
             ],
           ),
-          const Divider(color: Color(0xFF252D3D), height: 24),
+          const Divider(color: AppColors.borderCard, height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Score gain:   $gain', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13)),
-              Text('Impact: $impact', style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 12)),
+              Text('Impact: $impact', style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
             ],
           ),
           const SizedBox(height: 4),
-          Text('Timeline:     $time', style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 13)),
+          Text('Timeline:     $time', style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
           const SizedBox(height: 12),
-          Text('WHY: $pillar score changes from $transition', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+          Text('WHY: $pillar score changes from $transition', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
           const SizedBox(height: 12),
-          const Text('HOW:', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+          const Text('HOW:', style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.bold)),
           ...steps.asMap().entries.map((e) => Padding(
             padding: const EdgeInsets.only(top: 4, left: 8),
-            child: Text('Step ${e.key + 1}: ${e.value}', style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 12)),
+            child: Text('Step ${e.key + 1}: ${e.value}', style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
           )),
           const SizedBox(height: 16),
           Container(
             width: double.infinity,
             height: 48,
-            decoration: BoxDecoration(color: const Color(0xFF00D4B4), borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(color: AppColors.greenPrimary, borderRadius: BorderRadius.circular(14)),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.arrow_forward, color: Color(0xFF0D0F14), size: 18),
+                const Icon(Icons.arrow_forward, color: AppColors.bgScreen, size: 18),
                 const SizedBox(width: 8),
-                Text('$cta  →', style: const TextStyle(color: Color(0xFF0D0F14), fontWeight: FontWeight.bold, fontSize: 14)),
+                Text('$cta  →', style: const TextStyle(color: AppColors.bgScreen, fontWeight: FontWeight.bold, fontSize: 14)),
               ],
             ),
           )
@@ -894,24 +894,24 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: const Color(0xFF161B25),
+            color: AppColors.bgCard,
             borderRadius: BorderRadius.circular(14),
-            border: const Border(left: BorderSide(color: Color(0xFF00D4B4), width: 4)),
+            border: const Border(left: BorderSide(color: AppColors.greenPrimary, width: 4)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('${(_report?.modelUsed ?? 'LLAMA-3.3').toUpperCase()}-GENERATED EXPLANATION  ●  Tailored for ${ref.read(userProvider)?.name ?? 'You'}', style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 11, fontWeight: FontWeight.bold)),
-              const Divider(color: Color(0xFF252D3D), height: 24),
-              Text(_report?.llmExplanation ?? '${ref.read(userProvider)?.name ?? 'Applicant'}, your GigCredit score is $_score ($_grade). Analysis based on your verified financial profile.', style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.6)),
+              Text('${(_report?.modelUsed ?? 'LLAMA-3.3').toUpperCase()}-GENERATED EXPLANATION  ●  Tailored for ${ref.read(userProvider)?.name ?? 'You'}', style: const TextStyle(color: AppColors.textMuted, fontSize: 11, fontWeight: FontWeight.bold)),
+              const Divider(color: AppColors.borderCard, height: 24),
+              Text(_report?.llmExplanation ?? '${ref.read(userProvider)?.name ?? 'Applicant'}, your GigCredit score is $_score ($_grade). Analysis based on your verified financial profile.', style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, height: 1.6)),
               const SizedBox(height: 20),
               const Row(
                 children: [
-                  Icon(Icons.volume_up, color: Color(0xFF00D4B4), size: 18),
+                  Icon(Icons.volume_up, color: AppColors.greenPrimary, size: 18),
                   SizedBox(width: 8),
-                  Text('Listen in English', style: TextStyle(color: Color(0xFF00D4B4), fontSize: 13, fontWeight: FontWeight.bold)),
+                  Text('Listen in English', style: TextStyle(color: AppColors.greenPrimary, fontSize: 13, fontWeight: FontWeight.bold)),
                   Spacer(),
-                  Icon(Icons.share, color: Color(0xFF8B95A8), size: 18),
+                  Icon(Icons.share, color: AppColors.textMuted, size: 18),
                 ],
               )
             ],
@@ -924,10 +924,10 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            border: const Border(left: BorderSide(color: Color(0xFF00D4B4), width: 4)),
-            color: const Color(0xFF161B25).withValues(alpha: 0.5),
+            border: const Border(left: BorderSide(color: AppColors.greenPrimary, width: 4)),
+            color: AppColors.bgCard.withValues(alpha: 0.5),
           ),
-          child: Text('${ref.read(userProvider)?.name ?? 'Applicant'}, உங்கள் GigCredit மதிப்பெண் $_score. கிரேடு: $_grade. உங்கள் நிதி நடத்தை மதிப்பிடப்பட்டது.\n[Full Tamil translation available in app]', style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.6)),
+          child: Text('${ref.read(userProvider)?.name ?? 'Applicant'}, உங்கள் GigCredit மதிப்பெண் $_score. கிரேடு: $_grade. உங்கள் நிதி நடத்தை மதிப்பிடப்பட்டது.\n[Full Tamil translation available in app]', style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, height: 1.6)),
         ),
         
         const SizedBox(height: 16),
@@ -935,14 +935,14 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
         // Workers Like You
         Container(
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(color: const Color(0xFF161B25), borderRadius: BorderRadius.circular(14)),
+          decoration: BoxDecoration(color: AppColors.bgCard, borderRadius: BorderRadius.circular(14)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('👥  HOW DO YOU COMPARE?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-              Text('${_workType.replaceAll('_', ' ')} cohort\nSample: peer comparison', style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 13, height: 1.5)),
-              const Divider(color: Color(0xFF252D3D), height: 24),
-              const Text('SCORE DISTRIBUTION:', style: TextStyle(color: Color(0xFF8B95A8), fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+              const Text('👥  HOW DO YOU COMPARE?', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14)),
+              Text('${_workType.replaceAll('_', ' ')} cohort\nSample: peer comparison', style: const TextStyle(color: AppColors.textMuted, fontSize: 13, height: 1.5)),
+              const Divider(color: AppColors.borderCard, height: 24),
+              const Text('SCORE DISTRIBUTION:', style: TextStyle(color: AppColors.textMuted, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
               const SizedBox(height: 12),
               
               _buildDistributionRow('300-499', _score < 500 ? 0.8 : 0.1, '${(_score < 500 ? 35 : 15)}%'),
@@ -952,7 +952,7 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
               _buildDistributionRow('800-900', _score >= 800 ? 0.8 : 0.05, '${(_score >= 800 ? 60 : 10)}%'),
               
               const SizedBox(height: 16),
-              Text('Your score: $_score ($_grade) — ${_score >= 700 ? 'above average' : _score >= 600 ? 'near average' : 'below average'} for your cohort', style: const TextStyle(color: Color(0xFF3DD68C), fontSize: 13, fontWeight: FontWeight.bold)),
+              Text('Your score: $_score ($_grade) — ${_score >= 700 ? 'above average' : _score >= 600 ? 'near average' : 'below average'} for your cohort', style: const TextStyle(color: AppColors.greenBright, fontSize: 13, fontWeight: FontWeight.bold)),
             ],
           ),
         ),
@@ -965,12 +965,12 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: active ? const Color(0xFF00D4B4) : const Color(0xFF161B25),
+        color: active ? AppColors.greenPrimary : AppColors.bgCard,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         label,
-        style: TextStyle(color: active ? const Color(0xFF0D0F14) : const Color(0xFF8B95A8), fontSize: 13, fontWeight: active ? FontWeight.bold : FontWeight.normal),
+        style: TextStyle(color: active ? AppColors.bgScreen : AppColors.textMuted, fontSize: 13, fontWeight: active ? FontWeight.bold : FontWeight.normal),
       ),
     );
   }
@@ -980,19 +980,19 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
-          SizedBox(width: 60, child: Text(range, style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 12))),
+          SizedBox(width: 60, child: Text(range, style: const TextStyle(color: AppColors.textMuted, fontSize: 12))),
           Expanded(
             child: Row(
               children: [
                 Expanded(
                   flex: (flex * 100).toInt(),
-                  child: Container(height: 8, decoration: BoxDecoration(color: highlight ? const Color(0xFF00D4B4) : const Color(0xFF252D3D), borderRadius: BorderRadius.circular(4))),
+                  child: Container(height: 8, decoration: BoxDecoration(color: highlight ? AppColors.greenPrimary : AppColors.borderCard, borderRadius: BorderRadius.circular(4))),
                 ),
                 Expanded(flex: 100 - (flex * 100).toInt(), child: const SizedBox()),
               ],
             ),
           ),
-          SizedBox(width: 40, child: Text(count, textAlign: TextAlign.right, style: TextStyle(color: highlight ? const Color(0xFF00D4B4) : Colors.white, fontSize: 12, fontWeight: highlight ? FontWeight.bold : FontWeight.normal))),
+          SizedBox(width: 40, child: Text(count, textAlign: TextAlign.right, style: TextStyle(color: highlight ? AppColors.greenPrimary : AppColors.textPrimary, fontSize: 12, fontWeight: highlight ? FontWeight.bold : FontWeight.normal))),
         ],
       ),
     );
@@ -1000,13 +1000,13 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
 
   Widget _buildSection6Technical() {
     return Container(
-      decoration: BoxDecoration(color: const Color(0xFF161B25), borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFF252D3D))),
+      decoration: BoxDecoration(color: AppColors.bgCard, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.borderCard)),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          iconColor: Colors.white,
-          collapsedIconColor: const Color(0xFF8B95A8),
-          title: const Text('🔬 Technical Scoring Details [For lenders]', style: TextStyle(color: Colors.white, fontSize: 14)),
+          iconColor: AppColors.textPrimary,
+          collapsedIconColor: AppColors.textMuted,
+          title: const Text('🔬 Technical Scoring Details [For lenders]', style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
           children: [
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -1018,7 +1018,7 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
                 'Verdict: ${_report?.efsVerdict ?? _report?.efs ?? 'N/A'}\n\n'
                 'TOP SHAP FEATURES\n'
                 '${_report != null ? [..._report!.topStrengths.take(3).map((s) => '${s.featureName} (+${s.impactStrength.toStringAsFixed(3)})'), ..._report!.topConcerns.take(3).map((s) => '${s.featureName} (-${s.impactStrength.toStringAsFixed(3)})')].asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n') : 'No SHAP data available'}',
-                style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 12, height: 1.6, fontFamily: 'monospace'),
+                style: const TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.6, fontFamily: 'monospace'),
               ),
             )
           ],
@@ -1029,13 +1029,13 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
 
   Widget _buildSection7Regulatory() {
     return Container(
-      decoration: BoxDecoration(color: const Color(0xFF161B25), borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFF252D3D))),
+      decoration: BoxDecoration(color: AppColors.bgCard, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.borderCard)),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          iconColor: Colors.white,
-          collapsedIconColor: const Color(0xFF8B95A8),
-          title: const Text('⚖️ Regulatory & Legal Details [RBI Compliance]', style: TextStyle(color: Colors.white, fontSize: 14)),
+          iconColor: AppColors.textPrimary,
+          collapsedIconColor: AppColors.textMuted,
+          title: const Text('⚖️ Regulatory & Legal Details [RBI Compliance]', style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
           children: [
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -1049,7 +1049,7 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
                 '${_report != null && _report!.topConcerns.isNotEmpty ? _report!.topConcerns.take(3).toList().asMap().entries.map((e) => '${e.key + 1}. ${e.value.featureName} (SHAP -${e.value.impactStrength.toStringAsFixed(3)})').join('\n') : 'No adverse factors identified'}\n\n'
                 'PRIVACY NOTICE\n'
                 'Score computed on device. No raw data transmitted. Data controller: GigCredit NBFC Ltd.',
-                style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 12, height: 1.6),
+                style: const TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.6),
               ),
             )
           ],
@@ -1061,15 +1061,15 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
   Widget _buildStickyFooter() {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: Color(0xE6161B25),
-        border: Border(top: BorderSide(color: Color(0xFF252D3D))),
+      decoration: BoxDecoration(
+        color: AppColors.bgCard.withValues(alpha: 0.96),
+        border: const Border(top: BorderSide(color: AppColors.borderCard)),
       ),
       child: SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('$_proofId  ●  Hash: sha256:${_proofId.hashCode.toRadixString(16).padLeft(8, '0')}...  ●  Verified ✓', style: const TextStyle(color: Color(0xFF8B95A8), fontSize: 10, fontFamily: 'monospace')),
+            Text('$_proofId  ●  Hash: sha256:${_proofId.hashCode.toRadixString(16).padLeft(8, '0')}...  ●  Verified ✓', style: const TextStyle(color: AppColors.textMuted, fontSize: 10, fontFamily: 'monospace')),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -1085,10 +1085,10 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
               child: ElevatedButton(
                 onPressed: widget.onBack,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00D4B4),
+                  backgroundColor: AppColors.greenPrimary,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
-                child: const Text('💰   APPLY FOR A LOAN  →', style: TextStyle(color: Color(0xFF0D0F14), fontWeight: FontWeight.bold, fontSize: 14)),
+                child: const Text('💰   APPLY FOR A LOAN  →', style: TextStyle(color: AppColors.bgScreen, fontWeight: FontWeight.bold, fontSize: 14)),
               ),
             ),
           ],
@@ -1098,6 +1098,6 @@ class _XaiReportScreenState extends ConsumerState<XaiReportScreen> {
   }
 
   Widget _buildGhostButton(String label) {
-    return Text(label, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold));
+    return Text(label, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.bold));
   }
 }

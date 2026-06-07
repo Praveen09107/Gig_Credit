@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/theme/app_colors.dart';
@@ -82,20 +82,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     final responseStr =
         await ref.read(authControllerProvider.notifier).sendOtp(mobile);
 
-    // Check if it's a 6-digit OTP (success)
+    // Check if it's a 6-digit OTP (success) or a successful Twilio response
     if (responseStr != null &&
-        RegExp(r'^\d{6}$').hasMatch(responseStr) &&
+        (RegExp(r'^\d{6}$').hasMatch(responseStr) ||
+            responseStr == 'TWILIO_SUCCESS') &&
         mounted) {
       debugPrint('[GigCredit] OTP Generated: $responseStr');
 
       // Show premium toast notification
-      AppToast.success(context, 'OTP Sent', subtitle: 'Check your messages for the 6-digit code.');
+      AppToast.success(context, 'OTP Sent',
+          subtitle: 'Check your messages for the 6-digit code.');
 
-      // Also show OTP in a subtle way for demo purposes
-      if (mounted) {
+      // Also show OTP in a subtle way for demo purposes ONLY if not Twilio
+      if (mounted && responseStr != 'TWILIO_SUCCESS') {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Demo OTP: $responseStr',
+            content: Text('Your OTP: $responseStr',
                 style: const TextStyle(fontWeight: FontWeight.bold)),
             backgroundColor: AppColors.greenPrimary,
             duration: const Duration(seconds: 8),
@@ -199,25 +201,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       padding: const EdgeInsets.only(top: 48, bottom: 32),
       child: Column(
         children: [
-          // App icon
+          // Real GigCredit logo
           Container(
-            width: 72,
-            height: 72,
+            width: 88,
+            height: 88,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.28),
-                width: 2,
-              ),
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.18),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
-            alignment: Alignment.center,
-            child: Text(
-              'G',
-              style: AppTypography.displayLarge.copyWith(
-                color: Colors.white,
-                fontSize: 36,
-                fontWeight: FontWeight.w900,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(22),
+              child: Image.asset(
+                'assets/images/app_logo.png',
+                fit: BoxFit.cover,
               ),
             ),
           ),

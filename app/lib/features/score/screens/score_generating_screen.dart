@@ -20,6 +20,7 @@ import '../../../models/tailored_suggestion.dart';
 import '../../../state/api_service_provider.dart';
 import '../../../services/loan_api_service.dart';
 import '../widgets/score_status_message.dart';
+import '../../../shared/widgets/feedback/app_toast.dart';
 import '../../../shared/widgets/loaders/delivery_bike_loader.dart';
 import '../../../core/session/secure_storage.dart';
 import '../../../services/scoring_service.dart';
@@ -260,6 +261,10 @@ class _ScoreGeneratingScreenState extends ConsumerState<ScoreGeneratingScreen>
 
     debugPrint('[Privacy] ✅ COMPLETE: All raw PII data deleted. '
         'Only anonymized score report (no raw inputs) retained in memory.');
+
+    if (mounted) {
+      AppToast.success(context, 'Raw data deleted', subtitle: 'Real user text and uploaded data deleted from temp storage');
+    }
   }
 
   Future<void> _seedLoanOffers(int score) async {
@@ -306,45 +311,10 @@ class _ScoreGeneratingScreenState extends ConsumerState<ScoreGeneratingScreen>
           width: double.infinity,
           height: double.infinity,
           decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment(-0.5, -0.6),
-              end: Alignment(0.5, 0.8),
-              colors: [
-                AppColors.greenPrimary,
-                AppColors.greenMid,
-                AppColors.greenBright,
-              ],
-              stops: [0.0, 0.55, 1.0],
-            ),
+            color: AppColors.bgScreen,
           ),
           child: Stack(
             children: [
-              // Decorative circles
-              Positioned(
-                top: -60,
-                right: -40,
-                child: Container(
-                  width: 180,
-                  height: 180,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.06),
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: -30,
-                left: -50,
-                child: Container(
-                  width: 140,
-                  height: 140,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.04),
-                  ),
-                ),
-              ),
-
               SafeArea(
                 child: Center(
                   child: Padding(
@@ -358,7 +328,8 @@ class _ScoreGeneratingScreenState extends ConsumerState<ScoreGeneratingScreen>
                         
                         Text(
                           'Generating Your Score',
-                          style: AppTypography.heroHeading.copyWith(fontSize: 26),
+                          style: AppTypography.heroHeading.copyWith(
+                              fontSize: 26, color: AppColors.greenPrimary),
                           textAlign: TextAlign.center,
                         ).animate().fadeIn(duration: 600.ms),
                         

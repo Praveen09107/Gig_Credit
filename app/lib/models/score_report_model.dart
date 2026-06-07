@@ -18,6 +18,9 @@ class ScoreReportModel {
   final String? peerCohort;
   final String? efs;
   final String? deltaShap;
+  // Applicant profile data — stored so loan pipeline works after PII cleanup
+  final int applicantAge;
+  final double applicantMonthlyIncome;
   
   final List<ScorePillarModel> pillars;
   final Map<String, int> pillarContributions;
@@ -48,6 +51,8 @@ class ScoreReportModel {
     this.peerCohort,
     this.efs,
     this.deltaShap,
+    this.applicantAge = 0,
+    this.applicantMonthlyIncome = 0,
     required this.pillars,
     required this.pillarContributions,
     required this.topStrengths,
@@ -76,6 +81,8 @@ class ScoreReportModel {
     peerCohort: json['peerCohort'] as String?,
     efs: json['efs'] as String?,
     deltaShap: json['deltaShap'] as String?,
+    applicantAge: json['applicantAge'] as int? ?? 0,
+    applicantMonthlyIncome: (json['applicantMonthlyIncome'] as num?)?.toDouble() ?? 0,
     pillars: (json['pillars'] as List?)?.map((e) => ScorePillarModel.fromJson(e)).toList() ?? [],
     pillarContributions: Map<String, int>.from(json['pillarContributions'] ?? {}),
     topStrengths: (json['topStrengths'] as List?)?.map((e) => ShapFactorModel.fromJson(e)).toList() ?? [],
@@ -120,6 +127,8 @@ class ScoreReportModel {
     'peerCohort': peerCohort,
     'efs': efs,
     'deltaShap': deltaShap,
+    'applicantAge': applicantAge,
+    'applicantMonthlyIncome': applicantMonthlyIncome,
     'pillars': pillars.map((e) => e.toJson()).toList(),
     'pillarContributions': pillarContributions,
     'topStrengths': topStrengths.map((e) => e.toJson()).toList(),

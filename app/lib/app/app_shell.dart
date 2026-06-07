@@ -5,6 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../shared/theme/app_colors.dart';
 import '../shared/theme/app_typography.dart';
 import '../state/nav_provider.dart';
+import '../state/step_status_provider.dart';
+import '../state/verified_profile_provider.dart';
+import '../state/score_provider.dart';
+import '../shared/widgets/feedback/step_popups.dart';
 import 'app_router.dart';
 
 /// GigCredit App Shell — Bottom Navigation (4 tabs)
@@ -44,6 +48,33 @@ class AppShell extends ConsumerWidget {
     return 0;
   }
 
+  /// Returns true if the current route is inside the step flow (Steps 1-9 or generating)
+  bool _isInStepFlow(BuildContext context) {
+    final location = GoRouterState.of(context).uri.path;
+    return location.contains('/app/score/flow/') ||
+        location.contains('/app/score/generating');
+  }
+
+  /// Show abandon confirmation when user tries to leave the step flow via footer
+  Future<void> _handleTabTap(
+      BuildContext context, WidgetRef ref, int index) async {
+    HapticFeedback.selectionClick();
+
+    if (_isInStepFlow(context)) {
+      // Use the same premium popup style as the rest of the app
+      final confirmed = await AbandonSessionPopup.show(context);
+      if (confirmed != true) return; // User chose to stay
+
+      // Clear all session data before navigating away
+      ref.read(stepStatusProvider.notifier).reset();
+      ref.read(verifiedProfileProvider.notifier).reset();
+      ref.read(scoreProvider.notifier).reset();
+    }
+
+    ref.read(navProvider.notifier).setTab(index);
+    context.go(_items[index].route);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeIndex = _activeIndex(context);
@@ -53,11 +84,7 @@ class AppShell extends ConsumerWidget {
       bottomNavigationBar: _GigCreditBottomNav(
         activeIndex: activeIndex,
         items: _items,
-        onTap: (index) {
-          HapticFeedback.selectionClick();
-          ref.read(navProvider.notifier).setTab(index);
-          context.go(_items[index].route);
-        },
+        onTap: (index) => _handleTabTap(context, ref, index),
       ),
     );
   }

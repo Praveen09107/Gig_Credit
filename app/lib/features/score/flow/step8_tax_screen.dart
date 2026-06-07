@@ -22,6 +22,9 @@ import '../../../../shared/widgets/feedback/step_popups.dart';
 import '../../../../scoring/validation/bank_transaction_matcher.dart';
 import '../../../../scoring/validation/step3_validator.dart';
 import '../../../../shared/widgets/feedback/verification_phase_overlay.dart';
+import '../../../../services/gig_logger.dart';
+
+import '../../../../shared/widgets/feedback/step_validation_banner.dart';
 
 class Step8TaxScreen extends ConsumerStatefulWidget {
   const Step8TaxScreen({super.key});
@@ -48,6 +51,52 @@ class _Step8TaxScreenState extends ConsumerState<Step8TaxScreen> with Verificati
   final _gstLegalNameCtrl = TextEditingController();
   final _gstTurnoverCtrl = TextEditingController();
   bool _gstUploaded = false;
+
+  // Inline validation
+  List<String> _validationErrors = [];
+  List<String> _validationWarnings = [];
+
+  void _runInlineValidation() {
+    final errors = <String>[];
+    final warnings = <String>[];
+    final ocrResults = ref.read(ocrResultsProvider);
+
+    // PAN cross-check: ITR PAN must match Step 2 KYC PAN
+    if (_hasItr && _itrPanCtrl.text.trim().isNotEmpty) {
+      final itrPan = _itrPanCtrl.text.trim().toUpperCase();
+      final kycPan = (ocrResults['pan']?['pan_number'] as String? ??
+                      ocrResults['pan']?['id_number'] as String?)?.trim().toUpperCase() ?? '';
+      if (kycPan.isNotEmpty && itrPan != kycPan) {
+        errors.add('ITR PAN ($itrPan) does not match your KYC PAN ($kycPan) from Step 2. Please use the same PAN.');
+      }
+    }
+
+    // ITR income vs bank income cross-check (soft warning)
+    if (_hasItr && _itrIncomeCtrl.text.trim().isNotEmpty) {
+      final declaredAnnual = double.tryParse(_itrIncomeCtrl.text.replaceAll(',', '')) ?? 0.0;
+      final bankMonthly = ref.read(verifiedProfileProvider).personalInfo.selfDeclaredIncome;
+      if (declaredAnnual > 0 && bankMonthly > 0) {
+        final itrMonthly = declaredAnnual / 12.0;
+        final ratio = itrMonthly / bankMonthly;
+        if (ratio < 0.5 || ratio > 2.0) {
+          warnings.add('ITR annual income (₹${(declaredAnnual/1000).toStringAsFixed(0)}k) deviates significantly from your declared monthly income (₹${bankMonthly.toStringAsFixed(0)}/mo). Please verify.');
+        }
+      }
+    }
+
+    // GSTIN format check
+    if (_hasGst && _gstinCtrl.text.trim().isNotEmpty) {
+      final gstin = _gstinCtrl.text.trim().toUpperCase();
+      if (!RegExp(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]Z[0-9A-Z]$').hasMatch(gstin)) {
+        errors.add('GSTIN format is invalid. Expected format: 33ABCDE1234F1Z5 (15 characters).');
+      }
+    }
+
+    setState(() {
+      _validationErrors = errors;
+      _validationWarnings = warnings;
+    });
+  }
 
   @override
   void dispose() {
@@ -145,23 +194,24 @@ class _Step8TaxScreenState extends ConsumerState<Step8TaxScreen> with Verificati
         }
       }
 
-      // Log results
-      print('\n════════════════════════════════════════════');
-      print('STEP 8 TAX CROSS-VERIFICATION');
-      print('ITR filed: $_hasItr, GST: $_hasGst');
-      print('PAN mismatch: $panMismatch');
+      GigLogger.stepBanner(8, 'TAX (OPTIONAL) — CROSS-VERIFICATION');
+      GigLogger.data('ITR Filed',   _hasItr.toString());
+      GigLogger.data('GST Reg',     _hasGst.toString());
+      GigLogger.data('PAN Mismatch', panMismatch.toString());
+      
       if (incomeCheck.isNotEmpty) {
-        print('ITR monthly: ₹${(incomeCheck['itr_monthly'] as double).toStringAsFixed(0)}');
-        print('Bank monthly: ₹${(incomeCheck['bank_monthly'] as double).toStringAsFixed(0)}');
-        print('Ratio: ${((incomeCheck['ratio'] as double) * 100).toStringAsFixed(1)}%');
-        print('Within range (60%-140%): ${incomeCheck['within_range']}');
-        print('Status: ${incomeCheck['status']}');
+        GigLogger.sectionHeader('INCOME CHECK (ITR vs BANK)');
+        GigLogger.data('ITR monthly',  '\u20b9${(incomeCheck['itr_monthly'] as double).toStringAsFixed(0)}');
+        GigLogger.data('Bank monthly', '\u20b9${(incomeCheck['bank_monthly'] as double).toStringAsFixed(0)}');
+        GigLogger.data('Ratio',        '${((incomeCheck['ratio'] as double) * 100).toStringAsFixed(1)}%');
+        GigLogger.data('Status',       incomeCheck['status'].toString());
         if (!(incomeCheck['within_range'] as bool)) {
-          print('⚠ SOFT FLAG: ITR income deviates ${(incomeCheck['deviation_pct'] as double).toStringAsFixed(1)}% from bank average');
+          GigLogger.warn('ITR income deviates ${(incomeCheck['deviation_pct'] as double).toStringAsFixed(1)}% from bank average');
           if (mounted) AppToast.warning(context, 'ITR income deviates from bank average by ${(incomeCheck['deviation_pct'] as double).toStringAsFixed(0)}%');
+        } else {
+          GigLogger.ok('Income aligns with Bank records');
         }
       }
-      print('════════════════════════════════════════════\n');
 
       // ═══════════════════════════════════════════════════════════════
       // GAP 6 FIX: Backend API calls for tax verification
@@ -171,17 +221,17 @@ class _Step8TaxScreenState extends ConsumerState<Step8TaxScreen> with Verificati
       if (_hasGst && _gstinCtrl.text.trim().isNotEmpty) {
         try {
           final gstResult = await api.getGstFilingHistory(_gstinCtrl.text.trim().toUpperCase());
-          print('[Step8 API] GST filing history: ${gstResult['status'] ?? 'ok'}');
+          GigLogger.ok('GST filing history: ${gstResult['status'] ?? 'ok'}');
         } catch (e) {
-          print('[Step8 API] GST filing failed (non-blocking): $e');
+          GigLogger.warn('GST filing failed (non-blocking): $e');
         }
       }
       if (_hasItr && _itrPanCtrl.text.trim().isNotEmpty) {
         try {
           final itrResult = await api.verifyItr(_itrPanCtrl.text.trim().toUpperCase(), _assessmentYear);
-          print('[Step8 API] ITR verify: ${itrResult['status'] ?? 'ok'}');
+          GigLogger.ok('ITR verify: ${itrResult['status'] ?? 'ok'}');
         } catch (e) {
-          print('[Step8 API] ITR verify failed (non-blocking): $e');
+          GigLogger.warn('ITR verify failed (non-blocking): $e');
         }
       }
 
@@ -198,6 +248,12 @@ class _Step8TaxScreenState extends ConsumerState<Step8TaxScreen> with Verificati
         taxPaid: 0.0,
       ));
       ref.read(stepStatusProvider.notifier).setStatus(8, StepStatus.verified);
+
+      GigLogger.sectionHeader('GLOBAL STATE UPDATE');
+      GigLogger.stateUpdate('verifiedProfileProvider', 'taxInfo.isVerified', 'true');
+      GigLogger.stateUpdate('stepStatusProvider',      'step[8]',            'StepStatus.verified');
+      GigLogger.ok('Step 8 Tax complete');
+
       if (mounted) {
         setState(() => _isLoading = false);
         final incomeStatus = incomeCheck.isNotEmpty 
@@ -243,6 +299,20 @@ class _Step8TaxScreenState extends ConsumerState<Step8TaxScreen> with Verificati
           const Text('ITR and GST are optional but significantly boost your score.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
           const SizedBox(height: 20),
 
+          // ── Inline validation banner ──
+          if (_validationErrors.isNotEmpty || _validationWarnings.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: StepValidationBanner(
+                errors: _validationErrors,
+                warnings: _validationWarnings,
+                onDismiss: () => setState(() {
+                  _validationErrors = [];
+                  _validationWarnings = [];
+                }),
+              ),
+            ),
+
           // ── ITR Module ──
           _buildTaxModule(
             title: '📄 Income Tax Return (ITR)',
@@ -250,7 +320,7 @@ class _Step8TaxScreenState extends ConsumerState<Step8TaxScreen> with Verificati
             selected: _hasItr,
             onToggle: (v) => setState(() => _hasItr = v),
             children: [
-              AppTextField(label: 'PAN Number (as per ITR) *', controller: _itrPanCtrl, textCapitalization: TextCapitalization.characters, maxLength: 10),
+              AppTextField(label: 'PAN Number (as per ITR) *', controller: _itrPanCtrl, textCapitalization: TextCapitalization.characters, maxLength: 10, onChanged: (_) => _runInlineValidation()),
               const SizedBox(height: 12),
               AppTextField(label: 'Name as per ITR *', controller: _itrNameCtrl),
               const SizedBox(height: 12),
@@ -282,7 +352,7 @@ class _Step8TaxScreenState extends ConsumerState<Step8TaxScreen> with Verificati
             selected: _hasGst,
             onToggle: (v) => setState(() => _hasGst = v),
             children: [
-              AppTextField(label: 'GSTIN (15-char) *', controller: _gstinCtrl, textCapitalization: TextCapitalization.characters, maxLength: 15),
+              AppTextField(label: 'GSTIN (15-char) *', controller: _gstinCtrl, textCapitalization: TextCapitalization.characters, maxLength: 15, onChanged: (_) => _runInlineValidation()),
               const SizedBox(height: 12),
               AppTextField(label: 'Legal Name as per GST *', controller: _gstLegalNameCtrl),
               const SizedBox(height: 12),
@@ -300,7 +370,7 @@ class _Step8TaxScreenState extends ConsumerState<Step8TaxScreen> with Verificati
       bottomBar: PrimaryButton(
         label: isVerified ? 'Continue to Next Step' : 'Confirm Tax Info',
         isLoading: _isLoading,
-        isDisabled: false,
+        isDisabled: _validationErrors.isNotEmpty,
         onPressed: _submit,
       ),
     );

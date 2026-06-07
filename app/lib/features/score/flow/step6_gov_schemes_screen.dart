@@ -22,6 +22,9 @@ import '../../../../shared/widgets/feedback/step_popups.dart';
 import '../../../../scoring/validation/bank_transaction_matcher.dart';
 import '../../../../scoring/validation/step3_validator.dart';
 import '../../../../shared/widgets/feedback/verification_phase_overlay.dart';
+import '../../../../services/gig_logger.dart';
+
+import '../../../../shared/widgets/feedback/step_validation_banner.dart';
 
 class Step6GovSchemesScreen extends ConsumerStatefulWidget {
   const Step6GovSchemesScreen({super.key});
@@ -59,6 +62,28 @@ class _Step6GovSchemesScreenState extends ConsumerState<Step6GovSchemesScreen> w
   bool _mudraUploaded = false;
   bool _ppfUploaded = false;
   bool _udyamUploaded = false;
+
+  // Inline validation
+  List<String> _validationErrors = [];
+
+  void _runInlineValidation() {
+    final errors = <String>[];
+    // eShram UAN: must be 12 digits
+    if (_hasEshram && _eshramUanCtrl.text.trim().isNotEmpty) {
+      final uan = _eshramUanCtrl.text.trim();
+      if (uan.length != 12 || !RegExp(r'^\d{12}$').hasMatch(uan)) {
+        errors.add('eShram UAN must be exactly 12 digits (e.g. 123456789012).');
+      }
+    }
+    // Udyam: UDYAM-XX-00-0000000
+    if (_hasUdyam && _udyamRegCtrl.text.trim().isNotEmpty) {
+      final udyam = _udyamRegCtrl.text.trim().toUpperCase();
+      if (!RegExp(r'^UDYAM-[A-Z]{2}-\d{2}-\d{7}$').hasMatch(udyam)) {
+        errors.add('Udyam number format is invalid. Expected: UDYAM-TN-33-0012345.');
+      }
+    }
+    setState(() => _validationErrors = errors);
+  }
 
   @override
   void dispose() {
@@ -148,20 +173,26 @@ class _Step6GovSchemesScreenState extends ConsumerState<Step6GovSchemesScreen> w
       if (_hasUdyam && _udyamRegCtrl.text.trim().isNotEmpty) {
         final udyam = _udyamRegCtrl.text.trim().toUpperCase();
         if (!RegExp(r'^UDYAM-[A-Z]{2}-\d{2}-\d{7}$').hasMatch(udyam)) {
-          print('[Step6] SOFT FLAG: Udyam format may be invalid: $udyam');
+          GigLogger.warn('Udyam format may be invalid: $udyam');
           if (mounted) AppToast.warning(context, 'Udyam format: UDYAM-XX-00-0000000');
         }
       }
 
-      print('\n════════════════════════════════════════════');
-      print('STEP 6 GOV SCHEMES CROSS-VERIFICATION');
-      print('Schemes toggled: SVANidhi=$_hasSvanidhi, eShram=$_hasEshram, PM-SYM=$_hasPmsym, PMJJBY=$_hasPmjjby, Mudra=$_hasMudra, PPF=$_hasPpf, Udyam=$_hasUdyam');
-      print('Gov scheme credits found in bank: ${govCredits.length}');
-      print('Total gov scheme income: ₹${totalGovIncome.toStringAsFixed(0)}');
+      GigLogger.stepBanner(6, 'GOV SCHEMES (OPTIONAL) — CROSS-VERIFICATION');
+      GigLogger.sectionHeader('SCHEME TOGGLES');
+      GigLogger.data('SVANidhi', _hasSvanidhi.toString());
+      GigLogger.data('eShram',   _hasEshram.toString());
+      GigLogger.data('PM-SYM',   _hasPmsym.toString());
+      GigLogger.data('PMJJBY',   _hasPmjjby.toString());
+      GigLogger.data('Mudra',    _hasMudra.toString());
+      GigLogger.data('PPF',      _hasPpf.toString());
+      GigLogger.data('Udyam',    _hasUdyam.toString());
+      GigLogger.sectionHeader('BANK CROSS-CHECK');
+      GigLogger.data('Gov credits found', '${govCredits.length}');
+      GigLogger.data('Total gov income',  '\u20b9${totalGovIncome.toStringAsFixed(0)}');
       for (final c in govCredits) {
-        print('  ₹${c.amount.toStringAsFixed(0)} on ${c.date}: ${c.description}');
+        GigLogger.data('  \u20b9${c.amount.toStringAsFixed(0)}', '${c.date}: ${c.description}');
       }
-      print('════════════════════════════════════════════\n');
 
       // ═══════════════════════════════════════════════════════════════
       // GAP 6 FIX: Backend API calls for government scheme verification
@@ -171,25 +202,25 @@ class _Step6GovSchemesScreenState extends ConsumerState<Step6GovSchemesScreen> w
       if (_hasEshram && _eshramUanCtrl.text.trim().isNotEmpty) {
         try {
           final result = await api.verifyEshram(_eshramUanCtrl.text.trim());
-          print('[Step6 API] eShram: ${result['status'] ?? 'ok'}');
+          GigLogger.ok('eShram: ${result['status'] ?? 'ok'}');
         } catch (e) {
-          print('[Step6 API] eShram failed (non-blocking): $e');
+          GigLogger.warn('eShram failed (non-blocking): $e');
         }
       }
       if (_hasUdyam && _udyamRegCtrl.text.trim().isNotEmpty) {
         try {
           final result = await api.verifyUdyam(_udyamRegCtrl.text.trim().toUpperCase());
-          print('[Step6 API] Udyam: ${result['status'] ?? 'ok'}');
+          GigLogger.ok('Udyam: ${result['status'] ?? 'ok'}');
         } catch (e) {
-          print('[Step6 API] Udyam failed (non-blocking): $e');
+          GigLogger.warn('Udyam failed (non-blocking): $e');
         }
       }
       if (_hasPmsym && _pmsymAccCtrl.text.trim().isNotEmpty) {
         try {
           final result = await api.verifyPmsym(_pmsymAccCtrl.text.trim());
-          print('[Step6 API] PM-SYM: ${result['status'] ?? 'ok'}');
+          GigLogger.ok('PM-SYM: ${result['status'] ?? 'ok'}');
         } catch (e) {
-          print('[Step6 API] PM-SYM failed (non-blocking): $e');
+          GigLogger.warn('PM-SYM failed (non-blocking): $e');
         }
       }
 
@@ -201,6 +232,11 @@ class _Step6GovSchemesScreenState extends ConsumerState<Step6GovSchemesScreen> w
         hasPmScheme: _hasSvanidhi || _hasPmsym || _hasPmjjby || _hasMudra,
       ));
       ref.read(stepStatusProvider.notifier).setStatus(6, StepStatus.verified);
+
+      GigLogger.sectionHeader('GLOBAL STATE UPDATE');
+      GigLogger.stateUpdate('verifiedProfileProvider', 'govSchemesInfo.isVerified', 'true');
+      GigLogger.stateUpdate('stepStatusProvider',      'step[6]',                   'StepStatus.verified');
+      GigLogger.ok('Step 6 Gov Schemes complete');
       
       if (mounted) {
         setState(() => _isLoading = false);
@@ -244,6 +280,16 @@ class _Step6GovSchemesScreenState extends ConsumerState<Step6GovSchemesScreen> w
           const Text('All optional. Toggle schemes you are enrolled in.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
           const SizedBox(height: 20),
 
+          // ── Inline validation banner ──
+          if (_validationErrors.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: StepValidationBanner(
+                errors: _validationErrors,
+                onDismiss: () => setState(() => _validationErrors = []),
+              ),
+            ),
+
           _buildSchemeModule(title: '🛒 PM SVANidhi', hint: 'Street Vendor Scheme', selected: _hasSvanidhi, onToggle: (v) => setState(() => _hasSvanidhi = v), children: [
             AppTextField(label: 'SVANidhi Application ID *', controller: _svanidhiIdCtrl),
             const SizedBox(height: 12),
@@ -251,7 +297,7 @@ class _Step6GovSchemesScreenState extends ConsumerState<Step6GovSchemesScreen> w
           ]),
 
           _buildSchemeModule(title: '👷 eShram Registration', hint: 'Unorganised Workers UAN', selected: _hasEshram, onToggle: (v) => setState(() => _hasEshram = v), children: [
-            AppTextField(label: 'UAN (12-digit) *', controller: _eshramUanCtrl, keyboardType: TextInputType.number, maxLength: 12),
+            AppTextField(label: 'UAN (12-digit) *', controller: _eshramUanCtrl, keyboardType: TextInputType.number, maxLength: 12, onChanged: (_) => _runInlineValidation()),
             const SizedBox(height: 12),
             DocumentUploadCard(title: 'eShram Card Upload *', subtitle: 'Photo of eShram card', docType: 'gov_eshram', ocrService: ocrService, onExtracted: (_) => setState(() => _eshramUploaded = true)),
           ]),
@@ -281,7 +327,7 @@ class _Step6GovSchemesScreenState extends ConsumerState<Step6GovSchemesScreen> w
           ]),
 
           _buildSchemeModule(title: '🏭 Udyam / MSME', hint: 'MSME Registration', selected: _hasUdyam, onToggle: (v) => setState(() => _hasUdyam = v), children: [
-            AppTextField(label: 'Udyam Registration Number *', controller: _udyamRegCtrl),
+            AppTextField(label: 'Udyam Registration Number *', controller: _udyamRegCtrl, onChanged: (_) => _runInlineValidation()),
             const SizedBox(height: 12),
             DocumentUploadCard(title: 'Udyam Certificate *', subtitle: 'Registration certificate PDF/photo', docType: 'gov_udyam', ocrService: ocrService, onExtracted: (_) => setState(() => _udyamUploaded = true)),
           ]),
@@ -294,7 +340,7 @@ class _Step6GovSchemesScreenState extends ConsumerState<Step6GovSchemesScreen> w
       bottomBar: PrimaryButton(
         label: isVerified ? 'Continue to Next Step' : 'Confirm & Proceed',
         isLoading: _isLoading,
-        isDisabled: false,
+        isDisabled: _validationErrors.isNotEmpty,
         onPressed: _submit,
       ),
     );

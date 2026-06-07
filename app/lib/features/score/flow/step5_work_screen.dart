@@ -17,6 +17,9 @@ import '../../../../app/app_router.dart';
 import '../../../../shared/widgets/feedback/app_toast.dart';
 import '../../../../shared/widgets/feedback/step_popups.dart';
 import '../../../../shared/widgets/feedback/verification_phase_overlay.dart';
+import '../../../../services/gig_logger.dart';
+
+import '../../../../shared/widgets/feedback/step_validation_banner.dart';
 
 class Step5WorkScreen extends ConsumerStatefulWidget {
   const Step5WorkScreen({super.key});
@@ -50,6 +53,24 @@ class _Step5WorkScreenState extends ConsumerState<Step5WorkScreen> with Verifica
   // Type D: Freelancer
   bool _freelanceProfileUploaded = false;
   int _freelanceInvoices = 0;
+
+  // Inline validation
+  List<String> _validationErrors = [];
+  List<String> _validationWarnings = [];
+
+  void _runInlineValidation() {
+    final errors = <String>[];
+    final workType = _workType;
+    // Vehicle registration format check for platform workers
+    if ((workType == 'platform_worker' || workType == 'gig_worker') &&
+        _platformIdCtrl.text.trim().isNotEmpty) {
+      final rc = _platformIdCtrl.text.trim().toUpperCase();
+      if (!RegExp(r'^[A-Z]{2}\d{2}[A-Z]{1,3}\d{1,4}$').hasMatch(rc)) {
+        errors.add('Vehicle registration number format is invalid (e.g. TN09AB1234).');
+      }
+    }
+    setState(() { _validationErrors = errors; _validationWarnings = []; });
+  }
 
   String get _workType {
     final profile = ref.read(verifiedProfileProvider);
@@ -119,6 +140,15 @@ class _Step5WorkScreenState extends ConsumerState<Step5WorkScreen> with Verifica
         }
       }
 
+      GigLogger.stepBanner(5, 'WORK PROOF (OPTIONAL) — VERIFICATION');
+      GigLogger.sectionHeader('RAW INPUTS');
+      GigLogger.data('Work Type',      _workType);
+      GigLogger.data('Platform ID',    _platformIdCtrl.text.trim().isNotEmpty ? _platformIdCtrl.text.trim() : 'N/A');
+      GigLogger.data('RC Uploaded',    _rcUploaded.toString());
+      GigLogger.data('DL Uploaded',    _dlFrontUploaded.toString());
+      GigLogger.data('Earning Shots',  '$_earningScreenshots');
+      GigLogger.data('UPI Screenshot', _upiUploaded.toString());
+
       dismissVerificationPhase();
 
       ref.read(verifiedProfileProvider.notifier).updateStep5(WorkInfo(
@@ -135,6 +165,12 @@ class _Step5WorkScreenState extends ConsumerState<Step5WorkScreen> with Verifica
         // The other fields aren't in WorkInfo strictly, but UI allows progress
       ));
       ref.read(stepStatusProvider.notifier).setStatus(5, StepStatus.verified);
+
+      GigLogger.sectionHeader('GLOBAL STATE UPDATE');
+      GigLogger.stateUpdate('verifiedProfileProvider', 'workInfo.platformId',    _platformIdCtrl.text.trim());
+      GigLogger.stateUpdate('verifiedProfileProvider', 'workInfo.isVerified',    'true');
+      GigLogger.stateUpdate('stepStatusProvider',      'step[5]',                'StepStatus.verified');
+      GigLogger.ok('Step 5 Work Proof complete');
 
       if (mounted) {
         setState(() => _isLoading = false);
@@ -185,7 +221,15 @@ class _Step5WorkScreenState extends ConsumerState<Step5WorkScreen> with Verifica
           ),
           const SizedBox(height: 20),
 
-
+          // ── Inline validation banner ──
+          if (_validationErrors.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: StepValidationBanner(
+                errors: _validationErrors,
+                onDismiss: () => setState(() => _validationErrors = []),
+              ),
+            ),
 
           if (workType == 'platform_worker' || workType == 'gig_worker') 
             _buildPlatformWorker(ocrService)
@@ -237,7 +281,7 @@ class _Step5WorkScreenState extends ConsumerState<Step5WorkScreen> with Verifica
         AppTextField(
           label: 'Vehicle Registration Number *',
           controller: _platformIdCtrl,
-          onChanged: (_) => setState(() {}),
+          onChanged: (_) { setState(() {}); _runInlineValidation(); },
         ),
         const SizedBox(height: 12),
         DocumentUploadCard(

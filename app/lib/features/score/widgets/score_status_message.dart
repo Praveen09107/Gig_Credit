@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_typography.dart';
 
 /// Score Status Message — shows pipeline steps with realistic timing.
-/// Each step delay reflects the actual computation time of that stage.
 class ScoreStatusMessage extends StatefulWidget {
   const ScoreStatusMessage({super.key});
 
@@ -11,8 +11,6 @@ class ScoreStatusMessage extends StatefulWidget {
 }
 
 class _ScoreStatusMessageState extends State<ScoreStatusMessage> {
-  // Each entry: (message, duration in ms it stays visible)
-  // Total = ~18–22s matching real pipeline (ML + Groq LLM + store)
   static const List<(String, int)> _steps = [
     ('Analysing your identity documents...', 2000),
     ('Extracting income & bank patterns...', 2500),
@@ -65,7 +63,9 @@ class _ScoreStatusMessageState extends State<ScoreStatusMessage> {
           transitionBuilder: (child, anim) => FadeTransition(
             opacity: anim,
             child: SlideTransition(
-              position: Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(anim),
+              position: Tween<Offset>(
+                      begin: const Offset(0, 0.2), end: Offset.zero)
+                  .animate(anim),
               child: child,
             ),
           ),
@@ -73,25 +73,26 @@ class _ScoreStatusMessageState extends State<ScoreStatusMessage> {
             step.$1,
             key: ValueKey(_currentIndex),
             style: AppTypography.bodyMedium.copyWith(
-              color: Colors.white.withValues(alpha: 0.85),
+              color: AppColors.textSecondary,
               fontSize: 14,
             ),
             textAlign: TextAlign.center,
           ),
         ),
         const SizedBox(height: 10),
-        // Step progress indicator
+        // Step progress dots
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(_steps.length, (i) {
-            return Container(
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
               margin: const EdgeInsets.symmetric(horizontal: 2),
               width: i == _currentIndex ? 16 : 6,
               height: 4,
               decoration: BoxDecoration(
                 color: i <= _currentIndex
-                    ? Colors.white
-                    : Colors.white.withValues(alpha: 0.25),
+                    ? AppColors.greenPrimary
+                    : AppColors.borderCard,
                 borderRadius: BorderRadius.circular(999),
               ),
             );
@@ -99,9 +100,9 @@ class _ScoreStatusMessageState extends State<ScoreStatusMessage> {
         ),
         const SizedBox(height: 8),
         Text(
-          '${_elapsedSeconds}s elapsed · Step ${_currentIndex + 1}/${_steps.length}',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
+          '${_elapsedSeconds}s · Step ${_currentIndex + 1}/${_steps.length}',
+          style: const TextStyle(
+            color: AppColors.textMuted,
             fontSize: 11,
             fontFamily: 'monospace',
           ),

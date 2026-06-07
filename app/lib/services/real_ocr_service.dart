@@ -3,6 +3,7 @@ import 'package:paddle_ocr_flutter/paddle_ocr_flutter.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'ocr_service.dart';
 import 'parsing/bank_detector.dart';
+import 'gig_logger.dart';
 
 class RealOcrService implements OcrService {
   final PaddleOcrFlutter _ocr = PaddleOcrFlutter();
@@ -47,15 +48,14 @@ class RealOcrService implements OcrService {
 
     // Handle PDF files directly without ML OCR
     if (imagePath.toLowerCase().endsWith('.pdf')) {
-      print('\n[GigCredit OCR] ====== PDF PROCESSING START ======');
-      print('[GigCredit OCR] File    : $imagePath');
-      print('[GigCredit OCR] DocType : $docType');
+      GigLogger.ocrStart(docType, 'pdf');
+      GigLogger.info('Parsing PDF Document: $imagePath');
 
       final bytes = await File(imagePath).readAsBytes();
       final PdfDocument document = PdfDocument(inputBytes: bytes);
 
       final int totalPages = document.pages.count;
-      print('[GigCredit OCR] Pages   : $totalPages');
+      GigLogger.data('Total Pages', totalPages.toString());
 
       final StringBuffer pdfText = StringBuffer();
 
@@ -63,33 +63,35 @@ class RealOcrService implements OcrService {
         final String pageData = PdfTextExtractor(document)
             .extractText(startPageIndex: i, endPageIndex: i);
         pdfText.write(pageData);
-        // Log first 200 chars of each page for tracing
+        // Log preview of each page
         final preview = pageData.trim().replaceAll('\n', ' ');
-        print('[GigCredit OCR] Page ${i+1}/$totalPages | chars=${pageData.length} | preview: ${preview.length > 150 ? preview.substring(0, 150) : preview}');
+        GigLogger.info('Page ${i+1}/$totalPages  →  ${preview.length > 50 ? preview.substring(0, 50) + "..." : preview}');
       }
 
       text = pdfText.toString();
       document.dispose();
       confidence = 0.95;
 
-      print('[GigCredit OCR] Total extracted chars: ${text.length}');
-      print('[GigCredit OCR] ====== PDF PROCESSING END ======\n');
+      GigLogger.data('Total Chars Extracted', text.length.toString());
+      GigLogger.ocrEnd(docType, confidence);
       
     } else {
       // Process images with PaddleOCR
-      print('\n[GigCredit OCR] ====== IMAGE OCR START ======');
-      print('[GigCredit OCR] File    : $imagePath');
-      print('[GigCredit OCR] DocType : $docType');
+      GigLogger.ocrStart(docType, 'image');
+      GigLogger.info('Engine: PaddleOCR / ML Kit');
+      GigLogger.processing('Extracting text from image...');
+      
       await _ensureInit();
       final results = await _ocr.recognize(imagePath);
       final StringBuffer sb = StringBuffer();
+      
       for (int i = 0; i < results.length; i++) {
         sb.writeln(results[i].text);
-        print('[GigCredit OCR] Line ${(i+1).toString().padLeft(2)}: ${results[i].text}');
       }
       text = sb.toString();
-      print('[GigCredit OCR] Total lines: ${results.length}');
-      print('[GigCredit OCR] ====== IMAGE OCR END ======\n');
+      
+      GigLogger.data('Text Lines Detected', results.length.toString());
+      GigLogger.ocrEnd(docType, 0.90);
     }
 
     final cleanText = text.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
@@ -143,12 +145,97 @@ class RealOcrService implements OcrService {
       final aadhaarMatch = RegExp(r'\d{4}\s?\d{4}\s?\d{4}').firstMatch(text);
       if (aadhaarMatch != null) {
         extractedData['aadhaar_number'] = aadhaarMatch.group(0)?.replaceAll(' ', '');
-        print('[GigCredit OCR] Extracted aadhaar_number: ${extractedData["aadhaar_number"]}');
+        GigLogger.ocrField('Aadhaar Number', 'XXXX-XXXX-${extractedData["aadhaar_number"].substring(extractedData["aadhaar_number"].length > 4 ? extractedData["aadhaar_number"].length - 4 : 0)}');
       }
-      final nameMatch = RegExp(r'(?:name|\n)\s*([A-Z][a-zA-Z ]{3,30})').firstMatch(text);
-      if (nameMatch != null) {
-        extractedData['name'] = nameMatch.group(1)?.trim();
-        print('[GigCredit OCR] Extracted name: ${extractedData["name"]}');
+
+      // ── Person name extraction ──────────────────────────────────────────
+      // PaddleOCR reads lines top-to-bottom. On Aadhaar front:
+      //   Line 1: "Government of India"
+      //   Line 2: "Aadhaar no.issued:..."
+      //   Line 3: PERSON NAME  ← this is what we want
+      //   Line 4: DOB line
+      //   Line 5: Male/Female
+      //
+      // Strategy: split into lines, skip known header phrases,
+      // find the first line that looks like a person name
+      // (2-4 words, all letters/spaces, no digits, not a known header).
+      // ────────────────────────────────────────────────────────────────────
+      final _headerPhrases = [
+        'government of india', 'aadhaar', 'unique identification',
+        'uidai', 'proof of identity', 'proof of', 'authentication',
+        'scanning', 'qr code', 'offline xml', 'date of birth',
+        'dob', 'male', 'female', 'address', 'help@uidai',
+        'www.uidai', 'issued', 'citizenship',
+      ];
+
+      String? extractedName;
+      // Only scan the first 12 lines — person name appears near the top of Aadhaar.
+      // On device, PaddleOCR may return lines in different order than on PC.
+      // Strategy: scan ALL lines in first 12, pick the BEST candidate name.
+      // A valid person name:
+      //   - No digits, no special chars (except spaces/dots)
+      //   - Starts with capital letter
+      //   - At least one word with 5+ chars (filters "HIRT HRR", "ART", noise)
+      //   - Not a known header phrase
+      //   - Total length ≥ 6 chars
+      final aadhaarLines = text.split('\n').take(12).toList();
+      String? bestCandidate;
+      int bestScore = 0;
+
+      for (final line in aadhaarLines) {
+        final trimmed = line.trim();
+        if (trimmed.length < 6) continue;
+
+        final lower = trimmed.toLowerCase();
+        if (_headerPhrases.any((h) => lower.contains(h))) continue;
+        if (RegExp(r'\d').hasMatch(trimmed)) continue;
+        if (RegExp(r'[^a-zA-Z\s\.]').hasMatch(trimmed)) continue;
+        if (!RegExp(r'^[A-Z]').hasMatch(trimmed)) continue;
+
+        final words = trimmed.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+        if (words.isEmpty) continue;
+
+        // Score: sum of word lengths (longer words = more likely a real name)
+        final wordLengthSum = words.fold(0, (sum, w) => sum + w.length);
+        // Must have at least one word with 5+ chars (real names have long words)
+        final hasLongWord = words.any((w) => w.length >= 5);
+        if (!hasLongWord) continue;
+
+        if (wordLengthSum > bestScore) {
+          bestScore = wordLengthSum;
+          bestCandidate = trimmed;
+        }
+      }
+      extractedName = bestCandidate;
+
+      if (extractedName != null) {
+        extractedData['name'] = extractedName;
+        GigLogger.ocrField('Aadhaar Name', extractedName);
+        print('[GigCredit OCR] Extracted name: $extractedName');
+      } else {
+        // Fallback: try regex for name after "Aadhaar" keyword
+        final nameMatch = RegExp(r'(?:issued[:\s]+\S+\s+)([A-Z][a-zA-Z ]{3,40})', caseSensitive: false).firstMatch(text);
+        if (nameMatch != null) {
+          extractedData['name'] = nameMatch.group(1)?.trim();
+          GigLogger.ocrField('Aadhaar Name', extractedData['name']!);
+          print('[GigCredit OCR] Extracted name (fallback): ${extractedData["name"]}');
+        }
+      }
+
+      // ── DOB extraction ──────────────────────────────────────────────────
+      // Aadhaar shows DOB as "DOB: DD/MM/YYYY" or "/DB DD/MM/YYYY"
+      final dobMatch = RegExp(r'(?:DOB|D\.O\.B|Date of Birth|/DB)[:\s]*(\d{2}[/\-]\d{2}[/\-]\d{4})', caseSensitive: false).firstMatch(text);
+      if (dobMatch != null) {
+        extractedData['dob'] = dobMatch.group(1)?.trim();
+        GigLogger.ocrField('Aadhaar DOB', extractedData['dob']!);
+        print('[GigCredit OCR] Extracted dob: ${extractedData["dob"]}');
+      } else {
+        // Fallback: find any DD/MM/YYYY pattern
+        final dateMatch = RegExp(r'\b(\d{2}[/\-]\d{2}[/\-]\d{4})\b').firstMatch(text);
+        if (dateMatch != null) {
+          extractedData['dob'] = dateMatch.group(1)?.trim();
+          print('[GigCredit OCR] Extracted dob (fallback): ${extractedData["dob"]}');
+        }
       }
       return {'raw_text': text, 'doc_type': docType, 'confidence': 0.95, 'image_path': imagePath, ...extractedData};
     }
@@ -168,6 +255,55 @@ class RealOcrService implements OcrService {
         extractedData['pan_number'] = panMatch.group(0);
         print('[GigCredit OCR] Extracted pan_number: ${extractedData["pan_number"]}');
       }
+
+      // ── PAN name + DOB extraction ────────────────────────────────────────
+      // PaddleOCR line order: DOB before name, name is ALL CAPS.
+      // ────────────────────────────────────────────────────────────────────
+      final panLines = text.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+
+      // DOB: first date pattern DD/MM/YYYY
+      for (final line in panLines) {
+        final m = RegExp(r'(\d{2}[/\-]\d{2}[/\-]\d{4})').firstMatch(line);
+        if (m != null) {
+          extractedData['dob'] = m.group(1);
+          print('[GigCredit OCR] Extracted PAN dob: ${extractedData["dob"]}');
+          break;
+        }
+      }
+
+      // Name: ALL CAPS line, skip headers/digits/special chars
+      // Also skip father's name (line immediately before any "fathers name" label)
+      final _panSkip = ['income tax', 'department', 'permanent account', 'number card',
+                        'date of birth', 'fathers name', 'signature', 'govt', 'government'];
+
+      // Build set of father's names to skip
+      final fathersNames = <String>{};
+      for (int fi = 0; fi < panLines.length; fi++) {
+        if (panLines[fi].toLowerCase().contains('fathers name') ||
+            panLines[fi].toLowerCase().contains("father's name")) {
+          if (fi > 0) fathersNames.add(panLines[fi - 1].trim().toUpperCase());
+        }
+      }
+
+      String? panName;
+      for (final line in panLines) {
+        if (RegExp(r'\d').hasMatch(line)) continue;
+        final lower = line.toLowerCase();
+        if (_panSkip.any((h) => lower.contains(h))) continue;
+        if (RegExp(r'[^a-zA-Z\s\.]').hasMatch(line)) continue;
+        if (line.length < 4) continue;
+        final stripped = line.trim();
+        if (fathersNames.contains(stripped.toUpperCase())) continue; // skip father's name
+        if (stripped == stripped.toUpperCase()) {
+          panName = stripped;
+          break;
+        }
+      }
+      if (panName != null) {
+        extractedData['name'] = panName;
+        print('[GigCredit OCR] Extracted PAN name: $panName');
+      }
+
       return {'raw_text': text, 'doc_type': docType, 'confidence': 0.95, 'image_path': imagePath, ...extractedData};
     }
     else if (docType == 'bank_statement' || docType == 'sec_bank_statement') {

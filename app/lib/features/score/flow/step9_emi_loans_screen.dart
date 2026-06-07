@@ -18,6 +18,9 @@ import '../../../../shared/widgets/feedback/step_popups.dart';
 import '../../../../scoring/validation/bank_transaction_matcher.dart';
 import '../../../../scoring/validation/step3_validator.dart';
 import '../../../../shared/widgets/feedback/verification_phase_overlay.dart';
+import '../../../../services/gig_logger.dart';
+
+import '../../../../shared/widgets/feedback/step_validation_banner.dart';
 
 class Step9EmiLoansScreen extends ConsumerStatefulWidget {
   const Step9EmiLoansScreen({super.key});
@@ -50,6 +53,32 @@ class _Step9EmiLoansScreenState extends ConsumerState<Step9EmiLoansScreen> with 
   bool _hasActiveLoans = false;
   bool _isLoading = false;
   final List<_LoanEntry> _loanEntries = [_LoanEntry()];
+
+  // Inline validation
+  List<String> _validationErrors = [];
+  List<String> _validationWarnings = [];
+
+  void _runInlineValidation() {
+    final warnings = <String>[];
+    if (!_hasActiveLoans) {
+      setState(() { _validationErrors = []; _validationWarnings = []; });
+      return;
+    }
+    final income = ref.read(verifiedProfileProvider).personalInfo.selfDeclaredIncome;
+    if (income > 0) {
+      double totalEmi = 0;
+      for (final e in _loanEntries) {
+        totalEmi += double.tryParse(e.emiCtrl.text.replaceAll(',', '')) ?? 0.0;
+      }
+      final dti = totalEmi / income;
+      if (dti > 0.60) {
+        warnings.add('Total EMI (₹${totalEmi.toStringAsFixed(0)}/mo) exceeds 60% of your income (₹${income.toStringAsFixed(0)}/mo). This will significantly reduce your credit score.');
+      } else if (dti > 0.40) {
+        warnings.add('Total EMI (₹${totalEmi.toStringAsFixed(0)}/mo) is ${(dti*100).toStringAsFixed(0)}% of your income. Consider reducing EMI burden for a better score.');
+      }
+    }
+    setState(() { _validationErrors = []; _validationWarnings = warnings; });
+  }
 
   @override
   void dispose() {
@@ -171,19 +200,16 @@ class _Step9EmiLoansScreenState extends ConsumerState<Step9EmiLoansScreen> with 
       final monthlyIncome = profile.personalInfo.selfDeclaredIncome;
       final dti = monthlyIncome > 0 ? totalMonthlyEmi / monthlyIncome : 0.0;
 
-      print('\n════════════════════════════════════════════');
-      print('STEP 9 EMI/LOANS CROSS-VERIFICATION');
-      print('Has active loans: $_hasActiveLoans');
-      print('Declared EMIs: ${declaredEmis.length}');
-      print('Matched: ${verifyResult.matchedItems}/${verifyResult.totalItems}');
-      print('Monthly EMI total: ₹${totalMonthlyEmi.toStringAsFixed(0)}');
-      print('Declared income: ₹${monthlyIncome.toStringAsFixed(0)}');
-      print('Debt-to-Income ratio: ${(dti * 100).toStringAsFixed(1)}%');
+      GigLogger.stepBanner(9, 'EMI & LOANS — CROSS-VERIFICATION');
+      GigLogger.data('Declared Active Loans', _hasActiveLoans.toString());
+      GigLogger.data('Monthly EMI total', '₹${totalMonthlyEmi.toStringAsFixed(0)}');
+      GigLogger.data('Declared income', '₹${monthlyIncome.toStringAsFixed(0)}');
+      GigLogger.data('DTI Ratio', '${(dti * 100).toStringAsFixed(1)}%');
       for (final item in verifyResult.items) {
-        print('  [${item.status}] ${item.label}: ₹${item.declaredAmount} → ${item.matchResult.matchType} (${(item.matchResult.confidence * 100).toStringAsFixed(0)}%)');
+        GigLogger.info('  [${item.status}] ${item.label}: ₹${item.declaredAmount} → ${item.matchResult.matchType} (${(item.matchResult.confidence * 100).toStringAsFixed(0)}%)');
       }
       for (final w in verifyResult.warnings) {
-        print('  $w');
+        GigLogger.warn(w);
       }
 
       // DTI threshold warning
@@ -227,9 +253,9 @@ class _Step9EmiLoansScreenState extends ConsumerState<Step9EmiLoansScreen> with 
         if (lender.isNotEmpty && amount > 0) {
           try {
             final result = await api.verifyLoan(lender, amount, date);
-            print('[Step9 API] Loan verify ($lender): ${result['status'] ?? 'ok'}');
+            GigLogger.ok('Loan verify ($lender): ${result['status'] ?? 'ok'}');
           } catch (e) {
-            print('[Step9 API] Loan verify ($lender) failed (non-blocking): $e');
+            GigLogger.warn('Loan verify ($lender) failed (non-blocking): $e');
           }
         }
       }
@@ -237,9 +263,9 @@ class _Step9EmiLoansScreenState extends ConsumerState<Step9EmiLoansScreen> with 
       if (profile.bankInfo.accountNumber.isNotEmpty) {
         try {
           final loansResult = await api.checkLoans(profile.bankInfo.accountNumber);
-          print('[Step9 API] Loan check: ${loansResult['status'] ?? 'ok'}');
+          GigLogger.ok('Loan check: ${loansResult['status'] ?? 'ok'}');
         } catch (e) {
-          print('[Step9 API] Loan check failed (non-blocking): $e');
+          GigLogger.warn('Loan check failed (non-blocking): $e');
         }
       }
 
@@ -250,6 +276,11 @@ class _Step9EmiLoansScreenState extends ConsumerState<Step9EmiLoansScreen> with 
         loans: extractedLoans,
       ));
       ref.read(stepStatusProvider.notifier).setStatus(9, StepStatus.verified);
+
+      GigLogger.sectionHeader('GLOBAL STATE UPDATE');
+      GigLogger.stateUpdate('verifiedProfileProvider', 'emiLoansInfo.isVerified', 'true');
+      GigLogger.stateUpdate('stepStatusProvider',      'step[9]',                 'StepStatus.verified');
+      GigLogger.ok('Step 9 EMI & Loans complete — ALL STEPS VERIFIED');
 
       if (mounted) {
         setState(() => _isLoading = false);
@@ -282,6 +313,16 @@ class _Step9EmiLoansScreenState extends ConsumerState<Step9EmiLoansScreen> with 
           const Text('Declare active loan and EMI obligations.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
           const SizedBox(height: 20),
 
+          // ── Inline validation banner ──
+          if (_validationWarnings.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: StepValidationBanner(
+                warnings: _validationWarnings,
+                onDismiss: () => setState(() => _validationWarnings = []),
+              ),
+            ),
+
           // Top-level toggle
           Container(
             decoration: BoxDecoration(
@@ -294,7 +335,7 @@ class _Step9EmiLoansScreenState extends ConsumerState<Step9EmiLoansScreen> with 
               subtitle: Text(_hasActiveLoans ? 'Fill in your loan details below' : 'Skip if you have no active loans',
                   style: const TextStyle(fontSize: 11, color: AppColors.textTertiary)),
               value: _hasActiveLoans,
-              onChanged: (v) => setState(() => _hasActiveLoans = v),
+              onChanged: (v) => setState(() { _hasActiveLoans = v; _runInlineValidation(); }),
               activeThumbColor: AppColors.accent,
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             ),
@@ -381,7 +422,7 @@ class _Step9EmiLoansScreenState extends ConsumerState<Step9EmiLoansScreen> with 
             const SizedBox(height: 16),
             AppTextField(label: 'Lender Name *', controller: entry.lenderCtrl, hint: 'SBI / HDFC / Bajaj / IIFL / Other'),
             const SizedBox(height: 12),
-            AppTextField(label: 'Monthly EMI Amount (₹) *', controller: entry.emiCtrl, keyboardType: TextInputType.number),
+            AppTextField(label: 'Monthly EMI Amount (₹) *', controller: entry.emiCtrl, keyboardType: TextInputType.number, onChanged: (_) => _runInlineValidation()),
             const SizedBox(height: 12),
             GestureDetector(
               onTap: () => _pickDate(entry.prevDateCtrl),

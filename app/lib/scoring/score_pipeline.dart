@@ -116,6 +116,9 @@ class ScorePipeline {
       metaProbability: probability,
       efsVerdict: overallConfidence > 0.7 ? 'STABLE' : 'UNSTABLE',
       modelUsed: 'llama-3.3-70b-versatile',
+      // Store applicant profile data so loan pipeline works after PII cleanup
+      applicantAge: profile.personalInfo.age,
+      applicantMonthlyIncome: profile.personalInfo.selfDeclaredIncome,
     );
   }
 

@@ -58,6 +58,7 @@ dependencies:
   mobile_scanner: ^7.2.0
   paddle_ocr_flutter: ^0.0.3
   syncfusion_flutter_pdf: ^33.2.4
+  flutter_dotenv: ^6.0.1
 
 dev_dependencies:
   flutter_test:
@@ -72,6 +73,7 @@ flutter:
   uses-material-design: true
   
   assets:
+    - .env
     - assets/config/
     - assets/images/
     - assets/ocr/expected_outputs.json

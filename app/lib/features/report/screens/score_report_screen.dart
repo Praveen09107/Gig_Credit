@@ -12,6 +12,7 @@ import '../../../state/user_provider.dart';
 import '../../../app/app_router.dart';
 import '../../../models/score_report_model.dart';
 import '../../../shared/widgets/feedback/app_toast.dart';
+import '../pdf_report_generator.dart';
 
 class ScoreReportScreen extends ConsumerStatefulWidget {
   const ScoreReportScreen({super.key});
@@ -346,8 +347,8 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
   }
 
   Widget _buildDetailRow(String label, String value, {Color? valueColor, bool light = false}) {
-    final labelColor = light ? Colors.white.withValues(alpha: 0.65) : const Color(0xFF8B95A8);
-    final valColor = valueColor ?? (light ? Colors.white : Colors.white);
+    final labelColor = light ? Colors.white.withValues(alpha: 0.65) : AppColors.textMuted;
+    final valColor = valueColor ?? (light ? Colors.white : AppColors.textPrimary);
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
@@ -575,7 +576,7 @@ class _ScoreReportScreenState extends ConsumerState<ScoreReportScreen> {
   }
 
   Widget _buildGradeRow(String g, String r, String risk, String m,
-      {bool isHeader = false, bool isActive = false, Color color = Colors.black}) {
+      {bool isHeader = false, bool isActive = false, Color color = AppColors.textPrimary}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
       decoration: BoxDecoration(
@@ -1506,12 +1507,35 @@ Data controller: GigCredit NBFC Ltd.''',
   }
 
   Widget _buildGhostButton(BuildContext context, String label) {
+    final isDownload = label.contains('Download');
     return InkWell(
-      onTap: () {
-        if (label.contains('Download') || label.contains('Save')) {
-          AppToast.success(context, 'Report Saved', subtitle: '$label - Action Simulated');
+      onTap: () async {
+        if (isDownload) {
+          // Real PDF generation
+          try {
+            AppToast.info(context, 'Generating PDF...', subtitle: 'Please wait a moment');
+            final reportData = ref.read(scoreProvider).reportData;
+            if (reportData == null) {
+              AppToast.error(context, 'No report data', subtitle: 'Please generate a score first.');
+              return;
+            }
+            final userName = ref.read(userProvider)?.name ?? 'Applicant';
+            await PdfReportGenerator.shareReport(reportData, applicantName: userName);
+          } catch (e) {
+            if (mounted) {
+              AppToast.error(context, 'PDF generation failed', subtitle: e.toString().replaceFirst('Exception: ', ''));
+            }
+          }
         } else {
-          AppToast.success(context, 'Action Successful', subtitle: '$label - Simulated');
+          // Share with lender — print preview
+          try {
+            final reportData = ref.read(scoreProvider).reportData;
+            if (reportData == null) return;
+            final userName = ref.read(userProvider)?.name ?? 'Applicant';
+            await PdfReportGenerator.shareReport(reportData, applicantName: userName);
+          } catch (e) {
+            if (mounted) AppToast.error(context, 'Share failed', subtitle: 'Please try again.');
+          }
         }
       },
       borderRadius: BorderRadius.circular(8),

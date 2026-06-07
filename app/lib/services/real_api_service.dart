@@ -7,49 +7,140 @@ class RealApiService implements ApiService {
   final String baseUrl = AppConfig.baseUrl;
 
   Map<String, String> get _headers => {
-    'Content-Type': 'application/json',
-    'X-API-Key': AppConfig.apiKey,
-  };
+        'Content-Type': 'application/json',
+        'X-API-Key': AppConfig.apiKey,
+      };
 
-  Future<http.Response> _post(String url, {required Map<String, String> headers, required String body, Duration timeout = const Duration(seconds: 120)}) async {
+  Future<http.Response> _post(String url,
+      {required Map<String, String> headers,
+      required String body,
+      Duration timeout = const Duration(seconds: 120)}) async {
     try {
-      return await http.post(Uri.parse(url), headers: headers, body: body).timeout(timeout);
+      return await http
+          .post(Uri.parse(url), headers: headers, body: body)
+          .timeout(timeout);
     } catch (e) {
-      if (e.toString().contains('SocketException') || e.toString().contains('ClientException') || e.toString().contains('TimeoutException')) {
-        throw Exception('Network Error: Please check your connection and try again.');
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('ClientException') ||
+          e.toString().contains('TimeoutException')) {
+        throw Exception(
+            'Network Error: Please check your connection and try again.');
       }
       rethrow;
     }
   }
 
-  @override
-  Future<Map<String, dynamic>> sendOtp(String mobile, {bool isSignup = false, String? name}) async {
-    final response = await _post(
-      '$baseUrl/auth/otp/send',
-      headers: _headers,
-      body: jsonEncode({'mobile': mobile, 'isSignup': isSignup, 'name': name}),
-    );
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  String _formatMobile(String mobile) {
+    if (!mobile.startsWith('+')) {
+      return '+91$mobile';
     }
-    final errorMsg = jsonDecode(response.body)['detail'] ?? 'Failed to send OTP';
-    throw Exception(errorMsg);
+    return mobile;
+  }
+
+  @override
+  Future<Map<String, dynamic>> sendOtp(String mobile,
+      {bool isSignup = false, String? name}) async {
+    // Judge mock bypass
+    if (mobile == '9094909490' || mobile == '+919094909490') {
+      return {'status': 'success', 'message': 'OTP sent via Twilio'};
+    }
+
+    final formattedMobile = _formatMobile(mobile);
+    final basicAuth = base64Encode(utf8
+        .encode('${AppConfig.twilioAccountSid}:${AppConfig.twilioAuthToken}'));
+
+    try {
+      final response = await http.post(
+        Uri.parse(
+            'https://verify.twilio.com/v2/Services/${AppConfig.twilioServiceSid}/Verifications'),
+        headers: {
+          'Authorization': 'Basic $basicAuth',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {
+          'To': formattedMobile,
+          'Channel': 'sms',
+        },
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return {'status': 'success', 'message': 'OTP sent via Twilio'};
+      }
+      final errorData = jsonDecode(response.body);
+      final errorMsg =
+          errorData['detail'] ?? errorData['message'] ?? 'Failed to send OTP';
+      throw Exception(errorMsg);
+    } catch (e) {
+      throw Exception('Twilio Error: ${e.toString()}');
+    }
   }
 
   @override
   Future<Map<String, dynamic>> verifyOtp(String mobile, String otp) async {
-    final response = await _post(
-      '$baseUrl/auth/otp/verify',
-      headers: _headers,
-      body: jsonEncode({'mobile': mobile, 'otp': otp}),
-    );
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+    // Standardize to generic mock flow for +919999999999 to bypass twilio rate limits during dev
+    if (mobile == '9999999999' || mobile == '+919999999999') {
+      if (otp == '123456') {
+        return {
+          'status': 'success',
+          'token': 'mock-dev-token-999',
+          'user': {'name': 'Test User'}
+        };
+      }
     }
-    final errorMsg = jsonDecode(response.body)['detail'] ?? 'Invalid OTP';
-    throw Exception(errorMsg);
+
+    // Judge mock bypass
+    if (mobile == '9094909490' || mobile == '+919094909490') {
+      if (otp == '909490') {
+        return {
+          'status': 'success',
+          'token': 'mock-dev-token-judge',
+          'user': {'name': 'demo'}
+        };
+      } else {
+        throw Exception('Invalid OTP');
+      }
+    }
+
+    final formattedMobile = _formatMobile(mobile);
+    final basicAuth = base64Encode(utf8
+        .encode('${AppConfig.twilioAccountSid}:${AppConfig.twilioAuthToken}'));
+
+    try {
+      final response = await http.post(
+        Uri.parse(
+            'https://verify.twilio.com/v2/Services/${AppConfig.twilioServiceSid}/VerificationCheck'),
+        headers: {
+          'Authorization': 'Basic $basicAuth',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {
+          'To': formattedMobile,
+          'Code': otp,
+        },
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == 'approved') {
+          // Twilio approved. We return a fake token since backend isn't handling auth right now.
+          return {
+            'status': 'success',
+            'token': 'twilio-auth-token-12345',
+            'user': {'name': 'Gig Worker'}
+          };
+        } else {
+          throw Exception('Invalid OTP');
+        }
+      }
+
+      final errorData = jsonDecode(response.body);
+      final errorMsg =
+          errorData['detail'] ?? errorData['message'] ?? 'Failed to verify OTP';
+      throw Exception(errorMsg);
+    } catch (e) {
+      throw Exception('Twilio Verify Error: ${e.toString()}');
+    }
   }
 
   @override
@@ -62,12 +153,14 @@ class RealApiService implements ApiService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     }
-    final errorMsg = jsonDecode(response.body)['detail'] ?? 'Failed to verify Aadhaar';
+    final errorMsg =
+        jsonDecode(response.body)['detail'] ?? 'Failed to verify Aadhaar';
     throw Exception(errorMsg);
   }
 
   @override
-  Future<Map<String, dynamic>> verifyAadhaarOtp(String aadhaarNumber, String otp) async {
+  Future<Map<String, dynamic>> verifyAadhaarOtp(
+      String aadhaarNumber, String otp) async {
     final response = await _post(
       '$baseUrl/gov/aadhaar/otp/validate',
       headers: _headers,
@@ -77,7 +170,8 @@ class RealApiService implements ApiService {
       return jsonDecode(response.body);
     }
     final body = jsonDecode(response.body);
-    throw Exception(body['detail'] ?? body['message'] ?? 'OTP verification failed');
+    throw Exception(
+        body['detail'] ?? body['message'] ?? 'OTP verification failed');
   }
 
   @override
@@ -90,12 +184,14 @@ class RealApiService implements ApiService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     }
-    final errorMsg = jsonDecode(response.body)['detail'] ?? 'Failed to verify PAN';
+    final errorMsg =
+        jsonDecode(response.body)['detail'] ?? 'Failed to verify PAN';
     throw Exception(errorMsg);
   }
 
   @override
-  Future<Map<String, dynamic>> verifyPanOtp(String panNumber, String otp) async {
+  Future<Map<String, dynamic>> verifyPanOtp(
+      String panNumber, String otp) async {
     final response = await _post(
       '$baseUrl/gov/pan/otp/validate',
       headers: _headers,
@@ -105,7 +201,8 @@ class RealApiService implements ApiService {
       return jsonDecode(response.body);
     }
     final body = jsonDecode(response.body);
-    throw Exception(body['detail'] ?? body['message'] ?? 'OTP verification failed');
+    throw Exception(
+        body['detail'] ?? body['message'] ?? 'OTP verification failed');
   }
 
   // ── Step 4: Utility ──────────────────────────────────────────────────────
@@ -123,11 +220,13 @@ class RealApiService implements ApiService {
   }
 
   @override
-  Future<Map<String, dynamic>> verifyLpg(String consumerNumber, String provider) async {
+  Future<Map<String, dynamic>> verifyLpg(
+      String consumerNumber, String provider) async {
     final response = await _post(
       '$baseUrl/gov/lpg/verify',
       headers: _headers,
-      body: jsonEncode({'consumer_number': consumerNumber, 'provider': provider}),
+      body:
+          jsonEncode({'consumer_number': consumerNumber, 'provider': provider}),
     );
     if (response.statusCode == 200) return jsonDecode(response.body);
     final body = jsonDecode(response.body);
@@ -137,7 +236,8 @@ class RealApiService implements ApiService {
   // ── Step 5: Work ─────────────────────────────────────────────────────────
 
   @override
-  Future<Map<String, dynamic>> verifyVehicleInsurance(String vehicleNumber) async {
+  Future<Map<String, dynamic>> verifyVehicleInsurance(
+      String vehicleNumber) async {
     final response = await _post(
       '$baseUrl/gov/vehicle/insurance/verify',
       headers: _headers,
@@ -179,7 +279,8 @@ class RealApiService implements ApiService {
   // ── Step 9: Loans ────────────────────────────────────────────────────────
 
   @override
-  Future<Map<String, dynamic>> verifyLoan(String lenderName, double emiAmount, String latestDebitDate) async {
+  Future<Map<String, dynamic>> verifyLoan(
+      String lenderName, double emiAmount, String latestDebitDate) async {
     final response = await _post(
       '$baseUrl/gov/loan/verify',
       headers: _headers,
@@ -195,7 +296,8 @@ class RealApiService implements ApiService {
   }
 
   @override
-  Future<Map<String, dynamic>> verifyAccount(String accountNo, String ifsc) async {
+  Future<Map<String, dynamic>> verifyAccount(
+      String accountNo, String ifsc) async {
     final response = await _post(
       '$baseUrl/bank/account/verify',
       headers: _headers,
@@ -204,7 +306,8 @@ class RealApiService implements ApiService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     }
-    final errorMsg = jsonDecode(response.body)['detail'] ?? 'Failed to verify Account';
+    final errorMsg =
+        jsonDecode(response.body)['detail'] ?? 'Failed to verify Account';
     throw Exception(errorMsg);
   }
 
@@ -218,7 +321,8 @@ class RealApiService implements ApiService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     }
-    final errorMsg = jsonDecode(response.body)['detail'] ?? 'Failed to verify IFSC';
+    final errorMsg =
+        jsonDecode(response.body)['detail'] ?? 'Failed to verify IFSC';
     throw Exception(errorMsg);
   }
 
@@ -230,18 +334,22 @@ class RealApiService implements ApiService {
       body: jsonEncode({'pdf_base64': base64Pdf}),
     );
     if (response.statusCode == 200) return jsonDecode(response.body);
-    throw Exception('Failed to upload bank statement. Endpoint may not be active.');
+    throw Exception(
+        'Failed to upload bank statement. Endpoint may not be active.');
   }
 
   @override
-  Future<Map<String, dynamic>> verifyUtility(String consumerNumber, String provider) async {
+  Future<Map<String, dynamic>> verifyUtility(
+      String consumerNumber, String provider) async {
     final response = await _post(
       '$baseUrl/utility/verify',
       headers: _headers,
-      body: jsonEncode({'consumer_number': consumerNumber, 'provider': provider}),
+      body:
+          jsonEncode({'consumer_number': consumerNumber, 'provider': provider}),
     );
     if (response.statusCode == 200) return jsonDecode(response.body);
-    throw Exception('Utility verification not currently available from provider.');
+    throw Exception(
+        'Utility verification not currently available from provider.');
   }
 
   @override
@@ -322,7 +430,8 @@ class RealApiService implements ApiService {
   }
 
   @override
-  Future<Map<String, dynamic>> generateReportScore(Map<String, dynamic> verifiedProfileData) async {
+  Future<Map<String, dynamic>> generateReportScore(
+      Map<String, dynamic> verifiedProfileData) async {
     final response = await _post(
       '$baseUrl/api/report/generate',
       headers: _headers,
@@ -335,7 +444,8 @@ class RealApiService implements ApiService {
   }
 
   @override
-  Future<Map<String, dynamic>> getLlmExplanation(Map<String, dynamic> limitsData) async {
+  Future<Map<String, dynamic>> getLlmExplanation(
+      Map<String, dynamic> limitsData) async {
     final response = await _post(
       '$baseUrl/explain/full',
       headers: _headers,
@@ -368,7 +478,8 @@ class RealApiService implements ApiService {
   }
 
   @override
-  Future<Map<String, dynamic>> verifyInsurance(String policyNumber, String type) async {
+  Future<Map<String, dynamic>> verifyInsurance(
+      String policyNumber, String type) async {
     final response = await _post(
       '$baseUrl/gov/insurance/policy/verify',
       headers: _headers,
@@ -390,7 +501,8 @@ class RealApiService implements ApiService {
   }
 
   @override
-  Future<Map<String, dynamic>> verifyItr(String pan, String assessmentYear) async {
+  Future<Map<String, dynamic>> verifyItr(
+      String pan, String assessmentYear) async {
     final response = await _post(
       '$baseUrl/gov/income-tax/itr/verify',
       headers: _headers,

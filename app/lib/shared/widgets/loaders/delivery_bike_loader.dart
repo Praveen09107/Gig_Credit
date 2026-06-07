@@ -1,3 +1,4 @@
+﻿import '../../../shared/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -33,7 +34,7 @@ class DeliveryBikeLoader extends StatelessWidget {
                       return Container(
                         width: 16,
                         height: 2,
-                        color: Colors.white.withValues(alpha: 0.3),
+                        color: AppColors.greenMuted,
                       ).animate(onPlay: (controller) => controller.repeat())
                        .slideX(begin: 1.0, end: -1.0, duration: 400.ms, curve: Curves.linear);
                     }),
@@ -48,12 +49,12 @@ class DeliveryBikeLoader extends StatelessWidget {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
+                    color: AppColors.greenMuted,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.two_wheeler_rounded,
-                    color: Colors.white,
+                    color: AppColors.greenPrimary,
                     size: 28,
                   ),
                 ).animate(onPlay: (controller) => controller.repeat(reverse: true))
@@ -71,7 +72,7 @@ class DeliveryBikeLoader extends StatelessWidget {
                   width: 24,
                   height: 2,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.4),
+                    color: AppColors.greenMint,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ).animate(onPlay: (controller) => controller.repeat())
@@ -85,7 +86,7 @@ class DeliveryBikeLoader extends StatelessWidget {
                   width: 16,
                   height: 2,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.3),
+                    color: AppColors.greenMuted,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ).animate(onPlay: (controller) => controller.repeat())

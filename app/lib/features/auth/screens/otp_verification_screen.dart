@@ -29,8 +29,7 @@ class OtpVerificationScreen extends ConsumerStatefulWidget {
       _OtpVerificationScreenState();
 }
 
-class _OtpVerificationScreenState
-    extends ConsumerState<OtpVerificationScreen>
+class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen>
     with SingleTickerProviderStateMixin {
   String _otp = '';
 
@@ -86,9 +85,11 @@ class _OtpVerificationScreenState
       final user = ref.read(userProvider);
       // Show success toast
       if (widget.isSignup) {
-        AppToast.success(context, 'Account created successfully ✓', subtitle: 'Welcome to GigCredit!');
+        AppToast.success(context, 'Account created successfully ✓',
+            subtitle: 'Welcome to GigCredit!');
       } else {
-        AppToast.success(context, 'Welcome back, ${user?.name ?? ''}! 👋', subtitle: 'Signed in successfully.');
+        AppToast.success(context, 'Welcome back, ${user?.name ?? ''}! 👋',
+            subtitle: 'Signed in successfully.');
       }
       context.go('/app/home');
     } else if (mounted) {
@@ -96,11 +97,14 @@ class _OtpVerificationScreenState
       // Show error toast
       final error = authState.errorMessage ?? '';
       if (error.contains('Network Error')) {
-        AppToast.error(context, 'Network Error', subtitle: 'Please check your connection and try again.');
+        AppToast.error(context, 'Network Error',
+            subtitle: 'Please check your connection and try again.');
       } else if (error.contains('expired')) {
-        AppToast.error(context, 'OTP Expired', subtitle: 'Please request a new code.');
+        AppToast.error(context, 'OTP Expired',
+            subtitle: 'Please request a new code.');
       } else {
-        AppToast.error(context, 'Invalid OTP', subtitle: 'The code you entered is incorrect.');
+        AppToast.error(context, 'Invalid OTP',
+            subtitle: 'The code you entered is incorrect.');
       }
     }
   }
@@ -109,7 +113,8 @@ class _OtpVerificationScreenState
     ref
         .read(authControllerProvider.notifier)
         .sendOtp(widget.mobile, isSignup: widget.isSignup);
-    AppToast.info(context, 'OTP Resent', subtitle: 'Please check your messages.');
+    AppToast.info(context, 'OTP Resent',
+        subtitle: 'Please check your messages.');
   }
 
   @override
@@ -154,14 +159,18 @@ class _OtpVerificationScreenState
                       height: 72,
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [AppColors.greenPrimary, AppColors.greenBright],
+                          colors: [
+                            AppColors.greenPrimary,
+                            AppColors.greenBright
+                          ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.greenBright.withValues(alpha: 0.35),
+                            color:
+                                AppColors.greenBright.withValues(alpha: 0.35),
                             blurRadius: 20,
                             offset: const Offset(0, 6),
                           ),

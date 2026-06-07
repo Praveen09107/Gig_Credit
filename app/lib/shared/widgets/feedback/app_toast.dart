@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../theme/app_colors.dart';
 
 /// GigCredit Toast Notification System
 /// Usage: AppToast.success(context, 'Message here');
@@ -53,6 +54,15 @@ class AppToast {
     }
 
     late OverlayEntry entry;
+    bool _removed = false;
+
+    void safeRemove() {
+      if (!_removed && entry.mounted) {
+        _removed = true;
+        entry.remove();
+      }
+    }
+
     entry = OverlayEntry(
       builder: (context) => _ToastWidget(
         message: message,
@@ -60,16 +70,14 @@ class AppToast {
         borderColor: borderColor,
         icon: icon,
         iconColor: iconColor,
-        onDismiss: () => entry.remove(),
+        onDismiss: safeRemove,
       ),
     );
 
     overlay.insert(entry);
 
     // Auto-dismiss after 3 seconds
-    Future.delayed(const Duration(seconds: 3), () {
-      if (entry.mounted) entry.remove();
-    });
+    Future.delayed(const Duration(seconds: 3), safeRemove);
   }
 }
 
@@ -184,7 +192,7 @@ class _ToastWidgetState extends State<_ToastWidget>
                               widget.subtitle!,
                               style: const TextStyle(
                                 fontSize: 12,
-                                color: Color(0xFF8B95A8),
+                                color: AppColors.textMuted,
                               ),
                             ),
                           ],

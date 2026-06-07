@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/theme/app_colors.dart';
@@ -76,8 +76,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
 
   void _validate() {
     setState(() {
-      _isValid =
-          _mobileController.text.length == 10 && _nameController.text.length >= 2;
+      _isValid = _mobileController.text.length == 10 &&
+          _nameController.text.length >= 2;
       _errorMsg = null;
     });
   }
@@ -89,20 +89,22 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
         .read(authControllerProvider.notifier)
         .sendOtp(mobile, isSignup: true, name: name);
 
-    // Check if it's a 6-digit OTP (success)
+    // Check if it's a 6-digit OTP (success) or a successful Twilio response
     if (responseStr != null &&
-        RegExp(r'^\d{6}$').hasMatch(responseStr) &&
+        (RegExp(r'^\d{6}$').hasMatch(responseStr) ||
+            responseStr == 'TWILIO_SUCCESS') &&
         mounted) {
       debugPrint('[GigCredit] OTP Generated: $responseStr');
 
       // Show premium toast notification
-      AppToast.success(context, 'OTP Sent', subtitle: 'Check your messages for the 6-digit code.');
+      AppToast.success(context, 'OTP Sent',
+          subtitle: 'Check your messages for the 6-digit code.');
 
-      // Show OTP for demo
-      if (mounted) {
+      // Show OTP for demo ONLY if not Twilio
+      if (mounted && responseStr != 'TWILIO_SUCCESS') {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Demo OTP: $responseStr',
+            content: Text('Your OTP: $responseStr',
                 style: const TextStyle(fontWeight: FontWeight.bold)),
             backgroundColor: AppColors.greenPrimary,
             duration: const Duration(seconds: 8),
@@ -195,7 +197,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                       children: [
                         Text(
                           'Already have an account?  ',
-                          style: AppTypography.bodyMedium.copyWith(fontSize: 14),
+                          style:
+                              AppTypography.bodyMedium.copyWith(fontSize: 14),
                         ),
                         GestureDetector(
                           onTap: () => context.go(AppRoutes.login),
@@ -232,9 +235,32 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
 
   Widget _buildBrandHeader() {
     return Padding(
-      padding: const EdgeInsets.only(top: 60, bottom: 28),
+      padding: const EdgeInsets.only(top: 48, bottom: 28),
       child: Column(
         children: [
+          // Real GigCredit logo
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.greenPrimary.withValues(alpha: 0.20),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.asset(
+                'assets/images/app_logo.png',
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
           Text(
             'GigCredit',
             style: AppTypography.displayMedium.copyWith(

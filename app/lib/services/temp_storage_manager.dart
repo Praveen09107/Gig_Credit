@@ -94,6 +94,24 @@ class TempStorageManager {
       }
     } catch (_) {}
 
+    // sweep the image_picker temporary cache directory
+    try {
+      final cacheDir = await getTemporaryDirectory();
+      if (await cacheDir.exists()) {
+        await for (final entity in cacheDir.list(recursive: true)) {
+          try {
+            if (entity is File && 
+               (entity.path.contains('image_picker') || 
+                entity.path.endsWith('.jpg') || 
+                entity.path.endsWith('.png'))) {
+              await entity.delete();
+              deleted++;
+            }
+          } catch (_) {}
+        }
+      }
+    } catch (_) {}
+
     _firstFileTime = null;
     return deleted;
   }

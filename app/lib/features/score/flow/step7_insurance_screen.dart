@@ -23,6 +23,9 @@ import '../../../../scoring/validation/bank_transaction_matcher.dart';
 import '../../../../scoring/validation/step3_validator.dart';
 import '../../../../shared/widgets/feedback/verification_phase_overlay.dart';
 import '../../../../scoring/validation/fuzzy_matcher.dart';
+import '../../../../services/gig_logger.dart';
+
+import '../../../../shared/widgets/feedback/step_validation_banner.dart';
 
 class Step7InsuranceScreen extends ConsumerStatefulWidget {
   const Step7InsuranceScreen({super.key});
@@ -49,6 +52,45 @@ class _Step7InsuranceScreenState extends ConsumerState<Step7InsuranceScreen> wit
   final _lifePolicyCtrl = TextEditingController();
   final _lifeHolderCtrl = TextEditingController();
   bool _lifeUploaded = false;
+
+  // Inline validation
+  List<String> _validationErrors = [];
+  List<String> _validationWarnings = [];
+
+  void _runInlineValidation() {
+    final errors = <String>[];
+    final warnings = <String>[];
+    final step1Name = ref.read(verifiedProfileProvider).personalInfo.fullName;
+
+    // Policy holder names must match Step 1 name
+    for (final entry in [
+      if (_hasHealth && _healthHolderCtrl.text.trim().isNotEmpty) _healthHolderCtrl.text.trim(),
+      if (_hasVehicle && _vehicleHolderCtrl.text.trim().isNotEmpty) _vehicleHolderCtrl.text.trim(),
+      if (_hasLife && _lifeHolderCtrl.text.trim().isNotEmpty) _lifeHolderCtrl.text.trim(),
+    ]) {
+      if (step1Name.isEmpty) continue;
+      final n1 = step1Name.toUpperCase();
+      final n2 = entry.toUpperCase();
+      // Simple token check: at least one word must match
+      final words1 = n1.split(' ').where((w) => w.length >= 3).toSet();
+      final words2 = n2.split(' ').where((w) => w.length >= 3).toSet();
+      if (words1.intersection(words2).isEmpty) {
+        errors.add('Policy holder "$entry" does not match your profile name "$step1Name". Please use the same name as in Step 1.');
+        break;
+      }
+    }
+
+    // Vehicle insurance required if Step 1 vehicle ownership = true
+    final hasVehicle = ref.read(verifiedProfileProvider).personalInfo.vehicleOwnership;
+    if (hasVehicle && !_hasVehicle) {
+      warnings.add('You declared vehicle ownership in Step 1 but have not added vehicle insurance. This may affect your score.');
+    }
+
+    setState(() {
+      _validationErrors = errors;
+      _validationWarnings = warnings;
+    });
+  }
 
   @override
   void dispose() {
@@ -147,11 +189,11 @@ class _Step7InsuranceScreenState extends ConsumerState<Step7InsuranceScreen> wit
         if (mounted) AppToast.warning(context, 'Vehicle owner but no vehicle insurance declared');
       }
 
-      print('\n════════════════════════════════════════════');
-      print('STEP 7 INSURANCE CROSS-VERIFICATION');
-      print('Insurance debits found in bank: ${insuranceTxns.length}');
-      print('Health: $_hasHealth, Vehicle: $_hasVehicle, Life: $_hasLife');
-      print('════════════════════════════════════════════\n');
+      GigLogger.stepBanner(7, 'INSURANCE (OPTIONAL) — CROSS-VERIFICATION');
+      GigLogger.data('Health',  _hasHealth.toString());
+      GigLogger.data('Vehicle', _hasVehicle.toString());
+      GigLogger.data('Life',    _hasLife.toString());
+      GigLogger.data('Insurance debits in bank', '${insuranceTxns.length}');
 
       // ═══════════════════════════════════════════════════════════════
       // GAP 6 FIX: Backend API calls for insurance verification
@@ -161,25 +203,25 @@ class _Step7InsuranceScreenState extends ConsumerState<Step7InsuranceScreen> wit
       if (_hasHealth && _healthPolicyCtrl.text.trim().isNotEmpty) {
         try {
           final result = await api.verifyInsurance(_healthPolicyCtrl.text.trim(), 'health');
-          print('[Step7 API] Health insurance: ${result['status'] ?? 'ok'}');
+          GigLogger.ok('Health insurance: ${result['status'] ?? 'ok'}');
         } catch (e) {
-          print('[Step7 API] Health insurance failed (non-blocking): $e');
+          GigLogger.warn('Health insurance failed (non-blocking): $e');
         }
       }
       if (_hasVehicle && _vehiclePolicyCtrl.text.trim().isNotEmpty) {
         try {
           final result = await api.verifyInsurance(_vehiclePolicyCtrl.text.trim(), 'vehicle');
-          print('[Step7 API] Vehicle insurance: ${result['status'] ?? 'ok'}');
+          GigLogger.ok('Vehicle insurance: ${result['status'] ?? 'ok'}');
         } catch (e) {
-          print('[Step7 API] Vehicle insurance failed (non-blocking): $e');
+          GigLogger.warn('Vehicle insurance failed (non-blocking): $e');
         }
       }
       if (_hasLife && _lifePolicyCtrl.text.trim().isNotEmpty) {
         try {
           final result = await api.verifyInsurance(_lifePolicyCtrl.text.trim(), 'life');
-          print('[Step7 API] Life insurance: ${result['status'] ?? 'ok'}');
+          GigLogger.ok('Life insurance: ${result['status'] ?? 'ok'}');
         } catch (e) {
-          print('[Step7 API] Life insurance failed (non-blocking): $e');
+          GigLogger.warn('Life insurance failed (non-blocking): $e');
         }
       }
 
@@ -192,6 +234,12 @@ class _Step7InsuranceScreenState extends ConsumerState<Step7InsuranceScreen> wit
         hasLifeInsurance: _hasLife,
       ));
       ref.read(stepStatusProvider.notifier).setStatus(7, StepStatus.verified);
+
+      GigLogger.sectionHeader('GLOBAL STATE UPDATE');
+      GigLogger.stateUpdate('verifiedProfileProvider', 'insuranceInfo.isVerified', 'true');
+      GigLogger.stateUpdate('stepStatusProvider',      'step[7]',                  'StepStatus.verified');
+      GigLogger.ok('Step 7 Insurance complete');
+
       if (mounted) {
         setState(() => _isLoading = false);
         AppToast.success(context, 'Insurance verified ✓ (${insuranceTxns.length} premium payments found)');
@@ -234,6 +282,20 @@ class _Step7InsuranceScreenState extends ConsumerState<Step7InsuranceScreen> wit
           const Text('Active insurance lowers your risk profile.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
           const SizedBox(height: 20),
 
+          // ── Inline validation banner ──
+          if (_validationErrors.isNotEmpty || _validationWarnings.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: StepValidationBanner(
+                errors: _validationErrors,
+                warnings: _validationWarnings,
+                onDismiss: () => setState(() {
+                  _validationErrors = [];
+                  _validationWarnings = [];
+                }),
+              ),
+            ),
+
           // ── Health Insurance ──
           _buildInsuranceModule(
             title: '🏥 Health Insurance',
@@ -243,7 +305,7 @@ class _Step7InsuranceScreenState extends ConsumerState<Step7InsuranceScreen> wit
             children: [
               AppTextField(label: 'Health Policy Number *', controller: _healthPolicyCtrl),
               const SizedBox(height: 12),
-              AppTextField(label: 'Policy Holder Name *', controller: _healthHolderCtrl),
+              AppTextField(label: 'Policy Holder Name *', controller: _healthHolderCtrl, onChanged: (_) => _runInlineValidation()),
               const SizedBox(height: 12),
               DocumentUploadCard(title: 'Health Policy Document *', subtitle: 'Policy schedule / e-policy PDF', docType: 'insurance_health', ocrService: ocrService, onExtracted: (_) => setState(() => _healthUploaded = true)),
             ],
@@ -259,7 +321,7 @@ class _Step7InsuranceScreenState extends ConsumerState<Step7InsuranceScreen> wit
               children: [
                 AppTextField(label: 'Vehicle Policy Number *', controller: _vehiclePolicyCtrl),
                 const SizedBox(height: 12),
-                AppTextField(label: 'Policy Holder Name *', controller: _vehicleHolderCtrl),
+                AppTextField(label: 'Policy Holder Name *', controller: _vehicleHolderCtrl, onChanged: (_) => _runInlineValidation()),
                 const SizedBox(height: 12),
                 DocumentUploadCard(title: 'Vehicle Insurance Document *', subtitle: 'Motor insurance certificate', docType: 'insurance_vehicle', ocrService: ocrService, onExtracted: (_) => setState(() => _vehicleUploaded = true)),
               ],
@@ -274,7 +336,7 @@ class _Step7InsuranceScreenState extends ConsumerState<Step7InsuranceScreen> wit
             children: [
               AppTextField(label: 'Life Policy Number *', controller: _lifePolicyCtrl),
               const SizedBox(height: 12),
-              AppTextField(label: 'Policy Holder Name *', controller: _lifeHolderCtrl),
+              AppTextField(label: 'Policy Holder Name *', controller: _lifeHolderCtrl, onChanged: (_) => _runInlineValidation()),
               const SizedBox(height: 12),
               DocumentUploadCard(title: 'Life Policy Document *', subtitle: 'Policy bond / premium certificate PDF', docType: 'insurance_life', ocrService: ocrService, onExtracted: (_) => setState(() => _lifeUploaded = true)),
             ],
@@ -288,7 +350,7 @@ class _Step7InsuranceScreenState extends ConsumerState<Step7InsuranceScreen> wit
       bottomBar: PrimaryButton(
         label: isVerified ? 'Continue to Next Step' : 'Confirm Policies',
         isLoading: _isLoading,
-        isDisabled: false,
+        isDisabled: _validationErrors.isNotEmpty,
         onPressed: _submit,
       ),
     );

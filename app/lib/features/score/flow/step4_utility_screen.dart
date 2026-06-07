@@ -23,6 +23,9 @@ import '../../../../scoring/validation/step3_validator.dart';
 import '../../../../scoring/validation/fuzzy_matcher.dart';
 import '../../../../shared/widgets/feedback/verification_phase_overlay.dart';
 
+import '../../../../shared/widgets/feedback/step_validation_banner.dart';
+import '../../../../services/gig_logger.dart';
+
 class Step4UtilityScreen extends ConsumerStatefulWidget {
   const Step4UtilityScreen({super.key});
 
@@ -85,6 +88,45 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> with Ve
   int _mobileUploadCount = 1;
   int _internetUploadCount = 1;
   int _rentUploadCount = 1;
+
+  // Inline validation errors
+  List<String> _validationErrors = [];
+  List<String> _validationWarnings = [];
+
+  void _runInlineValidation() {
+    final errors = <String>[];
+    final warnings = <String>[];
+    final profile = ref.read(verifiedProfileProvider);
+    final step1Mobile = profile.personalInfo.mobileNumber;
+    final step1Name = profile.personalInfo.fullName;
+
+    // Mobile bill must match Step 1 mobile
+    if (_hasMobile && _mobileMobileCtrl.text.trim().isNotEmpty) {
+      final billMobile = _mobileMobileCtrl.text.trim();
+      if (step1Mobile.isNotEmpty && billMobile != step1Mobile) {
+        errors.add('Mobile bill number ($billMobile) does not match your registered mobile ($step1Mobile).');
+      }
+    }
+
+    // Bill names must match Step 1 name (soft flag)
+    if (step1Name.isNotEmpty) {
+      for (final ctrl in [_elecNameCtrl, _waterNameCtrl, _gasNameCtrl, _mobileNameCtrl, _internetNameCtrl]) {
+        final billName = ctrl.text.trim();
+        if (billName.isEmpty) continue;
+        final upper1 = step1Name.toUpperCase();
+        final upper2 = billName.toUpperCase();
+        if (!upper1.contains(upper2.split(' ').first) && !upper2.contains(step1Name.split(' ').first.toUpperCase())) {
+          warnings.add('Bill name "$billName" may not match your profile name "$step1Name". Please verify.');
+          break; // one warning is enough
+        }
+      }
+    }
+
+    setState(() {
+      _validationErrors = errors;
+      _validationWarnings = warnings;
+    });
+  }
 
   @override
   void dispose() {
@@ -305,9 +347,9 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> with Ve
         if (billName.isEmpty || step1Name.isEmpty) continue;
         final match = FuzzyMatcher.matchNames(step1Name, billName);
         if (match.severity == MatchSeverity.hardFail) {
-          print('[Step4 Identity] HARD FAIL: Step1 "$step1Name" vs bill "$billName" (${(match.score * 100).toStringAsFixed(1)}%)');
+          GigLogger.crossValidation('Step1.name', step1Name, 'Bill.name', billName.trim(), false);
         } else if (match.severity == MatchSeverity.softFlag) {
-          print('[Step4 Identity] SOFT FLAG: Step1 "$step1Name" vs bill "$billName" (${(match.score * 100).toStringAsFixed(1)}%)');
+          GigLogger.warn('SOFT: Step1 "$step1Name" vs bill "$billName" (${(match.score * 100).toStringAsFixed(1)}%)');
         }
       }
 
@@ -356,18 +398,18 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> with Ve
       if (_hasElectricity && _elecConsumerCtrl.text.trim().isNotEmpty) {
         try {
           final result = await api.verifyEb(_elecConsumerCtrl.text.trim());
-          print('[Step4 API] EB verify: ${result['status'] ?? 'ok'}');
+          GigLogger.ok('EB verify: ${result['status'] ?? 'ok'}');
         } catch (e) {
-          print('[Step4 API] EB verify failed (non-blocking): $e');
+          GigLogger.warn('EB verify failed (non-blocking): $e');
         }
       }
       if (_hasGas && _gasConsumerCtrl.text.trim().isNotEmpty) {
         try {
           // Assume provider is typed in name field for now
           final result = await api.verifyLpg(_gasConsumerCtrl.text.trim(), _gasNameCtrl.text.trim());
-          print('[Step4 API] LPG verify: ${result['status'] ?? 'ok'}');
+          GigLogger.ok('LPG verify: ${result['status'] ?? 'ok'}');
         } catch (e) {
-          print('[Step4 API] LPG verify failed (non-blocking): $e');
+          GigLogger.warn('LPG verify failed (non-blocking): $e');
         }
       }
 
@@ -378,6 +420,12 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> with Ve
         bills: extractedBills,
       ));
       ref.read(stepStatusProvider.notifier).setStatus(4, StepStatus.verified);
+
+      GigLogger.stepBanner(4, 'UTILITY BILLS (OPTIONAL) — COMPLETE');
+      GigLogger.stateUpdate('verifiedProfileProvider', 'utilityInfo.bills',     '${extractedBills.length} bills');
+      GigLogger.stateUpdate('verifiedProfileProvider', 'utilityInfo.isVerified','true');
+      GigLogger.stateUpdate('stepStatusProvider',      'step[4]',               'StepStatus.verified');
+      GigLogger.ok('Step 4 Utility complete');
 
       if (mounted) {
         setState(() => _isLoading = false);
@@ -417,6 +465,20 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> with Ve
           const SizedBox(height: 4),
           const Text('All modules optional. Toggle any bills you have.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
           const SizedBox(height: 20),
+
+          // ── Inline validation banner ──
+          if (_validationErrors.isNotEmpty || _validationWarnings.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: StepValidationBanner(
+                errors: _validationErrors,
+                warnings: _validationWarnings,
+                onDismiss: () => setState(() {
+                  _validationErrors = [];
+                  _validationWarnings = [];
+                }),
+              ),
+            ),
 
           // ── Electricity ──
           _buildBillModule(
@@ -572,7 +634,8 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> with Ve
             selected: _hasMobile,
             onToggle: (v) => setState(() => _hasMobile = v),
             children: [
-              AppTextField(label: 'Mobile Number *', controller: _mobileMobileCtrl, keyboardType: TextInputType.phone),
+              AppTextField(label: 'Mobile Number *', controller: _mobileMobileCtrl, keyboardType: TextInputType.phone,
+                onChanged: (_) => _runInlineValidation()),
               const SizedBox(height: 12),
               AppTextField(label: 'Account / Customer Number *', controller: _mobileAccountCtrl),
               const SizedBox(height: 12),
@@ -720,7 +783,7 @@ class _Step4UtilityScreenState extends ConsumerState<Step4UtilityScreen> with Ve
       bottomBar: PrimaryButton(
         label: isVerified ? 'Continue to Next Step' : 'Save & Continue',
         isLoading: _isLoading,
-        isDisabled: !isVerified && !_toggledBillsValid,
+        isDisabled: (!isVerified && !_toggledBillsValid) || _validationErrors.isNotEmpty,
         onPressed: _submit,
       ),
     );

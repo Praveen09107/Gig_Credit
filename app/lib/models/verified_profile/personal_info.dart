@@ -19,9 +19,10 @@ class PersonalInfo {
   /// Computed age from dateOfBirth (DD/MM/YYYY). Returns 0 if unparseable.
   int get age {
     try {
-      final parts = dateOfBirth.split('/');
+      final cleanDob = dateOfBirth.replaceAll('-', '/').trim();
+      final parts = cleanDob.split('/');
       if (parts.length != 3) return 0;
-      final dob = DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+      final dob = DateTime(int.parse(parts[2].trim()), int.parse(parts[1].trim()), int.parse(parts[0].trim()));
       final now = DateTime.now();
       int a = now.year - dob.year;
       if (now.month < dob.month || (now.month == dob.month && now.day < dob.day)) a--;

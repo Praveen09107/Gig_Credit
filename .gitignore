@@ -54,11 +54,34 @@ desktop.ini
 # artifact_manifest.json
 
 # Personal & User-specified Exclusions
+photos/
+# NOTE: /report/ only excludes top-level report folders, NOT app/lib source code
+/report/
+specification folders_new/
+test_pdfs/
+# Ignore loose image files but keep tracked app assets
 *.jpg
 *.jpeg
-*.png
 *.webp
-photos/
-report/
-specification folders_new/
-app/assets/images/
+*.png
+!app/assets/images/app_logo.png
+!app/android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+!app/android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+!app/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+!app/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+!app/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+!app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png
+!app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@1x.png
+!app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@2x.png
+!app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@3x.png
+!app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@1x.png
+!app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@2x.png
+!app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@3x.png
+!app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@1x.png
+!app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@2x.png
+!app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@3x.png
+!app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@2x.png
+!app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@3x.png
+!app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@1x.png
+!app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@2x.png
+!app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-83.5x83.5@2x.png

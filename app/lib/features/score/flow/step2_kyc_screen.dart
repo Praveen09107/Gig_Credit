@@ -22,6 +22,7 @@ import '../widgets/mismatch_warning_banner.dart';
 import '../../../../shared/widgets/loaders/coin_pulse_loader.dart';
 import '../../../../shared/widgets/feedback/app_toast.dart';
 import '../../../../shared/widgets/feedback/step_popups.dart';
+import '../../../../services/gig_logger.dart';
 
 class Step2KycScreen extends ConsumerStatefulWidget {
   const Step2KycScreen({super.key});
@@ -45,6 +46,10 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
   bool _selfieVerified = false;
   bool _isLoading = false;
   List<ValidationIssue> _validationIssues = [];
+
+  // Keys to force DocumentUploadCard reset when user needs to re-upload
+  int _aadhaarFrontUploadKey = 0;
+  int _panUploadKey = 0;
 
   bool _aadhaarOtpSent = false;
   String? _expectedAadhaarOtp;
@@ -76,7 +81,7 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
       try {
         final api = ref.read(apiServiceProvider);
         final aadhaarNumber = _aadhaarController.text.replaceAll(' ', '');
-        // ── REAL SERVER-SIDE OTP VALIDATION ──
+        // ── REAL SERVER-SIDE OTP VALIDATION — no local fallback ──
         await api.verifyAadhaarOtp(aadhaarNumber, enteredOtp);
         if (mounted) {
           setState(() {
@@ -84,33 +89,37 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
             _aadhaarOtpSent = false;
             _aadhaarVerifying = false;
           });
-          AppToast.success(context, 'Aadhaar OTP Verified ✓');
+          AppToast.success(context, 'Aadhaar Verified ✓');
         }
       } catch (e) {
-        if (mounted) {
+        if (mounted && !_aadhaarVerified) {
+          // guard: don't show error if already verified
           setState(() => _aadhaarVerifying = false);
-          // Fallback: if backend OTP store unavailable, validate against locally stored OTP
-          if (_expectedAadhaarOtp != null && _aadhaarOtpController.text == _expectedAadhaarOtp) {
-            setState(() {
-              _aadhaarVerified = true;
-              _aadhaarOtpSent = false;
-            });
-            AppToast.success(context, 'Aadhaar OTP Verified ✓');
+          final msg = e.toString().replaceFirst('Exception: ', '');
+          if (msg.contains('Incorrect') ||
+              msg.contains('wrong_otp') ||
+              msg.contains('Wrong')) {
+            AppToast.error(context, 'Incorrect OTP. Please try again.');
+          } else if (msg.contains('expired')) {
+            AppToast.error(context, 'OTP expired. Please request a new one.');
+          } else if (msg.contains('too_many') || msg.contains('attempts')) {
+            AppToast.error(
+                context, 'Too many failed attempts. Please request a new OTP.');
           } else {
-            final msg = e.toString().replaceFirst('Exception: ', '');
-            AppToast.error(context, msg.contains('Incorrect') || msg.contains('wrong') ? 'Incorrect OTP. Please try again.' : msg);
+            AppToast.error(
+                context, 'OTP verification failed. Please try again.');
           }
         }
       }
       return;
     }
 
-    // ── REAL FORMAT VALIDATION (per spec) ──
+    // ── REAL FORMAT VALIDATION — blocks before calling backend ──
     final text = _aadhaarController.text.replaceAll(' ', '');
     final formatIssue = Step2Validator.validateAadhaarFormat(text);
     if (formatIssue != null) {
       AppToast.error(context, formatIssue.message);
-      return;
+      return; // Hard block — do NOT call backend with invalid format
     }
     setState(() => _aadhaarVerifying = true);
 
@@ -121,35 +130,43 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
         setState(() {
           _aadhaarVerifying = false;
           _aadhaarOtpSent = true;
-          // Store OTP locally as fallback (in case backend OTP store is unavailable)
           _expectedAadhaarOtp = result['otp'] as String?;
         });
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Row(children: [Icon(Icons.message, color: Colors.blue), SizedBox(width: 8), Text('New Message')]),
-            content: Text('UIDAI: Your Aadhaar verification OTP is ${_expectedAadhaarOtp ?? '------'}. Valid for 10 minutes.'),
-            actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Dismiss'))],
+            title: const Row(children: [
+              Icon(Icons.message, color: Colors.blue),
+              SizedBox(width: 8),
+              Text('New Message')
+            ]),
+            content: Text(
+                'UIDAI: Your Aadhaar verification OTP is ${_expectedAadhaarOtp ?? '------'}. Valid for 10 minutes.'),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Dismiss'))
+            ],
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _aadhaarVerifying = false;
-          _aadhaarOtpSent = true;
-          final otp = (100000 + (DateTime.now().millisecondsSinceEpoch % 900000)).toString();
-          _expectedAadhaarOtp = otp;
-        });
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Row(children: [Icon(Icons.message, color: Colors.blue), SizedBox(width: 8), Text('New Message')]),
-            content: Text('UIDAI: Your Aadhaar verification OTP is $_expectedAadhaarOtp. Valid for 10 minutes.'),
-            actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Dismiss'))],
-          ),
-        );
-        AppToast.warning(context, 'Demo mode: OTP generated locally');
+        setState(() => _aadhaarVerifying = false);
+        final msg = e.toString().replaceFirst('Exception: ', '');
+        // Real backend error — show it, do NOT generate local OTP
+        if (msg.contains('not_found') || msg.contains('not found')) {
+          AppToast.error(context,
+              'Aadhaar not found. Please check the number and try again.');
+        } else if (msg.contains('invalid_format')) {
+          AppToast.error(context, 'Invalid Aadhaar format.');
+        } else if (msg.contains('Network')) {
+          AppToast.error(
+              context, 'Network error. Please check your connection.');
+        } else {
+          AppToast.error(
+              context, 'Aadhaar verification failed. Please try again.');
+        }
       }
     }
   }
@@ -167,7 +184,7 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
       try {
         final api = ref.read(apiServiceProvider);
         final panNumber = _panController.text.trim();
-        // ── REAL SERVER-SIDE OTP VALIDATION ──
+        // ── REAL SERVER-SIDE OTP VALIDATION — no local fallback ──
         await api.verifyPanOtp(panNumber, enteredOtp);
         if (mounted) {
           setState(() {
@@ -175,37 +192,37 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
             _panOtpSent = false;
             _panVerifying = false;
           });
-          AppToast.success(context, 'PAN OTP Verified ✓');
+          AppToast.success(context, 'PAN Verified ✓');
         }
       } catch (e) {
-        if (mounted) {
+        if (mounted && !_panVerified) {
+          // guard: don't show error if already verified
           setState(() => _panVerifying = false);
-          // Fallback: if backend OTP store unavailable, validate against locally stored OTP
-          if (_expectedPanOtp != null && _panOtpController.text == _expectedPanOtp) {
-            setState(() {
-              _panVerified = true;
-              _panOtpSent = false;
-            });
-            AppToast.success(context, 'PAN OTP Verified ✓');
+          final msg = e.toString().replaceFirst('Exception: ', '');
+          if (msg.contains('Incorrect') ||
+              msg.contains('wrong_otp') ||
+              msg.contains('Wrong')) {
+            AppToast.error(context, 'Incorrect OTP. Please try again.');
+          } else if (msg.contains('expired')) {
+            AppToast.error(context, 'OTP expired. Please request a new one.');
+          } else if (msg.contains('too_many') || msg.contains('attempts')) {
+            AppToast.error(
+                context, 'Too many failed attempts. Please request a new OTP.');
           } else {
-            final msg = e.toString().replaceFirst('Exception: ', '');
-            AppToast.error(context, msg.contains('Incorrect') || msg.contains('wrong') ? 'Incorrect OTP. Please try again.' : msg);
+            AppToast.error(
+                context, 'OTP verification failed. Please try again.');
           }
         }
       }
       return;
     }
 
-    // ── REAL FORMAT VALIDATION (per spec) ──
+    // ── REAL FORMAT VALIDATION — blocks before calling backend ──
     final text = _panController.text.trim();
     final formatIssue = Step2Validator.validatePanFormat(text);
-    if (formatIssue != null) {
-      if (formatIssue.isBlocking) {
-        AppToast.error(context, formatIssue.message);
-        return;
-      } else {
-        AppToast.warning(context, formatIssue.message);
-      }
+    if (formatIssue != null && formatIssue.isBlocking) {
+      AppToast.error(context, formatIssue.message);
+      return; // Hard block only — suppress soft flag (4th char warning is confusing)
     }
     setState(() => _panVerifying = true);
 
@@ -216,58 +233,67 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
         setState(() {
           _panVerifying = false;
           _panOtpSent = true;
-          // Store OTP locally as fallback
           _expectedPanOtp = result['otp'] as String?;
         });
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Row(children: [Icon(Icons.message, color: Colors.blue), SizedBox(width: 8), Text('New Message')]),
-            content: Text('NSDL: Your PAN verification OTP is ${_expectedPanOtp ?? '------'}. Valid for 10 minutes.'),
-            actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Dismiss'))],
+            title: const Row(children: [
+              Icon(Icons.message, color: Colors.blue),
+              SizedBox(width: 8),
+              Text('New Message')
+            ]),
+            content: Text(
+                'NSDL: Your PAN verification OTP is ${_expectedPanOtp ?? '------'}. Valid for 10 minutes.'),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Dismiss'))
+            ],
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _panVerifying = false;
-          _panOtpSent = true;
-          final otp = (100000 + (DateTime.now().millisecondsSinceEpoch % 900000)).toString();
-          _expectedPanOtp = otp;
-        });
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Row(children: [Icon(Icons.message, color: Colors.blue), SizedBox(width: 8), Text('New Message')]),
-            content: Text('NSDL: Your PAN verification OTP is $_expectedPanOtp. Valid for 10 minutes.'),
-            actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Dismiss'))],
-          ),
-        );
-        AppToast.warning(context, 'Demo mode: OTP generated locally');
+        setState(() => _panVerifying = false);
+        final msg = e.toString().replaceFirst('Exception: ', '');
+        // Real backend error — show it, do NOT generate local OTP
+        if (msg.contains('not_found') || msg.contains('not found')) {
+          AppToast.error(
+              context, 'PAN not found. Please check the number and try again.');
+        } else if (msg.contains('invalid_format')) {
+          AppToast.error(context, 'Invalid PAN format.');
+        } else if (msg.contains('Network')) {
+          AppToast.error(
+              context, 'Network error. Please check your connection.');
+        } else {
+          AppToast.error(context, 'PAN verification failed. Please try again.');
+        }
       }
     }
   }
 
   void _onAadhaarFrontExtracted(Map<String, dynamic> data) {
     ref.read(ocrResultsProvider.notifier).addResult('aadhaar_front', data);
-    
     if (data.containsKey('aadhaar_number') && data['aadhaar_number'] != null) {
       _aadhaarController.text = data['aadhaar_number'];
     }
-
-    setState(() => _aadhaarFrontExtracted = true);
+    setState(() {
+      _aadhaarFrontExtracted = true;
+      _validationIssues = []; // clear stale errors before re-validating
+    });
     _runCrossValidation();
   }
 
   void _onPanExtracted(Map<String, dynamic> data) {
     ref.read(ocrResultsProvider.notifier).addResult('pan', data);
-
     if (data.containsKey('pan_number') && data['pan_number'] != null) {
       _panController.text = data['pan_number'];
     }
-
-    setState(() => _panExtracted = true);
+    setState(() {
+      _panExtracted = true;
+      _validationIssues = []; // clear stale errors before re-validating
+    });
     _runCrossValidation();
   }
 
@@ -284,9 +310,10 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
 
   Future<void> _verifySelfie(Map<String, dynamic> data) async {
     ref.read(ocrResultsProvider.notifier).addResult('selfie', data);
-    
+
     final ocrResults = ref.read(ocrResultsProvider);
-    final aadhaarPath = ocrResults['aadhaar_front']?['image_path'] as String? ?? '';
+    final aadhaarPath =
+        ocrResults['aadhaar_front']?['image_path'] as String? ?? '';
     final panPath = ocrResults['pan']?['image_path'] as String? ?? '';
     final selfiePath = data['image_path'] as String? ?? 'mock_selfie';
 
@@ -295,13 +322,14 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
       panPath: panPath,
       selfiePath: selfiePath,
     );
-    
+
     setState(() => _selfieVerified = result.matched);
-    
+
     if (!result.matched) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Verification Failed: ${result.error ?? "Faces do not match!"}'), 
+          content: Text(
+              'Verification Failed: ${result.error ?? "Faces do not match!"}'),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 4),
         ),
@@ -310,25 +338,33 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
       ref.read(ocrResultsProvider.notifier).addResult('selfie', {});
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selfie Verified! Faces match.'), backgroundColor: Colors.green),
+        const SnackBar(
+            content: Text('Selfie Verified! Faces match.'),
+            backgroundColor: Colors.green),
       );
     }
   }
 
   bool get _isFormValid {
-    return _aadhaarVerified && _aadhaarFrontExtracted && _panVerified && _panExtracted && _selfieVerified;
+    return _aadhaarVerified &&
+        _aadhaarFrontExtracted &&
+        _panVerified &&
+        _panExtracted &&
+        _selfieVerified;
   }
 
   Future<void> _submit() async {
     final statusMap = ref.read(stepStatusProvider);
     if (statusMap[2] == StepStatus.verified) {
-       context.push(AppRoutes.scoreStep(3));
-       return;
+      context.push(AppRoutes.scoreStep(3));
+      return;
     }
 
     if (CrossStepValidator.hasBlockingErrors(_validationIssues)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fix document mismatches before proceeding'), backgroundColor: Colors.red),
+        const SnackBar(
+            content: Text('Please fix document mismatches before proceeding'),
+            backgroundColor: Colors.red),
       );
       return;
     }
@@ -349,16 +385,84 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
       selfieVerified: _selfieVerified,
     );
 
-    // Log full validation results
-    print('\n════════════════════════════════════════════');
-    print('STEP 2 VALIDATION RESULT: ${step2Result.passed ? "PASSED" : "FAILED"}');
-    print('Name match score: ${(step2Result.nameMatchScore * 100).toStringAsFixed(1)}%');
-    print('Hard fails: ${step2Result.hardFails.length}');
-    print('Soft flags: ${step2Result.softFlags.length}');
+    GigLogger.stepBanner(2, 'KYC IDENTITY CHAIN — CROSS-VALIDATION');
+
+    GigLogger.sectionHeader('INPUTS FOR CROSS-VALIDATION');
+    GigLogger.data('Step 1 Name (declared)', profile.personalInfo.fullName);
+    GigLogger.data('Step 1 DOB  (declared)', profile.personalInfo.dateOfBirth);
+    GigLogger.data(
+        'Entered Aadhaar',
+        _aadhaarController.text
+            .replaceAll(' ', '')
+            .replaceRange(0, 8, 'XXXX-XXXX-'));
+    GigLogger.data(
+        'Entered PAN',
+        _panController.text.trim().isEmpty
+            ? 'N/A'
+            : _panController.text.trim().replaceRange(0, 5, 'XXXXX'));
+    GigLogger.data('Aadhaar Front OCR name',
+        ocrResults['aadhaar_front']?['name'] ?? '(not extracted)');
+    GigLogger.data('Aadhaar DOB from OCR',
+        ocrResults['aadhaar_front']?['dob'] ?? '(not extracted)');
+    GigLogger.data(
+        'PAN OCR name', ocrResults['pan']?['name'] ?? '(not extracted)');
+    GigLogger.data('Selfie verified', _selfieVerified.toString());
+
+    GigLogger.sectionHeader('CROSS-STEP IDENTITY CHAIN CHECKS');
+    final step1Name = profile.personalInfo.fullName.toLowerCase().trim();
+    final aadhaarName = (ocrResults['aadhaar_front']?['name'] as String? ?? '')
+        .toLowerCase()
+        .trim();
+    final panName =
+        (ocrResults['pan']?['name'] as String? ?? '').toLowerCase().trim();
+    GigLogger.crossValidation(
+        'Step1.name',
+        step1Name,
+        'Aadhaar.name',
+        aadhaarName,
+        aadhaarName.isEmpty ||
+            aadhaarName == step1Name ||
+            step1Name.contains(aadhaarName.split(' ').first));
+    GigLogger.crossValidation(
+        'Step1.name',
+        step1Name,
+        'PAN.name',
+        panName,
+        panName.isEmpty ||
+            panName == step1Name ||
+            step1Name.contains(panName.split(' ').first));
+    GigLogger.crossValidation(
+        'Step1.dob',
+        profile.personalInfo.dateOfBirth,
+        'Aadhaar.dob',
+        ocrResults['aadhaar_front']?['dob'] ?? '',
+        (ocrResults['aadhaar_front']?['dob'] as String? ?? '').isEmpty ||
+            ocrResults['aadhaar_front']?['dob'] ==
+                profile.personalInfo.dateOfBirth);
+    GigLogger.check('Selfie face match', _selfieVerified);
+    GigLogger.check('Aadhaar front OCR done', _aadhaarFrontExtracted);
+    GigLogger.check('Aadhaar back OCR done', _aadhaarBackExtracted);
+    GigLogger.check('PAN OCR done', _panExtracted);
+    GigLogger.check('Aadhaar API verified', _aadhaarVerified);
+    GigLogger.check('PAN API verified', _panVerified);
+
+    GigLogger.divider();
+    GigLogger.data('Name Match Score',
+        '${(step2Result.nameMatchScore * 100).toStringAsFixed(1)}%');
+    GigLogger.data('Hard Fails', '${step2Result.hardFails.length}');
+    GigLogger.data('Soft Flags', '${step2Result.softFlags.length}');
     for (final issue in step2Result.issues) {
-      print('  [${issue.severity.name}] ${issue.code}: ${issue.message}');
+      if (issue.severity.name == 'hard') {
+        GigLogger.fail('[HARD] ${issue.code}: ${issue.message}');
+      } else {
+        GigLogger.warn('[SOFT] ${issue.code}: ${issue.message}');
+      }
     }
-    print('════════════════════════════════════════════\n');
+    if (step2Result.passed) {
+      GigLogger.ok('STEP 2 CROSS-VALIDATION → PASSED ✓');
+    } else {
+      GigLogger.fail('STEP 2 CROSS-VALIDATION → FAILED — submission blocked');
+    }
 
     // HARD FAIL — block submission
     if (!step2Result.passed) {
@@ -370,26 +474,30 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
             children: [
               Icon(Icons.error_outline, color: Colors.red),
               SizedBox(width: 8),
-              Text('KYC Validation Failed', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text('KYC Validation Failed',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ],
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Identity chain verification failed:', style: TextStyle(fontSize: 13)),
+              const Text('Identity chain verification failed:',
+                  style: TextStyle(fontSize: 13)),
               const SizedBox(height: 12),
               ...step2Result.hardFails.map((issue) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.close, color: Colors.red, size: 16),
-                    const SizedBox(width: 6),
-                    Expanded(child: Text(issue.message, style: const TextStyle(fontSize: 12))),
-                  ],
-                ),
-              )),
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.close, color: Colors.red, size: 16),
+                        const SizedBox(width: 6),
+                        Expanded(
+                            child: Text(issue.message,
+                                style: const TextStyle(fontSize: 12))),
+                      ],
+                    ),
+                  )),
             ],
           ),
           actions: [
@@ -420,20 +528,39 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
       await Future.delayed(const Duration(seconds: 2));
 
       ref.read(verifiedProfileProvider.notifier).updateStep2(
-        KycInfo(
-          isVerified: true,
-          backVerified: _aadhaarBackExtracted,
-          selfieVerified: _selfieVerified,
-          panVerified: _panVerified,
-          nameMatchScore: step2Result.nameMatchScore,
-        ),
-      );
+            KycInfo(
+              isVerified: true,
+              backVerified: _aadhaarBackExtracted,
+              selfieVerified: _selfieVerified,
+              panVerified: _panVerified,
+              nameMatchScore: step2Result.nameMatchScore,
+            ),
+          );
       ref.read(stepStatusProvider.notifier).setStatus(2, StepStatus.verified);
-      ref.read(stepStatusProvider.notifier).resetStepsAfter(2); // GAP 3: Reset downstream on re-submit
+      ref
+          .read(stepStatusProvider.notifier)
+          .resetStepsAfter(2); // GAP 3: Reset downstream on re-submit
+
+      GigLogger.sectionHeader('GLOBAL STATE UPDATE — verifiedProfileProvider');
+      GigLogger.stateUpdate(
+          'verifiedProfileProvider', 'kycInfo.isVerified', 'true');
+      GigLogger.stateUpdate('verifiedProfileProvider',
+          'kycInfo.aadhaarVerified', _aadhaarVerified.toString());
+      GigLogger.stateUpdate('verifiedProfileProvider', 'kycInfo.panVerified',
+          _panVerified.toString());
+      GigLogger.stateUpdate('verifiedProfileProvider', 'kycInfo.selfieVerified',
+          _selfieVerified.toString());
+      GigLogger.stateUpdate('verifiedProfileProvider', 'kycInfo.nameMatchScore',
+          '${(step2Result.nameMatchScore * 100).toStringAsFixed(1)}%');
+      GigLogger.stateUpdate(
+          'stepStatusProvider', 'step[2]', 'StepStatus.verified');
+      GigLogger.warn('Steps 3-9 downstream state RESET');
+      GigLogger.ok('Step 2 KYC complete — advancing to Step 3 (Bank)');
 
       if (mounted) {
         setState(() => _isLoading = false);
-        AppToast.success(context, 'KYC verified ✓ (name match: ${(step2Result.nameMatchScore * 100).toStringAsFixed(0)}%)');
+        AppToast.success(context,
+            'KYC verified ✓ (name match: ${(step2Result.nameMatchScore * 100).toStringAsFixed(0)}%)');
         context.push(AppRoutes.scoreStep(3));
       }
     } catch (e) {
@@ -449,7 +576,8 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
 
     return ScrollableStepLayout(
       currentStep: 2,
-      stepCompletionMap: statusMap.map((key, value) => MapEntry(key, value == StepStatus.verified)),
+      stepCompletionMap: statusMap
+          .map((key, value) => MapEntry(key, value == StepStatus.verified)),
       onStepTapped: (step) => context.push(AppRoutes.scoreStep(step)),
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -457,19 +585,38 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('KYC Verification', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              const Text('KYC Verification',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
               if (isVerified) const VerificationBadge(),
             ],
           ),
           const SizedBox(height: 4),
-          Text('Upload photos of your ID cards. Data is extracted on-device.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          Text('Upload photos of your ID cards. Data is extracted on-device.',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
           const SizedBox(height: 24),
 
           // ── Cross-Step Validation Warnings ──
           if (_validationIssues.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
-              child: MismatchWarningBanner(issues: _validationIssues),
+              child: MismatchWarningBanner(
+                issues: _validationIssues,
+                onDismiss: () {
+                  // Reset upload cards so user can re-upload correct documents
+                  setState(() {
+                    _aadhaarFrontExtracted = false;
+                    _panExtracted = false;
+                    _aadhaarFrontUploadKey++; // forces DocumentUploadCard to reset
+                    _panUploadKey++;
+                    _validationIssues = [];
+                  });
+                  // Clear OCR results so re-upload triggers fresh validation
+                  ref
+                      .read(ocrResultsProvider.notifier)
+                      .removeResult('aadhaar_front');
+                  ref.read(ocrResultsProvider.notifier).removeResult('pan');
+                },
+              ),
             ),
 
           // ═══════════════════════════════════════════
@@ -487,7 +634,8 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
               maxLength: 6,
               keyboardType: TextInputType.number,
               isVerified: false,
-              isVerifying: false,
+              isVerifying:
+                  _aadhaarVerifying, // show spinner during OTP validation
               isStepVerified: isVerified,
               onVerify: _verifyAadhaar,
             )
@@ -512,6 +660,7 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
               child: Column(
                 children: [
                   DocumentUploadCard(
+                    key: ValueKey('aadhaar_front_$_aadhaarFrontUploadKey'),
                     title: 'Aadhaar Card — Front Side',
                     subtitle: 'Photo showing name, DOB, Aadhaar number',
                     docType: 'aadhaar_front',
@@ -549,7 +698,7 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
               maxLength: 6,
               keyboardType: TextInputType.number,
               isVerified: false,
-              isVerifying: false,
+              isVerifying: _panVerifying, // show spinner during OTP validation
               isStepVerified: isVerified,
               onVerify: _verifyPan,
             )
@@ -573,6 +722,7 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
             child: IgnorePointer(
               ignoring: !_panVerified,
               child: DocumentUploadCard(
+                key: ValueKey('pan_$_panUploadKey'),
                 title: 'PAN Card Photo',
                 subtitle: 'Photo showing PAN number, name, DOB',
                 docType: 'pan',
@@ -604,11 +754,13 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
             Padding(
               padding: const EdgeInsets.only(top: 12),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.green.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+                  border:
+                      Border.all(color: Colors.green.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
@@ -616,7 +768,10 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
                     const SizedBox(width: 8),
                     Text(
                       'Face matched (95% confidence)',
-                      style: TextStyle(color: Colors.green.shade400, fontSize: 13, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          color: Colors.green.shade400,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -627,7 +782,9 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
       bottomBar: PrimaryButton(
         label: isVerified ? 'Continue to Next Step' : 'Verify KYC',
         isLoading: _isLoading,
-        isDisabled: !_isFormValid && !isVerified,
+        // Disabled if: form not complete OR step not verified OR blocking mismatch errors exist
+        isDisabled: (!_isFormValid && !isVerified) ||
+            CrossStepValidator.hasBlockingErrors(_validationIssues),
         onPressed: _submit,
       ),
     );
@@ -641,13 +798,20 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
           width: 28,
           height: 28,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: [AppColors.accent, AppColors.accentLight]),
+            gradient: const LinearGradient(
+                colors: [AppColors.accent, AppColors.accentLight]),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Center(child: Text(badge, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13))),
+          child: Center(
+              child: Text(badge,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13))),
         ),
         const SizedBox(width: 10),
-        Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+        Text(title,
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
       ],
     );
   }
@@ -689,13 +853,17 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
                   textCapitalization: textCapitalization,
                   maxLength: maxLength,
                   enabled: !isVerified && !isStepVerified,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 1.5),
+                  style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.5),
                   decoration: InputDecoration(
                     labelText: label,
                     hintText: hint,
                     counterText: '',
                     border: const OutlineInputBorder(),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 14),
                   ),
                 ),
               ),
@@ -709,15 +877,21 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
                         decoration: BoxDecoration(
                           color: AppColors.verified.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.verified.withValues(alpha: 0.4)),
+                          border: Border.all(
+                              color: AppColors.verified.withValues(alpha: 0.4)),
                         ),
                         child: const Center(
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.check_circle, color: AppColors.verified, size: 16),
+                              Icon(Icons.check_circle,
+                                  color: AppColors.verified, size: 16),
                               SizedBox(width: 4),
-                              Text('Verified', style: TextStyle(color: AppColors.verified, fontWeight: FontWeight.bold, fontSize: 12)),
+                              Text('Verified',
+                                  style: TextStyle(
+                                      color: AppColors.verified,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12)),
                             ],
                           ),
                         ),
@@ -727,12 +901,15 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.accent,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
                           padding: EdgeInsets.zero,
                         ),
                         child: isVerifying
                             ? const CoinPulseLoader(size: 6.0)
-                            : const Text('Verify', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                            : const Text('Verify',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 13)),
                       ),
               ),
             ],

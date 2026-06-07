@@ -132,16 +132,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (session != null) {
       // Restore user into providers
       final user = UserModel(
-        id:         session['userId'] ?? '',
-        name:       session['name']   ?? '',
-        mobile:     session['mobile'] ?? '',
+        id: session['userId'] ?? '',
+        name: session['name'] ?? '',
+        mobile: session['mobile'] ?? '',
         isVerified: true,
       );
       ref.read(userProvider.notifier).setUser(user);
       ref.read(authProvider.notifier).setAuthenticated(
-        userId: user.id,
-        token:  session['token'] ?? '',
-      );
+            userId: user.id,
+            token: session['token'] ?? '',
+          );
       if (mounted) context.go(AppRoutes.home);
     } else {
       context.go(AppRoutes.login);
@@ -212,30 +212,31 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // App Icon
+                        // App Icon — real GigCredit logo
                         AnimatedBuilder(
                           animation: _iconScale,
                           builder: (context, child) {
                             return Transform.scale(
                               scale: _iconScale.value,
                               child: Container(
-                                width: 80,
-                                height: 80,
+                                width: 96,
+                                height: 96,
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.18),
-                                  borderRadius: BorderRadius.circular(22),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.30),
-                                    width: 2,
-                                  ),
+                                  borderRadius: BorderRadius.circular(24),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color:
+                                          Colors.black.withValues(alpha: 0.25),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
                                 ),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  'G',
-                                  style: AppTypography.displayLarge.copyWith(
-                                    color: Colors.white,
-                                    fontSize: 40,
-                                    fontWeight: FontWeight.w900,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(24),
+                                  child: Image.asset(
+                                    'assets/images/app_logo.png',
+                                    fit: BoxFit.cover,
                                   ),
                                 ),
                               ),

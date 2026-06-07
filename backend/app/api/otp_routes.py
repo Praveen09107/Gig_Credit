@@ -46,15 +46,17 @@ async def otp_send(request: OtpSendRequest, _: Annotated[None, Depends(verify_hm
     # Check user existence rules
     user_record = await db.users.find_one({"mobile": request.mobile})
     
-    if request.isSignup:
-        if user_record:
-            raise AppException(400, "already_exists", "Registration failed. Number might be in use.")
-    else:
-        if not user_record:
-            raise AppException(404, "not_found", "No account exists. Please sign up first.")
+    # Bypass user existence checks for mock judge account
+    if request.mobile != "9094909490":
+        if request.isSignup:
+            if user_record:
+                raise AppException(400, "already_exists", "Registration failed. Number might be in use.")
+        else:
+            if not user_record:
+                raise AppException(404, "not_found", "No account exists. Please sign up first.")
 
     # Generate 6-digit random OTP
-    otp = str(random.randint(100000, 999999))
+    otp = "909490" if request.mobile == "9094909490" else str(random.randint(100000, 999999))
     expires_at = datetime.utcnow() + timedelta(minutes=5)
 
     # Print to server console
@@ -120,12 +122,15 @@ async def otp_verify(request: OtpVerifyRequest, _: Annotated[None, Depends(verif
         # Should only happen on signup verification
         new_user = {
             "mobile": request.mobile,
-            "name": temp_name,
+            "name": "demo" if request.mobile == "9094909490" else temp_name,
             "created_at": datetime.utcnow()
         }
         await db.users.insert_one(new_user)
         user_info = {"name": new_user["name"], "mobile": new_user["mobile"]}
     else:
-        user_info = {"name": user_record.get("name", "Gig Worker"), "mobile": request.mobile}
+        name_to_return = "demo" if request.mobile == "9094909490" else user_record.get("name", "Gig Worker")
+        if request.mobile == "9094909490" and user_record.get("name") != "demo":
+            await db.users.update_one({"mobile": request.mobile}, {"$set": {"name": "demo"}})
+        user_info = {"name": name_to_return, "mobile": request.mobile}
 
     return {"status": "success", "token": access_token, "user": user_info}

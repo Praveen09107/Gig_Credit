@@ -10,12 +10,17 @@ class AuthController extends StateNotifier<bool> {
 
   AuthController(this.ref) : super(false); // state = isLoading
 
-  Future<String?> sendOtp(String mobile, {bool isSignup = false, String? name}) async {
+  Future<String?> sendOtp(String mobile,
+      {bool isSignup = false, String? name}) async {
     state = true;
     try {
       final api = ref.read(apiServiceProvider);
-      final response = await api.sendOtp(mobile, isSignup: isSignup, name: name);
+      final response =
+          await api.sendOtp(mobile, isSignup: isSignup, name: name);
       state = false;
+      if (response['status'] == 'success') {
+        return response['otp'] ?? 'TWILIO_SUCCESS';
+      }
       return response['otp'];
     } catch (e) {
       state = false;
@@ -33,13 +38,13 @@ class AuthController extends StateNotifier<bool> {
       final response = await api.verifyOtp(mobile, otp);
 
       if (response['status'] == 'success') {
-        final token    = response['token'] as String? ?? '';
-        final userData = response['user']  as Map<String, dynamic>? ?? {};
+        final token = response['token'] as String? ?? '';
+        final userData = response['user'] as Map<String, dynamic>? ?? {};
 
         final user = UserModel(
-          id:         'USR_$mobile',
-          name:       userData['name'] as String? ?? '',
-          mobile:     mobile,
+          id: 'USR_$mobile',
+          name: userData['name'] as String? ?? '',
+          mobile: mobile,
           isVerified: false,
         );
 
@@ -48,19 +53,23 @@ class AuthController extends StateNotifier<bool> {
 
         ref.read(userProvider.notifier).setUser(user);
         ref.read(authProvider.notifier).setAuthenticated(
-          userId: user.id,
-          token:  token,
-        );
+              userId: user.id,
+              token: token,
+            );
 
         state = false;
         return true;
       }
       state = false;
-      ref.read(authProvider.notifier).setError('Unexpected response from server');
+      ref
+          .read(authProvider.notifier)
+          .setError('Unexpected response from server');
       return false;
     } catch (e) {
       state = false;
-      ref.read(authProvider.notifier).setError(e.toString().replaceAll('Exception: ', ''));
+      ref
+          .read(authProvider.notifier)
+          .setError(e.toString().replaceAll('Exception: ', ''));
       return false;
     }
   }
@@ -73,6 +82,7 @@ class AuthController extends StateNotifier<bool> {
   }
 }
 
-final authControllerProvider = StateNotifierProvider<AuthController, bool>((ref) {
+final authControllerProvider =
+    StateNotifierProvider<AuthController, bool>((ref) {
   return AuthController(ref);
 });

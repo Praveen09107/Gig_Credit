@@ -6,7 +6,7 @@ import '../models/user_model.dart';
 /// Called on login → saves. Called on app start → restores. Called on logout → clears.
 class SessionService {
   static const _storage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    aOptions: AndroidOptions(encryptedSharedPreferences: false),
   );
 
   static const _keyToken    = 'gc_auth_token';

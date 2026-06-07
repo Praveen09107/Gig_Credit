@@ -35,9 +35,10 @@ class StepProgressBar extends StatelessWidget {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                // Background lines
+                // Background lines — positioned between dots, not overlapping them
                 Positioned.fill(
-                  child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 9.0), // half of dotSize=18
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: List.generate(8, (index) {
@@ -45,15 +46,16 @@ class StepProgressBar extends StatelessWidget {
                         final isLineActive = currentStep > stepIndex ||
                             (stepCompletionMap[stepIndex] == true);
 
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          height: 2.5,
-                          width: lineSpacing,
-                          decoration: BoxDecoration(
-                            color: isLineActive
-                                ? (lightMode ? Colors.white : AppColors.greenBright)
-                                : (lightMode ? Colors.white.withValues(alpha: 0.30) : AppColors.borderCard),
-                            borderRadius: BorderRadius.circular(999),
+                        return Expanded(
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            height: 2.5,
+                            decoration: BoxDecoration(
+                              color: isLineActive
+                                  ? (lightMode ? Colors.white : AppColors.greenBright)
+                                  : (lightMode ? Colors.white.withValues(alpha: 0.30) : AppColors.borderCard),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
                           ),
                         );
                       }),

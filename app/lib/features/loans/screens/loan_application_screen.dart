@@ -11,6 +11,7 @@ import '../../../state/score_provider.dart';
 import '../../../shared/widgets/loaders/coin_pulse_loader.dart';
 import '../../../state/user_provider.dart';
 import '../../../state/loan_applications_provider.dart';
+import '../../../state/verified_profile_provider.dart';
 import '../../../shared/theme/app_colors.dart';
 
 // Unified theme constants — aligned with app-wide design system
@@ -101,19 +102,32 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
   }
   
   double get _existingEMI {
+    // Use real EMI data from Step 9 if available
+    final profile = ref.read(verifiedProfileProvider);
+    final realEmi = profile.emiLoansInfo.loans
+        .fold(0.0, (sum, loan) => sum + loan.monthlyEmi);
+    if (realEmi > 0) return realEmi;
+    // Fallback: estimate from score
     final report = ref.read(scoreProvider).reportData;
     if (report != null) {
-      // Estimate from score: higher score = lower EMI burden
       final emiRatio = report.finalScore > 700 ? 0.15 : (report.finalScore > 550 ? 0.30 : 0.40);
       return (_monthlyIncome * emiRatio).roundToDouble();
     }
-    return 8640;
+    return 0;
   }
   
   double get _monthlyIncome {
+    // First try: read from score report (survives PII cleanup after scoring)
     final report = ref.read(scoreProvider).reportData;
+    if (report != null && report.applicantMonthlyIncome > 0) {
+      return report.applicantMonthlyIncome;
+    }
+    // Second try: read from live profile (available during scoring session)
+    final profile = ref.read(verifiedProfileProvider);
+    final realIncome = profile.personalInfo.selfDeclaredIncome;
+    if (realIncome > 0) return realIncome;
+    // Fallback: estimate from P1 pillar contribution
     if (report != null) {
-      // Estimate from pillar P1 contribution scaled to income range
       final p1Contrib = report.pillarContributions['P1'] ?? 0;
       return (12000 + (p1Contrib * 200)).clamp(10000, 80000).roundToDouble();
     }
@@ -133,13 +147,16 @@ class _LoanApplicationScreenState extends ConsumerState<LoanApplicationScreen> w
   }
   
   int get _estimatedAge {
-    // Derive from profile data if available, otherwise use reasonable estimate
+    // Priority 1: read from score report (stored during scoring, survives PII cleanup)
     final report = ref.read(scoreProvider).reportData;
-    if (report != null) {
-      // Age estimate from work tenure and score signals
-      final p7Conf = report.pillars.where((p) => p.code == 'P7').firstOrNull?.confidence ?? 0.5;
-      return (25 + (p7Conf * 20)).round().clamp(18, 65);
+    if (report != null && report.applicantAge > 0) {
+      return report.applicantAge.clamp(18, 65);
     }
+    // Priority 2: live profile (available during active scoring session)
+    final profile = ref.read(verifiedProfileProvider);
+    final realAge = profile.personalInfo.age;
+    if (realAge > 0) return realAge.clamp(18, 65);
+    // Fallback: safe neutral default
     return 28;
   }
   
