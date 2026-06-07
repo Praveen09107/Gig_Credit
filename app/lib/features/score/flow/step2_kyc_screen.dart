@@ -40,11 +40,17 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
   bool _panVerified = false;
   bool _panVerifying = false;
 
+  // ── API-verified data (from server) — stored for cross-checking against OCR ──
+  // These are set when verify buttons succeed and used to validate uploaded images
+  Map<String, dynamic> _aadhaarApiData = {};  // {name, dob, aadhaar_number} from API
+  Map<String, dynamic> _panApiData = {};       // {name, dob, pan_number} from API
+
+  // Inline mismatch messages shown immediately after upload
+  String? _aadhaarImageMismatch;
+  String? _panImageMismatch;
   bool _aadhaarFrontExtracted = false;
   bool _aadhaarBackExtracted = false;
   bool _panExtracted = false;
-  bool _selfieVerified = false;
-  bool _isLoading = false;
   List<ValidationIssue> _validationIssues = [];
 
   // Keys to force DocumentUploadCard reset when user needs to re-upload
@@ -58,6 +64,9 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
   bool _panOtpSent = false;
   String? _expectedPanOtp;
   final _panOtpController = TextEditingController();
+
+  bool _selfieVerified = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -127,6 +136,13 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
       final api = ref.read(apiServiceProvider);
       final result = await api.verifyAadhaar(text);
       if (mounted) {
+        // Store API-verified Aadhaar data — used to cross-check uploaded image
+        _aadhaarApiData = {
+          'aadhaar_number': text,
+          'name': result['name'] as String? ?? '',
+          'dob':  result['dob']  as String? ?? '',
+          'state': result['state'] as String? ?? '',
+        };
         setState(() {
           _aadhaarVerifying = false;
           _aadhaarOtpSent = true;
@@ -230,6 +246,12 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
       final api = ref.read(apiServiceProvider);
       final result = await api.verifyPan(text);
       if (mounted) {
+        // Store API-verified PAN data — used to cross-check uploaded image
+        _panApiData = {
+          'pan_number': text,
+          'name': result['name'] as String? ?? '',
+          'dob':  result['dob']  as String? ?? '',
+        };
         setState(() {
           _panVerifying = false;
           _panOtpSent = true;
@@ -273,28 +295,153 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
     }
   }
 
+  /// Cross-check Aadhaar image OCR vs API-verified data.
+  /// Called immediately after image upload — shows inline mismatch banner if names/numbers don't match.
   void _onAadhaarFrontExtracted(Map<String, dynamic> data) {
     ref.read(ocrResultsProvider.notifier).addResult('aadhaar_front', data);
     if (data.containsKey('aadhaar_number') && data['aadhaar_number'] != null) {
       _aadhaarController.text = data['aadhaar_number'];
     }
+
+    String? mismatch;
+
+    // 1. Aadhaar number: OCR vs entered number
+    final ocrAadhaar = (data['aadhaar_number'] as String? ?? '').replaceAll(' ', '');
+    final enteredAadhaar = _aadhaarController.text.replaceAll(' ', '');
+    if (ocrAadhaar.isNotEmpty && enteredAadhaar.isNotEmpty && ocrAadhaar != enteredAadhaar) {
+      mismatch = 'Aadhaar number on the uploaded card ($ocrAadhaar) does not match the number you entered ($enteredAadhaar). Please upload your own Aadhaar card.';
+    }
+
+    // 2. Name: OCR vs API-verified name (from /gov/aadhaar/verify response)
+    if (mismatch == null && _aadhaarApiData.isNotEmpty) {
+      final apiName  = (_aadhaarApiData['name'] as String? ?? '').trim().toLowerCase();
+      final ocrName  = (data['name'] as String? ?? '').trim().toLowerCase();
+      if (apiName.isNotEmpty && ocrName.isNotEmpty) {
+        final score = _nameSimilarity(apiName, ocrName);
+        if (score < 0.60) {
+          mismatch = 'Name on the uploaded Aadhaar card ("${data['name']}") does not match the verified Aadhaar record ("${_aadhaarApiData['name']}"). You must upload your own Aadhaar card.';
+        }
+      }
+    }
+
+    // 3. DOB: OCR vs API-verified DOB
+    if (mismatch == null && _aadhaarApiData.isNotEmpty) {
+      final apiDob = (_aadhaarApiData['dob'] as String? ?? '').trim();
+      final ocrDob = (data['dob'] as String? ?? '').trim();
+      if (apiDob.isNotEmpty && ocrDob.isNotEmpty && !_dobsRoughMatch(apiDob, ocrDob)) {
+        mismatch = 'Date of birth on the uploaded Aadhaar card ($ocrDob) does not match the verified record ($apiDob). This does not appear to be your Aadhaar card.';
+      }
+    }
+
     setState(() {
-      _aadhaarFrontExtracted = true;
-      _validationIssues = []; // clear stale errors before re-validating
+      _aadhaarFrontExtracted = mismatch == null;
+      _aadhaarImageMismatch = mismatch;
+      _validationIssues = [];
     });
-    _runCrossValidation();
+
+    if (mismatch == null) {
+      _runCrossValidation();
+    }
   }
 
+  /// Cross-check PAN image OCR vs API-verified data AND vs Aadhaar API data.
+  /// Called immediately after image upload — shows inline mismatch banner if data doesn't match.
   void _onPanExtracted(Map<String, dynamic> data) {
     ref.read(ocrResultsProvider.notifier).addResult('pan', data);
     if (data.containsKey('pan_number') && data['pan_number'] != null) {
       _panController.text = data['pan_number'];
     }
+
+    String? mismatch;
+
+    // 1. PAN number: OCR vs entered number
+    final ocrPan     = (data['pan_number'] as String? ?? '').trim().toUpperCase();
+    final enteredPan = _panController.text.trim().toUpperCase();
+    if (ocrPan.isNotEmpty && enteredPan.isNotEmpty && ocrPan != enteredPan) {
+      mismatch = 'PAN number on the uploaded card ($ocrPan) does not match the PAN you entered ($enteredPan). Please upload your own PAN card.';
+    }
+
+    // 2. Name: OCR vs API-verified PAN name
+    if (mismatch == null && _panApiData.isNotEmpty) {
+      final apiName = (_panApiData['name'] as String? ?? '').trim().toLowerCase();
+      final ocrName = (data['name'] as String? ?? '').trim().toLowerCase();
+      if (apiName.isNotEmpty && ocrName.isNotEmpty) {
+        final score = _nameSimilarity(apiName, ocrName);
+        if (score < 0.60) {
+          mismatch = 'Name on the uploaded PAN card ("${data['name']}") does not match the verified PAN record ("${_panApiData['name']}"). You must upload your own PAN card.';
+        }
+      }
+    }
+
+    // 3. PAN name vs Aadhaar API name (cross-document identity chain)
+    if (mismatch == null && _aadhaarApiData.isNotEmpty && _panApiData.isNotEmpty) {
+      final aadhaarName = (_aadhaarApiData['name'] as String? ?? '').trim().toLowerCase();
+      final panName     = (_panApiData['name']    as String? ?? '').trim().toLowerCase();
+      if (aadhaarName.isNotEmpty && panName.isNotEmpty) {
+        final score = _nameSimilarity(aadhaarName, panName);
+        if (score < 0.55) {
+          mismatch = 'The name on your PAN ("${_panApiData['name']}") does not match the name on your Aadhaar ("${_aadhaarApiData['name']}"). Both documents must belong to the same person.';
+        }
+      }
+    }
+
+    // 4. DOB: OCR vs API-verified PAN DOB
+    if (mismatch == null && _panApiData.isNotEmpty) {
+      final apiDob = (_panApiData['dob'] as String? ?? '').trim();
+      final ocrDob = (data['dob'] as String? ?? '').trim();
+      if (apiDob.isNotEmpty && ocrDob.isNotEmpty && !_dobsRoughMatch(apiDob, ocrDob)) {
+        mismatch = 'Date of birth on the uploaded PAN card ($ocrDob) does not match the verified record ($apiDob). This does not appear to be your PAN card.';
+      }
+    }
+
     setState(() {
-      _panExtracted = true;
-      _validationIssues = []; // clear stale errors before re-validating
+      _panExtracted = mismatch == null;
+      _panImageMismatch = mismatch;
+      _validationIssues = [];
     });
-    _runCrossValidation();
+
+    if (mismatch == null) {
+      _runCrossValidation();
+    }
+  }
+
+  /// Simple bigram name similarity (0.0 – 1.0).
+  /// Works well for Indian names with minor OCR noise.
+  double _nameSimilarity(String a, String b) {
+    if (a == b) return 1.0;
+    if (a.isEmpty || b.isEmpty) return 0.0;
+    // Tokenise and check first-token containment (handles "Praveen Kumar P" vs "Praveen Kumar")
+    final aToks = a.split(RegExp(r'\s+'));
+    final bToks = b.split(RegExp(r'\s+'));
+    final common = aToks.where((t) => t.length > 1 && bToks.contains(t)).length;
+    final tokenScore = common / (aToks.length > bToks.length ? aToks.length : bToks.length);
+    if (tokenScore >= 0.6) return tokenScore;
+    // Bigram fallback
+    Set<String> bigrams(String s) {
+      final set = <String>{};
+      for (int i = 0; i < s.length - 1; i++) set.add(s.substring(i, i + 2));
+      return set;
+    }
+    final ab = bigrams(a); final bb = bigrams(b);
+    final inter = ab.intersection(bb).length;
+    if (ab.isEmpty && bb.isEmpty) return 1.0;
+    return (2.0 * inter) / (ab.length + bb.length);
+  }
+
+  /// Loose DOB comparison — same year+month is enough (OCR day errors are common).
+  bool _dobsRoughMatch(String d1, String d2) {
+    DateTime? parse(String s) {
+      final parts = s.split(RegExp(r'[/\-.]'));
+      if (parts.length < 3) return null;
+      try {
+        final first = int.parse(parts[0]);
+        if (first > 31) return DateTime(first, int.parse(parts[1]), int.parse(parts[2]));
+        return DateTime(int.parse(parts[2]), int.parse(parts[1]), first);
+      } catch (_) { return null; }
+    }
+    final dt1 = parse(d1); final dt2 = parse(d2);
+    if (dt1 == null || dt2 == null) return true; // can't parse — don't block
+    return dt1.year == dt2.year && dt1.month == dt2.month;
   }
 
   void _onAadhaarBackExtracted(Map<String, dynamic> data) {
@@ -346,6 +493,8 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
   }
 
   bool get _isFormValid {
+    // Block if any inline mismatch banners are showing
+    if (_aadhaarImageMismatch != null || _panImageMismatch != null) return false;
     return _aadhaarVerified &&
         _aadhaarFrontExtracted &&
         _panVerified &&
@@ -606,6 +755,8 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
                   setState(() {
                     _aadhaarFrontExtracted = false;
                     _panExtracted = false;
+                    _aadhaarImageMismatch = null;
+                    _panImageMismatch = null;
                     _aadhaarFrontUploadKey++; // forces DocumentUploadCard to reset
                     _panUploadKey++;
                     _validationIssues = [];
@@ -667,6 +818,19 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
                     ocrService: ocrService,
                     onExtracted: _onAadhaarFrontExtracted,
                   ),
+                  // Inline mismatch banner — shown immediately after wrong Aadhaar upload
+                  if (_aadhaarImageMismatch != null) ...[
+                    const SizedBox(height: 10),
+                    _buildMismatchBanner(
+                      message: _aadhaarImageMismatch!,
+                      onReupload: () => setState(() {
+                        _aadhaarImageMismatch = null;
+                        _aadhaarFrontExtracted = false;
+                        _aadhaarFrontUploadKey++;
+                        ref.read(ocrResultsProvider.notifier).removeResult('aadhaar_front');
+                      }),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   DocumentUploadCard(
                     title: 'Aadhaar Card — Back Side',
@@ -721,13 +885,30 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
             opacity: _panVerified ? 1.0 : 0.5,
             child: IgnorePointer(
               ignoring: !_panVerified,
-              child: DocumentUploadCard(
-                key: ValueKey('pan_$_panUploadKey'),
-                title: 'PAN Card Photo',
-                subtitle: 'Photo showing PAN number, name, DOB',
-                docType: 'pan',
-                ocrService: ocrService,
-                onExtracted: _onPanExtracted,
+              child: Column(
+                children: [
+                  DocumentUploadCard(
+                    key: ValueKey('pan_$_panUploadKey'),
+                    title: 'PAN Card Photo',
+                    subtitle: 'Photo showing PAN number, name, DOB',
+                    docType: 'pan',
+                    ocrService: ocrService,
+                    onExtracted: _onPanExtracted,
+                  ),
+                  // Inline mismatch banner — shown immediately after wrong PAN upload
+                  if (_panImageMismatch != null) ...[
+                    const SizedBox(height: 10),
+                    _buildMismatchBanner(
+                      message: _panImageMismatch!,
+                      onReupload: () => setState(() {
+                        _panImageMismatch = null;
+                        _panExtracted = false;
+                        _panUploadKey++;
+                        ref.read(ocrResultsProvider.notifier).removeResult('pan');
+                      }),
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
@@ -786,6 +967,70 @@ class _Step2KycScreenState extends ConsumerState<Step2KycScreen> {
         isDisabled: (!_isFormValid && !isVerified) ||
             CrossStepValidator.hasBlockingErrors(_validationIssues),
         onPressed: _submit,
+      ),
+    );
+  }
+
+  // ── Inline mismatch banner — shown immediately after wrong document upload ──
+  Widget _buildMismatchBanner({required String message, required VoidCallback onReupload}) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0x22F44336),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.withOpacity(0.5), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.error_rounded, color: Colors.red, size: 20),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Document Mismatch — Cannot Continue',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: const TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 12,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerRight,
+            child: GestureDetector(
+              onTap: onReupload,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'Re-upload Correct Document',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
